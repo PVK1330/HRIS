@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from '../../components/ui/Button.jsx'
+import FileUpload from '../../components/ui/FileUpload.jsx'
 import { Input } from '../../components/ui/Input.jsx'
 import { Toggle } from '../../components/ui/Toggle.jsx'
 import { dashboardStats } from '../../data/mockData.js'
@@ -8,6 +9,7 @@ export default function Settings() {
   const [companyName, setCompanyName] = useState('ElitePic Holdings')
   const [timezone, setTimezone] = useState('Asia/Dubai')
   const [notify, setNotify] = useState(true)
+  const [files, setFiles] = useState({})
 
   return (
     <div className="space-y-6">
@@ -22,6 +24,13 @@ export default function Settings() {
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Company profile</h2>
           <div className="mt-4 space-y-4">
+            <FileUpload
+              label="Company logo"
+              name="companyLogo"
+              accept=".jpg,.jpeg,.png,.webp,.svg"
+              onChange={(fileList) => setFiles((prev) => ({ ...prev, companyLogo: fileList }))}
+              helpText="PNG, JPG, WebP, or SVG. Square image recommended."
+            />
             <Input
               label="Company name"
               name="companyName"
@@ -55,7 +64,11 @@ export default function Settings() {
       </div>
 
       <div className="flex justify-end">
-        <Button label="Save changes" variant="secondary" />
+        <Button
+          label="Save changes"
+          variant="secondary"
+          onClick={() => console.log({ companyName, timezone, notify, files })}
+        />
       </div>
     </div>
   )
