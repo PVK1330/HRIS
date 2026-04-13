@@ -25,35 +25,35 @@ import { useAuth } from '../context/AuthContext.jsx'
 
 const adminNavGroups = [
   {
-    groupLabel: 'MAIN',
+    groupLabel: 'EMPLOYEE MANAGEMENT',
     items: [
       { label: 'Dashboard', icon: HiSquares2X2, path: '/admin/dashboard' },
       { label: 'Employee Directory', icon: HiUsers, path: '/admin/employee-directory' },
       { label: 'Employee Profile', icon: HiUser, path: '/admin/employee-profile' },
-      { label: 'Attendance', icon: HiClock, path: '/admin/attendance' },
+      { label: 'Attendance Management', icon: HiClock, path: '/admin/attendance' },
       { label: 'Leave & Absence', icon: HiCalendar, path: '/admin/leave' },
-      { label: 'Documents', icon: HiDocument, path: '/admin/documents' },
+      { label: 'Document Repository', icon: HiDocument, path: '/admin/documents' },
       { label: 'Visa & Nationality', icon: HiCreditCard, path: '/admin/visa' },
     ],
   },
   {
-    groupLabel: 'HR TOOLS',
+    groupLabel: 'HR OPERATIONS',
     items: [
-      { label: 'Performance', icon: HiChartBar, path: '/admin/performance' },
-      { label: 'Policies', icon: HiClipboardDocumentCheck, path: '/admin/policies' },
-      { label: 'Expenses', icon: HiCurrencyDollar, path: '/admin/expenses' },
-      { label: 'Onboarding', icon: HiUserPlus, path: '/admin/onboarding' },
+      { label: 'Performance Management', icon: HiChartBar, path: '/admin/performance' },
+      { label: 'Company Policies', icon: HiClipboardDocumentCheck, path: '/admin/policies' },
+      { label: 'Expense Management', icon: HiCurrencyDollar, path: '/admin/expenses' },
+      { label: 'Onboarding Process', icon: HiUserPlus, path: '/admin/onboarding' },
       {
         label: 'Exit Management',
         icon: HiArrowRightOnRectangle,
         path: '/admin/exit-management',
       },
-      { label: 'Letters & Templates', icon: HiEnvelope, path: '/admin/letters' },
+      { label: 'Letter Templates', icon: HiEnvelope, path: '/admin/letters' },
     ],
   },
   {
-    groupLabel: 'ADMIN',
-    items: [{ label: 'Settings', icon: HiCog6Tooth, path: '/admin/settings' }],
+    groupLabel: 'ADMINISTRATION',
+    items: [{ label: 'System Settings', icon: HiCog6Tooth, path: '/admin/settings' }],
   },
 ]
 

@@ -1,18 +1,18 @@
 import { useMemo, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import {
-  HiArrowPath,
-  HiArrowsRightLeft,
   HiBars3,
   HiBell,
-  HiBuildingOffice,
   HiCog6Tooth,
+  HiCurrencyDollar,
   HiDocumentText,
   HiExclamationTriangle,
-  HiFolder,
+  HiGlobeAlt,
+  HiHome,
   HiLockClosed,
+  HiServer,
+  HiShieldCheck,
   HiSquares2X2,
-  HiUser,
   HiUserCircle,
   HiUsers,
 } from 'react-icons/hi2'
@@ -23,39 +23,31 @@ import { useAuth } from '../context/AuthContext.jsx'
 
 const superNavGroups = [
   {
-    groupLabel: 'MAIN',
-    items: [{ label: 'Dashboard', icon: HiSquares2X2, path: '/superadmin/dashboard' }],
+    groupLabel: 'PLATFORM OVERVIEW',
+    items: [
+      { label: 'Dashboard', icon: HiHome, path: '/superadmin/dashboard' },
+      { label: 'Tenant Management', icon: HiDocumentText, path: '/superadmin/tenants' },
+      { label: 'Domains & SSL', icon: HiGlobeAlt, path: '/superadmin/domains' },
+      { label: 'Subscription Plans', icon: HiCurrencyDollar, path: '/superadmin/subscriptions' },
+      { label: 'Billing & Revenue', icon: HiCurrencyDollar, path: '/superadmin/billing' },
+    ],
   },
   {
     groupLabel: 'USER MANAGEMENT',
     items: [
       { label: 'Admin Users', icon: HiUserCircle, path: '/superadmin/admin-users' },
-      { label: 'Case Workers', icon: HiUsers, path: '/superadmin/caseworkers' },
-      { label: 'Clients / Candidates', icon: HiUser, path: '/superadmin/clients' },
-      { label: 'Sponsors / Businesses', icon: HiBuildingOffice, path: '/superadmin/sponsors' },
+      { label: 'Role Permissions', icon: HiLockClosed, path: '/superadmin/permissions' },
+      { label: 'Module Configuration', icon: HiSquares2X2, path: '/superadmin/modules' },
+      { label: 'System Announcements', icon: HiDocumentText, path: '/superadmin/announcements' },
     ],
   },
   {
-    groupLabel: 'ACCESS CONTROL',
-    items: [{ label: 'Permissions & RBAC', icon: HiLockClosed, path: '/superadmin/permissions' }],
-  },
-  {
-    groupLabel: 'CASE MANAGEMENT',
+    groupLabel: 'SYSTEM ADMINISTRATION',
     items: [
-      { label: 'All Cases', icon: HiFolder, path: '/superadmin/all-cases' },
-      { label: 'Case Detail', icon: HiDocumentText, path: '/superadmin/case-detail' },
-      { label: 'Pipeline', icon: HiArrowPath, path: '/superadmin/pipeline' },
-      { label: 'Assign / Reassign', icon: HiArrowsRightLeft, path: '/superadmin/assign-reassign' },
-      {
-        label: 'Escalations',
-        icon: HiExclamationTriangle,
-        path: '/superadmin/escalations',
-      },
+      { label: 'Audit Logs', icon: HiShieldCheck, path: '/superadmin/audit' },
+      { label: 'Support Tickets', icon: HiExclamationTriangle, path: '/superadmin/support' },
+      { label: 'Platform Configuration', icon: HiCog6Tooth, path: '/superadmin/settings' },
     ],
-  },
-  {
-    groupLabel: 'ADMIN',
-    items: [{ label: 'Settings', icon: HiCog6Tooth, path: '/superadmin/settings' }],
   },
 ]
 

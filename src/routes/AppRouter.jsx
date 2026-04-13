@@ -6,32 +6,44 @@ import SuperAdminLayout from '../layouts/SuperAdminLayout.jsx'
 import Login from '../pages/auth/Login.jsx'
 
 import AdminDashboard from '../pages/admin/Dashboard.jsx'
-import EmployeeDirectory from '../pages/admin/EmployeeDirectory.jsx'
-import EmployeeProfile from '../pages/admin/EmployeeProfile.jsx'
-import Attendance from '../pages/admin/Attendance.jsx'
-import LeaveAbsence from '../pages/admin/LeaveAbsence.jsx'
-import Documents from '../pages/admin/Documents.jsx'
-import VisaNationality from '../pages/admin/VisaNationality.jsx'
-import Performance from '../pages/admin/Performance.jsx'
-import Policies from '../pages/admin/Policies.jsx'
-import Expenses from '../pages/admin/Expenses.jsx'
-import Onboarding from '../pages/admin/Onboarding.jsx'
-import ExitManagement from '../pages/admin/ExitManagement.jsx'
-import LettersTemplates from '../pages/admin/LettersTemplates.jsx'
-import AdminSettings from '../pages/admin/Settings.jsx'
+import EmployeeDirectory from '../pages/admin/employees/EmployeeDirectory.jsx'
+import EmployeeProfile from '../pages/admin/employees/EmployeeProfile.jsx'
+import Attendance from '../pages/admin/hr/Attendance.jsx'
+import LeaveAbsence from '../pages/admin/hr/LeaveAbsence.jsx'
+import Documents from '../pages/admin/documents/Documents.jsx'
+import VisaNationality from '../pages/admin/compliance/VisaNationality.jsx'
+import Performance from '../pages/admin/hr/Performance.jsx'
+import Policies from '../pages/admin/compliance/Policies.jsx'
+import Expenses from '../pages/admin/finance/Expenses.jsx'
+import Onboarding from '../pages/admin/hr/Onboarding.jsx'
+import ExitManagement from '../pages/admin/hr/ExitManagement.jsx'
+import LettersTemplates from '../pages/admin/documents/LettersTemplates.jsx'
+import AdminSettings from '../pages/admin/settings/Settings.jsx'
 
-import SuperDashboard from '../pages/superadmin/Dashboard.jsx'
+import PlatformDashboard from '../pages/superadmin/platform/Dashboard.jsx'
+import TenantManagement from '../pages/superadmin/tenants/TenantManagement.jsx'
+import DomainsSSL from '../pages/superadmin/domains/DomainsSSL.jsx'
+import SubscriptionsPlans from '../pages/superadmin/subscriptions/SubscriptionsPlans.jsx'
+import Billing from '../pages/superadmin/billing/Billing.jsx'
+import ModuleManagement from '../pages/superadmin/platform/ModuleManagement.jsx'
+import Announcements from '../pages/superadmin/platform/Announcements.jsx'
+import AuditLogs from '../pages/superadmin/system/AuditLogs.jsx'
+import SupportTickets from '../pages/superadmin/support/SupportTickets.jsx'
 import AdminUsers from '../pages/superadmin/AdminUsers.jsx'
-import CaseWorkers from '../pages/superadmin/CaseWorkers.jsx'
-import ClientsCandidates from '../pages/superadmin/ClientsCandidates.jsx'
-import SponsorsBusiness from '../pages/superadmin/SponsorsBusiness.jsx'
 import Permissions from '../pages/superadmin/Permissions.jsx'
-import AllCases from '../pages/superadmin/AllCases.jsx'
-import CaseDetail from '../pages/superadmin/CaseDetail.jsx'
-import Pipeline from '../pages/superadmin/Pipeline.jsx'
-import AssignReassign from '../pages/superadmin/AssignReassign.jsx'
-import Escalations from '../pages/superadmin/Escalations.jsx'
 import SuperSettings from '../pages/superadmin/Settings.jsx'
+
+import EmployeeLayout from '../layouts/EmployeeLayout.jsx'
+import EmployeeDashboard from '../pages/employee/Dashboard.jsx'
+import HRLayout from '../layouts/HRLayout.jsx'
+import HRDashboard from '../pages/hr/Dashboard.jsx'
+import HRTeam from '../pages/hr/Team.jsx'
+import HRLeaveApprovals from '../pages/hr/LeaveApprovals.jsx'
+import HRAttendance from '../pages/hr/Attendance.jsx'
+import HRExpenses from '../pages/hr/Expenses.jsx'
+import HRPerformance from '../pages/hr/Performance.jsx'
+import HRLetters from '../pages/hr/Letters.jsx'
+import HRReports from '../pages/hr/Reports.jsx'
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth()
@@ -58,7 +70,7 @@ export const router = createBrowserRouter([
       {
         path: 'admin',
         element: (
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
             <AdminLayout />
           </ProtectedRoute>
         ),
@@ -81,6 +93,54 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        path: 'employee',
+        element: (
+          <ProtectedRoute allowedRoles={['employee', 'admin', 'superadmin']}>
+            <EmployeeLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          { index: true, element: <Navigate to="dashboard" replace /> },
+          { path: 'dashboard', element: <EmployeeDashboard /> },
+          { path: 'profile', element: <EmployeeDashboard /> },
+          { path: 'attendance', element: <EmployeeDashboard /> },
+          { path: 'leave', element: <EmployeeDashboard /> },
+          { path: 'timesheet', element: <EmployeeDashboard /> },
+          { path: 'goals', element: <EmployeeDashboard /> },
+          { path: 'reviews', element: <EmployeeDashboard /> },
+          { path: 'payslips', element: <EmployeeDashboard /> },
+          { path: 'expenses', element: <EmployeeDashboard /> },
+          { path: 'messages', element: <EmployeeDashboard /> },
+          { path: 'announcements', element: <EmployeeDashboard /> },
+          { path: 'settings', element: <EmployeeDashboard /> },
+        ],
+      },
+      {
+        path: 'hr',
+        element: (
+          <ProtectedRoute allowedRoles={['hr', 'admin', 'superadmin']}>
+            <HRLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          { index: true, element: <Navigate to="dashboard" replace /> },
+          { path: 'dashboard', element: <HRDashboard /> },
+          { path: 'team', element: <HRTeam /> },
+          { path: 'leave-approvals', element: <HRLeaveApprovals /> },
+          { path: 'attendance', element: <HRAttendance /> },
+          { path: 'expenses', element: <HRExpenses /> },
+          { path: 'performance', element: <HRPerformance /> },
+          { path: 'letters', element: <HRLetters /> },
+          { path: 'reports', element: <HRReports /> },
+          { path: 'employees', element: <HRTeam /> },
+          { path: 'onboarding', element: <EmployeeDashboard /> },
+          { path: 'exit', element: <EmployeeDashboard /> },
+          { path: 'announcements', element: <EmployeeDashboard /> },
+          { path: 'messages', element: <EmployeeDashboard /> },
+          { path: 'settings', element: <EmployeeDashboard /> },
+        ],
+      },
+      {
         path: 'superadmin',
         element: (
           <ProtectedRoute allowedRoles={['superadmin']}>
@@ -89,17 +149,17 @@ export const router = createBrowserRouter([
         ),
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
-          { path: 'dashboard', element: <SuperDashboard /> },
+          { path: 'dashboard', element: <PlatformDashboard /> },
+          { path: 'tenants', element: <TenantManagement /> },
+          { path: 'domains', element: <DomainsSSL /> },
+          { path: 'subscriptions', element: <SubscriptionsPlans /> },
+          { path: 'billing', element: <Billing /> },
+          { path: 'modules', element: <ModuleManagement /> },
+          { path: 'announcements', element: <Announcements /> },
+          { path: 'audit', element: <AuditLogs /> },
+          { path: 'support', element: <SupportTickets /> },
           { path: 'admin-users', element: <AdminUsers /> },
-          { path: 'caseworkers', element: <CaseWorkers /> },
-          { path: 'clients', element: <ClientsCandidates /> },
-          { path: 'sponsors', element: <SponsorsBusiness /> },
           { path: 'permissions', element: <Permissions /> },
-          { path: 'all-cases', element: <AllCases /> },
-          { path: 'case-detail', element: <CaseDetail /> },
-          { path: 'pipeline', element: <Pipeline /> },
-          { path: 'assign-reassign', element: <AssignReassign /> },
-          { path: 'escalations', element: <Escalations /> },
           { path: 'settings', element: <SuperSettings /> },
         ],
       },
