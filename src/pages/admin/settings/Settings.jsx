@@ -12,9 +12,6 @@ import { HiBuildingOffice, HiUsers, HiKey, HiCog6Tooth, HiShieldCheck, HiPencil,
 const selectClass =
   'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
-const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
-
 export default function Settings() {
   const [companyName, setCompanyName] = useState('HRIS Holdings')
   const [timezone, setTimezone] = useState('Asia/Dubai')
@@ -30,6 +27,39 @@ export default function Settings() {
   const [editRoleMode, setEditRoleMode] = useState(false)
   const [editingRoleId, setEditingRoleId] = useState(null)
   const [roleFormData, setRoleFormData] = useState({ name: '', description: '', permissions: [] })
+  
+  // Security settings state
+  const [twoFactorAuth, setTwoFactorAuth] = useState(true)
+  const [sessionTimeout, setSessionTimeout] = useState(true)
+  const [ipWhitelist, setIpWhitelist] = useState(false)
+  const [passwordComplexity, setPasswordComplexity] = useState(true)
+  const [loginMonitoring, setLoginMonitoring] = useState(true)
+  
+  // Module visibility state
+  const [moduleVisibility, setModuleVisibility] = useState({
+    employeeDirectory: true,
+    attendance: true,
+    leave: true,
+    performance: true,
+    documents: true,
+    visa: true,
+    departments: true,
+    projects: true,
+    tasks: true,
+    payroll: false
+  })
+  
+  // Attendance & Leave configuration state
+  const [workingHours, setWorkingHours] = useState('9:00 AM - 6:00 PM')
+  const [workingDays, setWorkingDays] = useState('Monday - Friday')
+  const [annualLeaveDays, setAnnualLeaveDays] = useState('30')
+  const [sickLeaveDays, setSickLeaveDays] = useState('15')
+  
+  // Sensitive data access state
+  const [salaryAccess, setSalaryAccess] = useState('Admin Only')
+  const [performanceAccess, setPerformanceAccess] = useState('Admin Only')
+  const [visaAccess, setVisaAccess] = useState('Admin Only')
+  const [contactAccess, setContactAccess] = useState('Admin Only')
 
   const teamMembers = useMemo(
     () => [
@@ -42,14 +72,11 @@ export default function Settings() {
     []
   )
 
-  const customRoles = useMemo(
-    () => [
-      { id: 1, name: 'HR Admin', description: 'Full HR module access', userCount: 8, isSystem: true },
-      { id: 2, name: 'Manager', description: 'Team management access', userCount: 12, isSystem: true },
-      { id: 3, name: 'Employee', description: 'Self-service access', userCount: 45, isSystem: true },
-    ],
-    []
-  )
+  const [customRoles, setCustomRoles] = useState([
+    { id: 1, name: 'HR Admin', description: 'Full HR module access', userCount: 8, isSystem: true, permissions: ['employee_directory', 'attendance', 'leave', 'performance', 'documents', 'visa', 'departments', 'projects', 'tasks', 'templates', 'reports'] },
+    { id: 2, name: 'Manager', description: 'Team management access', userCount: 12, isSystem: true, permissions: ['employee_directory', 'attendance', 'leave', 'performance', 'documents'] },
+    { id: 3, name: 'Employee', description: 'Self-service access', userCount: 45, isSystem: true, permissions: ['attendance', 'leave', 'documents'] },
+  ])
 
   const availablePermissions = useMemo(
     () => [
@@ -114,6 +141,7 @@ export default function Settings() {
   const handleDeleteTeam = (id) => {
     if (confirm('Are you sure you want to remove this team member?')) {
       console.log('Delete team member:', id)
+      // In real implementation, this would update the data source
     }
   }
 
@@ -122,12 +150,12 @@ export default function Settings() {
     setRoleFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handlePermissionToggle = (permissionKey) => {
+  const handlePermissionToggle = (permission) => {
     setRoleFormData((prev) => ({
       ...prev,
-      permissions: prev.permissions.includes(permissionKey)
-        ? prev.permissions.filter((p) => p !== permissionKey)
-        : [...prev.permissions, permissionKey],
+      permissions: prev.permissions.includes(permission)
+        ? prev.permissions.filter((p) => p !== permission)
+        : [...prev.permissions, permission]
     }))
   }
 
@@ -146,11 +174,11 @@ export default function Settings() {
 
   const handleEditRole = (id) => {
     const role = customRoles.find((r) => r.id === id)
-    if (role) {
+    if (role && !role.isSystem) {
       setRoleFormData({
         name: role.name,
         description: role.description,
-        permissions: [],
+        permissions: role.permissions || []
       })
       setEditRoleMode(true)
       setEditingRoleId(id)
@@ -159,9 +187,35 @@ export default function Settings() {
   }
 
   const handleDeleteRole = (id) => {
-    if (confirm('Are you sure you want to delete this role?')) {
+    const role = customRoles.find((r) => r.id === id)
+    if (role && !role.isSystem && confirm(`Are you sure you want to delete the role "${role.name}"?`)) {
+      setCustomRoles((prev) => prev.filter((r) => r.id !== id))
       console.log('Delete role:', id)
     }
+  }
+
+  const handleModuleVisibilityToggle = (module) => {
+    setModuleVisibility((prev) => ({ ...prev, [module]: !prev[module] }))
+  }
+
+  const handleSaveCompanySettings = () => {
+    console.log('Saving company settings:', { companyName, timezone, notify, files })
+    alert('Company settings saved successfully!')
+  }
+
+  const handleSaveSecuritySettings = () => {
+    console.log('Saving security settings:', { twoFactorAuth, sessionTimeout, ipWhitelist, passwordComplexity, loginMonitoring })
+    alert('Security settings saved successfully!')
+  }
+
+  const handleSaveAttendanceSettings = () => {
+    console.log('Saving attendance settings:', { workingHours, workingDays, annualLeaveDays, sickLeaveDays })
+    alert('Attendance & Leave settings saved successfully!')
+  }
+
+  const handleSaveDataAccessSettings = () => {
+    console.log('Saving data access settings:', { salaryAccess, performanceAccess, visaAccess, contactAccess })
+    alert('Data access settings saved successfully!')
   }
 
   const teamColumns = [
@@ -278,9 +332,9 @@ export default function Settings() {
               <h2 className="font-display text-lg font-bold text-gray-900">Notifications & Security</h2>
               <div className="mt-4 space-y-4">
                 <Toggle checked={notify} onChange={setNotify} label="Email HR admins for critical alerts" />
-                <Toggle checked={true} onChange={() => {}} label="Two-factor authentication required" />
-                <Toggle checked={true} onChange={() => {}} label="Session timeout after 30 minutes" />
-                <Toggle checked={false} onChange={() => {}} label="IP whitelist enabled" />
+                <Toggle checked={twoFactorAuth} onChange={setTwoFactorAuth} label="Two-factor authentication required" />
+                <Toggle checked={sessionTimeout} onChange={setSessionTimeout} label="Session timeout after 30 minutes" />
+                <Toggle checked={ipWhitelist} onChange={setIpWhitelist} label="IP whitelist enabled" />
                 <p className="text-xs text-gray-500">
                   Toggle state is local only (no backend).
                 </p>
@@ -290,50 +344,41 @@ export default function Settings() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Role & Permission Management</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-lg font-bold text-gray-900">Role & Permission Management</h2>
+                <Button label="Add Role" variant="primary" size="sm" onClick={() => { resetRoleModal(); setRoleModalOpen(true) }} />
+              </div>
               <div className="mt-4 space-y-3">
-                <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                  <div>
-                    <div className="font-medium text-gray-900">Super Admin</div>
-                    <div className="text-xs text-gray-500">Full system access</div>
+                {customRoles.map((role) => (
+                  <div key={role.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+                    <div>
+                      <div className="font-medium text-gray-900">{role.name}</div>
+                      <div className="text-xs text-gray-500">{role.description}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge label={`${role.userCount} users`} color="blue" />
+                      {!role.isSystem && (
+                        <div className="flex gap-1">
+                          <Button label="Edit" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEditRole(role.id)} />
+                          <Button label="Delete" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDeleteRole(role.id)} />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <Badge label="3 users" color="blue" />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                  <div>
-                    <div className="font-medium text-gray-900">HR Admin</div>
-                    <div className="text-xs text-gray-500">HR module access</div>
-                  </div>
-                  <Badge label="8 users" color="green" />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                  <div>
-                    <div className="font-medium text-gray-900">Manager</div>
-                    <div className="text-xs text-gray-500">Team management access</div>
-                  </div>
-                  <Badge label="12 users" color="orange" />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                  <div>
-                    <div className="font-medium text-gray-900">Employee</div>
-                    <div className="text-xs text-gray-500">Self-service access</div>
-                  </div>
-                  <Badge label="45 users" color="gray" />
-                </div>
-                <Button label="Manage Roles" variant="secondary" className="w-full" />
+                ))}
               </div>
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
               <h2 className="font-display text-lg font-bold text-gray-900">Module Visibility Control</h2>
               <div className="mt-4 space-y-3">
-                <Toggle checked={true} onChange={() => {}} label="Employee Directory" />
-                <Toggle checked={true} onChange={() => {}} label="Attendance & Timesheet" />
-                <Toggle checked={true} onChange={() => {}} label="Leave Management" />
-                <Toggle checked={true} onChange={() => {}} label="Performance Management" />
-                <Toggle checked={true} onChange={() => {}} label="Documents" />
-                <Toggle checked={true} onChange={() => {}} label="Visa & Nationality" />
-                <Toggle checked={false} onChange={() => {}} label="Payroll (Coming Soon)" />
+                <Toggle checked={moduleVisibility.employeeDirectory} onChange={() => handleModuleVisibilityToggle('employeeDirectory')} label="Employee Directory" />
+                <Toggle checked={moduleVisibility.attendance} onChange={() => handleModuleVisibilityToggle('attendance')} label="Attendance & Timesheet" />
+                <Toggle checked={moduleVisibility.leave} onChange={() => handleModuleVisibilityToggle('leave')} label="Leave Management" />
+                <Toggle checked={moduleVisibility.performance} onChange={() => handleModuleVisibilityToggle('performance')} label="Performance Management" />
+                <Toggle checked={moduleVisibility.documents} onChange={() => handleModuleVisibilityToggle('documents')} label="Documents" />
+                <Toggle checked={moduleVisibility.visa} onChange={() => handleModuleVisibilityToggle('visa')} label="Visa & Nationality" />
+                <Toggle checked={moduleVisibility.payroll} onChange={() => handleModuleVisibilityToggle('payroll')} label="Payroll (Coming Soon)" disabled />
               </div>
             </div>
           </div>
@@ -344,7 +389,7 @@ export default function Settings() {
               <div className="mt-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Salary Information</span>
-                  <select className={selectClass}>
+                  <select className={selectClass} value={salaryAccess} onChange={(e) => setSalaryAccess(e.target.value)}>
                     <option>Admin Only</option>
                     <option>HR Admin</option>
                     <option>Manager</option>
@@ -352,7 +397,7 @@ export default function Settings() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Performance Reviews</span>
-                  <select className={selectClass}>
+                  <select className={selectClass} value={performanceAccess} onChange={(e) => setPerformanceAccess(e.target.value)}>
                     <option>Admin Only</option>
                     <option>HR Admin</option>
                     <option>Manager</option>
@@ -360,7 +405,7 @@ export default function Settings() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Visa & Passport Data</span>
-                  <select className={selectClass}>
+                  <select className={selectClass} value={visaAccess} onChange={(e) => setVisaAccess(e.target.value)}>
                     <option>Admin Only</option>
                     <option>HR Admin</option>
                     <option>Manager</option>
@@ -368,7 +413,7 @@ export default function Settings() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Personal Contact Details</span>
-                  <select className={selectClass}>
+                  <select className={selectClass} value={contactAccess} onChange={(e) => setContactAccess(e.target.value)}>
                     <option>Admin Only</option>
                     <option>HR Admin</option>
                     <option>Manager</option>
@@ -382,11 +427,11 @@ export default function Settings() {
               <div className="mt-4 space-y-3">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Working Hours</label>
-                  <Input placeholder="9:00 AM - 6:00 PM" />
+                  <Input value={workingHours} onChange={(e) => setWorkingHours(e.target.value)} placeholder="9:00 AM - 6:00 PM" />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Working Days</label>
-                  <select className={selectClass}>
+                  <select className={selectClass} value={workingDays} onChange={(e) => setWorkingDays(e.target.value)}>
                     <option>Monday - Friday</option>
                     <option>Monday - Saturday</option>
                     <option>Sunday - Thursday</option>
@@ -394,11 +439,11 @@ export default function Settings() {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Annual Leave Days</label>
-                  <Input type="number" placeholder="30" />
+                  <Input type="number" value={annualLeaveDays} onChange={(e) => setAnnualLeaveDays(e.target.value)} placeholder="30" />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Sick Leave Days</label>
-                  <Input type="number" placeholder="15" />
+                  <Input type="number" value={sickLeaveDays} onChange={(e) => setSickLeaveDays(e.target.value)} placeholder="15" />
                 </div>
               </div>
             </div>
@@ -513,99 +558,58 @@ export default function Settings() {
       )}
 
       {activeTab === 'permissions' && (
-        <>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Module Visibility Control</h2>
-              <div className="mt-4 space-y-3">
-                <Toggle checked={true} onChange={() => {}} label="Employee Directory" />
-                <Toggle checked={true} onChange={() => {}} label="Attendance & Timesheet" />
-                <Toggle checked={true} onChange={() => {}} label="Leave Management" />
-                <Toggle checked={true} onChange={() => {}} label="Performance Management" />
-                <Toggle checked={true} onChange={() => {}} label="Documents" />
-                <Toggle checked={true} onChange={() => {}} label="Visa & Nationality" />
-                <Toggle checked={true} onChange={() => {}} label="Departments" />
-                <Toggle checked={true} onChange={() => {}} label="Projects" />
-                <Toggle checked={true} onChange={() => {}} label="Tasks" />
-                <Toggle checked={false} onChange={() => {}} label="Payroll (Coming Soon)" />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Role-Based Access</h2>
-              <div className="mt-4 space-y-3">
-                <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                  <div>
-                    <div className="font-medium text-gray-900">Super Admin</div>
-                    <div className="text-xs text-gray-500">Full system access</div>
-                  </div>
-                  <Badge label="3 users" color="blue" />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                  <div>
-                    <div className="font-medium text-gray-900">HR Admin</div>
-                    <div className="text-xs text-gray-500">HR module access</div>
-                  </div>
-                  <Badge label="8 users" color="green" />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                  <div>
-                    <div className="font-medium text-gray-900">Manager</div>
-                    <div className="text-xs text-gray-500">Team management access</div>
-                  </div>
-                  <Badge label="12 users" color="orange" />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                  <div>
-                    <div className="font-medium text-gray-900">Employee</div>
-                    <div className="text-xs text-gray-500">Self-service access</div>
-                  </div>
-                  <Badge label="45 users" color="gray" />
-                </div>
-                <Button label="Manage Roles" variant="secondary" className="w-full" onClick={() => setRoleModalOpen(true)} />
-              </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="font-display text-lg font-bold text-gray-900">Module Visibility Control</h2>
+            <div className="mt-4 space-y-3">
+              <Toggle checked={moduleVisibility.employeeDirectory} onChange={() => handleModuleVisibilityToggle('employeeDirectory')} label="Employee Directory" />
+              <Toggle checked={moduleVisibility.attendance} onChange={() => handleModuleVisibilityToggle('attendance')} label="Attendance & Timesheet" />
+              <Toggle checked={moduleVisibility.leave} onChange={() => handleModuleVisibilityToggle('leave')} label="Leave Management" />
+              <Toggle checked={moduleVisibility.performance} onChange={() => handleModuleVisibilityToggle('performance')} label="Performance Management" />
+              <Toggle checked={moduleVisibility.documents} onChange={() => handleModuleVisibilityToggle('documents')} label="Documents" />
+              <Toggle checked={moduleVisibility.visa} onChange={() => handleModuleVisibilityToggle('visa')} label="Visa & Nationality" />
+              <Toggle checked={moduleVisibility.departments} onChange={() => handleModuleVisibilityToggle('departments')} label="Departments" />
+              <Toggle checked={moduleVisibility.projects} onChange={() => handleModuleVisibilityToggle('projects')} label="Projects" />
+              <Toggle checked={moduleVisibility.tasks} onChange={() => handleModuleVisibilityToggle('tasks')} label="Tasks" />
+              <Toggle checked={moduleVisibility.payroll} onChange={() => handleModuleVisibilityToggle('payroll')} label="Payroll (Coming Soon)" disabled />
             </div>
           </div>
 
-          <Modal isOpen={roleModalOpen} onClose={() => { resetRoleModal(); setRoleModalOpen(false) }} title={editRoleMode ? 'Edit Role' : 'Create Role'} size="lg">
-            <form onSubmit={handleRoleSubmit}>
-              <div className="space-y-4">
-                <Input label="Role Name" name="name" value={roleFormData.name} onChange={handleRoleFormChange} required />
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="font-display text-lg font-bold text-gray-900">Role-Based Access</h2>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    className={textareaClass}
-                    name="description"
-                    value={roleFormData.description}
-                    onChange={handleRoleFormChange}
-                    rows={2}
-                    placeholder="Brief description of the role"
-                  />
+                  <div className="font-medium text-gray-900">Super Admin</div>
+                  <div className="text-xs text-gray-500">Full system access</div>
                 </div>
+                <Badge label="3 users" color="blue" />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Permissions</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {availablePermissions.map((perm) => (
-                      <label key={perm.key} className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:bg-gray-50">
-                        <input
-                          type="checkbox"
-                          checked={roleFormData.permissions.includes(perm.key)}
-                          onChange={() => handlePermissionToggle(perm.key)}
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{perm.label}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <div className="font-medium text-gray-900">HR Admin</div>
+                  <div className="text-xs text-gray-500">HR module access</div>
                 </div>
+                <Badge label="8 users" color="green" />
               </div>
-              <div className="mt-6 flex justify-end gap-2">
-                <Button type="button" label="Cancel" variant="ghost" onClick={() => { resetRoleModal(); setRoleModalOpen(false) }} />
-                <Button type="submit" label={editRoleMode ? 'Update Role' : 'Create Role'} variant="primary" />
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+                <div>
+                  <div className="font-medium text-gray-900">Manager</div>
+                  <div className="text-xs text-gray-500">Team management access</div>
+                </div>
+                <Badge label="12 users" color="orange" />
               </div>
-            </form>
-          </Modal>
-        </>
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
+                <div>
+                  <div className="font-medium text-gray-900">Employee</div>
+                  <div className="text-xs text-gray-500">Self-service access</div>
+                </div>
+                <Badge label="45 users" color="gray" />
+              </div>
+              <Button label="Manage Roles" variant="secondary" className="w-full" />
+            </div>
+          </div>
+        </div>
       )}
 
       {activeTab === 'security' && (
@@ -613,12 +617,14 @@ export default function Settings() {
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="font-display text-lg font-bold text-gray-900">Security Settings</h2>
             <div className="mt-4 space-y-3">
-              <Toggle checked={true} onChange={() => {}} label="Two-factor authentication required" />
-              <Toggle checked={true} onChange={() => {}} label="Session timeout after 30 minutes" />
-              <Toggle checked={false} onChange={() => {}} label="IP whitelist enabled" />
-              <Toggle checked={true} onChange={() => {}} label="Password complexity requirements" />
-              <Toggle checked={true} onChange={() => {}} label="Login attempt monitoring" />
-              <p className="text-xs text-gray-500">Toggle state is local only (no backend).</p>
+              <Toggle checked={twoFactorAuth} onChange={setTwoFactorAuth} label="Two-factor authentication required" />
+              <Toggle checked={sessionTimeout} onChange={setSessionTimeout} label="Session timeout after 30 minutes" />
+              <Toggle checked={ipWhitelist} onChange={setIpWhitelist} label="IP whitelist enabled" />
+              <Toggle checked={passwordComplexity} onChange={setPasswordComplexity} label="Password complexity requirements" />
+              <Toggle checked={loginMonitoring} onChange={setLoginMonitoring} label="Log in attempt monitoring" />
+            </div>
+            <div className="mt-4">
+              <Button label="Save Security Settings" variant="secondary" className="w-full" onClick={handleSaveSecuritySettings} />
             </div>
           </div>
 
@@ -627,7 +633,7 @@ export default function Settings() {
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Salary Information</span>
-                <select className={selectClass}>
+                <select className={selectClass} value={salaryAccess} onChange={(e) => setSalaryAccess(e.target.value)}>
                   <option>Admin Only</option>
                   <option>HR Admin</option>
                   <option>Manager</option>
@@ -635,7 +641,7 @@ export default function Settings() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Performance Reviews</span>
-                <select className={selectClass}>
+                <select className={selectClass} value={performanceAccess} onChange={(e) => setPerformanceAccess(e.target.value)}>
                   <option>Admin Only</option>
                   <option>HR Admin</option>
                   <option>Manager</option>
@@ -643,7 +649,7 @@ export default function Settings() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Visa & Passport Data</span>
-                <select className={selectClass}>
+                <select className={selectClass} value={visaAccess} onChange={(e) => setVisaAccess(e.target.value)}>
                   <option>Admin Only</option>
                   <option>HR Admin</option>
                   <option>Manager</option>
@@ -651,26 +657,57 @@ export default function Settings() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Personal Contact Details</span>
-                <select className={selectClass}>
+                <select className={selectClass} value={contactAccess} onChange={(e) => setContactAccess(e.target.value)}>
                   <option>Admin Only</option>
                   <option>HR Admin</option>
                   <option>Manager</option>
                 </select>
               </div>
             </div>
+            <div className="mt-4">
+              <Button label="Save Data Access Settings" variant="secondary" className="w-full" onClick={handleSaveDataAccessSettings} />
+            </div>
           </div>
         </div>
       )}
 
       {activeTab === 'company' && (
-        <div className="flex justify-end">
-          <Button
-            label="Save changes"
-            variant="secondary"
-            onClick={() => console.log({ companyName, timezone, notify, files })}
-          />
+        <div className="flex justify-end gap-2">
+          <Button label="Save Company Settings" variant="secondary" onClick={handleSaveCompanySettings} />
+          <Button label="Save Attendance Settings" variant="secondary" onClick={handleSaveAttendanceSettings} />
         </div>
       )}
+
+      <Modal isOpen={roleModalOpen} onClose={() => { resetRoleModal(); setRoleModalOpen(false) }} title={editRoleMode ? 'Edit Role' : 'Add Role'} size="lg">
+        <form onSubmit={handleRoleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+          <div className="space-y-4">
+            <Input label="Role Name" name="name" value={roleFormData.name} onChange={handleRoleFormChange} required />
+            <Input label="Description" name="description" value={roleFormData.description} onChange={handleRoleFormChange} />
+            
+            <div className="mt-4">
+              <h3 className="font-semibold text-gray-900 mb-3">Permissions</h3>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {availablePermissions.map((perm) => (
+                  <div key={perm.key} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={perm.key}
+                      checked={roleFormData.permissions.includes(perm.key)}
+                      onChange={() => handlePermissionToggle(perm.key)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor={perm.key} className="text-sm text-gray-700">{perm.label}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button type="button" label="Cancel" variant="ghost" onClick={() => { resetRoleModal(); setRoleModalOpen(false) }} />
+            <Button type="submit" label={editRoleMode ? 'Update Role' : 'Create Role'} variant="primary" />
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

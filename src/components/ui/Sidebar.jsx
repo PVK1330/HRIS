@@ -6,7 +6,17 @@ import { Button } from './Button.jsx'
 function roleSubtitle(role) {
   if (role === 'superadmin') return 'SUPER ADMIN'
   if (role === 'admin') return 'ADMIN'
+  if (role === 'hr') return 'HR ADMIN'
+  if (role === 'employee') return 'EMPLOYEE'
   return (role ?? '').toUpperCase()
+}
+
+function panelName(role) {
+  if (role === 'superadmin') return 'SUPER ADMIN PANEL'
+  if (role === 'admin') return 'ADMIN PANEL'
+  if (role === 'hr') return 'HR PANEL'
+  if (role === 'employee') return 'EMPLOYEE PORTAL'
+  return 'HRIS'
 }
 
 export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileClose }) {
@@ -31,9 +41,9 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0F766E]/10 text-[#0F766E]">
             <HiGlobeAlt className="h-6 w-6" aria-hidden />
           </div>
-          <div>
+          <div className="flex-1">
             <div className="font-display text-lg font-bold leading-tight text-[#0F766E]">HRIS</div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-[#6D28D9]">ADMIN PANEL</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#6D28D9]">{panelName(role)}</div>
           </div>
         </div>
 

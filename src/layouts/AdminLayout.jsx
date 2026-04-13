@@ -33,7 +33,6 @@ const adminNavGroups = [
     items: [
       { label: 'Dashboard', icon: HiSquares2X2, path: '/admin/dashboard' },
       { label: 'Employee Directory', icon: HiUsers, path: '/admin/employee-directory' },
-      { label: 'Employee Profile', icon: HiUser, path: '/admin/employee-profile' },
       { label: 'Attendance Management', icon: HiClock, path: '/admin/attendance' },
       { label: 'Leave & Absence', icon: HiCalendar, path: '/admin/leave' },
       { label: 'Document Repository', icon: HiDocument, path: '/admin/documents' },

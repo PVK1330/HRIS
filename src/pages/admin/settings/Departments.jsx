@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { HiBuildingOffice, HiPencil, HiTrash, HiUsers } from 'react-icons/hi2'
+import { HiBuildingOffice, HiPencil, HiTrash, HiUsers, HiPlus, HiCheck } from 'react-icons/hi2'
 
 const selectClass =
   'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
@@ -33,70 +33,67 @@ export default function DepartmentManagement() {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState(initialFormData)
   const [search, setSearch] = useState('')
+  const [departmentList, setDepartmentList] = useState([
+    {
+      id: 1,
+      name: 'IT',
+      code: 'IT',
+      head: 'John Smith',
+      location: 'Dubai',
+      employeeCount: 25,
+      status: 'Active',
+      description: 'Information Technology department',
+    },
+    {
+      id: 2,
+      name: 'Human Resources',
+      code: 'HR',
+      head: 'Sarah Johnson',
+      location: 'Dubai',
+      employeeCount: 8,
+      status: 'Active',
+      description: 'Human Resources department',
+    },
+    {
+      id: 3,
+      name: 'Finance',
+      code: 'FIN',
+      head: 'Michael Brown',
+      location: 'Dubai',
+      employeeCount: 12,
+      status: 'Active',
+      description: 'Finance department',
+    },
+    {
+      id: 4,
+      name: 'Marketing',
+      code: 'MKT',
+      head: 'Emily Davis',
+      location: 'Remote',
+      employeeCount: 10,
+      status: 'Active',
+      description: 'Marketing department',
+    },
+    {
+      id: 5,
+      name: 'Operations',
+      code: 'OPS',
+      head: 'David Wilson',
+      location: 'Abu Dhabi',
+      employeeCount: 15,
+      status: 'Active',
+      description: 'Operations department',
+    },
+  ])
 
-  const departments = useMemo(
-    () => [
-      {
-        id: 1,
-        name: 'IT',
-        code: 'IT',
-        head: 'John Smith',
-        location: 'Dubai',
-        employeeCount: 25,
-        status: 'Active',
-        description: 'Information Technology department',
-      },
-      {
-        id: 2,
-        name: 'Human Resources',
-        code: 'HR',
-        head: 'Sarah Johnson',
-        location: 'Dubai',
-        employeeCount: 8,
-        status: 'Active',
-        description: 'Human Resources department',
-      },
-      {
-        id: 3,
-        name: 'Finance',
-        code: 'FIN',
-        head: 'Michael Brown',
-        location: 'Dubai',
-        employeeCount: 12,
-        status: 'Active',
-        description: 'Finance department',
-      },
-      {
-        id: 4,
-        name: 'Marketing',
-        code: 'MKT',
-        head: 'Emily Davis',
-        location: 'Remote',
-        employeeCount: 10,
-        status: 'Active',
-        description: 'Marketing department',
-      },
-      {
-        id: 5,
-        name: 'Operations',
-        code: 'OPS',
-        head: 'David Wilson',
-        location: 'Abu Dhabi',
-        employeeCount: 15,
-        status: 'Active',
-        description: 'Operations department',
-      },
-    ],
-    []
-  )
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return departments.filter((d) => {
+    return departmentList.filter((d) => {
       if (!query) return true
       return `${d.name} ${d.code} ${d.head}`.toLowerCase().includes(query)
     })
-  }, [search])
+  }, [search, departmentList])
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
@@ -116,12 +113,46 @@ export default function DepartmentManagement() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log({ formData, editMode, editingId })
+    
+    if (editMode) {
+      // Update existing department
+      setDepartmentList((prev) => 
+        prev.map((dept) => 
+          dept.id === editingId 
+            ? { 
+                ...dept, 
+                name: formData.departmentName,
+                code: formData.departmentCode,
+                head: formData.departmentHead,
+                location: formData.location,
+                description: formData.description,
+                status: formData.status
+              } 
+            : dept
+        )
+      )
+      alert('Department updated successfully!')
+    } else {
+      // Add new department
+      const newDepartment = {
+        id: departmentList.length + 1,
+        name: formData.departmentName,
+        code: formData.departmentCode,
+        head: formData.departmentHead,
+        location: formData.location,
+        employeeCount: 0,
+        status: formData.status,
+        description: formData.description
+      }
+      setDepartmentList((prev) => [...prev, newDepartment])
+      alert('Department added successfully!')
+    }
+    
     handleCloseModal()
   }
 
   const handleEdit = (id) => {
-    const dept = departments.find((d) => d.id === id)
+    const dept = departmentList.find((d) => d.id === id)
     if (dept) {
       setFormData({
         departmentName: dept.name,
@@ -138,8 +169,14 @@ export default function DepartmentManagement() {
   }
 
   const handleDelete = (id) => {
+    const dept = departmentList.find((d) => d.id === id)
+    if (dept && dept.employeeCount > 0) {
+      alert('Cannot delete department with employees. Please reassign employees first.')
+      return
+    }
     if (confirm('Are you sure you want to delete this department?')) {
-      console.log('Delete department:', id)
+      setDepartmentList((prev) => prev.filter((d) => d.id !== id))
+      alert('Department deleted successfully!')
     }
   }
 
@@ -163,9 +200,9 @@ export default function DepartmentManagement() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex gap-2">
-          <Button label="Edit" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
+          <Button ariaLabel="Edit Department" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
           <Button
-            label="Delete"
+            ariaLabel="Delete Department"
             variant="ghost"
             size="sm"
             icon={HiTrash}
@@ -184,7 +221,7 @@ export default function DepartmentManagement() {
           <h1 className="font-display text-2xl font-bold text-gray-900">Department Management</h1>
           <p className="mt-1 text-sm text-gray-500">Create and manage organizational departments.</p>
         </div>
-        <Button label="Add Department" variant="primary" onClick={() => setModalOpen(true)} />
+        <Button ariaLabel="Add Department" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -194,7 +231,7 @@ export default function DepartmentManagement() {
               <HiBuildingOffice className="h-6 w-6" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">{departments.length}</div>
+              <div className="text-2xl font-bold text-gray-900">{departmentList.length}</div>
               <div className="text-sm text-gray-500">Total Departments</div>
             </div>
           </div>
@@ -206,7 +243,7 @@ export default function DepartmentManagement() {
             </div>
             <div>
               <div className="text-2xl font-bold text-gray-900">
-                {departments.reduce((acc, d) => acc + d.employeeCount, 0)}
+                {departmentList.reduce((acc, d) => acc + d.employeeCount, 0)}
               </div>
               <div className="text-sm text-gray-500">Total Employees</div>
             </div>
@@ -219,7 +256,7 @@ export default function DepartmentManagement() {
             </div>
             <div>
               <div className="text-2xl font-bold text-gray-900">
-                {departments.filter((d) => d.status === 'Active').length}
+                {departmentList.filter((d) => d.status === 'Active').length}
               </div>
               <div className="text-sm text-gray-500">Active Departments</div>
             </div>
@@ -315,8 +352,8 @@ export default function DepartmentManagement() {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" label={editMode ? 'Update Department' : 'Create Department'} variant="primary" />
+            <Button type="button" ariaLabel="Cancel" variant="ghost" onClick={handleCloseModal} />
+            <Button type="submit" ariaLabel="Save Department" variant="primary" icon={HiCheck} />
           </div>
         </form>
       </Modal>

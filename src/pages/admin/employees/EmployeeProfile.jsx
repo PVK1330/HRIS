@@ -187,6 +187,49 @@ export default function EmployeeProfile() {
         <Table columns={columns} data={employeeProfileEvents} pageSize={5} emptyMessage="No records" />
       </div>
 
+      {selected && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Asset Allocation</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Laptop - Dell XPS 15</div>
+                <div className="text-xs text-gray-500">Asset ID: AST-001 • Assigned: Jan 15, 2024</div>
+              </div>
+              <Badge label="Active" color="green" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Monitor - Dell 27" UHD</div>
+                <div className="text-xs text-gray-500">Asset ID: AST-002 • Assigned: Jan 15, 2024</div>
+              </div>
+              <Badge label="Active" color="green" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Keyboard - Logitech MX Keys</div>
+                <div className="text-xs text-gray-500">Asset ID: AST-003 • Assigned: Jan 15, 2024</div>
+              </div>
+              <Badge label="Active" color="green" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Mouse - Logitech MX Master 3</div>
+                <div className="text-xs text-gray-500">Asset ID: AST-004 • Assigned: Jan 15, 2024</div>
+              </div>
+              <Badge label="Active" color="green" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Headset - Jabra Evolve2 75</div>
+                <div className="text-xs text-gray-500">Asset ID: AST-005 • Assigned: Feb 1, 2024</div>
+              </div>
+              <Badge label="Active" color="green" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Edit Profile" size="md">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">

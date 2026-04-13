@@ -37,51 +37,45 @@ export default function EmployeeLeave() {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState(initialFormData)
   const [files, setFiles] = useState({})
+  const [leaveRequests, setLeaveRequests] = useState([
+    {
+      id: 1,
+      leaveType: 'Annual Leave',
+      startDate: '2026-04-15',
+      endDate: '2026-04-17',
+      days: 3,
+      reason: 'Family vacation',
+      status: 'Approved',
+      appliedOn: '2026-04-01',
+    },
+    {
+      id: 2,
+      leaveType: 'Sick Leave',
+      startDate: '2026-03-20',
+      endDate: '2026-03-21',
+      days: 2,
+      reason: 'Medical appointment',
+      status: 'Approved',
+      appliedOn: '2026-03-19',
+    },
+    {
+      id: 3,
+      leaveType: 'Personal Leave',
+      startDate: '2026-05-10',
+      endDate: '2026-05-10',
+      days: 1,
+      reason: 'Personal matter',
+      status: 'Pending',
+      appliedOn: '2026-04-10',
+    },
+  ])
+  const [leaveBalances, setLeaveBalances] = useState({
+    annual: { total: 30, used: 5, remaining: 25, carryForward: 2 },
+    sick: { total: 15, used: 2, remaining: 13, carryForward: 0 },
+    personal: { total: 5, used: 1, remaining: 4, carryForward: 0 },
+  })
 
-  const leaveRequests = useMemo(
-    () => [
-      {
-        id: 1,
-        leaveType: 'Annual Leave',
-        startDate: '2026-04-15',
-        endDate: '2026-04-17',
-        days: 3,
-        reason: 'Family vacation',
-        status: 'Approved',
-        appliedOn: '2026-04-01',
-      },
-      {
-        id: 2,
-        leaveType: 'Sick Leave',
-        startDate: '2026-03-20',
-        endDate: '2026-03-21',
-        days: 2,
-        reason: 'Medical appointment',
-        status: 'Approved',
-        appliedOn: '2026-03-19',
-      },
-      {
-        id: 3,
-        leaveType: 'Personal Leave',
-        startDate: '2026-05-10',
-        endDate: '2026-05-10',
-        days: 1,
-        reason: 'Personal matter',
-        status: 'Pending',
-        appliedOn: '2026-04-10',
-      },
-    ],
-    []
-  )
 
-  const leaveBalances = useMemo(
-    () => ({
-      annual: { total: 30, used: 5, remaining: 25 },
-      sick: { total: 15, used: 2, remaining: 13 },
-      personal: { total: 5, used: 1, remaining: 4 },
-    }),
-    []
-  )
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
@@ -106,30 +100,92 @@ export default function EmployeeLeave() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log({ formData, files, editMode, editingId })
+
+    if (editMode) {
+      // Update existing leave request
+      setLeaveRequests((prev) =>
+        prev.map((req) =>
+          req.id === editingId
+            ? {
+                ...req,
+                leaveType: formData.leaveType,
+                startDate: formData.startDate,
+                endDate: formData.endDate,
+                reason: formData.reason,
+                handoverNotes: formData.handoverNotes,
+                alternateContact: formData.alternateContact,
+              }
+            : req
+        )
+      )
+      alert('Leave request updated successfully!')
+    } else {
+      // Add new leave request
+      const startDate = new Date(formData.startDate)
+      const endDate = new Date(formData.endDate)
+      const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1
+
+      const newRequest = {
+        id: leaveRequests.length + 1,
+        leaveType: formData.leaveType,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        days,
+        reason: formData.reason,
+        handoverNotes: formData.handoverNotes,
+        alternateContact: formData.alternateContact,
+        status: 'Pending',
+        appliedOn: new Date().toISOString().split('T')[0],
+      }
+      setLeaveRequests((prev) => [...prev, newRequest])
+
+      // Update leave balance
+      const leaveTypeKey = formData.leaveType.toLowerCase().split(' ')[0]
+      if (leaveBalances[leaveTypeKey]) {
+        setLeaveBalances((prev) => ({
+          ...prev,
+          [leaveTypeKey]: {
+            ...prev[leaveTypeKey],
+            used: prev[leaveTypeKey].used + days,
+            remaining: prev[leaveTypeKey].remaining - days,
+          },
+        }))
+      }
+
+      alert('Leave request submitted successfully!')
+    }
+
     handleCloseModal()
   }
 
   const handleEdit = (id) => {
     const request = leaveRequests.find((r) => r.id === id)
-    if (request) {
+    if (request && request.status === 'Pending') {
       setFormData({
         leaveType: request.leaveType,
         startDate: request.startDate,
         endDate: request.endDate,
         reason: request.reason,
-        handoverNotes: '',
-        alternateContact: '',
+        handoverNotes: request.handoverNotes || '',
+        alternateContact: request.alternateContact || '',
       })
       setEditMode(true)
       setEditingId(id)
       setModalOpen(true)
+    } else if (request) {
+      alert('Cannot edit leave requests that are not pending.')
     }
   }
 
   const handleDelete = (id) => {
-    if (confirm('Are you sure you want to delete this leave request?')) {
-      console.log('Delete leave request:', id)
+    const request = leaveRequests.find((r) => r.id === id)
+    if (request && request.status !== 'Pending') {
+      alert('Cannot cancel leave requests that are not pending.')
+      return
+    }
+    if (confirm('Are you sure you want to cancel this leave request?')) {
+      setLeaveRequests((prev) => prev.filter((r) => r.id !== id))
+      alert('Leave request cancelled successfully!')
     }
   }
 
@@ -205,7 +261,63 @@ export default function EmployeeLeave() {
         />
       </div>
 
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Leave Summary</h2>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-700">Total Annual Leave</span>
+            <span className="font-semibold text-gray-900">30 days</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-700">Used This Year</span>
+            <span className="font-semibold text-gray-900">5 days</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-700">Remaining Balance</span>
+            <span className="font-semibold text-green-600">25 days</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-700">Carry Forward</span>
+            <span className="font-semibold text-gray-900">5 days</span>
+          </div>
+        </div>
+      </div>
+
       <Table columns={columns} data={leaveRequests} pageSize={5} />
+
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Leave History</h2>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Annual Leave - Family vacation</div>
+              <div className="text-xs text-gray-500">Apr 15-17, 2026 • 3 days</div>
+            </div>
+            <Badge label="Approved" color="green" />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Sick Leave - Medical appointment</div>
+              <div className="text-xs text-gray-500">Mar 20-21, 2026 • 2 days</div>
+            </div>
+            <Badge label="Approved" color="green" />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Personal Leave - Personal matter</div>
+              <div className="text-xs text-gray-500">Feb 10, 2026 • 1 day</div>
+            </div>
+            <Badge label="Approved" color="green" />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Annual Leave - Year-end break</div>
+              <div className="text-xs text-gray-500">Dec 25-31, 2025 • 5 days</div>
+            </div>
+            <Badge label="Approved" color="green" />
+          </div>
+        </div>
+      </div>
 
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Leave Request' : 'Apply for Leave'} size="lg">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">

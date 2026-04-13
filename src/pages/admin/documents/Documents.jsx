@@ -199,6 +199,74 @@ export default function Documents() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Document Version Tracking</h2>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Passport - John Doe</div>
+              <div className="text-xs text-gray-500">v2.0 • Uploaded Apr 10, 2026</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge label="Current" color="green" size="sm" />
+              <Button label="View" variant="ghost" size="sm" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Passport - John Doe</div>
+              <div className="text-xs text-gray-500">v1.0 • Uploaded Jan 15, 2025</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge label="Archived" color="gray" size="sm" />
+              <Button label="View" variant="ghost" size="sm" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Contract - Sarah Johnson</div>
+              <div className="text-xs text-gray-500">v3.1 • Updated Mar 20, 2026</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge label="Current" color="green" size="sm" />
+              <Button label="View" variant="ghost" size="sm" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Contract - Sarah Johnson</div>
+              <div className="text-xs text-gray-500">v3.0 • Updated Jan 1, 2026</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge label="Archived" color="gray" size="sm" />
+              <Button label="View" variant="ghost" size="sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Audit & Compliance Tracking</h2>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-start gap-2 text-sm">
+            <span className="text-gray-400">10:30 AM</span>
+            <span>John Smith uploaded Passport v2.0</span>
+          </div>
+          <div className="flex items-start gap-2 text-sm">
+            <span className="text-gray-400">09:45 AM</span>
+            <span>Sarah Johnson's Contract v3.1 approved by HR</span>
+          </div>
+          <div className="flex items-start gap-2 text-sm">
+            <span className="text-gray-400">09:15 AM</span>
+            <span>Michael Brown's National ID rejected - unclear scan</span>
+          </div>
+          <div className="flex items-start gap-2 text-sm">
+            <span className="text-gray-400">08:30 AM</span>
+            <span>Emily Davis submitted Education Certificate</span>
+          </div>
+        </div>
+      </div>
+
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Upload Document" size="md">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">

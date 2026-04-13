@@ -182,6 +182,28 @@ export default function Onboarding() {
           </div>
         </div>
       </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Automated Status Updates</h2>
+        <div className="mt-4 space-y-2 text-sm">
+          <div className="flex items-start gap-2 text-gray-600">
+            <span className="text-gray-400">10:30 AM</span>
+            <span>John Smith completed IT equipment setup - Status auto-updated to "In Progress"</span>
+          </div>
+          <div className="flex items-start gap-2 text-gray-600">
+            <span className="text-gray-400">09:45 AM</span>
+            <span>Sarah Johnson submitted HR documents - Notification sent to manager</span>
+          </div>
+          <div className="flex items-start gap-2 text-gray-600">
+            <span className="text-gray-400">09:15 AM</span>
+            <span>Michael Brown acknowledged Code of Conduct - Task marked complete</span>
+          </div>
+          <div className="flex items-start gap-2 text-gray-600">
+            <span className="text-gray-400">08:30 AM</span>
+            <span>System: John Smith onboarding 80% complete - Reminder to complete remaining tasks</span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { HiCheckCircle, HiPencil, HiTrash, HiUser, HiClock, HiFlag } from 'react-icons/hi2'
+import { HiCheckCircle, HiPencil, HiTrash, HiUser, HiClock, HiFlag, HiPlus, HiCheck } from 'react-icons/hi2'
 
 const selectClass =
   'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
@@ -47,72 +47,70 @@ export default function TaskManagement() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')
+  const [project, setProject] = useState('')
+  const [taskList, setTaskList] = useState([
+    {
+      id: 1,
+      title: 'Design employee dashboard',
+      description: 'Create UI/UX for employee dashboard',
+      project: 'HRIS Platform',
+      department: 'IT',
+      assignedTo: 'John Smith',
+      priority: 'High',
+      dueDate: '2026-04-20',
+      estimatedHours: 40,
+      status: 'In Progress',
+    },
+    {
+      id: 2,
+      title: 'Implement leave management',
+      description: 'Build leave request and approval system',
+      project: 'HRIS Platform',
+      department: 'IT',
+      assignedTo: 'Sarah Johnson',
+      priority: 'High',
+      dueDate: '2026-04-25',
+      estimatedHours: 60,
+      status: 'Pending',
+    },
+    {
+      id: 3,
+      title: 'Create API documentation',
+      description: 'Document all API endpoints',
+      project: 'HRIS Platform',
+      department: 'IT',
+      assignedTo: 'Michael Brown',
+      priority: 'Medium',
+      dueDate: '2026-05-10',
+      estimatedHours: 30,
+      status: 'Pending',
+    },
+    {
+      id: 4,
+      title: 'Setup testing framework',
+      description: 'Configure unit and integration tests',
+      project: 'HRIS Platform',
+      department: 'IT',
+      assignedTo: 'Emily Davis',
+      priority: 'Medium',
+      dueDate: '2026-04-15',
+      estimatedHours: 25,
+      status: 'Completed',
+    },
+    {
+      id: 5,
+      title: 'Database optimization',
+      description: 'Optimize database queries',
+      project: 'HRIS Platform',
+      department: 'IT',
+      assignedTo: 'David Wilson',
+      priority: 'Low',
+      dueDate: '2026-06-01',
+      estimatedHours: 20,
+      status: 'Pending',
+    },
+  ])
 
-  const tasks = useMemo(
-    () => [
-      {
-        id: 1,
-        title: 'Design employee dashboard',
-        description: 'Create UI/UX for employee dashboard',
-        project: 'HRIS Platform',
-        department: 'IT',
-        assignedTo: 'John Smith',
-        priority: 'High',
-        dueDate: '2026-04-20',
-        estimatedHours: 40,
-        status: 'In Progress',
-      },
-      {
-        id: 2,
-        title: 'Implement leave management',
-        description: 'Build leave request and approval system',
-        project: 'HRIS Platform',
-        department: 'IT',
-        assignedTo: 'Sarah Johnson',
-        priority: 'High',
-        dueDate: '2026-04-25',
-        estimatedHours: 60,
-        status: 'Pending',
-      },
-      {
-        id: 3,
-        title: 'Create API documentation',
-        description: 'Document all API endpoints',
-        project: 'HRIS Platform',
-        department: 'IT',
-        assignedTo: 'Michael Brown',
-        priority: 'Medium',
-        dueDate: '2026-05-10',
-        estimatedHours: 30,
-        status: 'Pending',
-      },
-      {
-        id: 4,
-        title: 'Setup testing framework',
-        description: 'Configure unit and integration tests',
-        project: 'HRIS Platform',
-        department: 'IT',
-        assignedTo: 'Emily Davis',
-        priority: 'Medium',
-        dueDate: '2026-04-15',
-        estimatedHours: 25,
-        status: 'Completed',
-      },
-      {
-        id: 5,
-        title: 'Database optimization',
-        description: 'Optimize database queries',
-        project: 'HRIS Platform',
-        department: 'IT',
-        assignedTo: 'David Wilson',
-        priority: 'Low',
-        dueDate: '2026-06-01',
-        estimatedHours: 20,
-        status: 'Pending',
-      },
-    ],
-    []
-  )
 
   const employees = useMemo(
     () => [
@@ -157,23 +155,35 @@ export default function TaskManagement() {
     []
   )
 
+  const projectOptions = useMemo(
+    () => [
+      { value: '', label: 'All projects' },
+      { value: 'HRIS Platform', label: 'HRIS Platform' },
+      { value: 'Mobile App Development', label: 'Mobile App Development' },
+      { value: 'Website Redesign', label: 'Website Redesign' },
+      { value: 'Process Automation', label: 'Process Automation' },
+    ],
+    []
+  )
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return tasks.filter((t) => {
+    return taskList.filter((t) => {
       if (query && !`${t.title} ${t.assignedTo}`.toLowerCase().includes(query)) return false
       if (status && t.status !== status) return false
       if (priority && t.priority !== priority) return false
+      if (project && t.project !== project) return false
       return true
     })
-  }, [search, status, priority])
+  }, [search, status, priority, project, taskList])
 
   const summary = useMemo(() => {
-    const pending = tasks.filter((t) => t.status === 'Pending').length
-    const inProgress = tasks.filter((t) => t.status === 'In Progress').length
-    const completed = tasks.filter((t) => t.status === 'Completed').length
-    const highPriority = tasks.filter((t) => t.priority === 'High' && t.status !== 'Completed').length
+    const pending = taskList.filter((t) => t.status === 'Pending').length
+    const inProgress = taskList.filter((t) => t.status === 'In Progress').length
+    const completed = taskList.filter((t) => t.status === 'Completed').length
+    const highPriority = taskList.filter((t) => t.priority === 'High' && t.status !== 'Completed').length
     return { pending, inProgress, completed, highPriority }
-  }, [tasks])
+  }, [taskList])
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
@@ -193,12 +203,51 @@ export default function TaskManagement() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log({ formData, editMode, editingId })
+    
+    if (editMode) {
+      // Update existing task
+      setTaskList((prev) => 
+        prev.map((task) => 
+          task.id === editingId 
+            ? { 
+                ...task, 
+                title: formData.taskTitle,
+                description: formData.taskDescription,
+                project: formData.project,
+                department: formData.department,
+                assignedTo: formData.assignedTo,
+                priority: formData.priority,
+                dueDate: formData.dueDate,
+                estimatedHours: parseFloat(formData.estimatedHours) || 0,
+                status: formData.status
+              } 
+            : task
+        )
+      )
+      alert('Task updated successfully!')
+    } else {
+      // Add new task
+      const newTask = {
+        id: taskList.length + 1,
+        title: formData.taskTitle,
+        description: formData.taskDescription,
+        project: formData.project,
+        department: formData.department,
+        assignedTo: formData.assignedTo,
+        priority: formData.priority,
+        dueDate: formData.dueDate,
+        estimatedHours: parseFloat(formData.estimatedHours) || 0,
+        status: formData.status
+      }
+      setTaskList((prev) => [...prev, newTask])
+      alert('Task added successfully!')
+    }
+    
     handleCloseModal()
   }
 
   const handleEdit = (id) => {
-    const task = tasks.find((t) => t.id === id)
+    const task = taskList.find((t) => t.id === id)
     if (task) {
       setFormData({
         taskTitle: task.title,
@@ -219,12 +268,18 @@ export default function TaskManagement() {
 
   const handleDelete = (id) => {
     if (confirm('Are you sure you want to delete this task?')) {
-      console.log('Delete task:', id)
+      setTaskList((prev) => prev.filter((t) => t.id !== id))
+      alert('Task deleted successfully!')
     }
   }
 
   const handleStatusChange = (id, newStatus) => {
-    console.log('Update task status:', id, newStatus)
+    setTaskList((prev) => 
+      prev.map((task) => 
+        task.id === id ? { ...task, status: newStatus } : task
+      )
+    )
+    alert('Task status updated successfully!')
   }
 
   const columns = [
@@ -253,15 +308,15 @@ export default function TaskManagement() {
       render: (_, row) => (
         <div className="flex gap-2">
           <Button
-            label="Complete"
+            ariaLabel="Complete"
             variant="ghost"
             size="sm"
             icon={HiCheckCircle}
             onClick={() => handleStatusChange(row.id, 'Completed')}
             disabled={row.status === 'Completed'}
           />
-          <Button label="Edit" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
-          <Button label="Delete" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
+          <Button ariaLabel="Edit Task" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
+          <Button ariaLabel="Delete Task" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
         </div>
       ),
     },
@@ -274,7 +329,7 @@ export default function TaskManagement() {
           <h1 className="font-display text-2xl font-bold text-gray-900">Task Management</h1>
           <p className="mt-1 text-sm text-gray-500">Create and manage tasks with team assignments.</p>
         </div>
-        <Button label="Add Task" variant="primary" onClick={() => setModalOpen(true)} />
+        <Button ariaLabel="Add Task" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-4">
@@ -327,7 +382,7 @@ export default function TaskManagement() {
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-4">
           <Input label="Search" name="search" placeholder="Search tasks..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          <Input label="Project" name="project" type="select" value={status} onChange={(e) => setStatus(e.target.value)} options={projects} />
+          <Input label="Project" name="project" type="select" value={project} onChange={(e) => setProject(e.target.value)} options={projectOptions} />
           <Input label="Priority" name="priority" type="select" value={priority} onChange={(e) => setPriority(e.target.value)} options={priorityOptions} />
           <Input label="Status" name="status" type="select" value={status} onChange={(e) => setStatus(e.target.value)} options={statusOptions} />
         </div>
@@ -476,8 +531,8 @@ export default function TaskManagement() {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" label={editMode ? 'Update Task' : 'Create Task'} variant="primary" />
+            <Button type="button" ariaLabel="Cancel" variant="ghost" onClick={handleCloseModal} />
+            <Button type="submit" ariaLabel={editMode ? 'Update Task' : 'Create Task'} variant="primary" icon={HiCheck} />
           </div>
         </form>
       </Modal>

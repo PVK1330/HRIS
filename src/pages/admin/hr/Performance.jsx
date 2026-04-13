@@ -187,6 +187,36 @@ export default function Performance() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Performance Cycle Configuration</h2>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Q1 2026 Review Cycle</div>
+              <div className="text-xs text-gray-500">Jan 1 - Mar 31, 2026 • Active</div>
+            </div>
+            <Badge label="Active" color="green" />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Q2 2026 Review Cycle</div>
+              <div className="text-xs text-gray-500">Apr 1 - Jun 30, 2026 • Upcoming</div>
+            </div>
+            <Badge label="Upcoming" color="blue" />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Annual 2025 Review Cycle</div>
+              <div className="text-xs text-gray-500">Jan 1 - Dec 31, 2025 • Completed</div>
+            </div>
+            <Badge label="Completed" color="gray" />
+          </div>
+        </div>
+        <div className="mt-4">
+          <Button label="Configure New Cycle" variant="secondary" className="w-full" />
+        </div>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Performance Analytics</h2>

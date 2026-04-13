@@ -48,6 +48,7 @@ import EmployeeGoals from '../pages/employee/Goals.jsx'
 import EmployeeReviews from '../pages/employee/Reviews.jsx'
 import EmployeePayslips from '../pages/employee/Payslips.jsx'
 import EmployeeExpenseClaims from '../pages/employee/ExpenseClaims.jsx'
+import EmployeeSettings from '../pages/employee/Settings.jsx'
 import HRLayout from '../layouts/HRLayout.jsx'
 import HRDashboard from '../pages/hr/Dashboard.jsx'
 import HRTeam from '../pages/hr/Team.jsx'
@@ -135,7 +136,7 @@ export const router = createBrowserRouter([
           { path: 'expenses', element: <EmployeeExpenseClaims /> },
           { path: 'messages', element: <HRMessages /> },
           { path: 'announcements', element: <HRAnnouncements /> },
-          { path: 'settings', element: <HRSettings /> },
+          { path: 'settings', element: <EmployeeSettings /> },
         ],
       },
       {

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { HiDocumentText, HiEnvelope, HiEye } from 'react-icons/hi2'
+import { useNavigate } from 'react-router-dom'
+import { HiDocumentText, HiEnvelope, HiEye, HiPencil, HiTrash, HiPlus } from 'react-icons/hi2'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
@@ -64,6 +65,7 @@ const initialFormData = {
 }
 
 export default function EmployeeDirectory() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [dept, setDept] = useState('')
   const [job, setJob] = useState('')
@@ -73,6 +75,12 @@ export default function EmployeeDirectory() {
   const [formData, setFormData] = useState(initialFormData)
   const [files, setFiles] = useState({})
   const [workEmailTouched, setWorkEmailTouched] = useState(false)
+  const [viewModalOpen, setViewModalOpen] = useState(false)
+  const [selectedEmployee, setSelectedEmployee] = useState(null)
+  const [viewActiveTab, setViewActiveTab] = useState('personal')
+  const [editMode, setEditMode] = useState(false)
+  const [editingEmployeeId, setEditingEmployeeId] = useState(null)
+  const [employeeList, setEmployeeList] = useState(employees)
 
   const deptOptions = useMemo(() => {
     const u = [...new Set(employees.map((e) => e.department))].sort()
@@ -105,7 +113,7 @@ export default function EmployeeDirectory() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return employees.map((e, idx) => ({
+    return employeeList.map((e, idx) => ({
       ...e,
       manager: idx % 3 === 0 ? 'Sarah Johnson' : idx % 3 === 1 ? 'Michael Brown' : 'Emily Davis',
       joinDate: '2024-01-15',
@@ -118,7 +126,7 @@ export default function EmployeeDirectory() {
       const blob = `${e.name} ${e.email} ${e.empId} ${e.department}`.toLowerCase()
       return blob.includes(q)
     })
-  }, [search, dept, job, loc, status])
+  }, [search, dept, job, loc, status, employeeList])
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
@@ -144,6 +152,8 @@ export default function EmployeeDirectory() {
     setFormData(initialFormData)
     setFiles({})
     setWorkEmailTouched(false)
+    setEditMode(false)
+    setEditingEmployeeId(null)
   }
 
   const handleCloseModal = () => {
@@ -153,8 +163,110 @@ export default function EmployeeDirectory() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log({ formData, files })
+    
+    if (editMode) {
+      // Update existing employee
+      setEmployeeList((prev) => 
+        prev.map((emp) => 
+          emp.empId === editingEmployeeId 
+            ? { 
+                ...emp, 
+                name: formData.fullName,
+                email: formData.workEmail || formData.personalEmail,
+                phone: formData.phoneNumber,
+                jobTitle: formData.jobTitle,
+                department: formData.department,
+                location: formData.workLocation,
+                manager: formData.reportingManager,
+                status: formData.employmentStatus,
+                joinDate: formData.joinDate
+              } 
+            : emp
+        )
+      )
+      alert('Employee updated successfully!')
+    } else {
+      // Add new employee
+      const newEmployee = {
+        id: employeeList.length + 1,
+        empId: formData.employeeId || `EMP${String(employeeList.length + 1).padStart(3, '0')}`,
+        name: formData.fullName,
+        email: formData.workEmail || formData.personalEmail,
+        phone: formData.phoneNumber,
+        jobTitle: formData.jobTitle,
+        department: formData.department,
+        location: formData.workLocation,
+        manager: formData.reportingManager,
+        status: formData.employmentStatus || 'Active',
+        joinDate: formData.joinDate || new Date().toISOString().split('T')[0],
+        initials: formData.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+      }
+      setEmployeeList((prev) => [...prev, newEmployee])
+      alert('Employee added successfully!')
+    }
+    
     handleCloseModal()
+  }
+
+  const handleView = (employee) => {
+    setSelectedEmployee(employee)
+    setViewActiveTab('personal')
+    setViewModalOpen(true)
+  }
+
+  const handleCloseViewModal = () => {
+    setViewModalOpen(false)
+    setSelectedEmployee(null)
+  }
+
+  const handleEmail = (employee) => {
+    window.location.href = `mailto:${employee.email}`
+  }
+
+  const handleLetter = (employee) => {
+    navigate('/admin/letters')
+  }
+
+  const handleEdit = (employee) => {
+    setFormData({
+      fullName: employee.name,
+      dateOfBirth: '',
+      gender: '',
+      nationality: '',
+      personalEmail: employee.email,
+      phoneNumber: employee.phone || '',
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      homeAddress: '',
+      employeeId: employee.empId,
+      jobTitle: employee.jobTitle,
+      department: employee.department,
+      employmentType: '',
+      workLocation: employee.location,
+      reportingManager: employee.manager || '',
+      joinDate: employee.joinDate || '2024-01-15',
+      probationEndDate: '',
+      workEmail: employee.email,
+      salary: '',
+      employmentStatus: employee.status,
+      passportNumber: '',
+      passportExpiry: '',
+      emiratesIdNumber: '',
+      emiratesIdExpiry: '',
+      visaType: '',
+      visaExpiryDate: '',
+    })
+    setEditMode(true)
+    setEditingEmployeeId(employee.empId)
+    setModalOpen(true)
+    handleCloseViewModal()
+  }
+
+  const handleDelete = (employee) => {
+    if (confirm(`Are you sure you want to delete ${employee.name}?`)) {
+      setEmployeeList((prev) => prev.filter((emp) => emp.empId !== employee.empId))
+      alert('Employee deleted successfully!')
+    }
   }
 
   const columns = [
@@ -185,11 +297,11 @@ export default function EmployeeDirectory() {
     {
       key: 'actions',
       label: 'Actions',
-      render: () => (
+      render: (_, row) => (
         <div className="flex items-center gap-1">
-          <Button ariaLabel="View" variant="ghost" size="sm" icon={HiEye} />
-          <Button ariaLabel="Email" variant="ghost" size="sm" icon={HiEnvelope} />
-          <Button ariaLabel="Letter" variant="ghost" size="sm" icon={HiDocumentText} />
+          <Button ariaLabel="View Details" variant="ghost" size="sm" icon={HiEye} onClick={() => handleView(row)} />
+          <Button ariaLabel="Send Email" variant="ghost" size="sm" icon={HiEnvelope} onClick={() => handleEmail(row)} />
+          <Button ariaLabel="Generate Letter" variant="ghost" size="sm" icon={HiDocumentText} onClick={() => handleLetter(row)} />
         </div>
       ),
     },
@@ -202,7 +314,7 @@ export default function EmployeeDirectory() {
           <h1 className="font-display text-2xl font-bold text-gray-900">Employee Directory</h1>
           <p className="mt-1 text-sm text-gray-500">Search, filter, and manage employee records.</p>
         </div>
-        <Button label="+ Add Employee" variant="primary" onClick={() => setModalOpen(true)} />
+        <Button ariaLabel="Add Employee" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -251,7 +363,7 @@ export default function EmployeeDirectory() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Add Employee" size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Employee' : 'Add Employee'} size="lg">
         <form
           onSubmit={handleSubmit}
           className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1"
@@ -606,10 +718,175 @@ export default function EmployeeDirectory() {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" label="Save" variant="primary" />
+            <Button type="button" ariaLabel="Cancel" variant="ghost" onClick={handleCloseModal} />
+            <Button type="submit" ariaLabel={editMode ? 'Update Employee' : 'Save Employee'} variant="primary" />
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} title="Employee Details" size="xl">
+        {selectedEmployee && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+              <div className="flex items-center gap-4">
+                <Avatar initials={selectedEmployee.initials} size="lg" />
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">{selectedEmployee.name}</h3>
+                  <p className="text-sm text-gray-500">{selectedEmployee.empId} • {selectedEmployee.email}</p>
+                  <Badge label={selectedEmployee.status} color={statusColor(selectedEmployee.status)} />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button ariaLabel="Edit Employee" variant="secondary" size="sm" icon={HiPencil} onClick={() => handleEdit(selectedEmployee)} />
+                <Button ariaLabel="Delete Employee" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDelete(selectedEmployee)} />
+              </div>
+            </div>
+
+            <div className="flex gap-2 border-b border-gray-200">
+              <button
+                onClick={() => setViewActiveTab('personal')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  viewActiveTab === 'personal'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Personal
+              </button>
+              <button
+                onClick={() => setViewActiveTab('work')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  viewActiveTab === 'work'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Work
+              </button>
+              <button
+                onClick={() => setViewActiveTab('documents')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  viewActiveTab === 'documents'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Documents
+              </button>
+              <button
+                onClick={() => setViewActiveTab('visa')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  viewActiveTab === 'visa'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Visa & Nationality
+              </button>
+            </div>
+
+            {viewActiveTab === 'personal' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Full Name</label>
+                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.name}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Email</label>
+                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.email}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Phone</label>
+                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.phone || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Location</label>
+                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.location}</p>
+                </div>
+              </div>
+            )}
+
+            {viewActiveTab === 'work' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Employee ID</label>
+                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.empId}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Department</label>
+                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.department}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Job Title</label>
+                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.jobTitle}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Manager</label>
+                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.manager || 'Not assigned'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Join Date</label>
+                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.joinDate || '2024-01-15'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Status</label>
+                  <Badge label={selectedEmployee.status} color={statusColor(selectedEmployee.status)} />
+                </div>
+              </div>
+            )}
+
+            {viewActiveTab === 'documents' && (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Uploaded Documents</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">Employment Contract</span>
+                      <span className="text-xs text-gray-500">Uploaded on 2024-01-15</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">ID Proof</span>
+                      <span className="text-xs text-gray-500">Uploaded on 2024-01-15</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">Educational Certificates</span>
+                      <span className="text-xs text-gray-500">Uploaded on 2024-01-15</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {viewActiveTab === 'visa' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Visa Type</label>
+                  <p className="text-sm font-medium text-gray-900">Employment Visa</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Visa Expiry</label>
+                  <p className="text-sm font-medium text-gray-900">2025-01-15</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Passport Number</label>
+                  <p className="text-sm font-medium text-gray-900">A12345678</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Passport Expiry</label>
+                  <p className="text-sm font-medium text-gray-900">2026-06-30</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Emirates ID</label>
+                  <p className="text-sm font-medium text-gray-900">784-XXXX-XXXXXXX-X</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Emirates ID Expiry</label>
+                  <p className="text-sm font-medium text-gray-900">2025-06-15</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   )
