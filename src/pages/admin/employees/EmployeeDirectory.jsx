@@ -105,7 +105,11 @@ export default function EmployeeDirectory() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return employees.filter((e) => {
+    return employees.map((e, idx) => ({
+      ...e,
+      manager: idx % 3 === 0 ? 'Sarah Johnson' : idx % 3 === 1 ? 'Michael Brown' : 'Emily Davis',
+      joinDate: '2024-01-15',
+    })).filter((e) => {
       if (dept && e.department !== dept) return false
       if (job && e.jobTitle !== job) return false
       if (loc && e.location !== loc) return false
@@ -155,28 +159,29 @@ export default function EmployeeDirectory() {
 
   const columns = [
     {
-      key: 'name',
+      key: 'employee',
       label: 'Employee',
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <Avatar name={row.name} size="sm" />
+          <Avatar initials={row.initials} />
           <div>
             <div className="font-medium text-gray-900">{row.name}</div>
-            <div className="text-xs text-gray-500">{row.email}</div>
+            <div className="text-xs text-gray-500">{row.empId}</div>
+            <div className="text-xs text-gray-400">{row.email}</div>
           </div>
         </div>
       ),
     },
-    { key: 'empId', label: 'Emp ID' },
-    { key: 'jobTitle', label: 'Job Title' },
     { key: 'department', label: 'Department' },
-    { key: 'location', label: 'Location' },
+    { key: 'jobTitle', label: 'Job Title' },
     { key: 'manager', label: 'Manager' },
     {
       key: 'status',
       label: 'Status',
       render: (v) => <Badge label={v} color={statusColor(v)} />,
     },
+    { key: 'location', label: 'Location' },
+    { key: 'joinDate', label: 'Join Date' },
     {
       key: 'actions',
       label: 'Actions',

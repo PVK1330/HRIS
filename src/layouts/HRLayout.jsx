@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { HiBars3, HiBell, HiHome, HiUsers, HiCalendar, HiClock, HiDocumentText, HiCurrencyDollar, HiChartBar, HiCog6Tooth, HiUserGroup, HiChatBubbleLeftRight } from 'react-icons/hi2'
+import { HiBars3, HiBell, HiBuildingOffice, HiFlag, HiFolder, HiHome, HiUsers, HiCalendar, HiClock, HiDocumentText, HiCurrencyDollar, HiChartBar, HiCog6Tooth, HiUserGroup, HiChatBubbleLeftRight } from 'react-icons/hi2'
 import { Sidebar } from '../components/ui/Sidebar.jsx'
 import { Avatar } from '../components/ui/Avatar.jsx'
 import { Button } from '../components/ui/Button.jsx'
@@ -36,6 +36,15 @@ const hrNavGroups = [
       { label: 'Employee Directory', icon: HiUserGroup, path: '/hr/employees' },
       { label: 'Onboarding', icon: HiDocumentText, path: '/hr/onboarding' },
       { label: 'Exit Management', icon: HiDocumentText, path: '/hr/exit' },
+    ],
+  },
+  {
+    groupLabel: 'ORGANIZATION MANAGEMENT',
+    items: [
+      { label: 'Departments', icon: HiBuildingOffice, path: '/hr/departments' },
+      { label: 'Projects', icon: HiFolder, path: '/hr/projects' },
+      { label: 'Tasks', icon: HiFlag, path: '/hr/tasks' },
+      { label: 'Template Generator', icon: HiDocumentText, path: '/hr/templates' },
     ],
   },
   {

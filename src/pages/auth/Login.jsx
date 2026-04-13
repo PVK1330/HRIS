@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { HiCheckCircle, HiGlobeAlt } from 'react-icons/hi2'
+import { HiBuildingOffice2, HiCheckCircle, HiEye, HiEyeSlash, HiLockClosed, HiUser } from 'react-icons/hi2'
 import { Button } from '../../components/ui/Button.jsx'
 import { Input } from '../../components/ui/Input.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 
 const ROLE_TABS = [
-  { id: 'admin', label: 'Admin', defaultEmail: 'admin@hris.com' },
-  { id: 'hr', label: 'HR Manager', defaultEmail: 'hr@hris.com' },
-  { id: 'employee', label: 'Employee', defaultEmail: 'employee@hris.com' },
-  { id: 'superadmin', label: 'Super Admin', defaultEmail: 'super@hris.com' },
+  { id: 'admin', label: 'Admin', defaultEmail: 'admin@hris.com', defaultPassword: 'admin123', icon: HiUser },
+  { id: 'hr', label: 'HR Manager', defaultEmail: 'hr@hris.com', defaultPassword: 'hr123', icon: HiBuildingOffice2 },
+  { id: 'employee', label: 'Employee', defaultEmail: 'employee@hris.com', defaultPassword: 'employee123', icon: HiUser },
+  { id: 'superadmin', label: 'Super Admin', defaultEmail: 'super@hris.com', defaultPassword: 'super123', icon: HiLockClosed },
 ]
 
 const POST_LOGIN = {
@@ -26,7 +26,8 @@ export default function Login() {
   const navigate = useNavigate()
   const [role, setRole] = useState('admin')
   const [email, setEmail] = useState('admin@hris.com')
-  const [password, setPassword] = useState('')
+  const [password, setPassword] = useState('admin123')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
   const handleSignIn = () => {
@@ -41,101 +42,188 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-y-auto bg-gray-100 py-6 sm:py-10">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 sm:px-6">
-        <div className="w-full rounded-2xl bg-white p-6 shadow-lg sm:p-8">
-          <div className="flex flex-col items-center">
-            <div className="flex items-center gap-2">
-              <HiGlobeAlt className="h-7 w-7 shrink-0 text-primary sm:h-8 sm:w-8" aria-hidden />
-              <div className="font-display text-xl font-bold leading-none sm:text-2xl">
-                <span className="text-primary">HRIS</span>
-              </div>
+    <div className="flex min-h-screen min-h-[100dvh]">
+      {/* Left Side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 lg:flex-col lg:justify-center lg:relative">
+        {/* Background Image with Overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: 'url("https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=2000&q=80")',
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0F766E]/90 via-[#0F766E]/80 to-[#0D5F57]/90" />
+        
+        {/* Content */}
+        <div className="relative z-10 mx-auto max-w-lg px-12">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg">
+              <HiBuildingOffice2 className="h-7 w-7 text-white" />
             </div>
-            <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-xs">
-              Human Resource Information System
-            </p>
+            <div>
+              <h1 className="font-display text-2xl font-bold text-white">HRIS</h1>
+              <p className="text-xs font-medium text-white/90">Human Resource Information System</p>
+            </div>
           </div>
 
-          <h1 className="mt-6 text-center font-display text-xl font-bold text-primary sm:mt-8 sm:text-2xl">
-            Sign in
-          </h1>
-
-          <div className="mt-6 space-y-4 sm:mt-8 sm:space-y-5">
-            <Input
-              label="Email"
-              labelClassName={labelUpper}
-              name="email"
-              type="email"
-              placeholder="you@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              suffix={<HiCheckCircle className="h-5 w-5" aria-hidden />}
-            />
-            <div>
-              <Input
-                label="Password"
-                labelClassName={labelUpper}
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <div className="mt-2 text-right">
-                <a
-                  href="#forgot"
-                  className="text-sm font-medium text-[#004CA5] hover:underline"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  Forgot password?
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-sm font-semibold text-[#004CA5]">Login as</p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {ROLE_TABS.map((tab) => {
-                  const active = role === tab.id
-                  return (
-                    <Button
-                      key={tab.id}
-                      label={tab.label}
-                      variant={active ? 'primary' : 'outline'}
-                      className={`w-full justify-center py-2.5 text-sm font-semibold ${
-                        active ? '' : 'border-gray-200 bg-white text-gray-800 hover:bg-gray-50'
-                      }`}
-                      onClick={() => {
-                        setRole(tab.id)
-                        setEmail(tab.defaultEmail)
-                      }}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-
-            {error && <p className="text-center text-sm text-red-600">{error}</p>}
-
-            <Button
-              label="Sign In"
-              variant="primary"
-              className="w-full justify-center py-3 text-base font-bold"
-              onClick={handleSignIn}
-            />
-
-            <p className="text-center text-sm text-gray-600">
-              Need access?{' '}
-              <a
-                href="#contact"
-                className="font-semibold text-[#004CA5] hover:underline"
-                onClick={(e) => e.preventDefault()}
-              >
-                Contact IT
-              </a>
+          <div className="space-y-5">
+            <h2 className="font-display text-3xl font-bold text-white leading-tight">
+              Empower Your Workforce with Modern HR Solutions
+            </h2>
+            <p className="text-base text-white/90 leading-relaxed">
+              Streamline your HR operations, manage employee data, and drive organizational success.
             </p>
+
+            <div className="grid grid-cols-2 gap-4 pt-4">
+              <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm border border-white/20 shadow-xl">
+                <div className="text-3xl font-bold text-white">500+</div>
+                <div className="text-xs font-medium text-white/90 mt-1">Companies</div>
+              </div>
+              <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm border border-white/20 shadow-xl">
+                <div className="text-3xl font-bold text-white">50K+</div>
+                <div className="text-xs font-medium text-white/90 mt-1">Employees</div>
+              </div>
+              <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm border border-white/20 shadow-xl">
+                <div className="text-3xl font-bold text-white">99.9%</div>
+                <div className="text-xs font-medium text-white/90 mt-1">Uptime</div>
+              </div>
+              <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm border border-white/20 shadow-xl">
+                <div className="text-3xl font-bold text-white">24/7</div>
+                <div className="text-xs font-medium text-white/90 mt-1">Support</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="flex w-full flex-1 flex-col items-center justify-center bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
+            <HiBuildingOffice2 className="h-8 w-8 text-[#0F766E]" />
+            <div className="font-display text-2xl font-bold text-[#0F766E]">HRIS</div>
+          </div>
+
+          <div className="rounded-2xl bg-white p-8 shadow-xl sm:p-10">
+            <div className="mb-8">
+              <h1 className="font-display text-2xl font-bold text-gray-900 sm:text-3xl">
+                Welcome back
+              </h1>
+              <p className="mt-2 text-sm text-gray-600">
+                Sign in to your account to continue
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <Input
+                label="Email Address"
+                labelClassName={labelUpper}
+                name="email"
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                suffix={<HiCheckCircle className="h-5 w-5 text-gray-400" aria-hidden />}
+              />
+
+              <div>
+                <div className="relative">
+                  <Input
+                    label="Password"
+                    labelClassName={labelUpper}
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <HiEyeSlash className="h-5 w-5" /> : <HiEye className="h-5 w-5" />}
+                  </button>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <a
+                    href="#forgot"
+                    className="text-sm font-medium text-[#0F766E] hover:text-[#0D5F57] hover:underline"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    Forgot password?
+                  </a>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-3 text-sm font-semibold text-gray-700">Select your role</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {ROLE_TABS.map((tab) => {
+                    const Icon = tab.icon
+                    const active = role === tab.id
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => {
+                          setRole(tab.id)
+                          setEmail(tab.defaultEmail)
+                          setPassword(tab.defaultPassword)
+                        }}
+                        className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                          active
+                            ? 'border-[#0F766E] bg-[#0F766E]/5 text-[#0F766E]'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="text-xs font-semibold">{tab.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <Button
+                label="Sign In"
+                variant="primary"
+                className="w-full justify-center py-3 text-base font-semibold"
+                onClick={handleSignIn}
+              />
+
+              <div className="text-center">
+                <p className="text-sm text-gray-600">
+                  Don't have an account?{' '}
+                  <a
+                    href="#contact"
+                    className="font-semibold text-[#0F766E] hover:text-[#0D5F57] hover:underline"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    Contact IT Support
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-8 text-center text-xs text-gray-500">
+            <p>© 2026 HRIS. All rights reserved.</p>
+            <div className="mt-2 flex justify-center gap-4">
+              <a href="#privacy" className="hover:text-gray-700" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
+              <a href="#terms" className="hover:text-gray-700" onClick={(e) => e.preventDefault()}>Terms of Service</a>
+            </div>
           </div>
         </div>
       </div>

@@ -162,6 +162,66 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Birthday &amp; Anniversary</h2>
+          <ul className="mt-4 space-y-3">
+            <li className="flex items-center gap-3 rounded-lg bg-blue-50 px-3 py-2 text-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                🎂
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">John Smith</div>
+                <div className="text-xs text-gray-500">Birthday Today</div>
+              </div>
+            </li>
+            <li className="flex items-center gap-3 rounded-lg bg-purple-50 px-3 py-2 text-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-600">
+                🎉
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">Sarah Johnson</div>
+                <div className="text-xs text-gray-500">3 Years Anniversary</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Visa &amp; Passport Expiry</h2>
+          <ul className="mt-4 space-y-3">
+            <li className="flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 text-sm">
+              <div>
+                <div className="font-medium text-gray-900">Michael Brown</div>
+                <div className="text-xs text-gray-500">Passport expires in 15 days</div>
+              </div>
+              <Badge label="Critical" color="red" />
+            </li>
+            <li className="flex items-center justify-between rounded-lg bg-yellow-50 px-3 py-2 text-sm">
+              <div>
+                <div className="font-medium text-gray-900">Emily Davis</div>
+                <div className="text-xs text-gray-500">Visa expires in 45 days</div>
+              </div>
+              <Badge label="Warning" color="orange" />
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Quick Access</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Button label="Employee Directory" variant="secondary" className="w-full justify-start" />
+          <Button label="Employee Profile" variant="secondary" className="w-full justify-start" />
+          <Button label="Attendance" variant="secondary" className="w-full justify-start" />
+          <Button label="Leave Management" variant="secondary" className="w-full justify-start" />
+          <Button label="Documents" variant="secondary" className="w-full justify-start" />
+          <Button label="Visa & Nationality" variant="secondary" className="w-full justify-start" />
+          <Button label="Policies" variant="secondary" className="w-full justify-start" />
+          <Button label="Performance" variant="secondary" className="w-full justify-start" />
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-3">
           <h2 className="font-display text-lg font-bold text-gray-900">New Joiners &amp; Exits</h2>
           <Table columns={joinColumns} data={joinersAndExits} pageSize={5} />

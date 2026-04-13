@@ -19,6 +19,10 @@ import Onboarding from '../pages/admin/hr/Onboarding.jsx'
 import ExitManagement from '../pages/admin/hr/ExitManagement.jsx'
 import LettersTemplates from '../pages/admin/documents/LettersTemplates.jsx'
 import AdminSettings from '../pages/admin/settings/Settings.jsx'
+import DepartmentManagement from '../pages/admin/settings/Departments.jsx'
+import ProjectManagement from '../pages/admin/settings/Projects.jsx'
+import TaskManagement from '../pages/admin/settings/Tasks.jsx'
+import TemplateGenerator from '../pages/admin/documents/TemplateGenerator.jsx'
 
 import PlatformDashboard from '../pages/superadmin/platform/Dashboard.jsx'
 import TenantManagement from '../pages/superadmin/tenants/TenantManagement.jsx'
@@ -35,6 +39,15 @@ import SuperSettings from '../pages/superadmin/Settings.jsx'
 
 import EmployeeLayout from '../layouts/EmployeeLayout.jsx'
 import EmployeeDashboard from '../pages/employee/Dashboard.jsx'
+import EmployeeTimeAttendance from '../pages/employee/TimeAttendance.jsx'
+import EmployeePerformance from '../pages/employee/Performance.jsx'
+import EmployeeCompensation from '../pages/employee/Compensation.jsx'
+import EmployeeLeave from '../pages/employee/Leave.jsx'
+import EmployeeTimesheet from '../pages/employee/Timesheet.jsx'
+import EmployeeGoals from '../pages/employee/Goals.jsx'
+import EmployeeReviews from '../pages/employee/Reviews.jsx'
+import EmployeePayslips from '../pages/employee/Payslips.jsx'
+import EmployeeExpenseClaims from '../pages/employee/ExpenseClaims.jsx'
 import HRLayout from '../layouts/HRLayout.jsx'
 import HRDashboard from '../pages/hr/Dashboard.jsx'
 import HRTeam from '../pages/hr/Team.jsx'
@@ -45,6 +58,8 @@ import HRPerformance from '../pages/hr/Performance.jsx'
 import HRLetters from '../pages/hr/Letters.jsx'
 import HRReports from '../pages/hr/Reports.jsx'
 import HRProfile from '../pages/hr/Profile.jsx'
+import HROnboarding from '../pages/admin/hr/Onboarding.jsx'
+import HRExitManagement from '../pages/admin/hr/ExitManagement.jsx'
 import HRMessages from '../pages/hr/Messages.jsx'
 import HRAnnouncements from '../pages/hr/Announcements.jsx'
 import HRSettings from '../pages/hr/Settings.jsx'
@@ -94,6 +109,10 @@ export const router = createBrowserRouter([
           { path: 'exit-management', element: <ExitManagement /> },
           { path: 'letters', element: <LettersTemplates /> },
           { path: 'settings', element: <AdminSettings /> },
+          { path: 'departments', element: <DepartmentManagement /> },
+          { path: 'projects', element: <ProjectManagement /> },
+          { path: 'tasks', element: <TaskManagement /> },
+          { path: 'templates', element: <TemplateGenerator /> },
         ],
       },
       {
@@ -107,13 +126,13 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <EmployeeDashboard /> },
           { path: 'profile', element: <HRProfile /> },
-          { path: 'attendance', element: <EmployeeDashboard /> },
-          { path: 'leave', element: <EmployeeDashboard /> },
-          { path: 'timesheet', element: <EmployeeDashboard /> },
-          { path: 'goals', element: <EmployeeDashboard /> },
-          { path: 'reviews', element: <EmployeeDashboard /> },
-          { path: 'payslips', element: <EmployeeDashboard /> },
-          { path: 'expenses', element: <EmployeeDashboard /> },
+          { path: 'attendance', element: <EmployeeTimeAttendance /> },
+          { path: 'leave', element: <EmployeeLeave /> },
+          { path: 'timesheet', element: <EmployeeTimesheet /> },
+          { path: 'goals', element: <EmployeeGoals /> },
+          { path: 'reviews', element: <EmployeeReviews /> },
+          { path: 'payslips', element: <EmployeePayslips /> },
+          { path: 'expenses', element: <EmployeeExpenseClaims /> },
           { path: 'messages', element: <HRMessages /> },
           { path: 'announcements', element: <HRAnnouncements /> },
           { path: 'settings', element: <HRSettings /> },
@@ -137,12 +156,16 @@ export const router = createBrowserRouter([
           { path: 'letters', element: <HRLetters /> },
           { path: 'reports', element: <HRReports /> },
           { path: 'employees', element: <HRTeam /> },
-          { path: 'onboarding', element: <EmployeeDashboard /> },
-          { path: 'exit', element: <EmployeeDashboard /> },
+          { path: 'onboarding', element: <HROnboarding /> },
+          { path: 'exit', element: <HRExitManagement /> },
           { path: 'announcements', element: <HRAnnouncements /> },
           { path: 'messages', element: <HRMessages /> },
           { path: 'settings', element: <HRSettings /> },
           { path: 'profile', element: <HRProfile /> },
+          { path: 'departments', element: <DepartmentManagement /> },
+          { path: 'projects', element: <ProjectManagement /> },
+          { path: 'tasks', element: <TaskManagement /> },
+          { path: 'templates', element: <TemplateGenerator /> },
         ],
       },
       {

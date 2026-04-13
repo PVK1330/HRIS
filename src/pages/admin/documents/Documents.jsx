@@ -14,13 +14,26 @@ const selectClass =
 const textareaClass =
   'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
+const mandatoryDocuments = [
+  'Passport',
+  'National ID',
+  'Education Certificates',
+  'Contract',
+  'Offer Letter',
+  'Experience Letters',
+]
+
 const docRows = employees.slice(0, 8).map((e, idx) => ({
   id: `doc-${e.id}`,
   employee: e.name,
-  docType: idx % 3 === 0 ? 'Contract' : idx % 3 === 1 ? 'ID' : 'Policy Ack',
+  empId: e.empId,
+  department: e.department,
+  docType: idx % 3 === 0 ? 'Contract' : idx % 3 === 1 ? 'National ID' : 'Passport',
   version: `v${1 + (idx % 3)}`,
   updated: '2026-04-04',
-  status: idx % 4 === 0 ? 'Pending review' : 'Signed',
+  status: idx % 4 === 0 ? 'Pending' : idx % 4 === 1 ? 'Submitted' : idx % 4 === 2 ? 'Rejected' : 'Approved',
+  hrComments: idx % 4 === 2 ? 'Please provide clearer scan' : '',
+  submittedDate: '2026-04-01',
 }))
 
 const initialFormData = {
@@ -36,15 +49,34 @@ const initialFormData = {
 
 export default function Documents() {
   const [q, setQ] = useState('')
+  const [deptFilter, setDeptFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [formData, setFormData] = useState(initialFormData)
   const [files, setFiles] = useState({})
 
+  const deptOptions = useMemo(() => {
+    const u = [...new Set(employees.map((e) => e.department))].sort()
+    return [{ value: '', label: 'All departments' }, ...u.map((d) => ({ value: d, label: d }))]
+  }, [])
+
+  const statusOptions = [
+    { value: '', label: 'All statuses' },
+    { value: 'Pending', label: 'Pending' },
+    { value: 'Submitted', label: 'Submitted' },
+    { value: 'Approved', label: 'Approved' },
+    { value: 'Rejected', label: 'Rejected' },
+  ]
+
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
-    if (!query) return docRows
-    return docRows.filter((r) => `${r.employee} ${r.docType}`.toLowerCase().includes(query))
-  }, [q])
+    return docRows.filter((r) => {
+      if (query && !`${r.employee} ${r.empId}`.toLowerCase().includes(query)) return false
+      if (deptFilter && r.department !== deptFilter) return false
+      if (statusFilter && r.status !== statusFilter) return false
+      return true
+    })
+  }, [q, deptFilter, statusFilter])
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
@@ -72,19 +104,44 @@ export default function Documents() {
   }
 
   const columns = [
-    { key: 'employee', label: 'Employee' },
-    { key: 'docType', label: 'Document' },
+    {
+      key: 'employee',
+      label: 'Employee',
+      render: (_, row) => (
+        <div>
+          <div className="font-medium text-gray-900">{row.employee}</div>
+          <div className="text-xs text-gray-500">{row.empId}</div>
+        </div>
+      ),
+    },
+    { key: 'department', label: 'Department' },
+    { key: 'docType', label: 'Document Type' },
     { key: 'version', label: 'Version' },
-    { key: 'updated', label: 'Updated' },
+    { key: 'submittedDate', label: 'Submitted' },
     {
       key: 'status',
       label: 'Status',
-      render: (v) => <Badge label={v} color={v.includes('Pending') ? 'orange' : 'green'} />,
+      render: (v) => {
+        const color = v === 'Pending' ? 'orange' : v === 'Rejected' ? 'red' : v === 'Approved' ? 'green' : 'blue'
+        return <Badge label={v} color={color} />
+      },
+    },
+    {
+      key: 'hrComments',
+      label: 'HR Comments',
+      render: (v) => <span className="text-xs text-gray-600">{v || '-'}</span>,
     },
     {
       key: 'actions',
       label: 'Actions',
-      render: () => <Button label="Download" variant="ghost" size="sm" icon={HiArrowDownTray} />,
+      render: (_, row) => (
+        <div className="flex items-center gap-1">
+          <Button label="View" variant="ghost" size="sm" />
+          <Button label="Download" variant="ghost" size="sm" icon={HiArrowDownTray} />
+          {row.status === 'Pending' && <Button label="Approve" variant="outline" size="sm" />}
+          {row.status === 'Pending' && <Button label="Reject" variant="ghost" size="sm" />}
+        </div>
+      ),
     },
   ]
 
@@ -99,13 +156,45 @@ export default function Documents() {
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <Input
-          label="Search"
-          name="q"
-          placeholder="Employee or document type…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <Input
+            label="Search"
+            name="q"
+            placeholder="Employee name or ID"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <Input
+            label="Department"
+            name="dept"
+            type="select"
+            value={deptFilter}
+            onChange={(e) => setDeptFilter(e.target.value)}
+            options={deptOptions}
+          />
+          <Input
+            label="Document Status"
+            name="status"
+            type="select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            options={statusOptions}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Mandatory Document Checklist</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {mandatoryDocuments.map((doc) => (
+            <div key={doc} className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-600">
+                ✓
+              </div>
+              <span className="text-sm font-medium text-gray-700">{doc}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <Table columns={columns} data={filtered} pageSize={5} />

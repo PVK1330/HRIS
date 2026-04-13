@@ -227,6 +227,44 @@ export default function EmployeeDashboard() {
           <Button label="Update Profile" variant="secondary" />
         </div>
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Upcoming Holidays</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Eid al-Fitr</div>
+                <div className="text-xs text-gray-500">Public Holiday</div>
+              </div>
+              <span className="text-sm text-gray-600">Apr 10, 2026</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-green-50 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Labor Day</div>
+                <div className="text-xs text-gray-500">Public Holiday</div>
+              </div>
+              <span className="text-sm text-gray-600">May 1, 2026</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Team Announcements</h2>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-lg border border-gray-200 px-4 py-2">
+              <div className="font-medium text-gray-900">Office Closure</div>
+              <div className="text-xs text-gray-500">Office will be closed on Apr 10-11 for Eid</div>
+              <div className="mt-1 text-xs text-gray-400">Posted 2 days ago</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 px-4 py-2">
+              <div className="font-medium text-gray-900">Team Building Event</div>
+              <div className="text-xs text-gray-500">Quarterly team outing on Apr 25</div>
+              <div className="mt-1 text-xs text-gray-400">Posted 5 days ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
