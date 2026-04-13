@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { HiBars3, HiBell, HiHome, HiUsers, HiCalendar, HiClock, HiDocumentText, HiCurrencyDollar, HiChartBar, HiCog6Tooth, HiUserGroup, HiChatBubbleLeftRight } from 'react-icons/hi2'
 import { Sidebar } from '../components/ui/Sidebar.jsx'
@@ -64,64 +64,77 @@ export default function HRLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
-  const breadcrumbs = useMemo(() => {
-    const pathSegments = location.pathname.split('/').filter(Boolean)
-    if (pathSegments.length === 0) return []
-
-    return pathSegments.map(titleCaseSegment)
-  }, [location])
+  const breadcrumb = useMemo(() => {
+    const parts = location.pathname.split('/').filter(Boolean)
+    if (parts[0] !== 'hr') return ['Home', 'HR']
+    const crumbs = ['Home', 'HR']
+    if (parts[1]) crumbs.push(titleCaseSegment(parts[1]))
+    return crumbs
+  }, [location.pathname])
 
   return (
-    <div className="flex min-h-screen bg-background-tertiary">
+    <div className="flex h-screen min-h-0 w-full overflow-hidden bg-background-tertiary">
       <Sidebar
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
         navGroups={hrNavGroups}
-        logoText="HRIS"
-        logoBadge="HR Manager"
+        role={user?.role}
+        user={user}
+        onLogout={() => { logout(); navigate('/login') }}
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
       />
-
-      <div className="flex flex-1 flex-col">
-        {/* Top Bar */}
-        <header className="flex h-[50px] items-center justify-between border-b border-border-tertiary bg-background-primary px-6">
-          <div className="flex items-center gap-4">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
+        <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-border-tertiary bg-background-primary px-3 sm:h-16 sm:px-4">
+          <div className="flex min-w-0 items-center gap-3">
             <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="rounded-md p-2 hover:bg-background-secondary"
+              type="button"
+              className="rounded-lg p-2 text-text-secondary hover:bg-background-secondary md:hidden"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
             >
-              <HiBars3 className="h-5 w-5" />
+              <HiBars3 className="h-6 w-6" />
             </button>
-            <h1 className="text-sm font-medium text-text-primary">
-              {breadcrumbs[breadcrumbs.length - 1] || 'Dashboard'}
-            </h1>
+            <nav className="hidden min-w-0 max-w-[50vw] truncate text-sm text-text-secondary sm:flex sm:items-center sm:gap-2 md:max-w-none">
+              {breadcrumb.map((c, i) => (
+                <span key={`${c}-${i}`} className="flex items-center gap-2">
+                  {i > 0 && <span className="text-text-tertiary">/</span>}
+                  {i === 0 ? (
+                    <Link to="/hr/dashboard" className="hover:text-primary">
+                      {c}
+                    </Link>
+                  ) : (
+                    <span className={i === breadcrumb.length - 1 ? 'font-semibold text-text-primary' : ''}>
+                      {c}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </nav>
           </div>
-
-          <div className="flex items-center gap-4">
-            <button className="relative rounded-md p-2 hover:bg-background-secondary">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              className="relative rounded-lg p-2 text-text-secondary hover:bg-background-secondary"
+              aria-label="Notifications"
+            >
               <HiBell className="h-5 w-5" />
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-danger-DEFAULT" />
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger-DEFAULT" />
             </button>
-
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className="text-sm font-medium text-text-primary">
-                  {user?.name || 'Neha Jain'}
-                </div>
-                <div className="text-xs text-text-secondary">
-                  {user?.department || 'Sales & Marketing'}
-                </div>
+            <div className="hidden items-center gap-2 sm:flex">
+              <Avatar name={user?.name} size="sm" />
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-text-primary">{user?.name}</div>
+                <div className="text-xs text-text-secondary">{user?.department || 'HR Manager'}</div>
               </div>
-              <Avatar name={user?.name || 'Neha Jain'} />
-              <Button label="Logout" variant="ghost" size="sm" onClick={() => { logout(); navigate('/login') }} />
             </div>
+            <Button label="Log out" variant="ghost" size="sm" onClick={() => { logout(); navigate('/login') }} />
           </div>
         </header>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-background-tertiary p-4 sm:p-6">
+          <div className="mx-auto min-w-0 max-w-[1600px]">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

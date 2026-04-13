@@ -61,7 +61,7 @@ function titleCaseSegment(seg) {
 export default function SuperAdminLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const breadcrumb = useMemo(() => {
     const parts = location.pathname.split('/').filter(Boolean)
@@ -78,6 +78,8 @@ export default function SuperAdminLayout() {
         navGroups={superNavGroups}
         logoText="HRIS"
         logoBadge="Super Admin"
+        mobileOpen={false}
+        onMobileClose={() => {}}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
         <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-3 sm:h-16 sm:px-4">
@@ -85,7 +87,7 @@ export default function SuperAdminLayout() {
             <button
               type="button"
               className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 md:hidden"
-              onClick={() => setMobileOpen(true)}
+              onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <HiBars3 className="h-6 w-6" />

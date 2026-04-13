@@ -25,7 +25,7 @@ export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [role, setRole] = useState('admin')
-  const [email, setEmail] = useState('admin@elitepic.com')
+  const [email, setEmail] = useState('admin@hris.com')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 

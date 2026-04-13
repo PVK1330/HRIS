@@ -30,8 +30,8 @@ function emailFromName(name) {
     .split(/\s+/)
     .filter(Boolean)
   if (parts.length === 0) return ''
-  if (parts.length === 1) return `${parts[0]}@elitepic.com`
-  return `${parts[0]}.${parts[parts.length - 1]}@elitepic.com`
+  if (parts.length === 1) return `${parts[0]}@hris.com`
+  return `${parts[0]}.${parts[parts.length - 1]}@hris.com`
 }
 
 const initialFormData = {

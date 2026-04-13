@@ -6,7 +6,7 @@ import { Toggle } from '../../../components/ui/Toggle.jsx'
 import { dashboardStats } from '../../../data/mockData.js'
 
 export default function Settings() {
-  const [companyName, setCompanyName] = useState('ElitePic Holdings')
+  const [companyName, setCompanyName] = useState('HRIS Holdings')
   const [timezone, setTimezone] = useState('Asia/Dubai')
   const [notify, setNotify] = useState(true)
   const [files, setFiles] = useState({})
