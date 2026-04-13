@@ -73,12 +73,11 @@ export default function SuperAdminLayout() {
   return (
     <div className="flex h-screen min-h-0 w-full overflow-hidden bg-gray-50">
       <Sidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
         navGroups={superNavGroups}
-        role={user?.role}
-        user={user}
-        onLogout={logout}
-        mobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
+        logoText="HRIS"
+        logoBadge="Super Admin"
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
         <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-3 sm:h-16 sm:px-4">

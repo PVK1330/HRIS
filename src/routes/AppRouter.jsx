@@ -44,6 +44,10 @@ import HRExpenses from '../pages/hr/Expenses.jsx'
 import HRPerformance from '../pages/hr/Performance.jsx'
 import HRLetters from '../pages/hr/Letters.jsx'
 import HRReports from '../pages/hr/Reports.jsx'
+import HRProfile from '../pages/hr/Profile.jsx'
+import HRMessages from '../pages/hr/Messages.jsx'
+import HRAnnouncements from '../pages/hr/Announcements.jsx'
+import HRSettings from '../pages/hr/Settings.jsx'
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth()
@@ -102,7 +106,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <EmployeeDashboard /> },
-          { path: 'profile', element: <EmployeeDashboard /> },
+          { path: 'profile', element: <HRProfile /> },
           { path: 'attendance', element: <EmployeeDashboard /> },
           { path: 'leave', element: <EmployeeDashboard /> },
           { path: 'timesheet', element: <EmployeeDashboard /> },
@@ -110,9 +114,9 @@ export const router = createBrowserRouter([
           { path: 'reviews', element: <EmployeeDashboard /> },
           { path: 'payslips', element: <EmployeeDashboard /> },
           { path: 'expenses', element: <EmployeeDashboard /> },
-          { path: 'messages', element: <EmployeeDashboard /> },
-          { path: 'announcements', element: <EmployeeDashboard /> },
-          { path: 'settings', element: <EmployeeDashboard /> },
+          { path: 'messages', element: <HRMessages /> },
+          { path: 'announcements', element: <HRAnnouncements /> },
+          { path: 'settings', element: <HRSettings /> },
         ],
       },
       {
@@ -135,9 +139,10 @@ export const router = createBrowserRouter([
           { path: 'employees', element: <HRTeam /> },
           { path: 'onboarding', element: <EmployeeDashboard /> },
           { path: 'exit', element: <EmployeeDashboard /> },
-          { path: 'announcements', element: <EmployeeDashboard /> },
-          { path: 'messages', element: <EmployeeDashboard /> },
-          { path: 'settings', element: <EmployeeDashboard /> },
+          { path: 'announcements', element: <HRAnnouncements /> },
+          { path: 'messages', element: <HRMessages /> },
+          { path: 'settings', element: <HRSettings /> },
+          { path: 'profile', element: <HRProfile /> },
         ],
       },
       {

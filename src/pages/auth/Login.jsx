@@ -6,12 +6,16 @@ import { Input } from '../../components/ui/Input.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 
 const ROLE_TABS = [
-  { id: 'admin', label: 'Admin', defaultEmail: 'admin@elitepic.com' },
-  { id: 'superadmin', label: 'Super Admin', defaultEmail: 'super@elitepic.com' },
+  { id: 'admin', label: 'Admin', defaultEmail: 'admin@hris.com' },
+  { id: 'hr', label: 'HR Manager', defaultEmail: 'hr@hris.com' },
+  { id: 'employee', label: 'Employee', defaultEmail: 'employee@hris.com' },
+  { id: 'superadmin', label: 'Super Admin', defaultEmail: 'super@hris.com' },
 ]
 
 const POST_LOGIN = {
   admin: '/admin/dashboard',
+  hr: '/hr/dashboard',
+  employee: '/employee/dashboard',
   superadmin: '/superadmin/dashboard',
 }
 
@@ -42,17 +46,17 @@ export default function Login() {
         <div className="w-full rounded-2xl bg-white p-6 shadow-lg sm:p-8">
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-2">
-              <HiGlobeAlt className="h-7 w-7 shrink-0 text-[#004CA5] sm:h-8 sm:w-8" aria-hidden />
+              <HiGlobeAlt className="h-7 w-7 shrink-0 text-primary sm:h-8 sm:w-8" aria-hidden />
               <div className="font-display text-xl font-bold leading-none sm:text-2xl">
-                <span className="text-[#004CA5]">ElitePic</span>
+                <span className="text-primary">HRIS</span>
               </div>
             </div>
-            <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-500 sm:text-xs">
-              HR &amp; CRM workspace
+            <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-xs">
+              Human Resource Information System
             </p>
           </div>
 
-          <h1 className="mt-6 text-center font-display text-xl font-bold text-[#004CA5] sm:mt-8 sm:text-2xl">
+          <h1 className="mt-6 text-center font-display text-xl font-bold text-primary sm:mt-8 sm:text-2xl">
             Sign in
           </h1>
 

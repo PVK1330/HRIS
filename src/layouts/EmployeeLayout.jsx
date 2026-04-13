@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { HiBars3, HiBell, HiHome, HiCalendar, HiClock, HiDocumentText, HiCurrencyDollar, HiChatBubbleLeftRight, HiCog6Tooth, HiUser } from 'react-icons/hi2'
 import { Sidebar } from '../components/ui/Sidebar.jsx'
@@ -59,7 +59,8 @@ function titleCaseSegment(seg) {
 }
 
 export default function EmployeeLayout() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
@@ -76,7 +77,7 @@ export default function EmployeeLayout() {
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
         navGroups={employeeNavGroups}
-        logoText="HRMatrix"
+        logoText="HRIS"
         logoBadge="Employee"
       />
 
@@ -111,6 +112,7 @@ export default function EmployeeLayout() {
                 </div>
               </div>
               <Avatar name={user?.name || 'John Doe'} />
+              <Button label="Logout" variant="ghost" size="sm" onClick={() => { logout(); navigate('/login') }} />
             </div>
           </div>
         </header>

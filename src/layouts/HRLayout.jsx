@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useState, useMemo } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { HiBars3, HiBell, HiHome, HiUsers, HiCalendar, HiClock, HiDocumentText, HiCurrencyDollar, HiChartBar, HiCog6Tooth, HiUserGroup, HiChatBubbleLeftRight } from 'react-icons/hi2'
 import { Sidebar } from '../components/ui/Sidebar.jsx'
 import { Avatar } from '../components/ui/Avatar.jsx'
@@ -61,7 +61,8 @@ function titleCaseSegment(seg) {
 }
 
 export default function HRLayout() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
@@ -78,7 +79,7 @@ export default function HRLayout() {
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
         navGroups={hrNavGroups}
-        logoText="HRMatrix"
+        logoText="HRIS"
         logoBadge="HR Manager"
       />
 
@@ -113,6 +114,7 @@ export default function HRLayout() {
                 </div>
               </div>
               <Avatar name={user?.name || 'Neha Jain'} />
+              <Button label="Logout" variant="ghost" size="sm" onClick={() => { logout(); navigate('/login') }} />
             </div>
           </div>
         </header>
