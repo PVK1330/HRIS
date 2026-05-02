@@ -279,29 +279,27 @@ export default function EmployeeDirectory() {
           <div>
             <div className="font-medium text-gray-900">{row.name}</div>
             <div className="text-xs text-gray-500">{row.empId}</div>
-            <div className="text-xs text-gray-400">{row.email}</div>
           </div>
         </div>
       ),
     },
-    { key: 'department', label: 'Department' },
     { key: 'jobTitle', label: 'Job Title' },
+    { key: 'department', label: 'Department' },
+    { key: 'location', label: 'Work Loc' },
     { key: 'manager', label: 'Manager' },
     {
       key: 'status',
       label: 'Status',
       render: (v) => <Badge label={v} color={statusColor(v)} />,
     },
-    { key: 'location', label: 'Location' },
-    { key: 'joinDate', label: 'Join Date' },
     {
       key: 'actions',
       label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-1">
-          <Button ariaLabel="View Details" variant="ghost" size="sm" icon={HiEye} onClick={() => handleView(row)} />
-          <Button ariaLabel="Send Email" variant="ghost" size="sm" icon={HiEnvelope} onClick={() => handleEmail(row)} />
-          <Button ariaLabel="Generate Letter" variant="ghost" size="sm" icon={HiDocumentText} onClick={() => handleLetter(row)} />
+          <Button ariaLabel="Email/Call" title="Email/Call" variant="ghost" size="sm" icon={HiEnvelope} onClick={() => handleEmail(row)} />
+          <Button ariaLabel="View Profile" title="View Profile" variant="ghost" size="sm" icon={HiEye} onClick={() => handleView(row)} />
+          <Button ariaLabel="Generate Letter" title="Generate Letter" variant="ghost" size="sm" icon={HiDocumentText} onClick={() => handleLetter(row)} />
         </div>
       ),
     },
@@ -724,7 +722,7 @@ export default function EmployeeDirectory() {
         </form>
       </Modal>
 
-      <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} title="Employee Details" size="xl">
+      <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} title="Employee Details" size="4xl">
         {selectedEmployee && (
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-gray-200 pb-4">
@@ -742,149 +740,391 @@ export default function EmployeeDirectory() {
               </div>
             </div>
 
-            <div className="flex gap-2 border-b border-gray-200">
-              <button
-                onClick={() => setViewActiveTab('personal')}
-                className={`px-4 py-2 text-sm font-medium ${
-                  viewActiveTab === 'personal'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Personal
-              </button>
-              <button
-                onClick={() => setViewActiveTab('work')}
-                className={`px-4 py-2 text-sm font-medium ${
-                  viewActiveTab === 'work'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Work
-              </button>
-              <button
-                onClick={() => setViewActiveTab('documents')}
-                className={`px-4 py-2 text-sm font-medium ${
-                  viewActiveTab === 'documents'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Documents
-              </button>
-              <button
-                onClick={() => setViewActiveTab('visa')}
-                className={`px-4 py-2 text-sm font-medium ${
-                  viewActiveTab === 'visa'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Visa & Nationality
-              </button>
+            <div className="flex gap-2 border-b border-gray-200 overflow-x-auto pb-1">
+              {[
+                { id: 'personal', label: 'Basic Info' },
+                { id: 'work', label: 'Employment' },
+                { id: 'documents', label: 'Documents' },
+                { id: 'visa', label: 'Visa & Nationality' },
+                { id: 'attendance', label: 'Attendance' },
+                { id: 'leave', label: 'Leave' },
+                { id: 'performance', label: 'Performance' },
+                { id: 'assets', label: 'Assets' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setViewActiveTab(tab.id)}
+                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap ${
+                    viewActiveTab === tab.id
+                      ? 'border-b-2 border-[#004CA5] text-[#004CA5]'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            {viewActiveTab === 'personal' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Full Name</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.name}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Email</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.email}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Phone</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.phone || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Location</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.location}</p>
-                </div>
-              </div>
-            )}
+            <div className="max-h-[60vh] overflow-y-auto pr-2">
+              {viewActiveTab === 'personal' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div><label className="text-xs text-gray-500">Name</label><p className="text-sm font-medium">{selectedEmployee.name}</p></div>
+                    <div><label className="text-xs text-gray-500">Employee ID</label><p className="text-sm font-medium">{selectedEmployee.empId}</p></div>
+                    <div><label className="text-xs text-gray-500">Job Title</label><p className="text-sm font-medium">{selectedEmployee.jobTitle}</p></div>
+                    <div><label className="text-xs text-gray-500">Department</label><p className="text-sm font-medium">{selectedEmployee.department}</p></div>
+                    <div><label className="text-xs text-gray-500">Reporting Manager</label><p className="text-sm font-medium">{selectedEmployee.manager || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Work Location</label><p className="text-sm font-medium">{selectedEmployee.location}</p></div>
+                    <div><label className="text-xs text-gray-500">Employment Type</label><p className="text-sm font-medium">Full-time</p></div>
+                    <div><label className="text-xs text-gray-500">Join Date</label><p className="text-sm font-medium">{selectedEmployee.joinDate || '2024-01-15'}</p></div>
+                    <div><label className="text-xs text-gray-500">Tenure</label><p className="text-sm font-medium">2 Years, 3 Months</p></div>
+                    <div><label className="text-xs text-gray-500">Current Day Status</label><p className="text-sm font-medium text-green-600">Present</p></div>
+                  </div>
+                  
+                  <div className="border-t pt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div><label className="text-xs text-gray-500">Date of Birth</label><p className="text-sm font-medium">1990-05-14</p></div>
+                    <div><label className="text-xs text-gray-500">Gender</label><p className="text-sm font-medium">Male</p></div>
+                    <div><label className="text-xs text-gray-500">Marital Status</label><p className="text-sm font-medium">Married</p></div>
+                    <div><label className="text-xs text-gray-500">Contact Numbers</label><p className="text-sm font-medium">{selectedEmployee.phone || '+971 50 123 4567'}</p></div>
+                    <div><label className="text-xs text-gray-500">Personal Email</label><p className="text-sm font-medium">{selectedEmployee.email}</p></div>
+                    <div><label className="text-xs text-gray-500">Number of Dependents</label><p className="text-sm font-medium">2</p></div>
+                  </div>
 
-            {viewActiveTab === 'work' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Employee ID</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.empId}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Department</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.department}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Job Title</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.jobTitle}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Manager</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.manager || 'Not assigned'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Join Date</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.joinDate || '2024-01-15'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Status</label>
-                  <Badge label={selectedEmployee.status} color={statusColor(selectedEmployee.status)} />
-                </div>
-              </div>
-            )}
+                  <div className="border-t pt-4">
+                    <label className="text-xs text-gray-500">Address</label>
+                    <p className="text-sm font-medium">123 Street, Downtown Dubai, UAE</p>
+                  </div>
+                  <div className="border-t pt-4">
+                    <label className="text-xs text-gray-500">Emergency Contact</label>
+                    <p className="text-sm font-medium">Jane Doe - +971 50 987 6543 (Wife)</p>
+                  </div>
 
-            {viewActiveTab === 'documents' && (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-gray-200 p-4">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Uploaded Documents</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">Employment Contract</span>
-                      <span className="text-xs text-gray-500">Uploaded on 2024-01-15</span>
+                  <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <h4 className="text-xs font-semibold text-blue-800 mb-1">Promotion History Summary</h4>
+                      <p className="text-sm text-blue-900">Promoted to Senior {selectedEmployee.jobTitle} on Jan 2024</p>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">ID Proof</span>
-                      <span className="text-xs text-gray-500">Uploaded on 2024-01-15</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">Educational Certificates</span>
-                      <span className="text-xs text-gray-500">Uploaded on 2024-01-15</span>
+                    <div className="bg-yellow-50 p-3 rounded-lg">
+                      <h4 className="text-xs font-semibold text-yellow-800 mb-1">Awards Summary</h4>
+                      <p className="text-sm text-yellow-900">Employee of the Month (Q3 2023)</p>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {viewActiveTab === 'visa' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Visa Type</label>
-                  <p className="text-sm font-medium text-gray-900">Employment Visa</p>
+              {viewActiveTab === 'work' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="text-xs text-gray-500">Job Title</label><p className="text-sm font-medium">{selectedEmployee.jobTitle}</p></div>
+                    <div><label className="text-xs text-gray-500">Job Level / Grade</label><p className="text-sm font-medium">L4 / Grade B</p></div>
+                    <div><label className="text-xs text-gray-500">Department</label><p className="text-sm font-medium">{selectedEmployee.department}</p></div>
+                    <div><label className="text-xs text-gray-500">Work Location</label><p className="text-sm font-medium">{selectedEmployee.location}</p></div>
+                    <div><label className="text-xs text-gray-500">Reporting Manager</label><p className="text-sm font-medium">{selectedEmployee.manager || 'Not assigned'}</p></div>
+                    <div><label className="text-xs text-gray-500">Employment Type</label><p className="text-sm font-medium">Full-time</p></div>
+                    <div><label className="text-xs text-gray-500">Date of Joining</label><p className="text-sm font-medium">{selectedEmployee.joinDate || '2024-01-15'}</p></div>
+                    <div><label className="text-xs text-gray-500">Probation End Date</label><p className="text-sm font-medium">2024-07-15</p></div>
+                  </div>
+
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4">Career History</h4>
+                    <div className="border-l-2 border-blue-200 ml-3 space-y-4">
+                      <div className="relative pl-4">
+                        <div className="absolute w-3 h-3 bg-blue-500 rounded-full -left-[7px] top-1.5 border-2 border-white"></div>
+                        <p className="text-sm font-medium text-gray-900">Promoted to {selectedEmployee.jobTitle}</p>
+                        <p className="text-xs text-gray-500">Jan 2024 • Promotion</p>
+                      </div>
+                      <div className="relative pl-4">
+                        <div className="absolute w-3 h-3 bg-gray-300 rounded-full -left-[7px] top-1.5 border-2 border-white"></div>
+                        <p className="text-sm font-medium text-gray-900">Joined as Junior {selectedEmployee.jobTitle}</p>
+                        <p className="text-xs text-gray-500">Jan 2022 • New Hire</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Visa Expiry</label>
-                  <p className="text-sm font-medium text-gray-900">2025-01-15</p>
+              )}
+
+              {viewActiveTab === 'documents' && (
+                <div className="space-y-6">
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-sm font-semibold text-gray-900">Mandatory Documents List</h4>
+                      <Button variant="outline" size="sm" icon={HiPlus} ariaLabel="Upload New Document">Upload</Button>
+                    </div>
+                    <div className="space-y-3">
+                      {[
+                        { name: 'Passport', status: 'Approved', v: 'v1.0' },
+                        { name: 'National ID', status: 'Submitted', v: 'v2.1' },
+                        { name: 'Education certificates', status: 'Pending', v: 'v1.0' },
+                        { name: 'Contract', status: 'Approved', v: 'v1.0' },
+                        { name: 'Offer letter', status: 'Approved', v: 'v1.0' },
+                        { name: 'Experience letters', status: 'Rejected', v: 'v1.0', comments: 'Needs to be attested' }
+                      ].map((doc, idx) => (
+                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">{doc.name}</span>
+                              <Badge label={doc.status} color={doc.status === 'Approved' ? 'green' : doc.status === 'Rejected' ? 'red' : doc.status === 'Submitted' ? 'blue' : 'yellow'} />
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">Version: {doc.v} • 2024-01-15 10:30 AM</div>
+                            {doc.comments && <div className="text-xs text-red-600 mt-1">HR Comments: {doc.comments}</div>}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="sm" ariaLabel="Replace">Replace</Button>
+                            <Button variant="ghost" size="sm" ariaLabel="History">History</Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Passport Number</label>
-                  <p className="text-sm font-medium text-gray-900">A12345678</p>
+              )}
+
+              {viewActiveTab === 'visa' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="text-xs text-gray-500">Nationality</label><p className="text-sm font-medium">Indian</p></div>
+                    <div><label className="text-xs text-gray-500">Country of Residence</label><p className="text-sm font-medium">UAE</p></div>
+                    <div><label className="text-xs text-gray-500">Passport Number</label><p className="text-sm font-medium">A12345678</p></div>
+                    <div><label className="text-xs text-gray-500">Passport Issue Date</label><p className="text-sm font-medium">2016-06-30</p></div>
+                    <div><label className="text-xs text-gray-500">Passport Expiry Date</label><p className="text-sm font-medium">2026-06-30</p></div>
+                    
+                    <div className="col-span-2 mt-2 mb-1 border-t pt-4"><h4 className="text-sm font-semibold">Visa / Work Permit</h4></div>
+                    <div><label className="text-xs text-gray-500">Visa / Work Permit Type</label><p className="text-sm font-medium">Employment Visa</p></div>
+                    <div><label className="text-xs text-gray-500">Visa Number</label><p className="text-sm font-medium">201-1234567-1</p></div>
+                    <div><label className="text-xs text-gray-500">Visa Issue Date</label><p className="text-sm font-medium">2023-01-15</p></div>
+                    <div><label className="text-xs text-gray-500">Visa Expiry Date</label><p className="text-sm font-medium">2025-01-15</p></div>
+                    <div><label className="text-xs text-gray-500">Sponsoring Entity</label><p className="text-sm font-medium">HRIS Solutions LLC</p></div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-3">Uploads</h4>
+                    <div className="flex gap-4">
+                      <div className="p-3 border border-gray-200 rounded text-sm text-center w-24"><HiDocumentText className="mx-auto text-xl text-gray-400 mb-1" /> Passport</div>
+                      <div className="p-3 border border-gray-200 rounded text-sm text-center w-24"><HiDocumentText className="mx-auto text-xl text-gray-400 mb-1" /> Visa</div>
+                      <div className="p-3 border border-gray-200 rounded text-sm text-center w-24"><HiDocumentText className="mx-auto text-xl text-gray-400 mb-1" /> Country ID</div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Passport Expiry</label>
-                  <p className="text-sm font-medium text-gray-900">2026-06-30</p>
+              )}
+
+              {viewActiveTab === 'attendance' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="text-xs text-gray-500">Total Hours (Month)</div>
+                      <div className="text-xl font-bold">160h 45m</div>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg">
+                      <div className="text-xs text-yellow-600">Late Minutes</div>
+                      <div className="text-xl font-bold text-yellow-700">25m</div>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg">
+                      <div className="text-xs text-red-600">Missing Clock-outs</div>
+                      <div className="text-xl font-bold text-red-700">1</div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-xs text-blue-600">Attendance Policy</div>
+                      <div className="text-xs font-medium text-blue-800 mt-1">10-min buffer allowed. &gt;3 late marks require regularization.</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">Recent Activity</h4>
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-gray-50 text-gray-600 border-b">
+                          <tr>
+                            <th className="p-3">Date</th>
+                            <th className="p-3">Clock In</th>
+                            <th className="p-3">Clock Out</th>
+                            <th className="p-3">Total</th>
+                            <th className="p-3">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b">
+                            <td className="p-3">Today</td>
+                            <td className="p-3">08:55 AM</td>
+                            <td className="p-3 text-gray-400">-</td>
+                            <td className="p-3 text-gray-400">-</td>
+                            <td className="p-3"><Badge label="Active" color="green" /></td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="p-3">Yesterday</td>
+                            <td className="p-3">09:15 AM</td>
+                            <td className="p-3">06:00 PM</td>
+                            <td className="p-3">8h 45m</td>
+                            <td className="p-3"><Badge label="Late" color="yellow" /></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">Regularization Requests</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <div className="text-sm font-medium">Missed punch on Oct 10</div>
+                          <div className="text-xs text-gray-500">Requested time: 06:00 PM</div>
+                        </div>
+                        <Badge label="Approved" color="green" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Emirates ID</label>
-                  <p className="text-sm font-medium text-gray-900">784-XXXX-XXXXXXX-X</p>
+              )}
+
+              {viewActiveTab === 'leave' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 border rounded-lg text-center">
+                      <div className="text-2xl font-bold text-blue-600">14</div>
+                      <div className="text-xs text-gray-500">Annual Leave</div>
+                    </div>
+                    <div className="p-4 border rounded-lg text-center">
+                      <div className="text-2xl font-bold text-green-600">8</div>
+                      <div className="text-xs text-gray-500">Sick Leave</div>
+                    </div>
+                    <div className="p-4 border rounded-lg text-center">
+                      <div className="text-2xl font-bold text-yellow-600">3</div>
+                      <div className="text-xs text-gray-500">Casual Leave</div>
+                    </div>
+                    <div className="p-4 border rounded-lg text-center bg-gray-50">
+                      <div className="text-2xl font-bold text-gray-700">0</div>
+                      <div className="text-xs text-gray-500">Unpaid Leave</div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-sm font-semibold">Leave History</h4>
+                    <Button variant="outline" size="sm">Upload Medical Cert</Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="p-3 border rounded-lg flex justify-between items-center">
+                      <div>
+                        <div className="text-sm font-medium">Annual Leave (3 days)</div>
+                        <div className="text-xs text-gray-500">12 Nov 2024 - 14 Nov 2024</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge label="Pending Approval" color="yellow" />
+                        <div className="flex gap-1 ml-2">
+                          <Button size="sm" variant="primary">Approve</Button>
+                          <Button size="sm" variant="ghost">Reject</Button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-3 border rounded-lg flex justify-between items-center">
+                      <div>
+                        <div className="text-sm font-medium">Sick Leave (1 day)</div>
+                        <div className="text-xs text-gray-500">05 Oct 2024</div>
+                        <div className="text-xs text-blue-500 underline mt-1 cursor-pointer">Medical_Cert.pdf</div>
+                      </div>
+                      <Badge label="Approved" color="green" />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500">Emirates ID Expiry</label>
-                  <p className="text-sm font-medium text-gray-900">2025-06-15</p>
+              )}
+
+              {viewActiveTab === 'performance' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="text-xs text-green-800">Yearly Rating (2023)</div>
+                      <div className="text-xl font-bold text-green-700">Exceeds Expectations (4/5)</div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-xs text-blue-800">Potential Rating</div>
+                      <div className="text-xl font-bold text-blue-700">High Potential</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-semibold mb-1">Manager Comments</h4>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg italic">"Outstanding performance this year. Successfully delivered the Q3 project ahead of schedule."</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold mb-1">Employee Comments</h4>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg italic">"Looking forward to taking on more leadership responsibilities next year."</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">Current Goals</h4>
+                    <div className="space-y-3">
+                      <div className="border p-3 rounded-lg">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-medium">Complete Leadership Training</span>
+                          <span className="text-blue-600">80%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{width: '80%'}}></div></div>
+                      </div>
+                      <div className="border p-3 rounded-lg">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-medium">Improve Team Velocity by 15%</span>
+                          <span className="text-blue-600">45%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{width: '45%'}}></div></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-2">Past Reviews</h4>
+                    <div className="text-sm text-gray-700 underline cursor-pointer">2022 Annual Review (3.5/5)</div>
+                    <div className="text-sm text-gray-700 underline cursor-pointer mt-1">2021 Annual Review (4/5)</div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {viewActiveTab === 'assets' && (
+                <div className="space-y-4">
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-gray-50 text-gray-600 border-b">
+                        <tr>
+                          <th className="p-3">Asset ID</th>
+                          <th className="p-3">Type</th>
+                          <th className="p-3">Serial No.</th>
+                          <th className="p-3">Issued Date</th>
+                          <th className="p-3">Condition</th>
+                          <th className="p-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b">
+                          <td className="p-3 font-medium">AST-1042</td>
+                          <td className="p-3">Laptop (MacBook Pro)</td>
+                          <td className="p-3">C02XXYYZZ</td>
+                          <td className="p-3">2023-01-15</td>
+                          <td className="p-3">Good</td>
+                          <td className="p-3"><Badge label="Issued" color="blue" /></td>
+                        </tr>
+                        <tr className="border-b">
+                          <td className="p-3 font-medium">AST-2105</td>
+                          <td className="p-3">Access Card</td>
+                          <td className="p-3">AC-55992</td>
+                          <td className="p-3">2023-01-16</td>
+                          <td className="p-3">Good</td>
+                          <td className="p-3"><Badge label="Issued" color="blue" /></td>
+                        </tr>
+                        <tr className="border-b bg-gray-50">
+                          <td className="p-3 font-medium text-gray-500">AST-0850</td>
+                          <td className="p-3 text-gray-500">Phone (iPhone 12)</td>
+                          <td className="p-3 text-gray-500">F1XXYYZZ</td>
+                          <td className="p-3 text-gray-500">2022-05-10</td>
+                          <td className="p-3 text-gray-500">Scratched</td>
+                          <td className="p-3"><Badge label="Returned" color="gray" /></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Modal>
