@@ -2,9 +2,26 @@ import { useMemo, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
+import { Modal } from '../../../components/ui/Modal.jsx'
 import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { onboardingKpis, onboardingTasks } from '../../../data/mockData.js'
+import { employees, onboardingKpis, onboardingTasks } from '../../../data/mockData.js'
+
+const selectClass =
+  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+
+const textareaClass =
+  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+
+const initialFormData = {
+  employeeId: '',
+  taskName: '',
+  taskCategory: '',
+  dueDate: '',
+  assignedTo: '',
+  priority: '',
+  description: '',
+}
 
 function statusColor(s) {
   if (s === 'Done') return 'green'
@@ -15,6 +32,8 @@ function statusColor(s) {
 
 export default function Onboarding() {
   const [owner, setOwner] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [formData, setFormData] = useState(initialFormData)
 
   const ownerOptions = useMemo(() => {
     const u = [...new Set(onboardingTasks.map((t) => t.owner))].sort()
@@ -25,6 +44,26 @@ export default function Onboarding() {
     if (!owner) return onboardingTasks
     return onboardingTasks.filter((t) => t.owner === owner)
   }, [owner])
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const resetModal = () => {
+    setFormData(initialFormData)
+  }
+
+  const handleCloseModal = () => {
+    setModalOpen(false)
+    resetModal()
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    console.log({ formData })
+    handleCloseModal()
+  }
 
   const columns = [
     { key: 'employee', label: 'Employee' },
@@ -50,7 +89,7 @@ export default function Onboarding() {
           <h1 className="font-display text-2xl font-bold text-gray-900">Onboarding Management</h1>
           <p className="mt-1 text-sm text-gray-500">Coordinate tasks across HR, IT, and managers.</p>
         </div>
-        <Button label="Create checklist" variant="primary" />
+        <Button label="Create checklist" variant="primary" onClick={() => setModalOpen(true)} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -204,6 +243,140 @@ export default function Onboarding() {
           </div>
         </div>
       </div>
+
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Create Onboarding Checklist" size="lg">
+        <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
+            Task details
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 w-full sm:col-span-1">
+              <label htmlFor="onboard-employee" className="mb-1 block text-sm font-medium text-gray-700">
+                Employee
+                <span className="text-red-500"> *</span>
+              </label>
+              <select
+                id="onboard-employee"
+                name="employeeId"
+                value={formData.employeeId}
+                onChange={handleFormChange}
+                className={selectClass}
+                required
+              >
+                <option value="" disabled hidden>
+                  Select employee
+                </option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name} ({e.empId})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Input
+              label="Task Name"
+              name="taskName"
+              value={formData.taskName}
+              onChange={handleFormChange}
+              placeholder="e.g. IT Equipment Setup"
+              required
+            />
+            <div className="w-full">
+              <label htmlFor="onboard-category" className="mb-1 block text-sm font-medium text-gray-700">
+                Task Category
+                <span className="text-red-500"> *</span>
+              </label>
+              <select
+                id="onboard-category"
+                name="taskCategory"
+                value={formData.taskCategory}
+                onChange={handleFormChange}
+                className={selectClass}
+                required
+              >
+                <option value="" disabled hidden>
+                  Select category
+                </option>
+                <option value="HR">HR</option>
+                <option value="IT">IT</option>
+                <option value="Finance">Finance</option>
+                <option value="Manager">Manager</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+            <Input
+              label="Due Date"
+              name="dueDate"
+              type="date"
+              value={formData.dueDate}
+              onChange={handleFormChange}
+              required
+            />
+            <div className="w-full">
+              <label htmlFor="onboard-assigned" className="mb-1 block text-sm font-medium text-gray-700">
+                Assigned To
+                <span className="text-red-500"> *</span>
+              </label>
+              <select
+                id="onboard-assigned"
+                name="assignedTo"
+                value={formData.assignedTo}
+                onChange={handleFormChange}
+                className={selectClass}
+                required
+              >
+                <option value="" disabled hidden>
+                  Select assignee
+                </option>
+                <option value="HR Team">HR Team</option>
+                <option value="IT Team">IT Team</option>
+                <option value="Manager">Manager</option>
+                <option value="Admin Team">Admin Team</option>
+              </select>
+            </div>
+            <div className="w-full">
+              <label htmlFor="onboard-priority" className="mb-1 block text-sm font-medium text-gray-700">
+                Priority
+                <span className="text-red-500"> *</span>
+              </label>
+              <select
+                id="onboard-priority"
+                name="priority"
+                value={formData.priority}
+                onChange={handleFormChange}
+                className={selectClass}
+                required
+              >
+                <option value="" disabled hidden>
+                  Select priority
+                </option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-3 w-full">
+            <label htmlFor="onboard-description" className="mb-1 block text-sm font-medium text-gray-700">
+              Description
+            </label>
+            <textarea
+              id="onboard-description"
+              name="description"
+              value={formData.description}
+              onChange={handleFormChange}
+              className={textareaClass}
+              rows={3}
+              placeholder="Task details and requirements"
+            />
+          </div>
+
+          <div className="mt-6 flex justify-end gap-2">
+            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
+            <Button type="submit" label="Create Task" variant="primary" />
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

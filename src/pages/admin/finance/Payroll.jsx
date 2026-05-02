@@ -1,15 +1,59 @@
 import React, { useState } from 'react';
-import { HiCurrencyDollar, HiChartBar, HiArrowDownTray, HiPlay, HiCheckCircle, HiMagnifyingGlass, HiFunnel } from 'react-icons/hi2';
+import { HiCurrencyDollar, HiChartBar, HiArrowDownTray, HiPlay, HiCheckCircle, HiMagnifyingGlass, HiFunnel, HiPlus } from 'react-icons/hi2';
 import { Button } from '../../../components/ui/Button.jsx';
 import { Badge } from '../../../components/ui/Badge.jsx';
 import { Input } from '../../../components/ui/Input.jsx';
+import { Modal } from '../../../components/ui/Modal.jsx';
 import { Table } from '../../../components/ui/Table.jsx';
 import { payrollData, employees } from '../../../data/mockData.js';
+
+const selectClass =
+  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 export default function Payroll() {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedMonth, setSelectedMonth] = useState('May 2026');
   const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id || '');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    employeeId: '',
+    basicSalary: '',
+    hra: '',
+    transportAllowance: '',
+    bonus: '',
+    pfContribution: '',
+    insurance: '',
+    otherDeductions: '',
+  });
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const resetModal = () => {
+    setFormData({
+      employeeId: '',
+      basicSalary: '',
+      hra: '',
+      transportAllowance: '',
+      bonus: '',
+      pfContribution: '',
+      insurance: '',
+      otherDeductions: '',
+    });
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    resetModal();
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log({ formData });
+    handleCloseModal();
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -40,6 +84,7 @@ export default function Payroll() {
               <div className="p-4 border-b border-border-tertiary bg-background-secondary/30 flex items-center justify-between">
                 <h3 className="font-bold text-text-primary">Salary Overview</h3>
                 <div className="flex gap-2">
+                  <Button label="Add Salary" variant="primary" size="sm" icon={HiPlus} onClick={() => setModalOpen(true)} />
                   <Button label="Filters" variant="ghost" size="sm" icon={HiFunnel} />
                   <Button label="Export CSV" variant="ghost" size="sm" icon={HiArrowDownTray} />
                 </div>
@@ -230,6 +275,113 @@ export default function Payroll() {
       </div>
 
       <div>{renderTabContent()}</div>
+
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Add Salary Details" size="lg">
+        <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
+            Employee selection
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 w-full sm:col-span-1">
+              <label htmlFor="payroll-employee" className="mb-1 block text-sm font-medium text-gray-700">
+                Employee
+                <span className="text-red-500"> *</span>
+              </label>
+              <select
+                id="payroll-employee"
+                name="employeeId"
+                value={formData.employeeId}
+                onChange={handleFormChange}
+                className={selectClass}
+                required
+              >
+                <option value="" disabled hidden>
+                  Select employee
+                </option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name} ({e.empId})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Earnings
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Basic Salary (AED)"
+              name="basicSalary"
+              type="number"
+              placeholder="0.00"
+              value={formData.basicSalary}
+              onChange={handleFormChange}
+              required
+            />
+            <Input
+              label="HRA (AED)"
+              name="hra"
+              type="number"
+              placeholder="0.00"
+              value={formData.hra}
+              onChange={handleFormChange}
+            />
+            <Input
+              label="Transport Allowance (AED)"
+              name="transportAllowance"
+              type="number"
+              placeholder="0.00"
+              value={formData.transportAllowance}
+              onChange={handleFormChange}
+            />
+            <Input
+              label="Bonus (AED)"
+              name="bonus"
+              type="number"
+              placeholder="0.00"
+              value={formData.bonus}
+              onChange={handleFormChange}
+            />
+          </div>
+
+          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Deductions
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="PF Contribution (AED)"
+              name="pfContribution"
+              type="number"
+              placeholder="0.00"
+              value={formData.pfContribution}
+              onChange={handleFormChange}
+            />
+            <Input
+              label="Insurance (AED)"
+              name="insurance"
+              type="number"
+              placeholder="0.00"
+              value={formData.insurance}
+              onChange={handleFormChange}
+            />
+            <Input
+              label="Other Deductions (AED)"
+              name="otherDeductions"
+              type="number"
+              placeholder="0.00"
+              value={formData.otherDeductions}
+              onChange={handleFormChange}
+            />
+          </div>
+
+          <div className="mt-6 flex justify-end gap-2">
+            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
+            <Button type="submit" label="Save Salary" variant="primary" />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
