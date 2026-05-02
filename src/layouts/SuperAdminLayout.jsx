@@ -25,28 +25,28 @@ const superNavGroups = [
   {
     groupLabel: 'PLATFORM OVERVIEW',
     items: [
-      { label: 'Dashboard', icon: HiHome, path: '/superadmin/dashboard' },
-      { label: 'Tenant Management', icon: HiDocumentText, path: '/superadmin/tenants' },
-      { label: 'Domains & SSL', icon: HiGlobeAlt, path: '/superadmin/domains' },
-      { label: 'Subscription Plans', icon: HiCurrencyDollar, path: '/superadmin/subscriptions' },
-      { label: 'Billing & Revenue', icon: HiCurrencyDollar, path: '/superadmin/billing' },
+      { label: 'Dashboard', icon: HiHome, path: '/superadmin/dashboard', roles: ['super_admin', 'support_admin', 'billing_admin'] },
+      { label: 'Tenant Management', icon: HiDocumentText, path: '/superadmin/tenants', roles: ['super_admin', 'support_admin', 'billing_admin'] },
+      { label: 'Domains & SSL', icon: HiGlobeAlt, path: '/superadmin/domains', roles: ['super_admin'] },
+      { label: 'Subscription Plans', icon: HiCurrencyDollar, path: '/superadmin/subscriptions', roles: ['super_admin', 'billing_admin'] },
+      { label: 'Billing & Revenue', icon: HiCurrencyDollar, path: '/superadmin/billing', roles: ['super_admin', 'billing_admin'] },
     ],
   },
   {
     groupLabel: 'USER MANAGEMENT',
     items: [
-      { label: 'Admin Users', icon: HiUserCircle, path: '/superadmin/admin-users' },
-      { label: 'Role Permissions', icon: HiLockClosed, path: '/superadmin/permissions' },
-      { label: 'Module Configuration', icon: HiSquares2X2, path: '/superadmin/modules' },
-      { label: 'System Announcements', icon: HiDocumentText, path: '/superadmin/announcements' },
+      { label: 'Admin Users', icon: HiUserCircle, path: '/superadmin/admin-users', roles: ['super_admin'] },
+      { label: 'Role Permissions', icon: HiLockClosed, path: '/superadmin/permissions', roles: ['super_admin'] },
+      { label: 'Module Configuration', icon: HiSquares2X2, path: '/superadmin/modules', roles: ['super_admin'] },
+      { label: 'System Announcements', icon: HiDocumentText, path: '/superadmin/announcements', roles: ['super_admin'] },
     ],
   },
   {
     groupLabel: 'SYSTEM ADMINISTRATION',
     items: [
-      { label: 'Audit Logs', icon: HiShieldCheck, path: '/superadmin/audit' },
-      { label: 'Support Tickets', icon: HiExclamationTriangle, path: '/superadmin/support' },
-      { label: 'Platform Configuration', icon: HiCog6Tooth, path: '/superadmin/settings' },
+      { label: 'Audit Logs', icon: HiShieldCheck, path: '/superadmin/audit', roles: ['super_admin', 'support_admin'] },
+      { label: 'Support Tickets', icon: HiExclamationTriangle, path: '/superadmin/support', roles: ['super_admin', 'support_admin'] },
+      { label: 'Platform Configuration', icon: HiCog6Tooth, path: '/superadmin/settings', roles: ['super_admin'] },
     ],
   },
 ]
@@ -58,10 +58,23 @@ function titleCaseSegment(seg) {
     .join(' ')
 }
 
+const ROLE_DISPLAY = {
+  super_admin: 'Super Admin',
+  support_admin: 'Support Admin',
+  billing_admin: 'Billing Admin',
+}
+
 export default function SuperAdminLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const filteredNavGroups = useMemo(() => {
+    return superNavGroups.map(group => ({
+      ...group,
+      items: group.items.filter(item => item.roles.includes(user?.role))
+    })).filter(group => group.items.length > 0)
+  }, [user])
 
   const breadcrumb = useMemo(() => {
     const parts = location.pathname.split('/').filter(Boolean)
@@ -74,7 +87,7 @@ export default function SuperAdminLayout() {
   return (
     <div className="flex h-screen min-h-0 w-full overflow-hidden bg-background-tertiary">
       <Sidebar
-        navGroups={superNavGroups}
+        navGroups={filteredNavGroups}
         role={user?.role}
         user={user}
         onLogout={logout}
@@ -120,9 +133,11 @@ export default function SuperAdminLayout() {
             </button>
             <div className="hidden items-center gap-2 sm:flex">
               <Avatar name={user?.name} size="sm" />
-              <div className="min-w-0">
+              <div className="min-w-0 text-right">
                 <div className="truncate text-sm font-semibold text-text-primary">{user?.name}</div>
-                <div className="text-xs text-text-secondary">Super Admin</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                  {ROLE_DISPLAY[user?.role] || 'Super Admin'}
+                </div>
               </div>
             </div>
             <Button label="Log out" variant="ghost" size="sm" onClick={logout} />

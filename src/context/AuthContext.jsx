@@ -5,22 +5,58 @@ import { useNavigate } from 'react-router-dom'
 const STORAGE_KEY = 'hris_auth_user'
 
 const accounts = {
-  'admin@hris.com': {
-    password: 'admin123',
-    user: { name: 'Sarah Ahmed', email: 'admin@hris.com', role: 'admin' },
+  // Admin Panel Roles
+  'hr_admin@hris.com': {
+    password: 'hradmin123',
+    user: { name: 'Sarah Ahmed', email: 'hr_admin@hris.com', role: 'hr_admin', panel: 'admin' },
   },
-  'hr@hris.com': {
-    password: 'hr123',
-    user: { name: 'Neha Jain', email: 'hr@hris.com', role: 'hr', department: 'Sales & Marketing' },
+  'hr_exec@hris.com': {
+    password: 'hrexec123',
+    user: { name: 'Neha Jain', email: 'hr_exec@hris.com', role: 'hr_executive', panel: 'admin', department: 'HR Operations' },
+  },
+  'manager@hris.com': {
+    password: 'manager123',
+    user: { name: 'Michael Chen', email: 'manager@hris.com', role: 'manager', panel: 'admin', department: 'Engineering' },
   },
   'employee@hris.com': {
     password: 'employee123',
-    user: { name: 'John Doe', email: 'employee@hris.com', role: 'employee', department: 'Engineering' },
+    user: { name: 'John Doe', email: 'employee@hris.com', role: 'employee', panel: 'admin', department: 'Engineering' },
   },
+  // SuperAdmin Panel Roles
   'super@hris.com': {
     password: 'super123',
-    user: { name: 'Demo Admin', email: 'super@hris.com', role: 'superadmin' },
+    user: { name: 'Alex Rivera', email: 'super@hris.com', role: 'super_admin', panel: 'superadmin' },
   },
+  'support@hris.com': {
+    password: 'support123',
+    user: { name: 'Support Tech', email: 'support@hris.com', role: 'support_admin', panel: 'superadmin' },
+  },
+  'billing@hris.com': {
+    password: 'billing123',
+    user: { name: 'Finance Lead', email: 'billing@hris.com', role: 'billing_admin', panel: 'superadmin' },
+  },
+}
+
+const PERMISSIONS = {
+  hr_admin: ['*'], // ALL permissions
+  hr_executive: [
+    'view_employees', 'view_attendance', 'approve_leave', 'view_documents', 
+    'approve_documents', 'view_performance', 'view_leave', 'create_policies', 'view_reports'
+  ],
+  manager: [
+    'view_team_employees', 'view_team_attendance', 'approve_team_leave', 'view_team_performance'
+  ],
+  employee: [
+    'view_own_profile', 'view_own_attendance', 'view_own_leave', 'view_own_documents', 
+    'view_own_payslips', 'submit_expense'
+  ],
+  super_admin: ['*'],
+  support_admin: [
+    'view_tenants', 'view_audit_logs', 'view_support_tickets', 'view_system_health'
+  ],
+  billing_admin: [
+    'view_billing', 'manage_subscriptions', 'view_tenants'
+  ],
 }
 
 const AuthContext = createContext(null)
@@ -37,14 +73,18 @@ export function AuthProvider({ children }) {
     }
   })
 
-  const login = useCallback((email, password, selectedRole) => {
+  const hasPermission = useCallback((permission) => {
+    if (!user) return false
+    const userPermissions = PERMISSIONS[user.role] || []
+    if (userPermissions.includes('*')) return true
+    return userPermissions.includes(permission)
+  }, [user])
+
+  const login = useCallback((email, password) => {
     const key = email?.trim().toLowerCase()
     const account = accounts[key]
     if (!account || account.password !== password) {
       return 'Invalid email or password.'
-    }
-    if (selectedRole && account.user.role !== selectedRole) {
-      return 'This email does not match the selected login role.'
     }
     setUser(account.user)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(account.user))
@@ -57,7 +97,21 @@ export function AuthProvider({ children }) {
     navigate('/login', { replace: true })
   }, [navigate])
 
-  const value = useMemo(() => ({ user, login, logout }), [user, login, logout])
+  const switchRole = useCallback((newRole) => {
+    // Dev helper to switch role in-memory
+    const matchingAccount = Object.values(accounts).find(a => a.user.role === newRole)
+    if (matchingAccount) {
+      setUser(matchingAccount.user)
+    }
+  }, [])
+
+  const value = useMemo(() => ({ 
+    user, 
+    login, 
+    logout, 
+    hasPermission,
+    switchRole
+  }), [user, login, logout, hasPermission, switchRole])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
