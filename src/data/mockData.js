@@ -1086,3 +1086,18 @@ export const permissionRoleDefaults = {
     'adm.settings': false,
   },
 }
+
+export const notifications = [
+  { id: 1, title: 'Leave Approved', message: 'Your leave request for next week has been approved.', time: '2 hours ago', type: 'success', read: false },
+  { id: 2, title: 'Document Expiring', message: 'Your Passport is expiring in 30 days. Please upload new copy.', time: '5 hours ago', type: 'warning', read: false },
+  { id: 3, title: 'New Announcement', message: 'Sarah Ahmed posted: New Office Policy: Work from Anywhere', time: '1 day ago', type: 'info', read: true },
+  { id: 4, title: 'Asset Assigned', message: 'MacBook Pro (SN-123) has been assigned to you.', time: '2 days ago', type: 'info', read: true },
+]
+
+export const payrollData = [
+  { id: 1, name: 'Sarah Ahmed', empId: 'EMP-001', department: 'HR', basic: 15000, allowances: 4000, deductions: 1000, net: 18000 },
+  { id: 2, name: 'Michael Chen', empId: 'EMP-002', department: 'Product', basic: 18000, allowances: 3000, deductions: 1500, net: 19500 },
+  { id: 3, name: 'John Doe', empId: 'EMP-003', department: 'Engineering', basic: 20000, allowances: 5000, deductions: 2000, net: 23000 },
+  { id: 4, name: 'Neha Jain', empId: 'EMP-004', department: 'Sales', basic: 12000, allowances: 6000, deductions: 800, net: 17200 },
+  { id: 5, name: 'David Smith', empId: 'EMP-005', department: 'IT', basic: 16000, allowances: 3500, deductions: 1200, net: 18300 },
+]

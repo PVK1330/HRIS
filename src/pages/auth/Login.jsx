@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { HiBuildingOffice2, HiCheckCircle, HiEye, HiEyeSlash, HiLockClosed, HiUser } from 'react-icons/hi2'
 import { Button } from '../../components/ui/Button.jsx'
@@ -6,40 +6,53 @@ import { Input } from '../../components/ui/Input.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 
 const ROLE_TABS = [
-  { id: 'admin', label: 'Admin', defaultEmail: 'admin@hris.com', defaultPassword: 'admin123', icon: HiUser },
-  { id: 'hr', label: 'HR Manager', defaultEmail: 'hr@hris.com', defaultPassword: 'hr123', icon: HiBuildingOffice2 },
+  { id: 'admin', label: 'HR Admin', defaultEmail: 'hr_admin@hris.com', defaultPassword: 'hradmin123', icon: HiBuildingOffice2 },
+  { id: 'hr_exec', label: 'HR Exec', defaultEmail: 'hr_exec@hris.com', defaultPassword: 'hrexec123', icon: HiUser },
+  { id: 'manager', label: 'Manager', defaultEmail: 'manager@hris.com', defaultPassword: 'manager123', icon: HiUser },
   { id: 'employee', label: 'Employee', defaultEmail: 'employee@hris.com', defaultPassword: 'employee123', icon: HiUser },
   { id: 'superadmin', label: 'Super Admin', defaultEmail: 'super@hris.com', defaultPassword: 'super123', icon: HiLockClosed },
 ]
 
 const POST_LOGIN = {
   admin: '/admin/dashboard',
-  hr: '/hr/dashboard',
-  employee: '/employee/dashboard',
-  superadmin: '/superadmin/dashboard',
+  hr_admin: '/admin/dashboard',
+  hr_executive: '/admin/dashboard',
+  manager: '/admin/dashboard',
+  employee: '/admin/dashboard',
+  super_admin: '/superadmin/dashboard',
+  support_admin: '/superadmin/dashboard',
+  billing_admin: '/superadmin/dashboard',
 }
 
 const labelUpper = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500'
 
 export default function Login() {
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const navigate = useNavigate()
-  const [role, setRole] = useState('admin')
-  const [email, setEmail] = useState('admin@hris.com')
-  const [password, setPassword] = useState('admin123')
+  const [activeTab, setActiveTab] = useState('admin')
+  const [email, setEmail] = useState('hr_admin@hris.com')
+  const [password, setPassword] = useState('hradmin123')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
   const handleSignIn = () => {
     setError('')
-    const err = login(email, password, role)
+    const err = login(email, password)
     if (err) {
       setError(err)
       return
     }
-    const target = POST_LOGIN[role]
-    if (target) navigate(target, { replace: true })
+    // Note: The user state might not be updated immediately after login call
+    // but the login call itself should return the account or we can look it up
   }
+
+  // Effect to navigate after user is set
+  useEffect(() => {
+    if (user) {
+      const target = POST_LOGIN[user.role]
+      if (target) navigate(target, { replace: true })
+    }
+  }, [user, navigate])
 
   return (
     <div className="flex min-h-screen min-h-[100dvh]">
@@ -161,31 +174,49 @@ export default function Login() {
               </div>
 
               <div>
-                <p className="mb-3 text-sm font-semibold text-gray-700">Select your role</p>
-                <div className="grid grid-cols-2 gap-3">
+                <p className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wider text-[10px]">Quick Login Roles</p>
+                <div className="grid grid-cols-3 gap-2">
                   {ROLE_TABS.map((tab) => {
                     const Icon = tab.icon
-                    const active = role === tab.id
+                    const active = activeTab === tab.id
                     return (
                       <button
                         key={tab.id}
                         type="button"
                         onClick={() => {
-                          setRole(tab.id)
+                          setActiveTab(tab.id)
                           setEmail(tab.defaultEmail)
                           setPassword(tab.defaultPassword)
                         }}
-                        className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                        className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-2.5 transition-all ${
                           active
                             ? 'border-[#0F766E] bg-[#0F766E]/5 text-[#0F766E]'
                             : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                       >
-                        <Icon className="h-5 w-5" />
-                        <span className="text-xs font-semibold">{tab.label}</span>
+                        <Icon className="h-4 w-4" />
+                        <span className="text-[10px] font-bold truncate w-full text-center">{tab.label}</span>
                       </button>
                     )
                   })}
+                </div>
+                
+                {/* Credential Hint */}
+                <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 p-3">
+                   <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">Demo Credentials</span>
+                      <span className="text-[10px] font-bold text-[#0F766E] uppercase">{activeTab.replace('_', ' ')}</span>
+                   </div>
+                   <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                         <p className="text-[10px] text-gray-400">Email</p>
+                         <p className="text-xs font-mono font-medium text-gray-700 truncate">{email}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                         <p className="text-[10px] text-gray-400">Password</p>
+                         <p className="text-xs font-mono font-medium text-gray-700">{password}</p>
+                      </div>
+                   </div>
                 </div>
               </div>
 

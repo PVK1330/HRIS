@@ -7,10 +7,17 @@ import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { Toggle } from '../../../components/ui/Toggle.jsx'
 import { dashboardStats } from '../../../data/mockData.js'
-import { HiBuildingOffice, HiUsers, HiKey, HiCog6Tooth, HiShieldCheck, HiPencil, HiTrash } from 'react-icons/hi2'
+import { HiBuildingOffice, HiUsers, HiKey, HiCog6Tooth, HiShieldCheck, HiPencil, HiTrash, HiCalendarDays, HiPlus } from 'react-icons/hi2'
 
 const selectClass =
   'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+
+const MOCK_LEAVE_TYPES = [
+  { id: 1, name: 'Annual Leave', days: 30, carryForward: true, carryLimit: 10, color: 'blue' },
+  { id: 2, name: 'Sick Leave', days: 15, carryForward: false, carryLimit: 0, color: 'red' },
+  { id: 3, name: 'Maternity Leave', days: 90, carryForward: false, carryLimit: 0, color: 'purple' },
+  { id: 4, name: 'Paternity Leave', days: 5, carryForward: false, carryLimit: 0, color: 'orange' },
+];
 
 export default function Settings() {
   const [companyName, setCompanyName] = useState('HRIS Holdings')
@@ -46,7 +53,7 @@ export default function Settings() {
     departments: true,
     projects: true,
     tasks: true,
-    payroll: false
+    payroll: true
   })
   
   // Attendance & Leave configuration state
@@ -55,6 +62,11 @@ export default function Settings() {
   const [annualLeaveDays, setAnnualLeaveDays] = useState('30')
   const [sickLeaveDays, setSickLeaveDays] = useState('15')
   
+  // Leave Type state
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [editLeaveMode, setEditLeaveMode] = useState(false);
+  const [leaveFormData, setLeaveFormData] = useState({ name: '', days: '', carryForward: false, carryLimit: 0 });
+
   // Sensitive data access state
   const [salaryAccess, setSalaryAccess] = useState('Admin Only')
   const [performanceAccess, setPerformanceAccess] = useState('Admin Only')
@@ -141,7 +153,6 @@ export default function Settings() {
   const handleDeleteTeam = (id) => {
     if (confirm('Are you sure you want to remove this team member?')) {
       console.log('Delete team member:', id)
-      // In real implementation, this would update the data source
     }
   }
 
@@ -190,7 +201,6 @@ export default function Settings() {
     const role = customRoles.find((r) => r.id === id)
     if (role && !role.isSystem && confirm(`Are you sure you want to delete the role "${role.name}"?`)) {
       setCustomRoles((prev) => prev.filter((r) => r.id !== id))
-      console.log('Delete role:', id)
     }
   }
 
@@ -199,24 +209,26 @@ export default function Settings() {
   }
 
   const handleSaveCompanySettings = () => {
-    console.log('Saving company settings:', { companyName, timezone, notify, files })
     alert('Company settings saved successfully!')
   }
 
   const handleSaveSecuritySettings = () => {
-    console.log('Saving security settings:', { twoFactorAuth, sessionTimeout, ipWhitelist, passwordComplexity, loginMonitoring })
     alert('Security settings saved successfully!')
   }
 
   const handleSaveAttendanceSettings = () => {
-    console.log('Saving attendance settings:', { workingHours, workingDays, annualLeaveDays, sickLeaveDays })
     alert('Attendance & Leave settings saved successfully!')
   }
 
   const handleSaveDataAccessSettings = () => {
-    console.log('Saving data access settings:', { salaryAccess, performanceAccess, visaAccess, contactAccess })
     alert('Data access settings saved successfully!')
   }
+
+  const handleLeaveSubmit = (e) => {
+    e.preventDefault();
+    console.log('Leave Type Data:', leaveFormData);
+    setLeaveModalOpen(false);
+  };
 
   const teamColumns = [
     { key: 'name', label: 'Name' },
@@ -246,55 +258,35 @@ export default function Settings() {
       <div>
         <h1 className="font-display text-2xl font-bold text-gray-900">Settings & Permissions</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Organization defaults and system configuration. Employees tracked: {dashboardStats.totalEmployees}.
+          Organization defaults and system configuration.
         </p>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('company')}
-          className={`px-4 py-2 text-sm font-medium ${
-            activeTab === 'company'
-              ? 'border-b-2 border-blue-500 text-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Company Profile
-        </button>
-        <button
-          onClick={() => setActiveTab('team')}
-          className={`px-4 py-2 text-sm font-medium ${
-            activeTab === 'team'
-              ? 'border-b-2 border-blue-500 text-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Team & Roles
-        </button>
-        <button
-          onClick={() => setActiveTab('permissions')}
-          className={`px-4 py-2 text-sm font-medium ${
-            activeTab === 'permissions'
-              ? 'border-b-2 border-blue-500 text-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Module Permissions
-        </button>
-        <button
-          onClick={() => setActiveTab('security')}
-          className={`px-4 py-2 text-sm font-medium ${
-            activeTab === 'security'
-              ? 'border-b-2 border-blue-500 text-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Security
-        </button>
+      <div className="flex gap-2 border-b border-gray-200 overflow-x-auto no-scrollbar">
+        {[
+          { id: 'company', label: 'Company Profile', icon: HiBuildingOffice },
+          { id: 'team', label: 'Team & Roles', icon: HiUsers },
+          { id: 'leave', label: 'Leave Settings', icon: HiCalendarDays },
+          { id: 'permissions', label: 'Module Permissions', icon: HiKey },
+          { id: 'security', label: 'Security', icon: HiShieldCheck },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all ${
+              activeTab === tab.id
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'company' && (
-        <>
+        <div className="space-y-6">
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
               <h2 className="font-display text-lg font-bold text-gray-900">Company Profile</h2>
@@ -326,129 +318,21 @@ export default function Settings() {
                   ]}
                 />
               </div>
+              <div className="mt-6 flex justify-end">
+                <Button label="Save Changes" variant="primary" onClick={handleSaveCompanySettings} />
+              </div>
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Notifications & Security</h2>
+              <h2 className="font-display text-lg font-bold text-gray-900">Localization</h2>
               <div className="mt-4 space-y-4">
-                <Toggle checked={notify} onChange={setNotify} label="Email HR admins for critical alerts" />
-                <Toggle checked={twoFactorAuth} onChange={setTwoFactorAuth} label="Two-factor authentication required" />
-                <Toggle checked={sessionTimeout} onChange={setSessionTimeout} label="Session timeout after 30 minutes" />
-                <Toggle checked={ipWhitelist} onChange={setIpWhitelist} label="IP whitelist enabled" />
-                <p className="text-xs text-gray-500">
-                  Toggle state is local only (no backend).
-                </p>
+                 <Input label="Fiscal Year Start" type="select" options={[{value: 'Jan', label: 'January'}]} value="Jan" />
+                 <Input label="Currency" type="select" options={[{value: 'AED', label: 'AED (Dirham)'}]} value="AED" />
+                 <Input label="Date Format" type="select" options={[{value: 'YYYY-MM-DD', label: 'YYYY-MM-DD'}]} value="YYYY-MM-DD" />
               </div>
             </div>
           </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-lg font-bold text-gray-900">Role & Permission Management</h2>
-                <Button label="Add Role" variant="primary" size="sm" onClick={() => { resetRoleModal(); setRoleModalOpen(true) }} />
-              </div>
-              <div className="mt-4 space-y-3">
-                {customRoles.map((role) => (
-                  <div key={role.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                    <div>
-                      <div className="font-medium text-gray-900">{role.name}</div>
-                      <div className="text-xs text-gray-500">{role.description}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge label={`${role.userCount} users`} color="blue" />
-                      {!role.isSystem && (
-                        <div className="flex gap-1">
-                          <Button label="Edit" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEditRole(role.id)} />
-                          <Button label="Delete" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDeleteRole(role.id)} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Module Visibility Control</h2>
-              <div className="mt-4 space-y-3">
-                <Toggle checked={moduleVisibility.employeeDirectory} onChange={() => handleModuleVisibilityToggle('employeeDirectory')} label="Employee Directory" />
-                <Toggle checked={moduleVisibility.attendance} onChange={() => handleModuleVisibilityToggle('attendance')} label="Attendance & Timesheet" />
-                <Toggle checked={moduleVisibility.leave} onChange={() => handleModuleVisibilityToggle('leave')} label="Leave Management" />
-                <Toggle checked={moduleVisibility.performance} onChange={() => handleModuleVisibilityToggle('performance')} label="Performance Management" />
-                <Toggle checked={moduleVisibility.documents} onChange={() => handleModuleVisibilityToggle('documents')} label="Documents" />
-                <Toggle checked={moduleVisibility.visa} onChange={() => handleModuleVisibilityToggle('visa')} label="Visa & Nationality" />
-                <Toggle checked={moduleVisibility.payroll} onChange={() => handleModuleVisibilityToggle('payroll')} label="Payroll (Coming Soon)" disabled />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Sensitive Data Access</h2>
-              <div className="mt-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Salary Information</span>
-                  <select className={selectClass} value={salaryAccess} onChange={(e) => setSalaryAccess(e.target.value)}>
-                    <option>Admin Only</option>
-                    <option>HR Admin</option>
-                    <option>Manager</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Performance Reviews</span>
-                  <select className={selectClass} value={performanceAccess} onChange={(e) => setPerformanceAccess(e.target.value)}>
-                    <option>Admin Only</option>
-                    <option>HR Admin</option>
-                    <option>Manager</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Visa & Passport Data</span>
-                  <select className={selectClass} value={visaAccess} onChange={(e) => setVisaAccess(e.target.value)}>
-                    <option>Admin Only</option>
-                    <option>HR Admin</option>
-                    <option>Manager</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Personal Contact Details</span>
-                  <select className={selectClass} value={contactAccess} onChange={(e) => setContactAccess(e.target.value)}>
-                    <option>Admin Only</option>
-                    <option>HR Admin</option>
-                    <option>Manager</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Attendance & Leave Configuration</h2>
-              <div className="mt-4 space-y-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Working Hours</label>
-                  <Input value={workingHours} onChange={(e) => setWorkingHours(e.target.value)} placeholder="9:00 AM - 6:00 PM" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Working Days</label>
-                  <select className={selectClass} value={workingDays} onChange={(e) => setWorkingDays(e.target.value)}>
-                    <option>Monday - Friday</option>
-                    <option>Monday - Saturday</option>
-                    <option>Sunday - Thursday</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Annual Leave Days</label>
-                  <Input type="number" value={annualLeaveDays} onChange={(e) => setAnnualLeaveDays(e.target.value)} placeholder="30" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Sick Leave Days</label>
-                  <Input type="number" value={sickLeaveDays} onChange={(e) => setSickLeaveDays(e.target.value)} placeholder="15" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
+        </div>
       )}
 
       {activeTab === 'team' && (
@@ -458,54 +342,7 @@ export default function Settings() {
               <h2 className="font-display text-lg font-bold text-gray-900">Team Members</h2>
               <p className="mt-1 text-sm text-gray-500">Manage team members, roles, and permissions</p>
             </div>
-            <Button label="Add Team Member" variant="primary" onClick={() => setTeamModalOpen(true)} />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-4">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                  <HiUsers className="h-6 w-6" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">{teamMembers.length}</div>
-                  <div className="text-sm text-gray-500">Total Members</div>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600">
-                  <HiKey className="h-6 w-6" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">{teamMembers.filter((m) => m.role === 'HR Admin').length}</div>
-                  <div className="text-sm text-gray-500">HR Admins</div>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-                  <HiUsers className="h-6 w-6" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">{teamMembers.filter((m) => m.role === 'Manager').length}</div>
-                  <div className="text-sm text-gray-500">Managers</div>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-600">
-                  <HiUsers className="h-6 w-6" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">{teamMembers.filter((m) => m.status === 'Active').length}</div>
-                  <div className="text-sm text-gray-500">Active</div>
-                </div>
-              </div>
-            </div>
+            <Button label="Add Team Member" variant="primary" icon={HiPlus} onClick={() => setTeamModalOpen(true)} />
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -514,46 +351,73 @@ export default function Settings() {
 
           <Table columns={teamColumns} data={filteredTeam} pageSize={10} />
 
-          <Modal isOpen={teamModalOpen} onClose={() => { resetTeamModal(); setTeamModalOpen(false) }} title={editTeamMode ? 'Edit Team Member' : 'Add Team Member'} size="md">
-            <form onSubmit={handleTeamSubmit}>
-              <div className="space-y-4">
-                <Input label="Full Name" name="name" value={teamFormData.name} onChange={handleTeamFormChange} required />
-                <Input label="Email" name="email" type="email" value={teamFormData.email} onChange={handleTeamFormChange} required />
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Role</label>
-                  <select className={selectClass} name="role" value={teamFormData.role} onChange={handleTeamFormChange} required>
-                    <option value="">Select role</option>
-                    <option value="Super Admin">Super Admin</option>
-                    <option value="HR Admin">HR Admin</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Employee">Employee</option>
-                  </select>
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-bold text-gray-900">Roles</h2>
+              <Button label="Add Role" variant="outline" size="sm" onClick={() => { resetRoleModal(); setRoleModalOpen(true) }} />
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {customRoles.map((role) => (
+                <div key={role.id} className="rounded-lg border border-gray-200 p-4 relative group">
+                  <h3 className="font-bold text-gray-900">{role.name}</h3>
+                  <p className="text-xs text-gray-500 mt-1">{role.description}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <Badge label={`${role.userCount} Users`} color="blue" />
+                    {!role.isSystem && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleEditRole(role.id)} className="p-1 text-gray-400 hover:text-blue-500"><HiPencil className="h-4 w-4" /></button>
+                        <button onClick={() => handleDeleteRole(role.id)} className="p-1 text-gray-400 hover:text-red-500"><HiTrash className="h-4 w-4" /></button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Department</label>
-                  <select className={selectClass} name="department" value={teamFormData.department} onChange={handleTeamFormChange} required>
-                    <option value="">Select department</option>
-                    <option value="HR">HR</option>
-                    <option value="IT">IT</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Operations">Operations</option>
-                    <option value="Marketing">Marketing</option>
-                  </select>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'leave' && (
+        <div className="space-y-6">
+           <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display text-lg font-bold text-gray-900">Leave Policies</h2>
+              <p className="mt-1 text-sm text-gray-500">Configure leave types, accruals and carry-forward rules</p>
+            </div>
+            <Button label="Add Leave Type" variant="primary" icon={HiPlus} onClick={() => { setEditLeaveMode(false); setLeaveModalOpen(true); }} />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {MOCK_LEAVE_TYPES.map((type) => (
+              <div key={type.id} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all">
+                <div className="flex justify-between items-start">
+                  <div className="flex gap-4">
+                    <div className={`h-12 w-12 rounded-xl bg-${type.color}-100 flex items-center justify-center text-${type.color}-600`}>
+                      <HiCalendarDays className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">{type.name}</h3>
+                      <p className="text-sm text-gray-500">{type.days} Days / Year</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                     <Button variant="ghost" size="sm" icon={HiPencil} onClick={() => { setEditLeaveMode(true); setLeaveModalOpen(true); }} />
+                     <Button variant="ghost" size="sm" icon={HiTrash} />
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
-                  <select className={selectClass} name="status" value={teamFormData.status} onChange={handleTeamFormChange} required>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
+                <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
+                   <div>
+                     <p className="text-xs font-bold text-gray-400 uppercase">Carry Forward</p>
+                     <p className="text-sm font-medium mt-1">{type.carryForward ? `Enabled (${type.carryLimit} days)` : 'Disabled'}</p>
+                   </div>
+                   <div>
+                     <p className="text-xs font-bold text-gray-400 uppercase">Accrual Method</p>
+                     <p className="text-sm font-medium mt-1">Monthly</p>
+                   </div>
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-2">
-                <Button type="button" label="Cancel" variant="ghost" onClick={() => { resetTeamModal(); setTeamModalOpen(false) }} />
-                <Button type="submit" label={editTeamMode ? 'Update' : 'Add'} variant="primary" />
-              </div>
-            </form>
-          </Modal>
+            ))}
+          </div>
         </div>
       )}
 
@@ -562,149 +426,100 @@ export default function Settings() {
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="font-display text-lg font-bold text-gray-900">Module Visibility Control</h2>
             <div className="mt-4 space-y-3">
-              <Toggle checked={moduleVisibility.employeeDirectory} onChange={() => handleModuleVisibilityToggle('employeeDirectory')} label="Employee Directory" />
-              <Toggle checked={moduleVisibility.attendance} onChange={() => handleModuleVisibilityToggle('attendance')} label="Attendance & Timesheet" />
-              <Toggle checked={moduleVisibility.leave} onChange={() => handleModuleVisibilityToggle('leave')} label="Leave Management" />
-              <Toggle checked={moduleVisibility.performance} onChange={() => handleModuleVisibilityToggle('performance')} label="Performance Management" />
-              <Toggle checked={moduleVisibility.documents} onChange={() => handleModuleVisibilityToggle('documents')} label="Documents" />
-              <Toggle checked={moduleVisibility.visa} onChange={() => handleModuleVisibilityToggle('visa')} label="Visa & Nationality" />
-              <Toggle checked={moduleVisibility.departments} onChange={() => handleModuleVisibilityToggle('departments')} label="Departments" />
-              <Toggle checked={moduleVisibility.projects} onChange={() => handleModuleVisibilityToggle('projects')} label="Projects" />
-              <Toggle checked={moduleVisibility.tasks} onChange={() => handleModuleVisibilityToggle('tasks')} label="Tasks" />
-              <Toggle checked={moduleVisibility.payroll} onChange={() => handleModuleVisibilityToggle('payroll')} label="Payroll (Coming Soon)" disabled />
+              {Object.keys(moduleVisibility).map((key) => (
+                <Toggle 
+                  key={key}
+                  checked={moduleVisibility[key]} 
+                  onChange={() => handleModuleVisibilityToggle(key)} 
+                  label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} 
+                />
+              ))}
             </div>
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-lg font-bold text-gray-900">Role-Based Access</h2>
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                <div>
-                  <div className="font-medium text-gray-900">Super Admin</div>
-                  <div className="text-xs text-gray-500">Full system access</div>
+            <h2 className="font-display text-lg font-bold text-gray-900">Sensitive Data Access</h2>
+            <div className="mt-4 space-y-4">
+              {['Salary Information', 'Performance Reviews', 'Visa Data'].map((label) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{label}</span>
+                  <select className={selectClass} style={{ width: '150px' }}>
+                    <option>Admin Only</option>
+                    <option>HR Admin</option>
+                    <option>Manager</option>
+                  </select>
                 </div>
-                <Badge label="3 users" color="blue" />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                <div>
-                  <div className="font-medium text-gray-900">HR Admin</div>
-                  <div className="text-xs text-gray-500">HR module access</div>
-                </div>
-                <Badge label="8 users" color="green" />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                <div>
-                  <div className="font-medium text-gray-900">Manager</div>
-                  <div className="text-xs text-gray-500">Team management access</div>
-                </div>
-                <Badge label="12 users" color="orange" />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
-                <div>
-                  <div className="font-medium text-gray-900">Employee</div>
-                  <div className="text-xs text-gray-500">Self-service access</div>
-                </div>
-                <Badge label="45 users" color="gray" />
-              </div>
-              <Button label="Manage Roles" variant="secondary" className="w-full" />
+              ))}
             </div>
           </div>
         </div>
       )}
 
       {activeTab === 'security' && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-lg font-bold text-gray-900">Security Settings</h2>
-            <div className="mt-4 space-y-3">
-              <Toggle checked={twoFactorAuth} onChange={setTwoFactorAuth} label="Two-factor authentication required" />
-              <Toggle checked={sessionTimeout} onChange={setSessionTimeout} label="Session timeout after 30 minutes" />
-              <Toggle checked={ipWhitelist} onChange={setIpWhitelist} label="IP whitelist enabled" />
-              <Toggle checked={passwordComplexity} onChange={setPasswordComplexity} label="Password complexity requirements" />
-              <Toggle checked={loginMonitoring} onChange={setLoginMonitoring} label="Log in attempt monitoring" />
+        <div className="max-w-2xl">
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
+            <h2 className="font-display text-lg font-bold text-gray-900">Security Configuration</h2>
+            <div className="space-y-4">
+              <Toggle checked={twoFactorAuth} onChange={setTwoFactorAuth} label="Require 2FA for all Admin users" />
+              <Toggle checked={sessionTimeout} onChange={setSessionTimeout} label="Automatic logout after 30m inactivity" />
+              <Toggle checked={passwordComplexity} onChange={setPasswordComplexity} label="Enforce complex password rules" />
+              <Toggle checked={loginMonitoring} onChange={setLoginMonitoring} label="Email on new device login" />
             </div>
-            <div className="mt-4">
-              <Button label="Save Security Settings" variant="secondary" className="w-full" onClick={handleSaveSecuritySettings} />
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-lg font-bold text-gray-900">Sensitive Data Access</h2>
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Salary Information</span>
-                <select className={selectClass} value={salaryAccess} onChange={(e) => setSalaryAccess(e.target.value)}>
-                  <option>Admin Only</option>
-                  <option>HR Admin</option>
-                  <option>Manager</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Performance Reviews</span>
-                <select className={selectClass} value={performanceAccess} onChange={(e) => setPerformanceAccess(e.target.value)}>
-                  <option>Admin Only</option>
-                  <option>HR Admin</option>
-                  <option>Manager</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Visa & Passport Data</span>
-                <select className={selectClass} value={visaAccess} onChange={(e) => setVisaAccess(e.target.value)}>
-                  <option>Admin Only</option>
-                  <option>HR Admin</option>
-                  <option>Manager</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Personal Contact Details</span>
-                <select className={selectClass} value={contactAccess} onChange={(e) => setContactAccess(e.target.value)}>
-                  <option>Admin Only</option>
-                  <option>HR Admin</option>
-                  <option>Manager</option>
-                </select>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Button label="Save Data Access Settings" variant="secondary" className="w-full" onClick={handleSaveDataAccessSettings} />
+            <div className="pt-4 border-t border-gray-100 flex justify-end">
+               <Button label="Update Security Policy" variant="primary" onClick={handleSaveSecuritySettings} />
             </div>
           </div>
         </div>
       )}
 
-      {activeTab === 'company' && (
-        <div className="flex justify-end gap-2">
-          <Button label="Save Company Settings" variant="secondary" onClick={handleSaveCompanySettings} />
-          <Button label="Save Attendance Settings" variant="secondary" onClick={handleSaveAttendanceSettings} />
-        </div>
-      )}
+      {/* Modals */}
+      <Modal isOpen={teamModalOpen} onClose={() => { resetTeamModal(); setTeamModalOpen(false) }} title={editTeamMode ? 'Edit Team Member' : 'Add Team Member'} size="md">
+        <form onSubmit={handleTeamSubmit} className="space-y-4">
+          <Input label="Full Name" name="name" value={teamFormData.name} onChange={handleTeamFormChange} required />
+          <Input label="Email" name="email" type="email" value={teamFormData.email} onChange={handleTeamFormChange} required />
+          <Input label="Role" name="role" type="select" options={[{value: 'HR Admin', label: 'HR Admin'}, {value: 'Manager', label: 'Manager'}]} value={teamFormData.role} onChange={handleTeamFormChange} required />
+          <div className="mt-6 flex justify-end gap-2">
+            <Button type="button" label="Cancel" variant="ghost" onClick={() => setTeamModalOpen(false)} />
+            <Button type="submit" label="Save Member" variant="primary" />
+          </div>
+        </form>
+      </Modal>
 
-      <Modal isOpen={roleModalOpen} onClose={() => { resetRoleModal(); setRoleModalOpen(false) }} title={editRoleMode ? 'Edit Role' : 'Add Role'} size="lg">
-        <form onSubmit={handleRoleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
-          <div className="space-y-4">
-            <Input label="Role Name" name="name" value={roleFormData.name} onChange={handleRoleFormChange} required />
-            <Input label="Description" name="description" value={roleFormData.description} onChange={handleRoleFormChange} />
-            
-            <div className="mt-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Permissions</h3>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {availablePermissions.map((perm) => (
-                  <div key={perm.key} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={perm.key}
-                      checked={roleFormData.permissions.includes(perm.key)}
-                      onChange={() => handlePermissionToggle(perm.key)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor={perm.key} className="text-sm text-gray-700">{perm.label}</label>
-                  </div>
-                ))}
-              </div>
+      <Modal isOpen={leaveModalOpen} onClose={() => setLeaveModalOpen(false)} title={editLeaveMode ? 'Edit Leave Type' : 'Add Leave Type'} size="md">
+        <form onSubmit={handleLeaveSubmit} className="space-y-4">
+          <Input label="Leave Name" name="name" value={leaveFormData.name} onChange={(e) => setLeaveFormData({...leaveFormData, name: e.target.value})} required placeholder="e.g. Vacation" />
+          <Input label="Days Per Year" name="days" type="number" value={leaveFormData.days} onChange={(e) => setLeaveFormData({...leaveFormData, days: e.target.value})} required />
+          <div className="flex items-center gap-4 py-2">
+            <Toggle checked={leaveFormData.carryForward} onChange={(val) => setLeaveFormData({...leaveFormData, carryForward: val})} label="Enable Carry Forward" />
+          </div>
+          {leaveFormData.carryForward && (
+            <Input label="Carry Forward Limit (Days)" type="number" value={leaveFormData.carryLimit} onChange={(e) => setLeaveFormData({...leaveFormData, carryLimit: e.target.value})} />
+          )}
+          <div className="mt-6 flex justify-end gap-2">
+            <Button type="button" label="Cancel" variant="ghost" onClick={() => setLeaveModalOpen(false)} />
+            <Button type="submit" label="Save Policy" variant="primary" />
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={roleModalOpen} onClose={() => setRoleModalOpen(false)} title={editRoleMode ? 'Edit Role' : 'Add Role'} size="lg">
+        <form onSubmit={handleRoleSubmit} className="space-y-4">
+          <Input label="Role Name" name="name" value={roleFormData.name} onChange={handleRoleFormChange} required />
+          <Input label="Description" name="description" value={roleFormData.description} onChange={handleRoleFormChange} />
+          <div className="mt-4">
+            <h3 className="font-semibold text-gray-900 mb-3 text-sm">Module Permissions</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {availablePermissions.map((perm) => (
+                <div key={perm.key} className="flex items-center gap-2">
+                  <input type="checkbox" id={`perm-${perm.key}`} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                  <label htmlFor={`perm-${perm.key}`} className="text-sm text-gray-700">{perm.label}</label>
+                </div>
+              ))}
             </div>
           </div>
           <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => { resetRoleModal(); setRoleModalOpen(false) }} />
-            <Button type="submit" label={editRoleMode ? 'Update Role' : 'Create Role'} variant="primary" />
+            <Button type="button" label="Cancel" variant="ghost" onClick={() => setRoleModalOpen(false)} />
+            <Button type="submit" label="Create Role" variant="primary" />
           </div>
         </form>
       </Modal>
