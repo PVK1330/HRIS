@@ -40,7 +40,7 @@ const adminNavGroups = [
       { label: 'Employee Directory', icon: HiUsers, path: '/admin/employee-directory', permission: 'view_employees' },
       { label: 'Attendance', icon: HiClock, path: '/admin/attendance', permission: 'view_attendance' },
       { label: 'Leave & Absence', icon: HiCalendar, path: '/admin/leave', permission: 'view_leave' },
-      { label: 'Documents', icon: HiDocument, path: '/admin/documents', permission: 'view_documents' },
+      { label: 'Documents & Approval', icon: HiDocument, path: '/admin/documents', permission: 'view_documents' },
       { label: 'Visa & Nationality', icon: HiCreditCard, path: '/admin/visa', permission: 'view_visa' },
       { label: 'Assets', icon: HiBriefcase, path: '/admin/assets', permission: 'view_assets' },
     ],

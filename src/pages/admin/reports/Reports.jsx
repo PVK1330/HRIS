@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { HiChartBar, HiArrowDownTray, HiFunnel, HiCalendarDays } from 'react-icons/hi2';
 import { Button } from '../../../components/ui/Button.jsx';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 const MOCK_DATA = [
   { name: 'Jan', value: 400 },
