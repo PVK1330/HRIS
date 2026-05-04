@@ -31,7 +31,15 @@ import CaseDetail from '../pages/superadmin/CaseDetail.jsx'
 import Pipeline from '../pages/superadmin/Pipeline.jsx'
 import AssignReassign from '../pages/superadmin/AssignReassign.jsx'
 import Escalations from '../pages/superadmin/Escalations.jsx'
-import SuperSettings from '../pages/superadmin/Settings.jsx'
+
+import SettingsLayout from '../pages/superadmin/settings/SettingsLayout.jsx'
+import GeneralSettings from '../pages/superadmin/settings/GeneralSettings.jsx'
+import CompanyDetails from '../pages/superadmin/settings/CompanyDetails.jsx'
+import LogoSettings from '../pages/superadmin/settings/LogoSettings.jsx'
+import SystemInfo from '../pages/superadmin/settings/SystemInfo.jsx'
+import EmailSettingsPage from '../pages/superadmin/settings/email/EmailSettings.jsx'
+import EmailTemplatesPage from '../pages/superadmin/settings/email/EmailTemplates.jsx'
+import EmailLogPage from '../pages/superadmin/settings/email/EmailLog.jsx'
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth()
@@ -100,7 +108,21 @@ export const router = createBrowserRouter([
           { path: 'pipeline', element: <Pipeline /> },
           { path: 'assign-reassign', element: <AssignReassign /> },
           { path: 'escalations', element: <Escalations /> },
-          { path: 'settings', element: <SuperSettings /> },
+          {
+            path: 'settings',
+            element: <SettingsLayout />,
+            children: [
+              { index: true, element: <Navigate to="general" replace /> },
+              { path: 'general', element: <GeneralSettings /> },
+              { path: 'company', element: <CompanyDetails /> },
+              { path: 'email', element: <Navigate to="settings" replace /> },
+              { path: 'email/settings', element: <EmailSettingsPage /> },
+              { path: 'email/templates', element: <EmailTemplatesPage /> },
+              { path: 'email/log', element: <EmailLogPage /> },
+              { path: 'logo', element: <LogoSettings /> },
+              { path: 'system', element: <SystemInfo /> },
+            ],
+          },
         ],
       },
       { path: '*', element: <Navigate to="/login" replace /> },
