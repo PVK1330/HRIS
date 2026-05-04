@@ -2,16 +2,24 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-const STORAGE_KEY = 'elitepic_auth_user'
+const STORAGE_KEY = 'hris_auth_user'
 
 const accounts = {
-  'admin@elitepic.com': {
+  'admin@hris.com': {
     password: 'admin123',
-    user: { name: 'Sarah Ahmed', email: 'admin@elitepic.com', role: 'admin' },
+    user: { name: 'Sarah Ahmed', email: 'admin@hris.com', role: 'admin' },
   },
-  'super@elitepic.com': {
+  'hr@hris.com': {
+    password: 'hr123',
+    user: { name: 'Neha Jain', email: 'hr@hris.com', role: 'hr', department: 'Sales & Marketing' },
+  },
+  'employee@hris.com': {
+    password: 'employee123',
+    user: { name: 'John Doe', email: 'employee@hris.com', role: 'employee', department: 'Engineering' },
+  },
+  'super@hris.com': {
     password: 'super123',
-    user: { name: 'Demo Admin', email: 'super@elitepic.com', role: 'superadmin' },
+    user: { name: 'Demo Admin', email: 'super@hris.com', role: 'superadmin' },
   },
 }
 

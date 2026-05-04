@@ -1,18 +1,18 @@
 import { useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
-  HiArrowPath,
-  HiArrowsRightLeft,
   HiBars3,
   HiBell,
-  HiBuildingOffice,
   HiCog6Tooth,
+  HiCurrencyDollar,
   HiDocumentText,
   HiExclamationTriangle,
-  HiFolder,
+  HiGlobeAlt,
+  HiHome,
   HiLockClosed,
+  HiServer,
+  HiShieldCheck,
   HiSquares2X2,
-  HiUser,
   HiUserCircle,
   HiUsers,
 } from "react-icons/hi2";
@@ -23,71 +23,33 @@ import { useAuth } from "../context/AuthContext.jsx";
 
 const superNavGroups = [
   {
-    groupLabel: "MAIN",
+    groupLabel: 'PLATFORM OVERVIEW',
     items: [
-      { label: "Dashboard", icon: HiSquares2X2, path: "/superadmin/dashboard" },
+      { label: 'Dashboard', icon: HiHome, path: '/superadmin/dashboard' },
+      { label: 'Tenant Management', icon: HiDocumentText, path: '/superadmin/tenants' },
+      { label: 'Domains & SSL', icon: HiGlobeAlt, path: '/superadmin/domains' },
+      { label: 'Subscription Plans', icon: HiCurrencyDollar, path: '/superadmin/subscriptions' },
+      { label: 'Billing & Revenue', icon: HiCurrencyDollar, path: '/superadmin/billing' },
     ],
   },
   {
-    groupLabel: "USER MANAGEMENT",
+    groupLabel: 'USER MANAGEMENT',
     items: [
-      {
-        label: "Admin Users",
-        icon: HiUserCircle,
-        path: "/superadmin/admin-users",
-      },
-      { label: "Case Workers", icon: HiUsers, path: "/superadmin/caseworkers" },
-      {
-        label: "Clients / Candidates",
-        icon: HiUser,
-        path: "/superadmin/clients",
-      },
-      {
-        label: "Sponsors / Businesses",
-        icon: HiBuildingOffice,
-        path: "/superadmin/sponsors",
-      },
+      { label: 'Admin Users', icon: HiUserCircle, path: '/superadmin/admin-users' },
+      { label: 'Role Permissions', icon: HiLockClosed, path: '/superadmin/permissions' },
+      { label: 'Module Configuration', icon: HiSquares2X2, path: '/superadmin/modules' },
+      { label: 'System Announcements', icon: HiDocumentText, path: '/superadmin/announcements' },
     ],
   },
   {
-    groupLabel: "ACCESS CONTROL",
+    groupLabel: 'SYSTEM ADMINISTRATION',
     items: [
-      {
-        label: "Permissions & RBAC",
-        icon: HiLockClosed,
-        path: "/superadmin/permissions",
-      },
+      { label: 'Audit Logs', icon: HiShieldCheck, path: '/superadmin/audit' },
+      { label: 'Support Tickets', icon: HiExclamationTriangle, path: '/superadmin/support' },
+      { label: 'Platform Configuration', icon: HiCog6Tooth, path: '/superadmin/settings' },
     ],
   },
-  {
-    groupLabel: "CASE MANAGEMENT",
-    items: [
-      { label: "All Cases", icon: HiFolder, path: "/superadmin/all-cases" },
-      {
-        label: "Case Detail",
-        icon: HiDocumentText,
-        path: "/superadmin/case-detail",
-      },
-      { label: "Pipeline", icon: HiArrowPath, path: "/superadmin/pipeline" },
-      {
-        label: "Assign / Reassign",
-        icon: HiArrowsRightLeft,
-        path: "/superadmin/assign-reassign",
-      },
-      {
-        label: "Escalations",
-        icon: HiExclamationTriangle,
-        path: "/superadmin/escalations",
-      },
-    ],
-  },
-  {
-    groupLabel: "ADMIN",
-    items: [
-      { label: "Settings", icon: HiCog6Tooth, path: "/superadmin/settings" },
-    ],
-  },
-];
+]
 
 function titleCaseSegment(seg) {
   return seg
@@ -97,9 +59,9 @@ function titleCaseSegment(seg) {
 }
 
 export default function SuperAdminLayout() {
-  const { user, logout } = useAuth();
-  const location = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, logout } = useAuth()
+  const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const breadcrumb = useMemo(() => {
     const parts = location.pathname.split("/").filter(Boolean);
@@ -111,12 +73,13 @@ export default function SuperAdminLayout() {
   return (
     <div className="flex h-screen min-h-0 w-full overflow-hidden bg-gray-50">
       <Sidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
         navGroups={superNavGroups}
-        role={user?.role}
-        user={user}
-        onLogout={logout}
-        mobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
+        logoText="HRIS"
+        logoBadge="Super Admin"
+        mobileOpen={false}
+        onMobileClose={() => {}}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
         <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-3 sm:h-16 sm:px-4">
@@ -124,7 +87,7 @@ export default function SuperAdminLayout() {
             <button
               type="button"
               className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 md:hidden"
-              onClick={() => setMobileOpen(true)}
+              onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <HiBars3 className="h-6 w-6" />

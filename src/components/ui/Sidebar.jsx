@@ -32,7 +32,7 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
             <HiGlobeAlt className="h-6 w-6" aria-hidden />
           </div>
           <div>
-            <div className="font-display text-lg font-bold leading-tight text-[#004CA5]">ElitePic</div>
+            <div className="font-display text-lg font-bold leading-tight text-[#004CA5]">HRIS</div>
             <div className="text-[10px] font-bold uppercase tracking-widest text-[#C8102E]">ADMIN PANEL</div>
           </div>
         </div>

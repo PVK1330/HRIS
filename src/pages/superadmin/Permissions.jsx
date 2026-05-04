@@ -33,7 +33,7 @@ export default function Permissions() {
       <div>
         <h1 className="font-display text-2xl font-bold text-gray-900">Permissions &amp; RBAC</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Configure what each role can access across the ElitePic platform.
+          Configure what each role can access across the HRIS platform.
         </p>
       </div>
 

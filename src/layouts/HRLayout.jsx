@@ -1,59 +1,55 @@
 import { useMemo, useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
-import {
-  HiArrowRightOnRectangle,
-  HiBars3,
-  HiBell,
-  HiCalendar,
-  HiChartBar,
-  HiClipboardDocumentCheck,
-  HiClock,
-  HiCog6Tooth,
-  HiCreditCard,
-  HiCurrencyDollar,
-  HiDocument,
-  HiEnvelope,
-  HiSquares2X2,
-  HiUser,
-  HiUserPlus,
-  HiUsers,
-} from 'react-icons/hi2'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { HiBars3, HiBell, HiHome, HiUsers, HiCalendar, HiClock, HiDocumentText, HiCurrencyDollar, HiChartBar, HiCog6Tooth, HiUserGroup, HiChatBubbleLeftRight } from 'react-icons/hi2'
 import { Sidebar } from '../components/ui/Sidebar.jsx'
 import { Avatar } from '../components/ui/Avatar.jsx'
 import { Button } from '../components/ui/Button.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
-const adminNavGroups = [
+const hrNavGroups = [
+  {
+    groupLabel: 'OVERVIEW',
+    items: [
+      { label: 'Dashboard', icon: HiHome, path: '/hr/dashboard' },
+      { label: 'My Team', icon: HiUsers, path: '/hr/team' },
+    ],
+  },
+  {
+    groupLabel: 'APPROVALS',
+    items: [
+      { label: 'Leave Requests', icon: HiCalendar, path: '/hr/leave-approvals' },
+      { label: 'Attendance', icon: HiClock, path: '/hr/attendance' },
+      { label: 'Expense Claims', icon: HiCurrencyDollar, path: '/hr/expenses' },
+    ],
+  },
+  {
+    groupLabel: 'HR TOOLS',
+    items: [
+      { label: 'Performance', icon: HiChartBar, path: '/hr/performance' },
+      { label: 'Letters & Documents', icon: HiDocumentText, path: '/hr/letters' },
+      { label: 'Reports', icon: HiDocumentText, path: '/hr/reports' },
+    ],
+  },
   {
     groupLabel: 'EMPLOYEE MANAGEMENT',
     items: [
-      { label: 'Dashboard', icon: HiSquares2X2, path: '/admin/dashboard' },
-      { label: 'Employee Directory', icon: HiUsers, path: '/admin/employee-directory' },
-      { label: 'Employee Profile', icon: HiUser, path: '/admin/employee-profile' },
-      { label: 'Attendance Management', icon: HiClock, path: '/admin/attendance' },
-      { label: 'Leave & Absence', icon: HiCalendar, path: '/admin/leave' },
-      { label: 'Document Repository', icon: HiDocument, path: '/admin/documents' },
-      { label: 'Visa & Nationality', icon: HiCreditCard, path: '/admin/visa' },
+      { label: 'Employee Directory', icon: HiUserGroup, path: '/hr/employees' },
+      { label: 'Onboarding', icon: HiDocumentText, path: '/hr/onboarding' },
+      { label: 'Exit Management', icon: HiDocumentText, path: '/hr/exit' },
     ],
   },
   {
-    groupLabel: 'HR OPERATIONS',
+    groupLabel: 'COMMUNICATION',
     items: [
-      { label: 'Performance Management', icon: HiChartBar, path: '/admin/performance' },
-      { label: 'Company Policies', icon: HiClipboardDocumentCheck, path: '/admin/policies' },
-      { label: 'Expense Management', icon: HiCurrencyDollar, path: '/admin/expenses' },
-      { label: 'Onboarding Process', icon: HiUserPlus, path: '/admin/onboarding' },
-      {
-        label: 'Exit Management',
-        icon: HiArrowRightOnRectangle,
-        path: '/admin/exit-management',
-      },
-      { label: 'Letter Templates', icon: HiEnvelope, path: '/admin/letters' },
+      { label: 'Announcements', icon: HiChatBubbleLeftRight, path: '/hr/announcements' },
+      { label: 'Messages', icon: HiChatBubbleLeftRight, path: '/hr/messages' },
     ],
   },
   {
-    groupLabel: 'ADMINISTRATION',
-    items: [{ label: 'System Settings', icon: HiCog6Tooth, path: '/admin/settings' }],
+    groupLabel: 'SETTINGS',
+    items: [
+      { label: 'HR Settings', icon: HiCog6Tooth, path: '/hr/settings' },
+    ],
   },
 ]
 
@@ -64,15 +60,16 @@ function titleCaseSegment(seg) {
     .join(' ')
 }
 
-export default function AdminLayout() {
+export default function HRLayout() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const breadcrumb = useMemo(() => {
     const parts = location.pathname.split('/').filter(Boolean)
-    if (parts[0] !== 'admin') return ['Home', 'Admin']
-    const crumbs = ['Home', 'Admin']
+    if (parts[0] !== 'hr') return ['Home', 'HR']
+    const crumbs = ['Home', 'HR']
     if (parts[1]) crumbs.push(titleCaseSegment(parts[1]))
     return crumbs
   }, [location.pathname])
@@ -80,10 +77,10 @@ export default function AdminLayout() {
   return (
     <div className="flex h-screen min-h-0 w-full overflow-hidden bg-background-tertiary">
       <Sidebar
-        navGroups={adminNavGroups}
+        navGroups={hrNavGroups}
         role={user?.role}
         user={user}
-        onLogout={logout}
+        onLogout={() => { logout(); navigate('/login') }}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
@@ -103,7 +100,7 @@ export default function AdminLayout() {
                 <span key={`${c}-${i}`} className="flex items-center gap-2">
                   {i > 0 && <span className="text-text-tertiary">/</span>}
                   {i === 0 ? (
-                    <Link to="/admin/dashboard" className="hover:text-primary">
+                    <Link to="/hr/dashboard" className="hover:text-primary">
                       {c}
                     </Link>
                   ) : (
@@ -128,10 +125,10 @@ export default function AdminLayout() {
               <Avatar name={user?.name} size="sm" />
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-text-primary">{user?.name}</div>
-                <div className="text-xs text-text-secondary">{user?.role === 'superadmin' ? 'Super Admin' : 'Admin'}</div>
+                <div className="text-xs text-text-secondary">{user?.department || 'HR Manager'}</div>
               </div>
             </div>
-            <Button label="Log out" variant="ghost" size="sm" onClick={logout} />
+            <Button label="Log out" variant="ghost" size="sm" onClick={() => { logout(); navigate('/login') }} />
           </div>
         </header>
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-background-tertiary p-4 sm:p-6">
