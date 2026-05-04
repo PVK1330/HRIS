@@ -30,7 +30,6 @@ import Payroll from '../pages/admin/finance/Payroll.jsx'
 
 import PlatformDashboard from '../pages/superadmin/platform/Dashboard.jsx'
 import TenantManagement from '../pages/superadmin/tenants/TenantManagement.jsx'
-import DomainsSSL from '../pages/superadmin/domains/DomainsSSL.jsx'
 import SubscriptionsPlans from '../pages/superadmin/subscriptions/SubscriptionsPlans.jsx'
 import Billing from '../pages/superadmin/billing/Billing.jsx'
 import ModuleManagement from '../pages/superadmin/platform/ModuleManagement.jsx'
@@ -112,7 +111,6 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <PlatformDashboard /> },
           { path: 'tenants', element: <TenantManagement /> },
-          { path: 'domains', element: <DomainsSSL /> },
           { path: 'subscriptions', element: <SubscriptionsPlans /> },
           { path: 'billing', element: <Billing /> },
           { path: 'modules', element: <ModuleManagement /> },

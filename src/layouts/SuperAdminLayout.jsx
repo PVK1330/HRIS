@@ -27,7 +27,6 @@ const superNavGroups = [
     items: [
       { label: 'Dashboard', icon: HiHome, path: '/superadmin/dashboard', roles: ['super_admin', 'support_admin', 'billing_admin'] },
       { label: 'Tenant Management', icon: HiDocumentText, path: '/superadmin/tenants', roles: ['super_admin', 'support_admin', 'billing_admin'] },
-      { label: 'Domains & SSL', icon: HiGlobeAlt, path: '/superadmin/domains', roles: ['super_admin'] },
       { label: 'Subscription Plans', icon: HiCurrencyDollar, path: '/superadmin/subscriptions', roles: ['super_admin', 'billing_admin'] },
       { label: 'Billing & Revenue', icon: HiCurrencyDollar, path: '/superadmin/billing', roles: ['super_admin', 'billing_admin'] },
     ],

@@ -1,13 +1,29 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
 import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { HiCheck, HiClock, HiCurrencyDollar, HiExclamationTriangle, HiGlobeAlt, HiUsers } from 'react-icons/hi2'
+import { 
+  HiCheckCircle, 
+  HiClock, 
+  HiCurrencyDollar, 
+  HiExclamationTriangle, 
+  HiGlobeAlt, 
+  HiUsers, 
+  HiArrowTrendingUp,
+  HiServerStack,
+  HiShieldCheck
+} from 'react-icons/hi2'
 
 export default function SuperAdminDashboard() {
-  const [searchQuery, setSearchQuery] = useState('')
+  const navigate = useNavigate()
+  const [platformStatus] = useState({
+    api: 'Healthy',
+    database: 'Healthy',
+    storage: 'Healthy',
+    uptime: '99.98%'
+  })
 
   const recentTenants = useMemo(() => [
     { id: 1, name: 'AlphaCorp HR', domain: 'alphacorp.hriscloud.io', plan: 'Enterprise', users: 342, status: 'Active', initials: 'AL', color: 'indigo' },
@@ -21,194 +37,143 @@ export default function SuperAdminDashboard() {
     { id: 2, action: 'Custom domain verified', detail: 'nexushr.ae DNS propagated successfully', time: '5 hours ago', color: 'indigo' },
     { id: 3, action: 'SSL renewal triggered', detail: 'Auto-renew for alphacorp.hriscloud.io', time: '8 hours ago', color: 'amber' },
     { id: 4, action: 'Tenant suspended', detail: 'Zenith People — payment overdue 14d', time: '1 day ago', color: 'red' },
-    { id: 5, action: 'Plan upgraded', detail: 'HR Nexus: Starter → Growth plan', time: '2 days ago', color: 'cyan' },
   ], [])
-
-  const statusColor = (status) => {
-    const colors = {
-      'Active': 'green',
-      'Trial': 'amber',
-      'SSL Issue': 'orange',
-      'Suspended': 'gray',
-    }
-    return colors[status] || 'gray'
-  }
-
-  const planColor = (plan) => {
-    const colors = {
-      'Enterprise': 'amber',
-      'Growth': 'cyan',
-      'Pro': 'indigo',
-      'Starter': 'gray',
-    }
-    return colors[plan] || 'gray'
-  }
-
-  const activityColor = (color) => {
-    const colors = {
-      'green': 'bg-green-500',
-      'indigo': 'bg-indigo-500',
-      'amber': 'bg-amber-500',
-      'red': 'bg-red-500',
-      'cyan': 'bg-cyan-500',
-    }
-    return colors[color] || 'bg-gray-500'
-  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Enhanced Header */}
       <div className="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Platform Overview</h1>
-          <p className="mt-1 text-sm text-gray-600">Real-time control center — All systems operational</p>
+          <h1 className="text-2xl font-bold text-gray-900">Platform Control Center</h1>
+          <p className="mt-1 text-sm text-gray-500">Global overview of all tenant environments and system health.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-sm font-semibold text-green-600">All Systems Online</span>
-          <span className="text-sm text-gray-500 ml-2">9 Apr 2026, 14:32 UTC</span>
-        </div>
-      </div>
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard
-          title="Total Tenants"
-          value="48"
-          trend="+6 this month"
-          trendColor="green"
-          icon={HiUsers}
-        />
-        <StatCard
-          title="Active Tenants"
-          value="41"
-          trend="Active"
-          trendColor="green"
-          icon={HiCheck}
-        />
-        <StatCard
-          title="Total End Users"
-          value="8,429"
-          trend="+212"
-          trendColor="cyan"
-          icon={HiUsers}
-        />
-        <StatCard
-          title="Monthly Revenue"
-          value="$47.2k"
-          trend="MRR"
-          trendColor="amber"
-          icon={HiCurrencyDollar}
-        />
-        <StatCard
-          title="SSL Expiring Soon"
-          value="3"
-          trend="Action needed"
-          trendColor="red"
-          icon={HiExclamationTriangle}
-        />
-        <StatCard
-          title="Custom Domains"
-          value="19"
-          trend="Custom"
-          trendColor="indigo"
-          icon={HiGlobeAlt}
-        />
-      </div>
-
-      {/* Alerts */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-          <HiExclamationTriangle className="h-4 w-4" />
-          SSL certificate for <strong>talentco.com</strong> expires in 8 days. Renew immediately.
-        </div>
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-700">
-          <HiClock className="h-4 w-4" />
-          Tenant <strong>HR Nexus Pvt Ltd</strong> trial expires in 3 days. Send upgrade prompt.
-        </div>
-        <div className="flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm font-semibold text-indigo-700">
-          <HiCheck className="h-4 w-4" />
-          Platform update v2.5.0 scheduled for deployment on 15 Apr 2026 at 02:00 UTC.
+        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs font-bold text-green-600 uppercase tracking-wider">All Systems Operational</span>
+          </div>
+          <div className="h-4 w-px bg-gray-200" />
+          <span className="text-xs font-medium text-gray-500">v2.5.0-stable</span>
         </div>
       </div>
 
-      {/* Recent Tenants & Activity */}
+      {/* Professional Stat Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="TOTAL REVENUE (MRR)" value="$48,290" trend="+12.5%" trendColor="green" icon={HiCurrencyDollar} />
+        <StatCard title="ACTIVE TENANTS" value="41" trend="+3 this week" trendColor="green" icon={HiGlobeAlt} />
+        <StatCard title="TOTAL END USERS" value="8,429" trend="+212" trendColor="blue" icon={HiUsers} />
+        <StatCard title="AVG. SESSION TIME" value="18m 42s" trend="+4%" trendColor="green" icon={HiClock} />
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Recent Tenants */}
-        <div className="lg:col-span-2">
-          <div className="rounded-lg border border-gray-200 bg-white">
-            <div className="flex items-center justify-between border-b border-gray-200 p-4">
-              <h2 className="text-sm font-semibold text-gray-900">Recent Tenants</h2>
-              <Button label="View All →" variant="ghost" size="sm" />
+        {/* Main Content Area */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Recent Tenants Table */}
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between border-b border-gray-200 p-5">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Recent Onboarding</h2>
+                <p className="text-xs text-gray-500">Newly registered organizations across the platform.</p>
+              </div>
+              <Button label="Manage All Tenants" variant="ghost" size="sm" onClick={() => navigate('/superadmin/tenants')} />
             </div>
             <Table
               columns={[
-                { key: 'tenant', label: 'Tenant' },
+                { key: 'tenant', label: 'Organization' },
                 { key: 'plan', label: 'Plan' },
                 { key: 'users', label: 'Users' },
                 { key: 'status', label: 'Status' },
               ]}
               data={recentTenants.map((tenant) => ({
                 tenant: (
-                  <div className="flex items-center gap-2">
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-lg bg-${tenant.color}-100 text-xs font-bold text-${tenant.color}-600`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-${tenant.color}-50 text-[10px] font-bold text-${tenant.color}-600 border border-${tenant.color}-100`}>
                       {tenant.initials}
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-gray-900">{tenant.name}</div>
-                      <div className="text-xs text-gray-500">{tenant.domain}</div>
+                      <div className="text-[10px] text-gray-400">{tenant.domain}</div>
                     </div>
                   </div>
                 ),
-                plan: <Badge variant={planColor(tenant.plan)}>{tenant.plan}</Badge>,
-                users: <span className="font-semibold text-gray-900">{tenant.users}</span>,
-                status: <Badge variant={statusColor(tenant.status)}>{tenant.status}</Badge>,
+                plan: <Badge label={tenant.plan} color={tenant.plan === 'Enterprise' ? 'amber' : 'blue'} />,
+                users: <span className="text-sm font-medium text-gray-700">{tenant.users}</span>,
+                status: <Badge label={tenant.status} color={tenant.status === 'Active' ? 'green' : tenant.status === 'Trial' ? 'amber' : 'gray'} />,
               }))}
             />
           </div>
+
+          {/* Revenue Trends (Simplified Mock) */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+             <div className="flex items-center justify-between mb-6">
+                <h2 className="text-base font-bold text-gray-900">Revenue Growth</h2>
+                <Badge label="Annual View" color="indigo" />
+             </div>
+             <div className="flex items-end gap-2 h-32">
+                {[40, 55, 45, 60, 75, 70, 85, 90, 80, 95, 100, 110].map((h, i) => (
+                  <div key={i} className="flex-1 bg-blue-500 rounded-t-sm opacity-20 hover:opacity-100 transition-all cursor-pointer" style={{ height: `${h}%` }} title={`Month ${i+1}: $${h}k`} />
+                ))}
+             </div>
+             <div className="mt-4 flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <span>JAN</span><span>JUN</span><span>DEC</span>
+             </div>
+          </div>
         </div>
 
-        {/* Recent Activity */}
-        <div>
-          <div className="rounded-lg border border-gray-200 bg-white">
-            <div className="border-b border-gray-200 p-4">
-              <h2 className="text-sm font-semibold text-gray-900">Recent Activity</h2>
+        {/* Sidebar Area */}
+        <div className="space-y-6">
+          {/* Platform Health Card */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <HiServerStack className="text-blue-500" /> Platform Infrastructure
+            </h2>
+            <div className="space-y-3">
+              {Object.entries(platformStatus).map(([key, status]) => (
+                <div key={key} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{key}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`h-1.5 w-1.5 rounded-full ${status === 'Healthy' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                    <span className="text-xs font-bold text-gray-900">{status}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="space-y-3 p-4">
+            <Button label="View System Logs" variant="ghost" className="w-full mt-4 text-xs" onClick={() => navigate('/superadmin/audit')} />
+          </div>
+
+          {/* Critical Alerts */}
+          <div className="rounded-xl border border-red-100 bg-red-50 p-5 shadow-sm">
+            <h2 className="text-sm font-bold text-red-900 mb-3 flex items-center gap-2">
+              <HiExclamationTriangle /> Critical Alerts
+            </h2>
+            <div className="space-y-3">
+               <div className="p-3 bg-white rounded-lg border border-red-100 shadow-sm">
+                  <p className="text-[11px] font-bold text-red-800">SSL EXPIRING</p>
+                  <p className="text-xs text-red-600 mt-0.5">talentco.com expires in 8 days.</p>
+               </div>
+               <div className="p-3 bg-white rounded-lg border border-amber-100 shadow-sm">
+                  <p className="text-[11px] font-bold text-amber-800">TRIAL EXPIRING</p>
+                  <p className="text-xs text-amber-600 mt-0.5">HR Nexus trial ends in 48h.</p>
+               </div>
+            </div>
+          </div>
+
+          {/* Recent Activity Feed */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-bold text-gray-900 mb-4">Platform Activity</h2>
+            <div className="space-y-4">
               {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex gap-2">
-                  <div className={`mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full ${activityColor(activity.color)}`} />
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold text-gray-900">{activity.action}</div>
-                    <div className="text-xs text-gray-500">{activity.detail}</div>
-                    <div className="mt-1 text-xs text-gray-400">{activity.time}</div>
+                <div key={activity.id} className="flex gap-3 relative">
+                  <div className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-${activity.color}-500 shadow-[0_0_8px] shadow-${activity.color}-500/50`} />
+                  <div>
+                    <p className="text-xs font-bold text-gray-900">{activity.action}</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">{activity.detail}</p>
+                    <p className="text-[10px] text-gray-400 mt-1">{activity.time}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Plan Distribution */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">Plan Distribution</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { name: 'STARTER', count: 12, percent: 25, color: 'gray', price: '$299/mo avg' },
-            { name: 'GROWTH', count: 18, percent: 38, color: 'cyan', price: '$699/mo avg' },
-            { name: 'PRO', count: 11, percent: 23, color: 'indigo', price: '$1,299/mo avg' },
-            { name: 'ENTERPRISE', count: 7, percent: 15, color: 'amber', price: '$2,999/mo avg' },
-          ].map((plan) => (
-            <div key={plan.name} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <div className="mb-2 text-xs font-bold tracking-wider text-gray-500">{plan.name}</div>
-              <div className="text-2xl font-bold text-gray-900">{plan.count}</div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-200">
-                <div className={`h-full rounded-full bg-${plan.color}-500`} style={{ width: `${plan.percent}%` }} />
-              </div>
-              <div className="mt-2 text-xs text-gray-500">{plan.percent}% of tenants · {plan.price}</div>
-            </div>
-          ))}
         </div>
       </div>
     </div>

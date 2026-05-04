@@ -1,89 +1,148 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+import { Badge } from '../../components/ui/Badge.jsx'
 import { Toggle } from '../../components/ui/Toggle.jsx'
-import { permissionMatrix, permissionRoleDefaults } from '../../data/mockData.js'
-
-const roles = ['Admin', 'Caseworker', 'Viewer']
-
-function cloneDefaults() {
-  const next = {}
-  roles.forEach((r) => {
-    next[r] = { ...permissionRoleDefaults[r] }
-  })
-  return next
-}
+import { Button } from '../../components/ui/Button.jsx'
+import { HiShieldCheck, HiCreditCard, HiChatBubbleLeftRight, HiInformationCircle } from 'react-icons/hi2'
 
 export default function Permissions() {
-  const [matrix, setMatrix] = useState(cloneDefaults)
+  const [roles, setRoles] = useState([
+    {
+      id: 'super_admin',
+      name: 'Super Admin',
+      description: 'Total platform control with access to security, system settings, and all tenant data.',
+      icon: HiShieldCheck,
+      color: 'red',
+      permissions: {
+        tenant_management: true,
+        billing_revenue: true,
+        user_management: true,
+        system_config: true,
+        audit_logs: true,
+        support_tickets: true
+      }
+    },
+    {
+      id: 'support_admin',
+      name: 'Support Admin',
+      description: 'Focuses on tenant support, issue resolution, and platform monitoring.',
+      icon: HiChatBubbleLeftRight,
+      color: 'blue',
+      permissions: {
+        tenant_management: true,
+        billing_revenue: false,
+        user_management: false,
+        system_config: false,
+        audit_logs: true,
+        support_tickets: true
+      }
+    },
+    {
+      id: 'billing_admin',
+      name: 'Billing Admin',
+      description: 'Handles subscriptions, revenue tracking, and platform financial reporting.',
+      icon: HiCreditCard,
+      color: 'green',
+      permissions: {
+        tenant_management: true,
+        billing_revenue: true,
+        user_management: false,
+        system_config: false,
+        audit_logs: false,
+        support_tickets: false
+      }
+    }
+  ])
 
-  const flatIds = useMemo(() => {
-    const ids = []
-    permissionMatrix.forEach((sec) => sec.rows.forEach((row) => ids.push(row.id)))
-    return ids
-  }, [])
-
-  const setCell = (role, permId, checked) => {
-    setMatrix((prev) => ({
-      ...prev,
-      [role]: { ...prev[role], [permId]: checked },
+  const handleToggle = (roleId, permKey) => {
+    // Prevent modifying Super Admin for safety in this mock
+    if (roleId === 'super_admin') return
+    
+    setRoles(roles.map(role => {
+      if (role.id === roleId) {
+        return {
+          ...role,
+          permissions: {
+            ...role.permissions,
+            [permKey]: !role.permissions[permKey]
+          }
+        }
+      }
+      return role
     }))
+  }
+
+  const permissionLabels = {
+    tenant_management: 'Manage Tenants',
+    billing_revenue: 'Billing & Revenue',
+    user_management: 'Manage SuperAdmins',
+    system_config: 'System Configuration',
+    audit_logs: 'View Audit Logs',
+    support_tickets: 'Handle Support Tickets'
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-gray-900">Permissions &amp; RBAC</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Platform RBAC</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Configure what each role can access across the HRIS platform.
+          Simplify access control for your internal platform administration team.
         </p>
       </div>
 
-      <div className="space-y-8">
-        {permissionMatrix.map((section) => (
-          <div key={section.section} className="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-200 px-5 py-4">
-              <h2 className="font-display text-lg font-bold text-gray-900">{section.section}</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <div className="grid min-w-[720px] grid-cols-[minmax(240px,1fr)_repeat(3,minmax(140px,1fr))] gap-0">
-                <div className="border-b border-gray-100 bg-gray-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-gray-600">
-                  Permission
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {roles.map((role) => (
+          <div key={role.id} className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden transition-all hover:shadow-md">
+            {/* Role Header */}
+            <div className={`p-5 border-b border-gray-100`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className={`p-2 rounded-lg ${
+                  role.color === 'red' ? 'bg-red-50 text-red-600' : 
+                  role.color === 'blue' ? 'bg-blue-50 text-blue-600' : 
+                  'bg-green-50 text-green-600'
+                }`}>
+                  <role.icon className="h-6 w-6" />
                 </div>
-                {roles.map((r) => (
-                  <div
-                    key={r}
-                    className="border-b border-gray-100 bg-gray-50 px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-gray-600"
-                  >
-                    {r}
-                  </div>
-                ))}
-                {section.rows.map((row) => (
-                  <div key={row.id} className="contents">
-                    <div className="border-b border-gray-100 px-4 py-4 text-sm font-medium text-gray-800">
-                      {row.label}
-                    </div>
-                    {roles.map((role) => (
-                      <div
-                        key={`${row.id}-${role}`}
-                        className="flex items-center justify-center border-b border-gray-100 px-2 py-3"
-                      >
-                        <Toggle
-                          checked={Boolean(matrix[role]?.[row.id])}
-                          onChange={(checked) => setCell(role, row.id, checked)}
-                          label=""
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                <Badge label={role.id === 'super_admin' ? 'SYSTEM' : 'CUSTOM'} color={role.color} />
               </div>
+              <h2 className="text-lg font-bold text-gray-900">{role.name}</h2>
+              <p className="mt-1 text-xs text-gray-500 leading-relaxed">{role.description}</p>
+            </div>
+
+            {/* Permissions List */}
+            <div className="flex-1 p-5 space-y-4">
+               <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Access Rights</h3>
+               {Object.keys(role.permissions).map((key) => (
+                 <div key={key} className="flex items-center justify-between group">
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                      {permissionLabels[key]}
+                    </span>
+                    <Toggle 
+                      checked={role.permissions[key]} 
+                      onChange={() => handleToggle(role.id, key)} 
+                      disabled={role.id === 'super_admin'}
+                    />
+                 </div>
+               ))}
+            </div>
+
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+               <Button label="Reset Defaults" variant="ghost" size="sm" disabled={role.id === 'super_admin'} />
+               <Button label="Save Changes" variant="primary" size="sm" disabled={role.id === 'super_admin'} />
             </div>
           </div>
         ))}
       </div>
 
-      <p className="text-xs text-gray-400">
-        {flatIds.length} permissions tracked across {roles.length} roles (mock UI — changes are local only).
-      </p>
+      {/* Info Section */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 flex gap-3">
+         <HiInformationCircle className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+         <div>
+            <p className="text-xs text-blue-700 font-semibold">RBAC Management Policy</p>
+            <p className="mt-0.5 text-xs text-blue-600 leading-relaxed">
+              These roles apply only to the SuperAdmin panel. Tenant-specific roles (like Employee, Manager, and Tenant Admin) are configured within the individual tenant instances.
+            </p>
+         </div>
+      </div>
     </div>
   )
 }

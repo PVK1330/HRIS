@@ -3,13 +3,18 @@ import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
+import { 
+  HiMagnifyingGlass, 
+  HiFunnel, 
+  HiArrowPath, 
+  HiCalendarDays,
+  HiShieldCheck
+} from 'react-icons/hi2'
 
 export default function AuditLogs() {
   const [searchQuery, setSearchQuery] = useState('')
   const [tenantFilter, setTenantFilter] = useState('all')
   const [actionFilter, setActionFilter] = useState('all')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
 
   const auditLogs = useMemo(() => [
     { id: 1, timestamp: '2026-04-09 14:31:22', admin: 'Super Admin', action: 'Tenant Created', target: 'AlphaCorp HR', ip: '192.168.1.1', result: 'Success' },
@@ -30,94 +35,99 @@ export default function AuditLogs() {
     })
   }, [auditLogs, searchQuery, tenantFilter, actionFilter])
 
-  const actionColor = (action) => {
-    const colors = {
-      'Tenant Created': 'blue',
-      'Domain Verified': 'indigo',
-      'Tenant Suspended': 'red',
-      'Plan Changed': 'amber',
-      'Login': 'gray',
-    }
-    return colors[action] || 'gray'
-  }
-
-  const resultColor = (result) => {
-    return result === 'Success' ? 'green' : 'red'
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
-        <p className="mt-1 text-sm text-gray-600">Track all administrative actions across the platform</p>
+      <div className="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Platform Security Audit</h1>
+          <p className="mt-1 text-sm text-gray-500">Immutable trail of all administrative events across the entire tenant network.</p>
+        </div>
+        <div className="flex gap-2">
+           <Button label="Export CSV" variant="ghost" size="sm" />
+           <Button label="Refresh" variant="ghost" size="sm" icon={HiArrowPath} />
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Search</label>
-            <Input placeholder="Action, user, tenant..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      {/* Advanced Filters */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="flex-1 space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Global Search</label>
+            <div className="relative">
+               <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+               <input 
+                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                 placeholder="Search by action, user, or target..." 
+                 value={searchQuery} 
+                 onChange={(e) => setSearchQuery(e.target.value)} 
+               />
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Tenant</label>
+          <div className="w-full lg:w-48 space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Tenant Network</label>
             <select
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#004CA5] focus:ring-2 focus:ring-[#004CA5]/20"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
               value={tenantFilter}
               onChange={(e) => setTenantFilter(e.target.value)}
             >
-              <option value="all">All Tenants</option>
+              <option value="all">All Ecosystem</option>
               <option value="AlphaCorp">AlphaCorp HR</option>
               <option value="HR Nexus">HR Nexus</option>
             </select>
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Action Type</label>
+          <div className="w-full lg:w-48 space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Event Category</label>
             <select
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#004CA5] focus:ring-2 focus:ring-[#004CA5]/20"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
             >
-              <option value="all">All</option>
-              <option value="Login">Login</option>
-              <option value="Domain">Domain</option>
-              <option value="Billing">Billing</option>
-              <option value="Settings">Settings</option>
-              <option value="Tenant">Tenant</option>
+              <option value="all">Any Action</option>
+              <option value="Login">Access Events</option>
+              <option value="Tenant">Provisioning</option>
+              <option value="Domain">DNS/Domains</option>
+              <option value="Billing">Financial</option>
             </select>
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Date From</label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Date To</label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-          </div>
+          <Button label="Clear" variant="ghost" size="sm" className="h-[42px]" onClick={() => { setSearchQuery(''); setTenantFilter('all'); setActionFilter('all'); }} />
         </div>
       </div>
 
-      {/* Audit Logs Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <Table
           columns={[
-            { key: 'timestamp', label: 'Timestamp' },
-            { key: 'admin', label: 'Admin / Tenant' },
-            { key: 'action', label: 'Action' },
-            { key: 'target', label: 'Target' },
-            { key: 'ip', label: 'IP Address' },
-            { key: 'result', label: 'Result' },
+            { key: 'timestamp', label: 'Precise Timestamp' },
+            { key: 'admin', label: 'Actor' },
+            { key: 'action', label: 'Event Type' },
+            { key: 'target', label: 'Affected Target' },
+            { key: 'ip', label: 'IP / Location' },
+            { key: 'result', label: 'Outcome' },
           ]}
           data={filteredLogs.map((log) => ({
-            timestamp: <span className="font-mono text-xs text-gray-500">{log.timestamp}</span>,
-            admin: <span className="text-sm font-semibold text-gray-900">{log.admin}</span>,
-            action: <Badge variant={actionColor(log.action)}>{log.action}</Badge>,
-            target: <span className="text-sm text-gray-500">{log.target}</span>,
-            ip: <span className="font-mono text-xs text-gray-500">{log.ip}</span>,
-            result: <Badge variant={resultColor(log.result)}>{log.result}</Badge>,
+            timestamp: (
+              <div className="flex items-center gap-2">
+                 <HiCalendarDays className="text-gray-400 h-4 w-4" />
+                 <span className="font-mono text-[11px] text-gray-500">{log.timestamp}</span>
+              </div>
+            ),
+            admin: <span className="text-sm font-bold text-gray-900">{log.admin}</span>,
+            action: <Badge label={log.action} color={log.action.includes('Tenant') ? 'blue' : log.action.includes('Domain') ? 'indigo' : 'gray'} />,
+            target: <span className="text-sm text-gray-700 font-medium">{log.target}</span>,
+            ip: <span className="font-mono text-xs text-gray-400">{log.ip}</span>,
+            result: (
+              <div className="flex items-center gap-1.5">
+                 <div className={`h-1.5 w-1.5 rounded-full ${log.result === 'Success' ? 'bg-green-500' : 'bg-red-500'}`} />
+                 <span className={`text-[10px] font-bold uppercase ${log.result === 'Success' ? 'text-green-600' : 'text-red-600'}`}>{log.result}</span>
+              </div>
+            ),
           }))}
         />
+        {filteredLogs.length === 0 && (
+           <div className="py-20 text-center">
+              <HiShieldCheck className="mx-auto h-12 w-12 text-gray-100" />
+              <p className="mt-2 text-sm text-gray-400">No audit logs matching your filters.</p>
+           </div>
+        )}
       </div>
     </div>
   )
