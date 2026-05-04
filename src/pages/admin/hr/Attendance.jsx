@@ -40,9 +40,15 @@ export default function Attendance() {
     return employees.slice(0, 8).map((e, idx) => ({
       id: e.id,
       employee: e.name,
+      empId: e.empId,
       department: e.department,
       status: idx % 2 === 0 ? 'Present' : idx % 3 === 0 ? 'Remote' : 'Late',
       checkIn: idx % 2 === 0 ? '08:55' : '09:18',
+      checkOut: idx % 2 === 0 ? '18:00' : '17:45',
+      totalHours: idx % 2 === 0 ? '9.08' : '8.45',
+      isLate: idx % 3 === 0,
+      earlyDeparture: idx % 4 === 0,
+      regularizationStatus: idx % 5 === 0 ? 'Pending' : idx % 5 === 1 ? 'Approved' : 'N/A',
     }))
   }, [])
 
@@ -77,7 +83,16 @@ export default function Attendance() {
   }
 
   const columns = [
-    { key: 'employee', label: 'Employee' },
+    {
+      key: 'employee',
+      label: 'Employee',
+      render: (_, row) => (
+        <div>
+          <div className="font-medium text-gray-900">{row.employee}</div>
+          <div className="text-xs text-gray-500">{row.empId}</div>
+        </div>
+      ),
+    },
     { key: 'department', label: 'Department' },
     {
       key: 'status',
@@ -90,6 +105,37 @@ export default function Attendance() {
       ),
     },
     { key: 'checkIn', label: 'Check-in' },
+    { key: 'checkOut', label: 'Check-out' },
+    { key: 'totalHours', label: 'Total Hours' },
+    {
+      key: 'isLate',
+      label: 'Late',
+      render: (v) => (v ? <Badge label="Yes" color="red" /> : <span className="text-gray-500">No</span>),
+    },
+    {
+      key: 'earlyDeparture',
+      label: 'Early Departure',
+      render: (v) => (v ? <Badge label="Yes" color="orange" /> : <span className="text-gray-500">No</span>),
+    },
+    {
+      key: 'regularizationStatus',
+      label: 'Regularization',
+      render: (v) => {
+        if (v === 'N/A') return <span className="text-gray-500">-</span>
+        const color = v === 'Pending' ? 'orange' : 'green'
+        return <Badge label={v} color={color} />
+      },
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_, row) => (
+        <div className="flex items-center gap-1">
+          <Button label="View" variant="ghost" size="sm" />
+          {row.isLate && <Button label="Regularize" variant="outline" size="sm" />}
+        </div>
+      ),
+    },
   ]
 
   return (
@@ -121,6 +167,67 @@ export default function Attendance() {
       </div>
 
       <Table columns={columns} data={filtered} pageSize={5} />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Attendance Calendar</h2>
+          <div className="mt-4 grid grid-cols-7 gap-2 text-center text-sm">
+            <div className="font-semibold text-gray-500">Sun</div>
+            <div className="font-semibold text-gray-500">Mon</div>
+            <div className="font-semibold text-gray-500">Tue</div>
+            <div className="font-semibold text-gray-500">Wed</div>
+            <div className="font-semibold text-gray-500">Thu</div>
+            <div className="font-semibold text-gray-500">Fri</div>
+            <div className="font-semibold text-gray-500">Sat</div>
+            {[...Array(30)].map((_, i) => (
+              <div
+                key={i}
+                className={`flex h-10 items-center justify-center rounded-lg ${
+                  i % 7 === 0 || i % 7 === 6
+                    ? 'bg-gray-100 text-gray-400'
+                    : i % 5 === 0
+                    ? 'bg-red-50 text-red-600'
+                    : 'bg-green-50 text-green-600'
+                }`}
+              >
+                {i + 1}
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-green-50" />
+              <span className="text-gray-600">Present</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-red-50" />
+              <span className="text-gray-600">Absent</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-gray-100" />
+              <span className="text-gray-600">Weekend</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Overtime Summary</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Total Overtime This Month</span>
+              <span className="font-semibold text-gray-900">42.5 hours</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Employees with Overtime</span>
+              <span className="font-semibold text-gray-900">12</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Pending Approvals</span>
+              <Badge label="5" color="orange" />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Mark Attendance" size="md">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">

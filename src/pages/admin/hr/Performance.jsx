@@ -187,6 +187,122 @@ export default function Performance() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Performance Cycle Configuration</h2>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Q1 2026 Review Cycle</div>
+              <div className="text-xs text-gray-500">Jan 1 - Mar 31, 2026 • Active</div>
+            </div>
+            <Badge label="Active" color="green" />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Q2 2026 Review Cycle</div>
+              <div className="text-xs text-gray-500">Apr 1 - Jun 30, 2026 • Upcoming</div>
+            </div>
+            <Badge label="Upcoming" color="blue" />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Annual 2025 Review Cycle</div>
+              <div className="text-xs text-gray-500">Jan 1 - Dec 31, 2025 • Completed</div>
+            </div>
+            <Badge label="Completed" color="gray" />
+          </div>
+        </div>
+        <div className="mt-4">
+          <Button label="Configure New Cycle" variant="secondary" className="w-full" />
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Performance Analytics</h2>
+          <div className="mt-4 space-y-4">
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-700">Exceeds Expectations</span>
+                <span className="font-semibold text-gray-900">35%</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-[35%] rounded-full bg-green-500" />
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-700">Meets Expectations</span>
+                <span className="font-semibold text-gray-900">45%</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-[45%] rounded-full bg-blue-500" />
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-700">Needs Improvement</span>
+                <span className="font-semibold text-gray-900">15%</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-[15%] rounded-full bg-orange-500" />
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-700">Below Expectations</span>
+                <span className="font-semibold text-gray-900">5%</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-[5%] rounded-full bg-red-500" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Department Performance</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  IT
+                </div>
+                <span className="text-sm font-medium text-gray-900">IT Department</span>
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-gray-900">4.2</div>
+                <div className="text-xs text-gray-500">Avg Rating</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
+                  HR
+                </div>
+                <span className="text-sm font-medium text-gray-900">HR Department</span>
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-gray-900">4.5</div>
+                <div className="text-xs text-gray-500">Avg Rating</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-600">
+                  FN
+                </div>
+                <span className="text-sm font-medium text-gray-900">Finance Department</span>
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-gray-900">4.1</div>
+                <div className="text-xs text-gray-500">Avg Rating</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Add Review / Set Goal" size="lg">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">

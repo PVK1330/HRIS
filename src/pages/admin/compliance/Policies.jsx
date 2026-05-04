@@ -123,6 +123,84 @@ export default function Policies() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Policy Acknowledgement</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">HR Policies</div>
+                <div className="text-xs text-gray-500">45/45 acknowledged</div>
+              </div>
+              <Badge label="100%" color="green" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">IT & Security</div>
+                <div className="text-xs text-gray-500">38/45 acknowledged</div>
+              </div>
+              <Badge label="84%" color="blue" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Code of Conduct</div>
+                <div className="text-xs text-gray-500">42/45 acknowledged</div>
+              </div>
+              <Badge label="93%" color="green" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Reminder Notifications</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg bg-yellow-50 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Pending Acknowledgements</div>
+                <div className="text-xs text-gray-500">12 employees</div>
+              </div>
+              <Button label="Send Reminder" variant="outline" size="sm" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Policy Expiring Soon</div>
+                <div className="text-xs text-gray-500">3 policies due for review</div>
+              </div>
+              <Button label="Notify Owners" variant="outline" size="sm" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-purple-50 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">New Policy Published</div>
+                <div className="text-xs text-gray-500">Remote Work Policy v2.0</div>
+              </div>
+              <Button label="Notify All" variant="outline" size="sm" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Audit Log</h2>
+          <div className="mt-4 space-y-2 text-sm">
+            <div className="flex items-start gap-2 text-gray-600">
+              <span className="text-gray-400">10:30 AM</span>
+              <span>John Smith acknowledged HR Policies</span>
+            </div>
+            <div className="flex items-start gap-2 text-gray-600">
+              <span className="text-gray-400">09:45 AM</span>
+              <span>Sarah Johnson published IT Security Policy v2.1</span>
+            </div>
+            <div className="flex items-start gap-2 text-gray-600">
+              <span className="text-gray-400">09:15 AM</span>
+              <span>Admin sent reminder to 5 employees</span>
+            </div>
+            <div className="flex items-start gap-2 text-gray-600">
+              <span className="text-gray-400">08:30 AM</span>
+              <span>Michael Brown viewed Code of Conduct</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Add Policy" size="lg">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">

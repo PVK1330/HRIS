@@ -19,10 +19,17 @@ import Onboarding from '../pages/admin/hr/Onboarding.jsx'
 import ExitManagement from '../pages/admin/hr/ExitManagement.jsx'
 import LettersTemplates from '../pages/admin/documents/LettersTemplates.jsx'
 import AdminSettings from '../pages/admin/settings/Settings.jsx'
+import DepartmentManagement from '../pages/admin/settings/Departments.jsx'
+import ProjectManagement from '../pages/admin/settings/Projects.jsx'
+import TaskManagement from '../pages/admin/settings/Tasks.jsx'
+import TemplateGenerator from '../pages/admin/documents/TemplateGenerator.jsx'
+import AssetManagement from '../pages/admin/assets/AssetManagement.jsx'
+import Reports from '../pages/admin/reports/Reports.jsx'
+import AnnouncementsPage from '../pages/admin/Announcements.jsx'
+import Payroll from '../pages/admin/finance/Payroll.jsx'
 
 import PlatformDashboard from '../pages/superadmin/platform/Dashboard.jsx'
 import TenantManagement from '../pages/superadmin/tenants/TenantManagement.jsx'
-import DomainsSSL from '../pages/superadmin/domains/DomainsSSL.jsx'
 import SubscriptionsPlans from '../pages/superadmin/subscriptions/SubscriptionsPlans.jsx'
 import Billing from '../pages/superadmin/billing/Billing.jsx'
 import ModuleManagement from '../pages/superadmin/platform/ModuleManagement.jsx'
@@ -41,21 +48,9 @@ import EmailSettingsPage from '../pages/superadmin/settings/email/EmailSettings.
 import EmailTemplatesPage from '../pages/superadmin/settings/email/EmailTemplates.jsx'
 import EmailLogPage from '../pages/superadmin/settings/email/EmailLog.jsx'
 
-import EmployeeLayout from '../layouts/EmployeeLayout.jsx'
-import EmployeeDashboard from '../pages/employee/Dashboard.jsx'
-import HRLayout from '../layouts/HRLayout.jsx'
-import HRDashboard from '../pages/hr/Dashboard.jsx'
-import HRTeam from '../pages/hr/Team.jsx'
-import HRLeaveApprovals from '../pages/hr/LeaveApprovals.jsx'
-import HRAttendance from '../pages/hr/Attendance.jsx'
-import HRExpenses from '../pages/hr/Expenses.jsx'
-import HRPerformance from '../pages/hr/Performance.jsx'
-import HRLetters from '../pages/hr/Letters.jsx'
-import HRReports from '../pages/hr/Reports.jsx'
-import HRProfile from '../pages/hr/Profile.jsx'
-import HRMessages from '../pages/hr/Messages.jsx'
-import HRAnnouncements from '../pages/hr/Announcements.jsx'
-import HRSettings from '../pages/hr/Settings.jsx'
+import SuperProfile from '../pages/superadmin/Profile.jsx'
+
+// Legacy imports removed causing 404s
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth()
@@ -72,6 +67,9 @@ function RootLayout() {
   )
 }
 
+const ADMIN_ROLES = ['hr_admin', 'hr_executive', 'manager', 'employee']
+const SUPER_ROLES = ['super_admin', 'support_admin', 'billing_admin']
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -82,7 +80,7 @@ export const router = createBrowserRouter([
       {
         path: 'admin',
         element: (
-          <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
             <AdminLayout />
           </ProtectedRoute>
         ),
@@ -102,61 +100,20 @@ export const router = createBrowserRouter([
           { path: 'exit-management', element: <ExitManagement /> },
           { path: 'letters', element: <LettersTemplates /> },
           { path: 'settings', element: <AdminSettings /> },
-        ],
-      },
-      {
-        path: 'employee',
-        element: (
-          <ProtectedRoute allowedRoles={['employee', 'admin', 'superadmin']}>
-            <EmployeeLayout />
-          </ProtectedRoute>
-        ),
-        children: [
-          { index: true, element: <Navigate to="dashboard" replace /> },
-          { path: 'dashboard', element: <EmployeeDashboard /> },
-          { path: 'profile', element: <HRProfile /> },
-          { path: 'attendance', element: <EmployeeDashboard /> },
-          { path: 'leave', element: <EmployeeDashboard /> },
-          { path: 'timesheet', element: <EmployeeDashboard /> },
-          { path: 'goals', element: <EmployeeDashboard /> },
-          { path: 'reviews', element: <EmployeeDashboard /> },
-          { path: 'payslips', element: <EmployeeDashboard /> },
-          { path: 'expenses', element: <EmployeeDashboard /> },
-          { path: 'messages', element: <HRMessages /> },
-          { path: 'announcements', element: <HRAnnouncements /> },
-          { path: 'settings', element: <HRSettings /> },
-        ],
-      },
-      {
-        path: 'hr',
-        element: (
-          <ProtectedRoute allowedRoles={['hr', 'admin', 'superadmin']}>
-            <HRLayout />
-          </ProtectedRoute>
-        ),
-        children: [
-          { index: true, element: <Navigate to="dashboard" replace /> },
-          { path: 'dashboard', element: <HRDashboard /> },
-          { path: 'team', element: <HRTeam /> },
-          { path: 'leave-approvals', element: <HRLeaveApprovals /> },
-          { path: 'attendance', element: <HRAttendance /> },
-          { path: 'expenses', element: <HRExpenses /> },
-          { path: 'performance', element: <HRPerformance /> },
-          { path: 'letters', element: <HRLetters /> },
-          { path: 'reports', element: <HRReports /> },
-          { path: 'employees', element: <HRTeam /> },
-          { path: 'onboarding', element: <EmployeeDashboard /> },
-          { path: 'exit', element: <EmployeeDashboard /> },
-          { path: 'announcements', element: <HRAnnouncements /> },
-          { path: 'messages', element: <HRMessages /> },
-          { path: 'settings', element: <HRSettings /> },
-          { path: 'profile', element: <HRProfile /> },
+          { path: 'departments', element: <DepartmentManagement /> },
+          { path: 'projects', element: <ProjectManagement /> },
+          { path: 'tasks', element: <TaskManagement /> },
+          { path: 'templates', element: <TemplateGenerator /> },
+          { path: 'assets', element: <AssetManagement /> },
+          { path: 'reports', element: <Reports /> },
+          { path: 'announcements', element: <AnnouncementsPage /> },
+          { path: 'payroll', element: <Payroll /> },
         ],
       },
       {
         path: 'superadmin',
         element: (
-          <ProtectedRoute allowedRoles={['superadmin']}>
+          <ProtectedRoute allowedRoles={SUPER_ROLES}>
             <SuperAdminLayout />
           </ProtectedRoute>
         ),
@@ -164,7 +121,6 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <PlatformDashboard /> },
           { path: 'tenants', element: <TenantManagement /> },
-          { path: 'domains', element: <DomainsSSL /> },
           { path: 'subscriptions', element: <SubscriptionsPlans /> },
           { path: 'billing', element: <Billing /> },
           { path: 'modules', element: <ModuleManagement /> },
@@ -188,6 +144,7 @@ export const router = createBrowserRouter([
               { path: 'system', element: <SystemInfo /> },
             ],
           },
+          { path: 'profile', element: <SuperProfile /> },
         ],
       },
       { path: '*', element: <Navigate to="/login" replace /> },

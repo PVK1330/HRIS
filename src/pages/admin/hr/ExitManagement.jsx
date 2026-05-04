@@ -105,6 +105,243 @@ export default function ExitManagement() {
 
       <Table columns={columns} data={exitRecords} pageSize={5} />
 
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Clearance Task Tracking</h2>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">John Smith - IT Assets</div>
+              <div className="text-xs text-gray-500">Laptop, Monitor, Keyboard pending return</div>
+            </div>
+            <Badge label="Pending" color="orange" />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Sarah Johnson - System Access</div>
+              <div className="text-xs text-gray-500">Email, ERP, and access revocation pending</div>
+            </div>
+            <Badge label="In Progress" color="blue" />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Michael Brown - Library Books</div>
+              <div className="text-xs text-gray-500">2 books returned, clearance pending</div>
+            </div>
+            <Badge label="Completed" color="green" />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Asset Return Management</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Laptop - Dell XPS 15</div>
+                <div className="text-xs text-gray-500">John Smith • AST-001</div>
+              </div>
+              <Badge label="Pending" color="orange" size="sm" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Monitor - Dell 27"</div>
+                <div className="text-xs text-gray-500">Sarah Johnson • AST-002</div>
+              </div>
+              <Badge label="Returned" color="green" size="sm" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Security Badge</div>
+                <div className="text-xs text-gray-500">Michael Brown • BADGE-003</div>
+              </div>
+              <Badge label="Returned" color="green" size="sm" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Exit Interview Recording</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">John Smith</div>
+                <div className="text-xs text-gray-500">Scheduled: Apr 20, 2026</div>
+              </div>
+              <Badge label="Scheduled" color="blue" size="sm" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Sarah Johnson</div>
+                <div className="text-xs text-gray-500">Completed: Apr 15, 2026</div>
+              </div>
+              <Badge label="Completed" color="green" size="sm" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Michael Brown</div>
+                <div className="text-xs text-gray-500">Waived by employee</div>
+              </div>
+              <Badge label="Waived" color="gray" size="sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Final Settlement Processing</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">John Smith</div>
+                <div className="text-xs text-gray-500">Salary: AED 15,000 • Benefits: AED 2,500</div>
+              </div>
+              <Badge label="Processing" color="orange" size="sm" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Sarah Johnson</div>
+                <div className="text-xs text-gray-500">Salary: AED 12,000 • Benefits: AED 1,800</div>
+              </div>
+              <Badge label="Paid" color="green" size="sm" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Michael Brown</div>
+                <div className="text-xs text-gray-500">Salary: AED 18,000 • Benefits: AED 3,000</div>
+              </div>
+              <Badge label="Pending" color="orange" size="sm" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Exit Document Generation</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">NOC - John Smith</div>
+                <div className="text-xs text-gray-500">No Objection Certificate</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge label="Generated" color="green" size="sm" />
+                <Button label="Download" variant="ghost" size="sm" />
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Experience Letter - Sarah Johnson</div>
+                <div className="text-xs text-gray-500">Employment verification</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge label="Generated" color="green" size="sm" />
+                <Button label="Download" variant="ghost" size="sm" />
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Settlement Statement - Michael Brown</div>
+                <div className="text-xs text-gray-500">Final payment details</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge label="Pending" color="orange" size="sm" />
+                <Button label="Generate" variant="ghost" size="sm" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Exit Workflow Stages</h2>
+          <div className="mt-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 text-xs">
+                ✓
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">Resignation Submitted</div>
+                <div className="text-xs text-gray-500">Employee submitted formal resignation</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 text-xs">
+                ✓
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">Notice Period Confirmed</div>
+                <div className="text-xs text-gray-500">HR confirmed last working day</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">
+                3
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">Exit Interview Scheduled</div>
+                <div className="text-xs text-gray-500">Interview with HR Manager</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 text-xs">
+                4
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">Asset Clearance</div>
+                <div className="text-xs text-gray-500">IT equipment and access return</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 text-xs">
+                5
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">Final Settlement</div>
+                <div className="text-xs text-gray-500">Salary, benefits, and dues calculation</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 text-xs">
+                6
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">Documents Issued</div>
+                <div className="text-xs text-gray-500">NOC and experience letter</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Active Exit Cases</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">John Smith</div>
+                <div className="text-xs text-gray-500">15 days remaining in notice</div>
+              </div>
+              <Badge label="Notice" color="orange" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Sarah Johnson</div>
+                <div className="text-xs text-gray-500">Offboarding in progress</div>
+              </div>
+              <Badge label="Offboarding" color="blue" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Michael Brown</div>
+                <div className="text-xs text-gray-500">Pending clearance</div>
+              </div>
+              <Badge label="Clearance" color="purple" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Initiate Exit" size="lg">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
