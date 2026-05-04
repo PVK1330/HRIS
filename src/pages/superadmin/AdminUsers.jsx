@@ -6,7 +6,12 @@ import {
   HiEnvelope, 
   HiShieldCheck,
   HiMagnifyingGlass,
-  HiXMark
+  HiXMark,
+  HiQuestionMarkCircle,
+  HiFingerPrint,
+  HiUserGroup,
+  HiUserCircle,
+  HiPlus
 } from 'react-icons/hi2'
 import { Badge } from '../../components/ui/Badge.jsx'
 import { Button } from '../../components/ui/Button.jsx'
@@ -54,7 +59,6 @@ export default function AdminUsers() {
     setShowInviteModal(false)
     setInviteForm({ name: '', email: '', role: 'Super Admin', sendEmail: true })
     setErrors({})
-    alert(`Invite sent to ${inviteForm.email}`)
   }
 
   const handleEditClick = (user) => {
@@ -74,7 +78,7 @@ export default function AdminUsers() {
   }
 
   const handleRevoke = () => {
-    if (confirm(`Are you sure you want to revoke access for ${selectedUser.name}?`)) {
+    if (window.confirm(`Are you sure you want to revoke access for ${selectedUser.name}?`)) {
       setUsers(users.map(u => u.id === selectedUser.id ? { ...u, status: 'Inactive' } : u))
       setShowEditModal(false)
     }
@@ -83,107 +87,142 @@ export default function AdminUsers() {
   const getInitials = (name) => name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Platform Administrators</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage internal team members with access to the SuperAdmin panel.</p>
+    <div className="space-y-4 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+             <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
+                <HiUserCircle className="h-4.5 w-4.5" />
+             </div>
+             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Admin Users</h1>
+             <div className="group relative">
+                <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-blue-500 transition-colors" />
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
+                   <p className="font-bold text-blue-400 mb-1 uppercase tracking-widest">Internal Team</p>
+                   Manage your internal staff who have access to this superadmin panel.
+                   <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+                </div>
+             </div>
+          </div>
+          <p className="text-[11px] font-medium text-slate-500">Manage internal staff members.</p>
         </div>
-        <Button label="Invite New Admin" variant="primary" icon={HiUserPlus} onClick={() => setShowInviteModal(true)} />
+        <Button label="Add User" variant="primary" size="sm" icon={HiUserPlus} onClick={() => setShowInviteModal(true)} />
       </div>
 
-      <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-        <div className="relative flex-1">
-          <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+        <div className="relative flex-1 group w-full">
+          <HiMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
           <input 
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-            placeholder="Search by name, email or role..."
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-transparent rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:border-blue-500/20 transition-all outline-none"
+            placeholder="Search team members..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <Badge label={`${filtered.length} Users Total`} color="gray" />
+        <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100 w-full sm:w-auto">
+           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Pool</span>
+           <span className="text-xs font-bold text-slate-900">{filtered.length} Staff</span>
+        </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      {/* Team Member Table */}
+      <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
         <Table 
           columns={[
-            { key: 'user', label: 'Administrator' },
-            { key: 'role', label: 'Platform Role' },
-            { key: 'lastLogin', label: 'Last Activity' },
+            { key: 'user', label: 'Admin User' },
+            { key: 'role', label: 'Role' },
+            { key: 'lastLogin', label: 'Last Login' },
             { key: 'status', label: 'Status' },
             { key: 'actions', label: 'Actions' },
           ]} 
           data={filtered.map(u => ({
             user: (
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-xs font-bold text-blue-600">
+              <div className="flex items-center gap-4 py-2">
+                <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[11px] font-black text-blue-600 shadow-sm transition-transform hover:scale-105">
                   {getInitials(u.name)}
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-gray-900">{u.name}</div>
-                  <div className="text-xs text-gray-500">{u.email}</div>
+                  <div className="text-sm font-bold text-slate-900 tracking-tight">{u.name}</div>
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{u.email}</div>
                 </div>
               </div>
             ),
-            role: <Badge label={u.role} color={u.role === 'Super Admin' ? 'indigo' : 'blue'} />,
-            lastLogin: <span className="text-xs text-gray-500">{u.lastLogin}</span>,
+            role: <Badge label={u.role} color={u.role === 'Super Admin' ? 'indigo' : 'blue'} variant="glass" />,
+            lastLogin: <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{u.lastLogin}</span>,
             status: <Badge label={u.status} color={u.status === 'Active' ? 'green' : u.status === 'Pending' ? 'amber' : 'gray'} />,
             actions: (
-              <Button variant="ghost" size="sm" icon={HiPencilSquare} onClick={() => handleEditClick(u)} />
+              <Button variant="ghost" size="sm" icon={HiPencilSquare} className="text-slate-400 hover:text-blue-600" onClick={() => handleEditClick(u)} />
             )
           }))} 
         />
       </div>
 
       {/* Invite Modal */}
-      <Modal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invite New Administrator" size="md">
-        <div className="space-y-5">
-          <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex gap-3">
-             <HiEnvelope className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-             <p className="text-xs text-blue-700 leading-relaxed">
-               Invited users will receive a secure link to set up their platform password and multi-factor authentication.
+      <Modal 
+        isOpen={showInviteModal} 
+        onClose={() => setShowInviteModal(false)} 
+        title="Provision Team Member" 
+        description="Initialize a new administrative credentials for an HRIS staff member."
+        icon={HiPlus}
+        size="lg"
+      >
+        <div className="space-y-8 p-2">
+          <div className="p-6 bg-blue-50/50 rounded-[1.5rem] border border-blue-100 flex gap-4 items-start">
+             <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm">
+                <HiFingerPrint className="h-6 w-6" />
+             </div>
+             <p className="text-xs text-blue-700 font-medium leading-relaxed">
+               Secure credentials will be dispatched via encrypted email. The staff member will be required to configure multi-factor authentication (MFA) upon first access.
              </p>
           </div>
-          <Input label="Full Name *" placeholder="e.g. Sarah Wilson" value={inviteForm.name} onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })} />
-          <Input label="Email Address *" type="email" placeholder="sarah.w@hriscloud.io" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} />
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Platform Access Level *</label>
-            <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 outline-none" value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}>
-              <option>Super Admin</option><option>Support Admin</option><option>Billing Admin</option><option>Read Only</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Input label="Staff Identity *" placeholder="e.g. Sarah Wilson" value={inviteForm.name} onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })} />
+            <Input label="Enterprise Email *" type="email" placeholder="sarah.w@hriscloud.io" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} />
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Orchestration Privilege Level *</label>
+              <select className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all appearance-none shadow-sm cursor-pointer" value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}>
+                <option>Super Admin</option><option>Support Admin</option><option>Billing Admin</option><option>Read Only</option>
+              </select>
+            </div>
           </div>
-          <div className="flex gap-2 pt-4">
-            <Button label="Cancel" variant="ghost" className="flex-1" onClick={() => setShowInviteModal(false)} />
-            <Button label="Send Invitation" variant="primary" className="flex-1" onClick={handleInvite} />
+          <div className="flex gap-4 pt-6 border-t border-slate-100">
+            <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowInviteModal(false)} />
+            <Button label="Save" variant="primary" className="flex-1" onClick={handleInvite} />
           </div>
         </div>
       </Modal>
 
       {/* Edit Modal */}
-      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Manage Access">
-        <div className="space-y-4">
-          <Input label="Full Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-          <Input label="Email Address" value={editForm.email} disabled />
+      <Modal 
+        isOpen={showEditModal} 
+        onClose={() => setShowEditModal(false)} 
+        title="Manage Staff Credentials"
+        description="Modify internal administrative metadata and orchestration rights."
+        icon={HiPencilSquare}
+      >
+        <div className="space-y-6 p-2">
+          <Input label="Staff Identity" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+          <Input label="Registered Email" value={editForm.email} disabled />
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-gray-500">Platform Role</label>
-              <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 outline-none" value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}>
+              <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Platform Role</label>
+              <select className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer" value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}>
                 <option>Super Admin</option><option>Support Admin</option><option>Billing Admin</option>
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-gray-500">Account Status</label>
-              <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 outline-none" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
+              <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Account Status</label>
+              <select className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
                 <option>Active</option><option>Inactive</option>
               </select>
             </div>
           </div>
-          <div className="flex flex-col gap-2 pt-6">
-            <Button label="Update Account" variant="primary" onClick={handleSaveEdit} />
-            <div className="flex gap-2">
-              <Button label="Revoke Access" variant="ghost" className="flex-1 text-red-600 hover:bg-red-50" icon={HiTrash} onClick={handleRevoke} />
-              <Button label="Cancel" variant="ghost" className="flex-1" onClick={() => setShowEditModal(false)} />
+          <div className="flex flex-col gap-3 pt-6 border-t border-slate-100">
+            <Button label="Save" variant="primary" onClick={handleSaveEdit} />
+            <div className="flex gap-3">
+              <Button label="Delete" variant="ghost" className="flex-1 text-red-600 hover:bg-red-50 font-bold border-transparent" icon={HiTrash} onClick={handleRevoke} />
+              <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400 border-transparent" onClick={() => setShowEditModal(false)} />
             </div>
           </div>
         </div>

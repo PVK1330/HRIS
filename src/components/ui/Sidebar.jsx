@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import { HiArrowRightOnRectangle, HiGlobeAlt, HiQuestionMarkCircle } from 'react-icons/hi2'
 import { Avatar } from './Avatar.jsx'
 import { Button } from './Button.jsx'
@@ -12,11 +12,11 @@ function roleSubtitle(role) {
 }
 
 function panelName(role) {
-  if (role === 'superadmin') return 'SUPER ADMIN PANEL'
+  if (role === 'super_admin' || role === 'superadmin') return 'SUPER ADMIN'
   if (role === 'admin') return 'ADMIN PANEL'
   if (role === 'hr') return 'HR PANEL'
   if (role === 'employee') return 'EMPLOYEE PORTAL'
-  return 'HRIS'
+  return ''
 }
 
 export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileClose }) {
@@ -37,14 +37,8 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="flex shrink-0 items-center gap-3 px-5 py-6">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0F766E]/10 text-[#0F766E]">
-            <HiGlobeAlt className="h-6 w-6" aria-hidden />
-          </div>
-          <div className="flex-1">
-            <div className="font-display text-lg font-bold leading-tight text-[#0F766E]">HRIS</div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-[#6D28D9]">{panelName(role)}</div>
-          </div>
+        <div className="flex shrink-0 items-center justify-center p-[5px] border-b border-slate-50">
+          <img src="/HRIS_Logo.png" alt="HRIS Logo" className="h-16 w-auto object-contain" />
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
@@ -56,22 +50,44 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
               {group.items.map((item) => {
                 const Icon = item.icon
                 return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    onClick={onMobileClose}
-                    end
-                    className={({ isActive }) =>
-                      `mx-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'bg-[#0F766E] text-white shadow-sm'
-                          : 'text-slate-700 hover:bg-gray-50 hover:text-[#0F766E]'
-                      }`
-                    }
-                  >
-                    {Icon && <Icon className="h-5 w-5 shrink-0 opacity-90" aria-hidden />}
-                    <span>{item.label}</span>
-                  </NavLink>
+                  <div key={item.path} className="relative group">
+                    <NavLink
+                      to={item.path}
+                      onClick={onMobileClose}
+                      end
+                      className={({ isActive }) =>
+                        `mx-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                          isActive
+                            ? 'bg-[#0F766E] text-white shadow-sm'
+                            : 'text-slate-700 hover:bg-gray-50 hover:text-[#0F766E]'
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          {Icon && (
+                            <Icon 
+                              className={`h-5 w-5 shrink-0 transition-opacity ${
+                                isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                              }`} 
+                              aria-hidden 
+                            />
+                          )}
+                          <span>{item.label}</span>
+                          <HiQuestionMarkCircle className="ml-auto h-4 w-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </>
+                      )}
+                    </NavLink>
+
+                    {/* Custom Tooltip */}
+                    {item.why && (
+                      <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 w-64 p-3 bg-slate-900 text-white text-[11px] leading-relaxed rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] pointer-events-none border border-white/10">
+                        <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+                        <p className="font-bold text-blue-400 mb-1 uppercase tracking-wider">Module Context</p>
+                        {item.why}
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </div>
@@ -81,12 +97,15 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
         <div className="shrink-0 space-y-3 border-t border-gray-100 bg-white px-4 py-4">
           <div className="flex items-center gap-3 rounded-xl bg-gray-100 px-3 py-3">
             <Avatar name={user?.name ?? 'User'} size="md" bgColor={avatarPalette} />
-            <div className="min-w-0 flex-1">
+            <Link 
+              to={role === 'super_admin' || role === 'superadmin' ? '/superadmin/profile' : '/admin/employee-profile'} 
+              className="min-w-0 flex-1 hover:opacity-80 transition-opacity"
+            >
               <div className="truncate text-sm font-bold text-[#0F766E]">{user?.name ?? 'User'}</div>
               <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                 {roleSubtitle(role)}
               </div>
-            </div>
+            </Link>
             {onLogout && (
               <Button
                 variant="ghost"

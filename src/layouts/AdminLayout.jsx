@@ -208,15 +208,15 @@ export default function AdminLayout() {
             </div>
 
             <NotificationDropdown />
-            <div className="hidden items-center gap-2 sm:flex">
-              <Avatar name={user?.name} size="sm" />
+            <Link to="/admin/employee-profile" className="hidden items-center gap-2 sm:flex group">
+              <Avatar name={user?.name} size="sm" className="group-hover:ring-2 group-hover:ring-primary transition-all" />
               <div className="min-w-0 text-right">
-                <div className="truncate text-sm font-semibold text-text-primary">{user?.name}</div>
+                <div className="truncate text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">{user?.name}</div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-primary">
                   {ROLE_DISPLAY[user?.role]}
                 </div>
               </div>
-            </div>
+            </Link>
             <Button label="Log out" variant="ghost" size="sm" onClick={logout} />
           </div>
         </header>

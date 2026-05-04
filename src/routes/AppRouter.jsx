@@ -39,6 +39,7 @@ import SupportTickets from '../pages/superadmin/support/SupportTickets.jsx'
 import AdminUsers from '../pages/superadmin/AdminUsers.jsx'
 import Permissions from '../pages/superadmin/Permissions.jsx'
 import SuperSettings from '../pages/superadmin/Settings.jsx'
+import SuperProfile from '../pages/superadmin/Profile.jsx'
 
 // Legacy imports removed causing 404s
 
@@ -120,6 +121,7 @@ export const router = createBrowserRouter([
           { path: 'admin-users', element: <AdminUsers /> },
           { path: 'permissions', element: <Permissions /> },
           { path: 'settings', element: <SuperSettings /> },
+          { path: 'profile', element: <SuperProfile /> },
         ],
       },
       { path: '*', element: <Navigate to="/login" replace /> },

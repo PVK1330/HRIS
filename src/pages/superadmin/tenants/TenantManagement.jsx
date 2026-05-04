@@ -4,29 +4,33 @@ import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
-import { 
-  HiCheck, 
-  HiClock, 
-  HiDocumentText, 
-  HiXMark, 
-  HiArrowDownTray, 
-  HiUserCircle, 
-  HiKey, 
-  HiPlus, 
-  HiPencil, 
-  HiTrash, 
+import {
+  HiCheck,
+  HiClock,
+  HiDocumentText,
+  HiXMark,
+  HiArrowDownTray,
+  HiUserCircle,
+  HiKey,
+  HiPlus,
+  HiPencil,
+  HiTrash,
   HiArrowTopRightOnSquare,
   HiCalendarDays,
-  HiCreditCard
+  HiCreditCard,
+  HiUsers,
+  HiShieldCheck,
+  HiQuestionMarkCircle,
+  HiGlobeAlt
 } from 'react-icons/hi2'
 
 export default function TenantManagement() {
   const [searchQuery, setSearchQuery] = useState('')
   const [planFilter, setPlanFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
-  
+
   // Data State
-  const [tenants, setTenants] = useState([
+  const [organizations, setOrganizations] = useState([
     { id: 1, name: 'AlphaCorp HR', domain: 'alphacorp.hriscloud.io', adminEmail: 'admin@alphacorp.com', plan: 'Enterprise', users: 342, maxUsers: 500, storage: 29, maxStorage: 50, status: 'Active', created: '01 Jan 2026', initials: 'AL', color: 'indigo', domainType: 'Subdomain', billingCycle: 'Annual' },
     { id: 2, name: 'HR Nexus Pvt Ltd', domain: 'hrnexus.hriscloud.io', adminEmail: 'it@hrnexus.io', plan: 'Growth', users: 87, maxUsers: 200, storage: 6, maxStorage: 20, status: 'Trial', created: '01 Apr 2026', initials: 'HR', color: 'cyan', domainType: 'Subdomain', billingCycle: 'Monthly' },
     { id: 3, name: 'TalentCo FZCO', domain: 'talentco.com', adminEmail: 'ops@talentco.com', plan: 'Pro', users: 156, maxUsers: 300, storage: 16.5, maxStorage: 30, status: 'SSL Issue', created: '15 Nov 2025', initials: 'TC', color: 'green', domainType: 'Custom Domain', billingCycle: 'Annual' },
@@ -34,13 +38,13 @@ export default function TenantManagement() {
   ])
 
   // Modal States
-  const [showNewTenantModal, setShowNewTenantModal] = useState(false)
-  const [showTenantDetailModal, setShowTenantDetailModal] = useState(false)
+  const [showNewModal, setShowNewModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
-  
-  const [selectedTenant, setSelectedTenant] = useState(null)
-  const [confirmAction, setConfirmAction] = useState('') 
+
+  const [selectedOrg, setSelectedOrg] = useState(null)
+  const [confirmAction, setConfirmAction] = useState('')
   const [confirmInput, setConfirmInput] = useState('')
 
   // Form States
@@ -48,39 +52,39 @@ export default function TenantManagement() {
   const [newForm, setNewForm] = useState({ name: '', adminName: '', adminEmail: '', plan: 'Starter', billingCycle: 'Monthly', subdomain: '' })
   const [errors, setErrors] = useState({})
 
-  const filteredTenants = useMemo(() => {
-    return tenants.filter((tenant) => {
-      const matchesSearch = tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tenant.domain.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tenant.adminEmail.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesPlan = planFilter === 'all' || tenant.plan === planFilter
-      const matchesStatus = statusFilter === 'all' || tenant.status === statusFilter
+  const filteredOrganizations = useMemo(() => {
+    return organizations.filter((org) => {
+      const matchesSearch = org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        org.domain.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        org.adminEmail.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesPlan = planFilter === 'all' || org.plan === planFilter
+      const matchesStatus = statusFilter === 'all' || org.status === statusFilter
       return matchesSearch && matchesPlan && matchesStatus
     })
-  }, [tenants, searchQuery, planFilter, statusFilter])
+  }, [organizations, searchQuery, planFilter, statusFilter])
 
   const handleExport = () => {
-    alert('Exporting ' + tenants.length + ' tenants to CSV...')
+    alert('Exporting ' + organizations.length + ' organizations to CSV...')
   }
 
-  const handleLoginAs = (tenant) => {
-    alert(`Redirecting to ${tenant.domain} as Platform Admin...`)
+  const handleLoginAs = (org) => {
+    alert(`Redirecting to ${org.domain} as Platform Admin...`)
   }
 
-  const handleView = (tenant) => {
-    setSelectedTenant(tenant)
-    setShowTenantDetailModal(true)
+  const handleView = (org) => {
+    setSelectedOrg(org)
+    setShowDetailModal(true)
   }
 
-  const handleEdit = (tenant) => {
-    setSelectedTenant(tenant)
+  const handleEdit = (org) => {
+    setSelectedOrg(org)
     setEditForm({
-      name: tenant.name,
-      adminEmail: tenant.adminEmail,
-      plan: tenant.plan,
-      billingCycle: tenant.billingCycle || 'Monthly',
-      maxUsers: tenant.maxUsers,
-      status: tenant.status
+      name: org.name,
+      adminEmail: org.adminEmail,
+      plan: org.plan,
+      billingCycle: org.billingCycle || 'Monthly',
+      maxUsers: org.maxUsers,
+      status: org.status
     })
     setShowEditModal(true)
   }
@@ -90,16 +94,16 @@ export default function TenantManagement() {
       setErrors({ name: !editForm.name, adminEmail: !editForm.adminEmail })
       return
     }
-    setTenants(tenants.map(t => t.id === selectedTenant.id ? { ...t, ...editForm } : t))
+    setOrganizations(organizations.map(o => o.id === selectedOrg.id ? { ...o, ...editForm } : o))
     setShowEditModal(false)
   }
 
-  const handleCreateTenant = () => {
+  const handleCreateOrganization = () => {
     if (!newForm.name || !newForm.adminEmail || !newForm.subdomain) {
       alert('Please fill all required fields.')
       return
     }
-    const newTenant = {
+    const newOrg = {
       id: Date.now(),
       name: newForm.name,
       domain: `${newForm.subdomain}.hriscloud.io`,
@@ -116,54 +120,69 @@ export default function TenantManagement() {
       domainType: 'Subdomain',
       billingCycle: newForm.billingCycle
     }
-    setTenants([newTenant, ...tenants])
-    setShowNewTenantModal(false)
+    setOrganizations([newOrg, ...organizations])
+    setShowNewModal(false)
     setNewForm({ name: '', adminName: '', adminEmail: '', plan: 'Starter', billingCycle: 'Monthly', subdomain: '' })
   }
 
-  const handleAction = (type, tenant) => {
-    setSelectedTenant(tenant)
+  const handleAction = (type, org) => {
+    setSelectedOrg(org)
     setConfirmAction(type)
     setConfirmInput('')
     setShowConfirmModal(true)
   }
 
   const executeAction = () => {
-    if (confirmAction === 'delete' && confirmInput !== selectedTenant.name) {
+    if (confirmAction === 'delete' && confirmInput !== selectedOrg.name) {
       setErrors({ confirm: true })
       return
     }
     if (confirmAction === 'suspend') {
-      setTenants(tenants.map(t => t.id === selectedTenant.id ? { ...t, status: 'Suspended' } : t))
+      setOrganizations(organizations.map(o => o.id === selectedOrg.id ? { ...o, status: 'Suspended' } : o))
     } else if (confirmAction === 'delete') {
-      setTenants(tenants.filter(t => t.id !== selectedTenant.id))
+      setOrganizations(organizations.filter(o => o.id !== selectedOrg.id))
     } else if (confirmAction === 'reset_pw') {
-      alert(`Password reset link sent to ${selectedTenant.adminEmail}`)
+      alert(`Password reset link sent to ${selectedOrg.adminEmail}`)
     }
     setShowConfirmModal(false)
-    setShowTenantDetailModal(false)
+    setShowDetailModal(false)
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tenant Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage all registered organizations and their access levels.</p>
+    <div className="space-y-4 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+             <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
+                <HiGlobeAlt className="h-4.5 w-4.5" />
+             </div>
+             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Organizations</h1>
+             <div className="group relative">
+                <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-indigo-500 transition-colors" />
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
+                   <p className="font-bold text-indigo-400 mb-1 uppercase tracking-widest">Company Management</p>
+                   Manage all companies, their domains, and user limits.
+                   <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+                </div>
+             </div>
+          </div>
+          <p className="text-[11px] font-medium text-slate-500">View and manage all organization accounts.</p>
         </div>
         <div className="flex gap-2">
-          <Button label="Export CSV" variant="ghost" icon={HiArrowDownTray} onClick={handleExport} />
-          <Button label="New Tenant" variant="primary" icon={HiPlus} onClick={() => setShowNewTenantModal(true)} />
+          <Button label="Export CSV" variant="ghost" size="sm" icon={HiArrowDownTray} onClick={handleExport} className="text-slate-500 font-bold" />
+          <Button label="Add Organization" variant="primary" size="sm" icon={HiPlus} onClick={() => setShowNewModal(true)} />
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Input label="Search Tenants" placeholder="Name, domain, or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      {/* Filter Section */}
+      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Input label="Search Organizations" placeholder="Name, domain, or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Subscription Plan</label>
-            <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 outline-none" value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
-              <option value="all">All Plans</option>
+            <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Subscription Plan</label>
+            <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all appearance-none cursor-pointer" value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
+              <option value="all">All Ecosystem Tiers</option>
               <option>Starter</option>
               <option>Growth</option>
               <option>Pro</option>
@@ -171,9 +190,9 @@ export default function TenantManagement() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-500">Current Status</label>
-            <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 outline-none" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">All Statuses</option>
+            <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Current Status</label>
+            <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all appearance-none cursor-pointer" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All Operational States</option>
               <option>Active</option>
               <option>Trial</option>
               <option>Suspended</option>
@@ -181,154 +200,178 @@ export default function TenantManagement() {
             </select>
           </div>
           <div className="flex items-end">
-            <Button label="Reset Filters" variant="ghost" className="w-full" onClick={() => { setSearchQuery(''); setPlanFilter('all'); setStatusFilter('all'); }} />
+            <Button label="Reset Filters" variant="ghost" className="w-full font-bold text-slate-400" onClick={() => { setSearchQuery(''); setPlanFilter('all'); setStatusFilter('all'); }} />
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      {/* Organization Table */}
+      <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
         <Table
           columns={[
-            { key: 'tenant', label: 'Organization' },
-            { key: 'plan', label: 'Plan' },
-            { key: 'users', label: 'Users' },
+            { key: 'org', label: 'Organization' },
+            { key: 'plan', label: 'Tier' },
+            { key: 'users', label: 'Nodes' },
             { key: 'status', label: 'Status' },
-            { key: 'created', label: 'Created' },
-            { key: 'actions', label: 'Actions' },
+            { key: 'created', label: 'Onboarded' },
+            { key: 'actions', label: 'Orchestration' },
           ]}
-          data={filteredTenants.map((tenant) => ({
-            tenant: (
-              <div className="flex items-center gap-3">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg bg-${tenant.color}-50 text-xs font-bold text-${tenant.color}-600 border border-${tenant.color}-100`}>
-                  {tenant.initials}
+          data={filteredOrganizations.map((org) => ({
+            org: (
+              <div className="flex items-center gap-4 py-2">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-${org.color}-50 text-[11px] font-black text-${org.color}-600 border border-${org.color}-100 shadow-sm`}>
+                  {org.initials}
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-gray-900">{tenant.name}</div>
-                  <div className="text-[11px] font-mono text-blue-500">{tenant.domain}</div>
+                  <div className="text-sm font-bold text-slate-900 tracking-tight">{org.name}</div>
+                  <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{org.domain}</div>
                 </div>
               </div>
             ),
-            plan: <Badge label={tenant.plan} color={tenant.plan === 'Enterprise' ? 'amber' : tenant.plan === 'Growth' ? 'cyan' : tenant.plan === 'Pro' ? 'indigo' : 'gray'} />,
+            plan: <Badge label={org.plan} color={org.plan === 'Enterprise' ? 'amber' : org.plan === 'Growth' ? 'cyan' : org.plan === 'Pro' ? 'indigo' : 'gray'} variant="glass" />,
             users: (
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-900">{tenant.users}</span>
-                <span className="text-[10px] text-gray-400">/ {tenant.maxUsers}</span>
+                <span className="text-sm font-black text-slate-900">{org.users}</span>
+                <span className="text-[10px] font-bold text-slate-400">/ {org.maxUsers}</span>
               </div>
             ),
-            status: <Badge label={tenant.status} color={tenant.status === 'Active' ? 'green' : tenant.status === 'Trial' ? 'amber' : tenant.status === 'Suspended' ? 'gray' : 'red'} />,
-            created: <span className="text-xs text-gray-500">{tenant.created}</span>,
+            status: <Badge label={org.status} color={org.status === 'Active' ? 'green' : org.status === 'Trial' ? 'amber' : org.status === 'Suspended' ? 'gray' : 'red'} />,
+            created: <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{org.created}</span>,
             actions: (
-              <div className="flex gap-1">
-                <Button variant="ghost" size="sm" icon={HiDocumentText} title="View Details" onClick={() => handleView(tenant)} />
-                <Button variant="ghost" size="sm" icon={HiPencil} title="Edit Tenant" onClick={() => handleEdit(tenant)} />
-                <Button variant="ghost" size="sm" icon={HiArrowTopRightOnSquare} title="Login As" onClick={() => handleLoginAs(tenant)} />
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" icon={HiDocumentText} className="text-slate-400 hover:text-indigo-600" onClick={() => handleView(org)} />
+                <Button variant="ghost" size="sm" icon={HiPencil} className="text-slate-400 hover:text-blue-600" onClick={() => handleEdit(org)} />
+                <Button variant="ghost" size="sm" icon={HiArrowTopRightOnSquare} className="text-slate-400 hover:text-emerald-600" onClick={() => handleLoginAs(org)} />
               </div>
             ),
           }))}
         />
       </div>
 
-      {/* New Tenant Modal */}
-      <Modal isOpen={showNewTenantModal} onClose={() => setShowNewTenantModal(false)} title="Register New Organization" size="lg">
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Organization Name *" placeholder="e.g. Acme Corp" value={newForm.name} onChange={(e) => setNewForm({...newForm, name: e.target.value})} />
-            <Input label="Subdomain Prefix *" placeholder="acme-hr" value={newForm.subdomain} onChange={(e) => setNewForm({...newForm, subdomain: e.target.value})} />
-            <Input label="Admin Email *" type="email" placeholder="admin@acme.com" value={newForm.adminEmail} onChange={(e) => setNewForm({...newForm, adminEmail: e.target.value})} />
+      {/* New Organization Modal */}
+      <Modal
+        isOpen={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        title="Add Organization"
+        description="Fill in the details below to create a new organization account."
+        icon={HiPlus}
+        size="lg"
+      >
+        <div className="space-y-8 p-2">
+          <div className="grid grid-cols-2 gap-6">
+            <Input label="Organization Name *" placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
+            <Input label="Subdomain Prefix *" placeholder="hris-global" value={newForm.subdomain} onChange={(e) => setNewForm({ ...newForm, subdomain: e.target.value })} />
+            <Input label="Root Admin Email *" type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
             <div>
-              <label className="mb-1 block text-xs font-semibold text-gray-500">Subscription Plan</label>
-              <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 outline-none" value={newForm.plan} onChange={(e) => setNewForm({...newForm, plan: e.target.value})}>
+              <label className="mb-2 block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Subscription Tier</label>
+              <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer" value={newForm.plan} onChange={(e) => setNewForm({ ...newForm, plan: e.target.value })}>
                 <option>Starter</option><option>Growth</option><option>Pro</option><option>Enterprise</option>
               </select>
             </div>
           </div>
-          <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
-            <Button label="Cancel" variant="ghost" onClick={() => setShowNewTenantModal(false)} />
-            <Button label="Create Organization" variant="primary" onClick={handleCreateTenant} />
+          <div className="flex gap-4 justify-end pt-6 border-t border-slate-100">
+            <Button label="Cancel" variant="ghost" className="font-bold text-slate-400" onClick={() => setShowNewModal(false)} />
+            <Button label="Save" variant="primary" onClick={handleCreateOrganization} />
           </div>
         </div>
       </Modal>
 
       {/* Detail Modal */}
-      <Modal isOpen={showTenantDetailModal} onClose={() => setShowTenantDetailModal(false)} title={selectedTenant?.name} size="lg">
-        {selectedTenant && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Admin Email</span>
-                <p className="mt-1 text-sm font-semibold text-gray-900">{selectedTenant.adminEmail}</p>
+      <Modal
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        title={selectedOrg?.name}
+        description={`Organization ID: ${selectedOrg?.id} · Domain: ${selectedOrg?.domain}`}
+        icon={HiUsers}
+        size="lg"
+      >
+        {selectedOrg && (
+          <div className="space-y-8 p-2">
+            <div className="grid grid-cols-3 gap-6">
+              <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 shadow-sm">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Root Admin</span>
+                <p className="mt-1 text-sm font-black text-slate-900 tracking-tight">{selectedOrg.adminEmail}</p>
               </div>
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Billing Cycle</span>
-                <p className="mt-1 text-sm font-semibold text-gray-900">{selectedTenant.billingCycle}</p>
+              <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 shadow-sm">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Billing Cycle</span>
+                <p className="mt-1 text-sm font-black text-slate-900 tracking-tight">{selectedOrg.billingCycle}</p>
               </div>
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Storage</span>
-                <p className="mt-1 text-sm font-semibold text-gray-900">{selectedTenant.storage}GB / {selectedTenant.maxStorage}GB</p>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-gray-900 px-1">QUICK ACTIONS</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <Button label="Login As Admin" variant="ghost" icon={HiArrowTopRightOnSquare} className="justify-start" onClick={() => handleLoginAs(selectedTenant)} />
-                <Button label="Reset Admin Password" variant="ghost" icon={HiKey} className="justify-start" onClick={() => handleAction('reset_pw', selectedTenant)} />
-                <Button label="Update Plan" variant="ghost" icon={HiCreditCard} className="justify-start" onClick={() => handleEdit(selectedTenant)} />
+              <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 shadow-sm">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Storage Node</span>
+                <p className="mt-1 text-sm font-black text-slate-900 tracking-tight">{selectedOrg.storage}GB / {selectedOrg.maxStorage}GB</p>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
-              <Button label="Suspend Access" variant="ghost" className="text-amber-600 hover:bg-amber-50" icon={HiClock} onClick={() => handleAction('suspend', selectedTenant)} />
-              <Button label="Terminate Tenant" variant="ghost" className="text-red-600 hover:bg-red-50" icon={HiTrash} onClick={() => handleAction('delete', selectedTenant)} />
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] px-1">Management Controls</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <Button label="Login As Administrator" variant="ghost" icon={HiArrowTopRightOnSquare} className="justify-start font-bold text-slate-600 py-3" onClick={() => handleLoginAs(selectedOrg)} />
+                <Button label="Reset Access Credentials" variant="ghost" icon={HiKey} className="justify-start font-bold text-slate-600 py-3" onClick={() => handleAction('reset_pw', selectedOrg)} />
+                <Button label="Scale Infrastructure" variant="ghost" icon={HiCreditCard} className="justify-start font-bold text-slate-600 py-3" onClick={() => handleEdit(selectedOrg)} />
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-slate-100 flex justify-between items-center gap-4">
+              <Button label="Suspend Ecosystem" variant="ghost" className="text-amber-600 hover:bg-amber-50 font-bold border-transparent" icon={HiClock} onClick={() => handleAction('suspend', selectedOrg)} />
+              <Button label="Terminate Organization" variant="ghost" className="text-red-600 hover:bg-red-50 font-bold border-transparent" icon={HiTrash} onClick={() => handleAction('delete', selectedOrg)} />
             </div>
           </div>
         )}
       </Modal>
 
       {/* Edit Modal */}
-      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Modify Organization">
-        <div className="space-y-4">
-          <Input label="Company Name" value={editForm.name} onChange={(e) => setEditForm({...editForm, name: e.target.value})} />
-          <Input label="Admin Email" value={editForm.adminEmail} onChange={(e) => setEditForm({...editForm, adminEmail: e.target.value})} />
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Organization"
+        description="Update organization details and resource limits."
+        icon={HiPencil}
+      >
+        <div className="space-y-6 p-2">
+          <Input label="Organization Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+          <Input label="Root Admin Email" value={editForm.adminEmail} onChange={(e) => setEditForm({ ...editForm, adminEmail: e.target.value })} />
           <div className="grid grid-cols-2 gap-4">
-             <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-500">Plan</label>
-                <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 outline-none" value={editForm.plan} onChange={(e) => setEditForm({...editForm, plan: e.target.value})}>
-                  <option>Starter</option><option>Growth</option><option>Pro</option><option>Enterprise</option>
-                </select>
-             </div>
-             <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-500">Status</label>
-                <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 outline-none" value={editForm.status} onChange={(e) => setEditForm({...editForm, status: e.target.value})}>
-                  <option>Active</option><option>Trial</option><option>Suspended</option><option>SSL Issue</option>
-                </select>
-             </div>
+            <div>
+              <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Ecosystem Plan</label>
+              <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all" value={editForm.plan} onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}>
+                <option>Starter</option><option>Growth</option><option>Pro</option><option>Enterprise</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Operational Status</label>
+              <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
+                <option>Active</option><option>Trial</option><option>Suspended</option><option>SSL Issue</option>
+              </select>
+            </div>
           </div>
-          <div className="flex gap-2 pt-4">
-            <Button label="Cancel" variant="ghost" className="flex-1" onClick={() => setShowEditModal(false)} />
-            <Button label="Update Tenant" variant="primary" className="flex-1" onClick={handleSaveEdit} />
+          <div className="flex gap-3 pt-6 border-t border-slate-100">
+            <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowEditModal(false)} />
+            <Button label="Save" variant="primary" className="flex-1" onClick={handleSaveEdit} />
           </div>
         </div>
       </Modal>
 
       {/* Confirmation Modal */}
-      <Modal isOpen={showConfirmModal} onClose={() => setShowConfirmModal(false)} title="Security Confirmation">
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600 leading-relaxed">
-            {confirmAction === 'delete' ? 'This will permanently remove all data for this organization. This cannot be undone.' : 
-             confirmAction === 'suspend' ? 'This will block all users from this organization immediately.' : 
-             'A temporary password reset link will be sent to the admin email address.'}
-          </p>
+      <Modal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title="Security Handshake"
+        description={confirmAction === 'delete' ? 'This will permanently purge all organizational data and nodes. This action is irreversible.' :
+          confirmAction === 'suspend' ? 'This will immediately revoke access to all ecosystem users.' :
+            'A secure password reset sequence will be triggered for the root administrator.'}
+        icon={HiShieldCheck}
+      >
+        <div className="space-y-6 p-2">
           {confirmAction === 'delete' && (
-            <Input label={`Type "${selectedTenant?.name}" to confirm`} value={confirmInput} onChange={(e) => setConfirmInput(e.target.value)} />
+            <Input label={`Type "${selectedOrg?.name}" to authorize purge`} value={confirmInput} onChange={(e) => setConfirmInput(e.target.value)} />
           )}
-          <div className="flex gap-2 pt-2">
-            <Button label="Cancel" variant="ghost" className="flex-1" onClick={() => setShowConfirmModal(false)} />
-            <Button 
-              label={confirmAction === 'delete' ? 'Terminate Data' : confirmAction === 'suspend' ? 'Confirm Suspension' : 'Send Link'} 
-              variant={confirmAction === 'delete' ? 'danger' : 'primary'} 
-              className="flex-1" 
-              onClick={executeAction} 
+          <div className="flex gap-3 pt-2">
+            <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowConfirmModal(false)} />
+            <Button
+              label={confirmAction === 'delete' ? 'Delete' : 'Save'}
+              variant={confirmAction === 'delete' ? 'danger' : 'primary'}
+              className="flex-1"
+              onClick={executeAction}
             />
           </div>
         </div>

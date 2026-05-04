@@ -23,29 +23,95 @@ import { useAuth } from '../context/AuthContext.jsx'
 
 const superNavGroups = [
   {
-    groupLabel: 'PLATFORM OVERVIEW',
+    groupLabel: 'PLATFORM',
     items: [
-      { label: 'Dashboard', icon: HiHome, path: '/superadmin/dashboard', roles: ['super_admin', 'support_admin', 'billing_admin'] },
-      { label: 'Tenant Management', icon: HiDocumentText, path: '/superadmin/tenants', roles: ['super_admin', 'support_admin', 'billing_admin'] },
-      { label: 'Subscription Plans', icon: HiCurrencyDollar, path: '/superadmin/subscriptions', roles: ['super_admin', 'billing_admin'] },
-      { label: 'Billing & Revenue', icon: HiCurrencyDollar, path: '/superadmin/billing', roles: ['super_admin', 'billing_admin'] },
+      { 
+        label: 'Dashboard', 
+        icon: HiHome, 
+        path: '/superadmin/dashboard', 
+        roles: ['super_admin', 'support_admin', 'billing_admin'],
+        why: 'Real-time overview of your platform performance and system health.'
+      },
+      { 
+        label: 'Organizations', 
+        icon: HiDocumentText, 
+        path: '/superadmin/tenants', 
+        roles: ['super_admin', 'support_admin', 'billing_admin'],
+        why: 'Manage all companies using the platform and their individual settings.'
+      },
+      { 
+        label: 'Pricing Plans', 
+        icon: HiCurrencyDollar, 
+        path: '/superadmin/subscriptions', 
+        roles: ['super_admin', 'billing_admin'],
+        why: 'Create and manage your subscription tiers and feature limits.'
+      },
+      { 
+        label: 'Billing', 
+        icon: HiCurrencyDollar, 
+        path: '/superadmin/billing', 
+        roles: ['super_admin', 'billing_admin'],
+        why: 'Track all payments, invoices, and revenue from organizations.'
+      },
     ],
   },
   {
-    groupLabel: 'USER MANAGEMENT',
+    groupLabel: 'TEAM & SECURITY',
     items: [
-      { label: 'Admin Users', icon: HiUserCircle, path: '/superadmin/admin-users', roles: ['super_admin'] },
-      { label: 'Role Permissions', icon: HiLockClosed, path: '/superadmin/permissions', roles: ['super_admin'] },
-      { label: 'Module Configuration', icon: HiSquares2X2, path: '/superadmin/modules', roles: ['super_admin'] },
-      { label: 'System Announcements', icon: HiDocumentText, path: '/superadmin/announcements', roles: ['super_admin'] },
+      { 
+        label: 'Admin Users', 
+        icon: HiUserCircle, 
+        path: '/superadmin/admin-users', 
+        roles: ['super_admin'],
+        why: 'Manage your internal staff who have access to this superadmin panel.'
+      },
+      { 
+        label: 'Permissions', 
+        icon: HiLockClosed, 
+        path: '/superadmin/permissions', 
+        roles: ['super_admin'],
+        why: 'Define what each admin user can see and do on the platform.'
+      },
+      { 
+        label: 'Modules', 
+        icon: HiSquares2X2, 
+        path: '/superadmin/modules', 
+        roles: ['super_admin'],
+        why: 'Enable or disable specific HR features like Payroll or Attendance globally.'
+      },
+      { 
+        label: 'Announcements', 
+        icon: HiDocumentText, 
+        path: '/superadmin/announcements', 
+        roles: ['super_admin'],
+        why: 'Send important updates and maintenance news to all organizations.'
+      },
     ],
   },
   {
-    groupLabel: 'SYSTEM ADMINISTRATION',
+    groupLabel: 'SYSTEM',
     items: [
-      { label: 'Audit Logs', icon: HiShieldCheck, path: '/superadmin/audit', roles: ['super_admin', 'support_admin'] },
-      { label: 'Support Tickets', icon: HiExclamationTriangle, path: '/superadmin/support', roles: ['super_admin', 'support_admin'] },
-      { label: 'Platform Configuration', icon: HiCog6Tooth, path: '/superadmin/settings', roles: ['super_admin'] },
+      { 
+        label: 'Audit Logs', 
+        icon: HiShieldCheck, 
+        path: '/superadmin/audit', 
+        roles: ['super_admin', 'support_admin'],
+        why: 'View a detailed history of every action taken by administrators.'
+      },
+      { 
+        label: 'Support', 
+        icon: HiExclamationTriangle, 
+        path: '/superadmin/support', 
+        roles: ['super_admin', 'support_admin'],
+        why: 'Manage and resolve help requests from organization admins.'
+      },
+      { 
+        label: 'Settings', 
+        icon: HiCog6Tooth, 
+        path: '/superadmin/settings', 
+        roles: ['super_admin'],
+        why: 'Manage global platform settings like emails and security.'
+      },
     ],
   },
 ]
@@ -130,15 +196,15 @@ export default function SuperAdminLayout() {
               <HiBell className="h-5 w-5" />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger-DEFAULT" />
             </button>
-            <div className="hidden items-center gap-2 sm:flex">
-              <Avatar name={user?.name} size="sm" />
+            <Link to="/superadmin/profile" className="hidden items-center gap-2 sm:flex group">
+              <Avatar name={user?.name} size="sm" className="group-hover:ring-2 group-hover:ring-indigo-600 transition-all" />
               <div className="min-w-0 text-right">
-                <div className="truncate text-sm font-semibold text-text-primary">{user?.name}</div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                <div className="truncate text-sm font-semibold text-text-primary group-hover:text-indigo-600 transition-colors">{user?.name}</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-primary opacity-60">
                   {ROLE_DISPLAY[user?.role] || 'Super Admin'}
                 </div>
               </div>
-            </div>
+            </Link>
             <Button label="Log out" variant="ghost" size="sm" onClick={logout} />
           </div>
         </header>
