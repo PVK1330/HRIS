@@ -6,6 +6,7 @@ const variantClasses = {
   outline: 'border border-gray-300 text-gray-700 hover:bg-gray-100',
   danger: 'bg-red-100 text-red-600 hover:bg-red-200',
   ghost: 'text-gray-500 hover:bg-gray-100',
+  Approve: 'bg-green-100 text-green-600 hover:bg-green-200'
 }
 
 const sizeClasses = {

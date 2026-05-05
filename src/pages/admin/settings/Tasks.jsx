@@ -308,15 +308,15 @@ export default function TaskManagement() {
       render: (_, row) => (
         <div className="flex gap-2">
           <Button
-            ariaLabel="Complete"
-            variant="ghost"
+            label="Complete"
+            variant="Approve"
             size="sm"
             icon={HiCheckCircle}
             onClick={() => handleStatusChange(row.id, 'Completed')}
             disabled={row.status === 'Completed'}
           />
-          <Button ariaLabel="Edit Task" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
-          <Button ariaLabel="Delete Task" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
+          <Button label="Edit Task" className="bg-blue-500 text-blue-600 hover:bg-blue-500" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
+          <Button label="Delete Task" variant="danger" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
         </div>
       ),
     },
@@ -329,7 +329,7 @@ export default function TaskManagement() {
           <h1 className="font-display text-2xl font-bold text-gray-900">Task Management</h1>
           <p className="mt-1 text-sm text-gray-500">Create and manage tasks with team assignments.</p>
         </div>
-        <Button ariaLabel="Add Task" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
+        <Button label="Add Task" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-4">
@@ -390,7 +390,8 @@ export default function TaskManagement() {
 
       <Table columns={columns} data={filtered} pageSize={10} />
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Task' : 'Add Task'} size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Task' : 'Add Task'} size="xl
+      " showClose>
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <Input

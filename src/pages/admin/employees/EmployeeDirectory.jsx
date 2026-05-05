@@ -163,24 +163,24 @@ export default function EmployeeDirectory() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     if (editMode) {
       // Update existing employee
-      setEmployeeList((prev) => 
-        prev.map((emp) => 
-          emp.empId === editingEmployeeId 
-            ? { 
-                ...emp, 
-                name: formData.fullName,
-                email: formData.workEmail || formData.personalEmail,
-                phone: formData.phoneNumber,
-                jobTitle: formData.jobTitle,
-                department: formData.department,
-                location: formData.workLocation,
-                manager: formData.reportingManager,
-                status: formData.employmentStatus,
-                joinDate: formData.joinDate
-              } 
+      setEmployeeList((prev) =>
+        prev.map((emp) =>
+          emp.empId === editingEmployeeId
+            ? {
+              ...emp,
+              name: formData.fullName,
+              email: formData.workEmail || formData.personalEmail,
+              phone: formData.phoneNumber,
+              jobTitle: formData.jobTitle,
+              department: formData.department,
+              location: formData.workLocation,
+              manager: formData.reportingManager,
+              status: formData.employmentStatus,
+              joinDate: formData.joinDate
+            }
             : emp
         )
       )
@@ -204,7 +204,7 @@ export default function EmployeeDirectory() {
       setEmployeeList((prev) => [...prev, newEmployee])
       alert('Employee added successfully!')
     }
-    
+
     handleCloseModal()
   }
 
@@ -361,10 +361,10 @@ export default function EmployeeDirectory() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Employee' : 'Add Employee'} size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Employee' : 'Add Employee'} size="xl" showClose>
         <form
           onSubmit={handleSubmit}
-          className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1"
+          className="h-full w-full overflow-y-auto pr-1"
         >
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
             Personal information
@@ -716,16 +716,26 @@ export default function EmployeeDirectory() {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" ariaLabel="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" ariaLabel={editMode ? 'Update Employee' : 'Save Employee'} variant="primary" />
+            <Button
+              type="button"
+              label="Cancel"
+              variant="ghost"
+              onClick={handleCloseModal}
+            />
+
+            <Button
+              type="submit"
+              label={editMode ? 'Update Employee' : 'Save Employee'}
+              variant="primary"
+            />
           </div>
         </form>
       </Modal>
 
-      <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} title="Employee Details" size="4xl">
+      <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} title="Employee Details" size="2xl" showClose={true}>
         {selectedEmployee && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-4 w-full h-full">
               <div className="flex items-center gap-4">
                 <Avatar initials={selectedEmployee.initials} size="lg" />
                 <div>
@@ -754,11 +764,10 @@ export default function EmployeeDirectory() {
                 <button
                   key={tab.id}
                   onClick={() => setViewActiveTab(tab.id)}
-                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap ${
-                    viewActiveTab === tab.id
-                      ? 'border-b-2 border-[#004CA5] text-[#004CA5]'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap ${viewActiveTab === tab.id
+                    ? 'border-b-2 border-[#004CA5] text-[#004CA5]'
+                    : 'text-gray-500 hover:text-gray-700'
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -780,7 +789,7 @@ export default function EmployeeDirectory() {
                     <div><label className="text-xs text-gray-500">Tenure</label><p className="text-sm font-medium">2 Years, 3 Months</p></div>
                     <div><label className="text-xs text-gray-500">Current Day Status</label><p className="text-sm font-medium text-green-600">Present</p></div>
                   </div>
-                  
+
                   <div className="border-t pt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div><label className="text-xs text-gray-500">Date of Birth</label><p className="text-sm font-medium">1990-05-14</p></div>
                     <div><label className="text-xs text-gray-500">Gender</label><p className="text-sm font-medium">Male</p></div>
@@ -887,7 +896,7 @@ export default function EmployeeDirectory() {
                     <div><label className="text-xs text-gray-500">Passport Number</label><p className="text-sm font-medium">A12345678</p></div>
                     <div><label className="text-xs text-gray-500">Passport Issue Date</label><p className="text-sm font-medium">2016-06-30</p></div>
                     <div><label className="text-xs text-gray-500">Passport Expiry Date</label><p className="text-sm font-medium">2026-06-30</p></div>
-                    
+
                     <div className="col-span-2 mt-2 mb-1 border-t pt-4"><h4 className="text-sm font-semibold">Visa / Work Permit</h4></div>
                     <div><label className="text-xs text-gray-500">Visa / Work Permit Type</label><p className="text-sm font-medium">Employment Visa</p></div>
                     <div><label className="text-xs text-gray-500">Visa Number</label><p className="text-sm font-medium">201-1234567-1</p></div>
@@ -1001,7 +1010,7 @@ export default function EmployeeDirectory() {
                     <h4 className="text-sm font-semibold">Leave History</h4>
                     <Button variant="outline" size="sm">Upload Medical Cert</Button>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="p-3 border rounded-lg flex justify-between items-center">
                       <div>
@@ -1060,14 +1069,14 @@ export default function EmployeeDirectory() {
                           <span className="font-medium">Complete Leadership Training</span>
                           <span className="text-blue-600">80%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{width: '80%'}}></div></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{ width: '80%' }}></div></div>
                       </div>
                       <div className="border p-3 rounded-lg">
                         <div className="flex justify-between text-sm mb-1">
                           <span className="font-medium">Improve Team Velocity by 15%</span>
                           <span className="text-blue-600">45%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{width: '45%'}}></div></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{ width: '45%' }}></div></div>
                       </div>
                     </div>
                   </div>

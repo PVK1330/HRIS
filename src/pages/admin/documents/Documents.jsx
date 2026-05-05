@@ -417,10 +417,10 @@ export default function Documents() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex flex-wrap items-center gap-1">
-          <Button label="View" variant="ghost" size="sm" onClick={() => setViewSubmission(row)} />
+          <Button label="View"variant='primary' size="sm" onClick={() => setViewSubmission(row)} />
           <Button
             label="Download"
-            variant="ghost"
+            variant="secondary"
             size="sm"
             icon={HiArrowDownTray}
             onClick={() =>
@@ -439,8 +439,8 @@ export default function Documents() {
           )}
           {showReviewActions(row) && (
             <>
-              <Button label="Approve" variant="outline" size="sm" onClick={() => approveRow(row)} />
-              <Button label="Reject" variant="ghost" size="sm" onClick={() => openReject(row)} />
+              <Button label="Approve" variant="Approve" size="sm" onClick={() => approveRow(row)} />
+              <Button label="Reject" variant="danger" size="sm" onClick={() => openReject(row)} />
             </>
           )}
         </div>
@@ -564,10 +564,10 @@ export default function Documents() {
               <div className="flex items-center gap-2">
                 <Badge
                   label={row.archived ? 'Archived' : 'Current'}
-                  color={row.archived ? 'gray' : 'green'}
+                  color={row.archived ? 'orange' : 'green'}
                   size="sm"
                 />
-                <Button label="View" variant="ghost" size="sm" onClick={() => setViewSubmission(row)} />
+                <Button label="View" variant="danger" size="sm" onClick={() => setViewSubmission(row)} />
               </div>
             </div>
           ))}
@@ -591,7 +591,7 @@ export default function Documents() {
         </div>
       </div>
 
-      <Modal isOpen={uploadModalOpen} onClose={handleCloseUpload} title="Upload document" size="md">
+      <Modal isOpen={uploadModalOpen} onClose={handleCloseUpload} title="Upload document" size="xl">
         <form onSubmit={handleSubmitUpload} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Document details</p>
           <div className="grid grid-cols-2 gap-3">
@@ -711,7 +711,7 @@ export default function Documents() {
         isOpen={!!viewSubmission}
         onClose={() => setViewSubmission(null)}
         title="Submission details"
-        size="sm"
+        size="lg"
       >
         {viewSubmission && (
           <div className="space-y-2 py-4 text-sm text-gray-700">
@@ -732,7 +732,7 @@ export default function Documents() {
         )}
       </Modal>
 
-      <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)} title="Reject document" size="sm">
+      <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)} title="Reject document" size="lg">
         {rejectTargetRow && (
           <div className="space-y-3 py-2">
             <p className="text-sm text-gray-600">

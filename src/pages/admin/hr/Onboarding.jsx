@@ -78,7 +78,7 @@ export default function Onboarding() {
     {
       key: 'actions',
       label: 'Actions',
-      render: () => <Button label="Update" variant="ghost" size="sm" />,
+      render: () => <Button label="Update" variant="primary" size="sm" />,
     },
   ]
 

@@ -131,8 +131,8 @@ export default function Attendance() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-1">
-          <Button label="View" variant="ghost" size="sm" />
-          {row.isLate && <Button label="Regularize" variant="outline" size="sm" />}
+          <Button label="View" variant="primary" size="sm"  />
+          {row.isLate && <Button label="Regularize" variant="secondary" size="sm"  />}
         </div>
       ),
     },
@@ -229,7 +229,7 @@ export default function Attendance() {
         </div>
       </div>
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Mark Attendance" size="md">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Mark Attendance" size="xl" showClose={true}>
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
             Attendance record

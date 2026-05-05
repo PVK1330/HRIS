@@ -130,7 +130,7 @@ export default function Performance() {
       render: (_, row) => (
         <Button
           label="Open review"
-          variant="ghost"
+          variant="danger"
           size="sm"
           onClick={(e) => {
             e.stopPropagation()
@@ -303,7 +303,7 @@ export default function Performance() {
         </div>
       </div>
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Add Review / Set Goal" size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Add Review / Set Goal" size="xl">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
             Performance review

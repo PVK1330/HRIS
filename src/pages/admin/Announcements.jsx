@@ -102,10 +102,10 @@ export default function Announcements() {
                   </span>
                 </td>
                 {isHrAdmin && (
-                  <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="px-6 py-4 ">
                     <div className="flex justify-end gap-2">
-                      <button className="rounded-lg p-1 text-text-secondary hover:bg-background-tertiary hover:text-primary"><HiPencilSquare className="h-5 w-5" /></button>
-                      <button className="rounded-lg p-1 text-text-secondary hover:bg-danger-DEFAULT/10 hover:text-danger-DEFAULT"><HiTrash className="h-5 w-5" /></button>
+                      <button className="rounded-lg p-1  text-text-secondary"><HiPencilSquare className="h-5 w-5 text-green-600" /></button>
+                      <button className="rounded-lg p-1 text-text-secondary"><HiTrash className="h-5 w-5 text-red-700" /></button>
                     </div>
                   </td>
                 )}
@@ -115,7 +115,7 @@ export default function Announcements() {
         </table>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Create Announcement" size="lg">
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Create Announcement" size="xl">
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <Input label="Announcement Title" name="title" value={formData.title} onChange={handleInputChange} required placeholder="e.g. New Office Policy" />
           <Input 
