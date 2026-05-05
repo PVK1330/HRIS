@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
+import Swal from 'sweetalert2'
 import api from '../../../services/api'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
@@ -22,7 +23,8 @@ import {
   HiUsers,
   HiShieldCheck,
   HiQuestionMarkCircle,
-  HiGlobeAlt
+  HiGlobeAlt,
+  HiInformationCircle
 } from 'react-icons/hi2'
 
 const slugify = (text) => text.toString().toLowerCase().trim()
@@ -94,6 +96,7 @@ export default function TenantManagement() {
   const [showNewModal, setShowNewModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   const [selectedOrg, setSelectedOrg] = useState(null)
@@ -101,6 +104,7 @@ export default function TenantManagement() {
   const [confirmInput, setConfirmInput] = useState('')
 
   // Form States
+  const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' })
   const [editForm, setEditForm] = useState({ name: '', adminEmail: '', plan: 'Starter', billingCycle: 'Monthly', maxUsers: 50, status: 'Active' })
   const [newForm, setNewForm] = useState({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' })
   const [errors, setErrors] = useState({})
@@ -117,7 +121,15 @@ export default function TenantManagement() {
   }, [organizations, searchQuery, planFilter, statusFilter])
 
   const handleExport = () => {
-    alert('Exporting ' + organizations.length + ' organizations to CSV...')
+    Swal.fire({
+      icon: 'info',
+      title: 'Exporting Data',
+      text: `Preparing ${organizations.length} organizations for CSV export...`,
+      timer: 2000,
+      showConfirmButton: false,
+      background: '#fff',
+      color: '#1e293b'
+    })
   }
 
   const handleLoginAs = (org) => {
@@ -157,18 +169,28 @@ export default function TenantManagement() {
       setShowEditModal(false)
       fetchTenants()
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to update organization')
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: error.response?.data?.message || 'Failed to update organization',
+        confirmButtonColor: '#4f46e5'
+      })
     }
   }
 
   const handleCreateOrganization = async () => {
     if (!newForm.name || !newForm.adminEmail || !newForm.adminName || !newForm.adminPassword) {
-      alert('Please fill all required fields.')
+      Swal.fire({
+        icon: 'warning',
+        title: 'Incomplete Form',
+        text: 'Please fill all required fields to provision the organization.',
+        confirmButtonColor: '#4f46e5'
+      })
       return
     }
 
     try {
-      setLoading(true)
+      setIsLoading(true)
       await api.post('/tenants/create', {
         name: newForm.name,
         adminEmail: newForm.adminEmail,
@@ -180,17 +202,60 @@ export default function TenantManagement() {
       setNewForm({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' })
       fetchTenants() // Refresh list
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to create organization')
+      Swal.fire({
+        icon: 'error',
+        title: 'Provisioning Failed',
+        text: error.response?.data?.message || 'Failed to create organization',
+        confirmButtonColor: '#ef4444'
+      })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   const handleAction = (type, org) => {
     setSelectedOrg(org)
+    if (type === 'reset_pw') {
+      setResetForm({ password: '', confirmPassword: '' })
+      setShowResetModal(true)
+      return
+    }
     setConfirmAction(type)
     setConfirmInput('')
     setShowConfirmModal(true)
+  }
+
+  const handleResetPassword = async () => {
+    if (!resetForm.password || resetForm.password !== resetForm.confirmPassword) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Passwords do not match or are empty.',
+        confirmButtonColor: '#f59e0b'
+      })
+      return
+    }
+    try {
+      setIsLoading(true)
+      await api.post(`/tenants/${selectedOrg.id}/reset-password`, {
+        password: resetForm.password
+      })
+      Swal.fire({
+        icon: 'success',
+        title: 'Credentials Updated',
+        text: `Administrator password has been updated and emailed to ${selectedOrg.adminEmail}`,
+        confirmButtonColor: '#4f46e5'
+      })
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Reset Failed',
+        text: error.response?.data?.message || 'Failed to reset password',
+        confirmButtonColor: '#ef4444'
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const executeAction = async () => {
@@ -206,13 +271,31 @@ export default function TenantManagement() {
         await api.delete(`/tenants/${selectedOrg.id}`)
       } else if (confirmAction === 'reset_pw') {
         await api.post(`/tenants/${selectedOrg.id}/reset-password`)
-        alert(`Password reset link sent to ${selectedOrg.adminEmail}`)
+        Swal.fire({
+          icon: 'success',
+          title: 'Reset Successful',
+          text: `Administrator password has been reset and emailed to ${selectedOrg.adminEmail}`,
+          confirmButtonColor: '#4f46e5'
+        })
       }
       setShowConfirmModal(false)
       setShowDetailModal(false)
       fetchTenants()
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Action Executed',
+        text: 'The requested administrative operation completed successfully.',
+        timer: 2000,
+        showConfirmButton: false
+      })
     } catch (error) {
-      alert(error.response?.data?.message || 'Action failed')
+      Swal.fire({
+        icon: 'error',
+        title: 'Operation Failed',
+        text: error.response?.data?.message || 'Action failed',
+        confirmButtonColor: '#ef4444'
+      })
     }
   }
 
@@ -439,6 +522,58 @@ export default function TenantManagement() {
           <div className="flex gap-3 pt-6 border-t border-slate-100">
             <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowEditModal(false)} />
             <Button label="Save" variant="primary" className="flex-1" onClick={handleSaveEdit} />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        title="Update Credentials"
+        description={`Set a new administrator password for ${selectedOrg?.name}.`}
+        icon={HiKey}
+      >
+        <div className="space-y-5 p-2">
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 mb-2">
+            <div className="flex gap-3">
+              <HiInformationCircle className="h-5 w-5 text-amber-500 shrink-0" />
+              <p className="text-[11px] font-medium text-amber-800 leading-relaxed">
+                The new password will be updated instantly in the tenant's database and sent to <span className="font-bold underline">{selectedOrg?.adminEmail}</span>.
+              </p>
+            </div>
+          </div>
+          
+          <Input 
+            label="New Password" 
+            type="password"
+            placeholder="••••••••"
+            value={resetForm.password} 
+            onChange={(e) => setResetForm({ ...resetForm, password: e.target.value })} 
+          />
+          <Input 
+            label="Confirm New Password" 
+            type="password"
+            placeholder="••••••••"
+            value={resetForm.confirmPassword} 
+            onChange={(e) => setResetForm({ ...resetForm, confirmPassword: e.target.value })} 
+          />
+
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
+            <Button 
+              label="Cancel" 
+              variant="ghost" 
+              className="flex-1 font-bold text-slate-400" 
+              onClick={() => setShowResetModal(false)} 
+            />
+            <Button 
+              label="Update & Email" 
+              variant="primary" 
+              className="flex-1" 
+              onClick={handleResetPassword} 
+              loading={isLoading}
+              disabled={!resetForm.password || resetForm.password !== resetForm.confirmPassword || isLoading}
+            />
           </div>
         </div>
       </Modal>
