@@ -49,26 +49,31 @@ export default function Settings() {
       id: 'general',
       label: 'Platform Profile',
       icon: HiCog6Tooth,
+      why: 'Defines the global identity and configuration defaults that all organizations inherit by default.'
     },
     {
       id: 'smtp',
       label: 'Mail Infrastructure',
       icon: HiServer,
+      why: 'The primary communication engine. All system invitations, password resets, and critical alerts rely on this relay.'
     },
     {
       id: 'email',
       label: 'Event Notifications',
       icon: HiEnvelope,
+      why: 'Manages automated trigger-based communication throughout the organization lifecycle to maintain high engagement.'
     },
     {
       id: 'payment',
       label: 'Revenue & Billing',
       icon: HiCreditCard,
+      why: 'Integrates secure payment gateways for automated subscription billing and platform-wide revenue tracking.'
     },
     {
       id: 'security',
       label: 'Access Governance',
       icon: HiShieldCheck,
+      why: 'Enforces platform-wide security protocols, including multi-factor authentication and session integrity rules.'
     },
   ]
 
@@ -108,6 +113,13 @@ export default function Settings() {
                     <tab.icon className={`h-4.5 w-4.5 ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`} />
                     <span>{tab.label}</span>
                   </button>
+
+                  {/* Strategic Why Tooltip */}
+                  <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 w-64 p-4 bg-slate-900 text-white text-[11px] leading-relaxed rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none border border-white/10">
+                    <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+                    <p className="font-bold text-blue-400 mb-1.5 uppercase tracking-wider">Strategic Context</p>
+                    {tab.why}
+                  </div>
                 </div>
               ))}
             </nav>

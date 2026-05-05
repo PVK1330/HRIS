@@ -38,6 +38,7 @@ import AuditLogs from '../pages/superadmin/system/AuditLogs.jsx'
 import SupportTickets from '../pages/superadmin/support/SupportTickets.jsx'
 import AdminUsers from '../pages/superadmin/AdminUsers.jsx'
 import Permissions from '../pages/superadmin/Permissions.jsx'
+import SuperProfile from '../pages/superadmin/Profile.jsx'
 
 import SettingsLayout from '../pages/superadmin/settings/SettingsLayout.jsx'
 import GeneralSettings from '../pages/superadmin/settings/GeneralSettings.jsx'
@@ -53,8 +54,6 @@ import DomainSettings from '../pages/superadmin/settings/DomainSettings.jsx'
 import AccountSettings from '../pages/superadmin/settings/AccountSettings.jsx'
 import CurrencySettings from '../pages/superadmin/settings/CurrencySettings.jsx'
 import RecaptchaSettings from '../pages/superadmin/settings/RecaptchaSettings.jsx'
-import SuperSettings from '../pages/superadmin/Settings.jsx'
-import SuperProfile from '../pages/superadmin/Profile.jsx'
 
 // Legacy imports removed causing 404s
 
@@ -135,6 +134,7 @@ export const router = createBrowserRouter([
           { path: 'support', element: <SupportTickets /> },
           { path: 'admin-users', element: <AdminUsers /> },
           { path: 'permissions', element: <Permissions /> },
+          { path: 'profile', element: <SuperProfile /> },
           {
             path: 'settings',
             element: <SettingsLayout />,
@@ -156,7 +156,6 @@ export const router = createBrowserRouter([
               { path: 'recaptcha', element: <RecaptchaSettings /> },
             ],
           },
-          { path: 'profile', element: <SuperProfile /> },
         ],
       },
       { path: '*', element: <Navigate to="/login" replace /> },
