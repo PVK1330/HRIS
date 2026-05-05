@@ -23,7 +23,7 @@ import { Input } from '../../components/ui/Input.jsx'
 export default function Permissions() {
   const [roles, setRoles] = useState([
     {
-      id: 'super_admin',
+      id: 'superadmin',
       name: 'Super Admin',
       description: 'Total platform control with access to security, system settings, and all organization data.',
       icon: HiFingerPrint,
@@ -122,7 +122,7 @@ export default function Permissions() {
 
   const handleToggle = (roleId, permKey) => {
     // Prevent modifying Super Admin for safety in this mock
-    if (roleId === 'super_admin') return
+    if (roleId === 'superadmin') return
 
     setRoles(roles.map(role => {
       if (role.id === roleId) {
@@ -177,7 +177,7 @@ export default function Permissions() {
             {/* Role Header */}
             <div className={`p-5 border-b border-slate-50 relative`}>
                <div className="absolute top-8 right-8">
-                  <Badge label={role.id === 'super_admin' ? 'SYSTEM CORE' : 'CUSTOM'} color={role.color} variant="glass" />
+                  <Badge label={role.id === 'superadmin' ? 'SYSTEM CORE' : 'CUSTOM'} color={role.color} variant="glass" />
                </div>
                <div className={`h-14 w-14 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-slate-50 transition-transform group-hover:scale-110 ${
                   role.color === 'rose' ? 'bg-rose-50 text-rose-600' :
@@ -209,15 +209,15 @@ export default function Permissions() {
                   <Toggle
                     checked={role.permissions[key]}
                     onChange={() => handleToggle(role.id, key)}
-                    disabled={role.id === 'super_admin'}
+                    disabled={role.id === 'superadmin'}
                   />
                 </div>
               ))}
             </div>
 
             <div className="p-6 bg-white border-t border-slate-50 flex justify-end gap-3">
-              <Button label="Cancel" variant="ghost" className="text-slate-400 font-bold" disabled={role.id === 'super_admin'} />
-              <Button label="Save" variant="primary" className={role.id === 'super_admin' ? 'bg-slate-100 text-slate-400 border-none' : ''} disabled={role.id === 'super_admin'} />
+              <Button label="Cancel" variant="ghost" className="text-slate-400 font-bold" disabled={role.id === 'superadmin'} />
+              <Button label="Save" variant="primary" className={role.id === 'superadmin' ? 'bg-slate-100 text-slate-400 border-none' : ''} disabled={role.id === 'superadmin'} />
             </div>
           </div>
         ))}

@@ -11,22 +11,42 @@ export function Table({
   pageSize = 5,
   /** Max height for scrollable table body (vertical + horizontal scroll inside). */
   maxHeightClass = 'max-h-[min(70vh,42rem)]',
+  // Server-side pagination props
+  totalCount,
+  currentPage,
+  onPageChange,
 }) {
-  const [page, setPage] = useState(0)
+  const [internalPage, setInternalPage] = useState(0)
 
-  const total = data?.length ?? 0
+  const isServerSide = totalCount !== undefined
+  const total = isServerSide ? totalCount : (data?.length ?? 0)
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
 
-  const safePage = Math.min(page, pageCount - 1)
+  const activePage = isServerSide ? currentPage : internalPage
+  const safePage = Math.min(activePage, pageCount - 1)
+  
   const start = safePage * pageSize
   const end = Math.min(start + pageSize, total)
-  const slice = useMemo(
-    () => (Array.isArray(data) ? data.slice(start, end) : []),
-    [data, start, end],
-  )
+
+  const slice = useMemo(() => {
+    if (isServerSide) return data || []
+    return Array.isArray(data) ? data.slice(start, end) : []
+  }, [data, isServerSide, start, end])
 
   const showingFrom = total === 0 ? 0 : start + 1
-  const showingTo = end
+  const showingTo = isServerSide ? (start + slice.length) : end
+
+  const handlePrev = () => {
+    const newPage = Math.max(0, safePage - 1)
+    if (onPageChange) onPageChange(newPage)
+    else setInternalPage(newPage)
+  }
+
+  const handleNext = () => {
+    const newPage = Math.min(pageCount - 1, safePage + 1)
+    if (onPageChange) onPageChange(newPage)
+    else setInternalPage(newPage)
+  }
 
   return (
     <div className="flex min-w-0 max-w-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -40,7 +60,7 @@ export function Table({
                 <th
                   key={col.key}
                   scope="col"
-                  className="whitespace-nowrap border-b border-gray-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600 sm:px-4"
+                  className={`whitespace-nowrap border-b border-gray-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600 sm:px-4 ${col.className || ''}`}
                 >
                   {col.label}
                 </th>
@@ -52,7 +72,7 @@ export function Table({
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={`sk-${i}`}>
                   {columns.map((col) => (
-                    <td key={col.key} className="px-3 py-3 sm:px-4">
+                    <td key={col.key} className={`px-3 py-3 sm:px-4 ${col.className || ''}`}>
                       <div className="h-4 animate-pulse rounded bg-gray-200" />
                     </td>
                   ))}
@@ -63,7 +83,7 @@ export function Table({
                 <td colSpan={columns.length} className="px-4 py-12">
                   <div className="flex flex-col items-center justify-center gap-2 text-center text-gray-500">
                     <HiInbox className="h-10 w-10 text-gray-300" aria-hidden />
-                    <p className="text-sm">{emptyMessage}</p>
+                    <div className="text-sm">{emptyMessage}</div>
                   </div>
                 </td>
               </tr>
@@ -78,7 +98,7 @@ export function Table({
                     const raw = row[col.key]
                     const content = col.render ? col.render(raw, row) : raw
                     return (
-                      <td key={col.key} className="whitespace-nowrap px-3 py-3 text-sm text-gray-800 sm:px-4">
+                      <td key={col.key} className={`whitespace-nowrap px-3 py-3 text-sm text-gray-800 sm:px-4 ${col.className || ''}`}>
                         {content}
                       </td>
                     )
@@ -98,14 +118,14 @@ export function Table({
             label="Prev"
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.max(0, Math.min(p, pageCount - 1) - 1))}
+            onClick={handlePrev}
             disabled={safePage <= 0 || loading}
           />
           <Button
             label="Next"
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.min(pageCount - 1, Math.min(p, pageCount - 1) + 1))}
+            onClick={handleNext}
             disabled={safePage >= pageCount - 1 || loading || total === 0}
           />
         </div>

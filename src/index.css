@@ -10,3 +10,8 @@
 button {
   cursor: pointer;
 }
+
+/* Ensure SweetAlert2 is above our Modals (which use z-[9999]) */
+.swal2-container {
+  z-index: 10000 !important;
+}

@@ -12,7 +12,7 @@ function roleSubtitle(role) {
 }
 
 function panelName(role) {
-  if (role === 'super_admin' || role === 'superadmin') return 'SUPER ADMIN'
+  if (role === 'superadmin' || role === 'superadmin') return 'SUPER ADMIN'
   if (role === 'admin') return 'ADMIN PANEL'
   if (role === 'hr') return 'HR PANEL'
   if (role === 'employee') return 'EMPLOYEE PORTAL'
@@ -74,19 +74,9 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
                             />
                           )}
                           <span>{item.label}</span>
-                          <HiQuestionMarkCircle className="ml-auto h-4 w-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </>
                       )}
                     </NavLink>
-
-                    {/* Custom Tooltip */}
-                    {item.why && (
-                      <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 w-64 p-3 bg-slate-900 text-white text-[11px] leading-relaxed rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] pointer-events-none border border-white/10">
-                        <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45" />
-                        <p className="font-bold text-blue-400 mb-1 uppercase tracking-wider">Module Context</p>
-                        {item.why}
-                      </div>
-                    )}
                   </div>
                 )
               })}
@@ -98,7 +88,7 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
           <div className="flex items-center gap-3 rounded-xl bg-gray-100 px-3 py-3">
             <Avatar name={user?.name ?? 'User'} size="md" bgColor={avatarPalette} />
             <Link 
-              to={role === 'super_admin' || role === 'superadmin' ? '/superadmin/profile' : '/admin/employee-profile'} 
+              to={role === 'superadmin' || role === 'superadmin' ? '/superadmin/profile' : '/admin/employee-profile'} 
               className="min-w-0 flex-1 hover:opacity-80 transition-opacity"
             >
               <div className="truncate text-sm font-bold text-[#0F766E]">{user?.name ?? 'User'}</div>

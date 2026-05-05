@@ -29,29 +29,25 @@ const superNavGroups = [
         label: 'Dashboard', 
         icon: HiHome, 
         path: '/superadmin/dashboard', 
-        roles: ['super_admin', 'support_admin', 'billing_admin'],
-        why: 'Real-time overview of your platform performance and system health.'
+        roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
       { 
         label: 'Organizations', 
         icon: HiDocumentText, 
         path: '/superadmin/tenants', 
-        roles: ['super_admin', 'support_admin', 'billing_admin'],
-        why: 'Manage all companies using the platform and their individual settings.'
+        roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
       { 
         label: 'Pricing Plans', 
         icon: HiCurrencyDollar, 
         path: '/superadmin/subscriptions', 
-        roles: ['super_admin', 'billing_admin'],
-        why: 'Create and manage your subscription tiers and feature limits.'
+        roles: ['superadmin', 'billing_admin'],
       },
       { 
         label: 'Billing', 
         icon: HiCurrencyDollar, 
         path: '/superadmin/billing', 
-        roles: ['super_admin', 'billing_admin'],
-        why: 'Track all payments, invoices, and revenue from organizations.'
+        roles: ['superadmin', 'billing_admin'],
       },
     ],
   },
@@ -62,29 +58,25 @@ const superNavGroups = [
         label: 'Admin Users', 
         icon: HiUserCircle, 
         path: '/superadmin/admin-users', 
-        roles: ['super_admin'],
-        why: 'Manage your internal staff who have access to this superadmin panel.'
+        roles: ['superadmin'],
       },
       { 
         label: 'Permissions', 
         icon: HiLockClosed, 
         path: '/superadmin/permissions', 
-        roles: ['super_admin'],
-        why: 'Define what each admin user can see and do on the platform.'
+        roles: ['superadmin'],
       },
       { 
         label: 'Modules', 
         icon: HiSquares2X2, 
         path: '/superadmin/modules', 
-        roles: ['super_admin'],
-        why: 'Enable or disable specific HR features like Payroll or Attendance globally.'
+        roles: ['superadmin'],
       },
       { 
         label: 'Announcements', 
         icon: HiDocumentText, 
         path: '/superadmin/announcements', 
-        roles: ['super_admin'],
-        why: 'Send important updates and maintenance news to all organizations.'
+        roles: ['superadmin'],
       },
     ],
   },
@@ -95,22 +87,19 @@ const superNavGroups = [
         label: 'Audit Logs', 
         icon: HiShieldCheck, 
         path: '/superadmin/audit', 
-        roles: ['super_admin', 'support_admin'],
-        why: 'View a detailed history of every action taken by administrators.'
+        roles: ['superadmin', 'support_admin'],
       },
       { 
         label: 'Support', 
         icon: HiExclamationTriangle, 
         path: '/superadmin/support', 
-        roles: ['super_admin', 'support_admin'],
-        why: 'Manage and resolve help requests from organization admins.'
+        roles: ['superadmin', 'support_admin'],
       },
       { 
         label: 'Settings', 
         icon: HiCog6Tooth, 
         path: '/superadmin/settings', 
-        roles: ['super_admin'],
-        why: 'Manage global platform settings like emails and security.'
+        roles: ['superadmin'],
       },
     ],
   },
@@ -124,7 +113,7 @@ function titleCaseSegment(seg) {
 }
 
 const ROLE_DISPLAY = {
-  super_admin: 'Super Admin',
+  superadmin: 'Super Admin',
   support_admin: 'Support Admin',
   billing_admin: 'Billing Admin',
 }

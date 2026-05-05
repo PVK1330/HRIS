@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import Swal from 'sweetalert2'
+import api from '../../../services/api'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
@@ -21,8 +23,14 @@ import {
   HiUsers,
   HiShieldCheck,
   HiQuestionMarkCircle,
-  HiGlobeAlt
+  HiGlobeAlt,
+  HiInformationCircle
 } from 'react-icons/hi2'
+
+const slugify = (text) => text.toString().toLowerCase().trim()
+  .replace(/\s+/g, '-')
+  .replace(/[^\w-]+/g, '')
+  .replace(/--+/g, '-')
 
 export default function TenantManagement() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -30,17 +38,65 @@ export default function TenantManagement() {
   const [statusFilter, setStatusFilter] = useState('all')
 
   // Data State
-  const [organizations, setOrganizations] = useState([
-    { id: 1, name: 'AlphaCorp HR', domain: 'alphacorp.hriscloud.io', adminEmail: 'admin@alphacorp.com', plan: 'Enterprise', users: 342, maxUsers: 500, storage: 29, maxStorage: 50, status: 'Active', created: '01 Jan 2026', initials: 'AL', color: 'indigo', domainType: 'Subdomain', billingCycle: 'Annual' },
-    { id: 2, name: 'HR Nexus Pvt Ltd', domain: 'hrnexus.hriscloud.io', adminEmail: 'it@hrnexus.io', plan: 'Growth', users: 87, maxUsers: 200, storage: 6, maxStorage: 20, status: 'Trial', created: '01 Apr 2026', initials: 'HR', color: 'cyan', domainType: 'Subdomain', billingCycle: 'Monthly' },
-    { id: 3, name: 'TalentCo FZCO', domain: 'talentco.com', adminEmail: 'ops@talentco.com', plan: 'Pro', users: 156, maxUsers: 300, storage: 16.5, maxStorage: 30, status: 'SSL Issue', created: '15 Nov 2025', initials: 'TC', color: 'green', domainType: 'Custom Domain', billingCycle: 'Annual' },
-    { id: 4, name: 'Zenith People Co', domain: 'zenith.hriscloud.io', adminEmail: 'hr@zenithpeople.ae', plan: 'Starter', users: 24, maxUsers: 50, storage: 1, maxStorage: 5, status: 'Suspended', created: '10 Aug 2025', initials: 'ZE', color: 'amber', domainType: 'Subdomain', billingCycle: 'Monthly' },
-  ])
+  const [organizations, setOrganizations] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [totalCount, setTotalCount] = useState(0)
+  const [currentPage, setCurrentPage] = useState(0) // 0-indexed for UI, 1-indexed for API
+  const pageSize = 5
+
+  useEffect(() => {
+    fetchTenants(currentPage)
+  }, [currentPage])
+
+  const fetchTenants = async (page = 0) => {
+    try {
+      setIsLoading(true)
+      const response = await api.get('/tenants', {
+        params: {
+          page: page + 1,
+          limit: pageSize
+        }
+      })
+      const { tenants, total } = response.data.data
+
+      // Transform data to match UI expectations
+      const transformed = tenants.map(t => {
+        const slug = slugify(t.name)
+        const baseDomain = window.location.hostname === 'localhost' ? 'localhost' : 'hris.cloud'
+        return {
+          id: t.id,
+          name: t.name,
+          dbName: t.db_name,
+          domain: `${slug}.${baseDomain}`,
+          adminEmail: t.admin_email,
+          plan: 'Starter', // Default for now
+          users: 0,
+          maxUsers: 100,
+          storage: 0,
+          maxStorage: 10,
+          status: t.status.charAt(0).toUpperCase() + t.status.slice(1),
+          created: new Date(t.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          initials: t.name.substring(0, 2).toUpperCase(),
+          color: 'indigo',
+          domainType: 'Subdomain',
+          billingCycle: 'Monthly'
+        }
+      })
+      // console.log('Tenants fetched:', transformed)
+      setOrganizations(transformed)
+      setTotalCount(total)
+    } catch (error) {
+      console.error('Failed to fetch tenants:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // Modal States
   const [showNewModal, setShowNewModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   const [selectedOrg, setSelectedOrg] = useState(null)
@@ -48,8 +104,9 @@ export default function TenantManagement() {
   const [confirmInput, setConfirmInput] = useState('')
 
   // Form States
+  const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' })
   const [editForm, setEditForm] = useState({ name: '', adminEmail: '', plan: 'Starter', billingCycle: 'Monthly', maxUsers: 50, status: 'Active' })
-  const [newForm, setNewForm] = useState({ name: '', adminName: '', adminEmail: '', plan: 'Starter', billingCycle: 'Monthly', subdomain: '' })
+  const [newForm, setNewForm] = useState({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' })
   const [errors, setErrors] = useState({})
 
   const filteredOrganizations = useMemo(() => {
@@ -64,11 +121,20 @@ export default function TenantManagement() {
   }, [organizations, searchQuery, planFilter, statusFilter])
 
   const handleExport = () => {
-    alert('Exporting ' + organizations.length + ' organizations to CSV...')
+    Swal.fire({
+      icon: 'info',
+      title: 'Exporting Data',
+      text: `Preparing ${organizations.length} organizations for CSV export...`,
+      timer: 2000,
+      showConfirmButton: false,
+      background: '#fff',
+      color: '#1e293b'
+    })
   }
 
   const handleLoginAs = (org) => {
-    alert(`Redirecting to ${org.domain} as Platform Admin...`)
+    const url = `http://${org.domain}:5173/login`
+    window.open(url, '_blank')
   }
 
   const handleView = (org) => {
@@ -89,63 +155,148 @@ export default function TenantManagement() {
     setShowEditModal(true)
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editForm.name || !editForm.adminEmail) {
       setErrors({ name: !editForm.name, adminEmail: !editForm.adminEmail })
       return
     }
-    setOrganizations(organizations.map(o => o.id === selectedOrg.id ? { ...o, ...editForm } : o))
-    setShowEditModal(false)
+    try {
+      await api.patch(`/tenants/${selectedOrg.id}`, {
+        name: editForm.name,
+        adminEmail: editForm.adminEmail,
+        status: editForm.status.toLowerCase()
+      })
+      setShowEditModal(false)
+      fetchTenants()
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: error.response?.data?.message || 'Failed to update organization',
+        confirmButtonColor: '#4f46e5'
+      })
+    }
   }
 
-  const handleCreateOrganization = () => {
-    if (!newForm.name || !newForm.adminEmail || !newForm.subdomain) {
-      alert('Please fill all required fields.')
+  const handleCreateOrganization = async () => {
+    if (!newForm.name || !newForm.adminEmail || !newForm.adminName || !newForm.adminPassword) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Incomplete Form',
+        text: 'Please fill all required fields to provision the organization.',
+        confirmButtonColor: '#4f46e5'
+      })
       return
     }
-    const newOrg = {
-      id: Date.now(),
-      name: newForm.name,
-      domain: `${newForm.subdomain}.hriscloud.io`,
-      adminEmail: newForm.adminEmail,
-      plan: newForm.plan,
-      users: 0,
-      maxUsers: 100,
-      storage: 0,
-      maxStorage: 10,
-      status: 'Active',
-      created: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      initials: newForm.name.substring(0, 2).toUpperCase(),
-      color: 'indigo',
-      domainType: 'Subdomain',
-      billingCycle: newForm.billingCycle
+
+    try {
+      setIsLoading(true)
+      await api.post('/tenants/create', {
+        name: newForm.name,
+        adminEmail: newForm.adminEmail,
+        adminName: newForm.adminName,
+        adminPassword: newForm.adminPassword
+      })
+
+      setShowNewModal(false)
+      setNewForm({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' })
+      fetchTenants() // Refresh list
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Provisioning Failed',
+        text: error.response?.data?.message || 'Failed to create organization',
+        confirmButtonColor: '#ef4444'
+      })
+    } finally {
+      setIsLoading(false)
     }
-    setOrganizations([newOrg, ...organizations])
-    setShowNewModal(false)
-    setNewForm({ name: '', adminName: '', adminEmail: '', plan: 'Starter', billingCycle: 'Monthly', subdomain: '' })
   }
 
   const handleAction = (type, org) => {
     setSelectedOrg(org)
+    if (type === 'reset_pw') {
+      setResetForm({ password: '', confirmPassword: '' })
+      setShowResetModal(true)
+      return
+    }
     setConfirmAction(type)
     setConfirmInput('')
     setShowConfirmModal(true)
   }
 
-  const executeAction = () => {
+  const handleResetPassword = async () => {
+    if (!resetForm.password || resetForm.password !== resetForm.confirmPassword) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Passwords do not match or are empty.',
+        confirmButtonColor: '#f59e0b'
+      })
+      return
+    }
+    try {
+      setIsLoading(true)
+      await api.post(`/tenants/${selectedOrg.id}/reset-password`, {
+        password: resetForm.password
+      })
+      Swal.fire({
+        icon: 'success',
+        title: 'Credentials Updated',
+        text: `Administrator password has been updated and emailed to ${selectedOrg.adminEmail}`,
+        confirmButtonColor: '#4f46e5'
+      })
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Reset Failed',
+        text: error.response?.data?.message || 'Failed to reset password',
+        confirmButtonColor: '#ef4444'
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const executeAction = async () => {
     if (confirmAction === 'delete' && confirmInput !== selectedOrg.name) {
       setErrors({ confirm: true })
       return
     }
-    if (confirmAction === 'suspend') {
-      setOrganizations(organizations.map(o => o.id === selectedOrg.id ? { ...o, status: 'Suspended' } : o))
-    } else if (confirmAction === 'delete') {
-      setOrganizations(organizations.filter(o => o.id !== selectedOrg.id))
-    } else if (confirmAction === 'reset_pw') {
-      alert(`Password reset link sent to ${selectedOrg.adminEmail}`)
+
+    try {
+      if (confirmAction === 'suspend') {
+        await api.patch(`/tenants/${selectedOrg.id}`, { status: 'suspended' })
+      } else if (confirmAction === 'delete') {
+        await api.delete(`/tenants/${selectedOrg.id}`)
+      } else if (confirmAction === 'reset_pw') {
+        await api.post(`/tenants/${selectedOrg.id}/reset-password`)
+        Swal.fire({
+          icon: 'success',
+          title: 'Reset Successful',
+          text: `Administrator password has been reset and emailed to ${selectedOrg.adminEmail}`,
+          confirmButtonColor: '#4f46e5'
+        })
+      }
+      setShowConfirmModal(false)
+      setShowDetailModal(false)
+      fetchTenants()
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Action Executed',
+        text: 'The requested administrative operation completed successfully.',
+        timer: 2000,
+        showConfirmButton: false
+      })
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Operation Failed',
+        text: error.response?.data?.message || 'Action failed',
+        confirmButtonColor: '#ef4444'
+      })
     }
-    setShowConfirmModal(false)
-    setShowDetailModal(false)
   }
 
   return (
@@ -154,18 +305,18 @@ export default function TenantManagement() {
       <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-             <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
-                <HiGlobeAlt className="h-4.5 w-4.5" />
-             </div>
-             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Organizations</h1>
-             <div className="group relative">
-                <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-indigo-500 transition-colors" />
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
-                   <p className="font-bold text-indigo-400 mb-1 uppercase tracking-widest">Company Management</p>
-                   Manage all companies, their domains, and user limits.
-                   <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
-                </div>
-             </div>
+            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
+              <HiGlobeAlt className="h-4.5 w-4.5" />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Organizations</h1>
+            <div className="group relative">
+              <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-indigo-500 transition-colors" />
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
+                <p className="font-bold text-indigo-400 mb-1 uppercase tracking-widest">Company Management</p>
+                Manage all companies, their domains, and user limits.
+                <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+              </div>
+            </div>
           </div>
           <p className="text-[11px] font-medium text-slate-500">View and manage all organization accounts.</p>
         </div>
@@ -208,13 +359,17 @@ export default function TenantManagement() {
       {/* Organization Table */}
       <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
         <Table
+          pageSize={pageSize}
+          totalCount={totalCount}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
           columns={[
             { key: 'org', label: 'Organization' },
-            { key: 'plan', label: 'Tier' },
-            { key: 'users', label: 'Nodes' },
-            { key: 'status', label: 'Status' },
-            { key: 'created', label: 'Onboarded' },
-            { key: 'actions', label: 'Orchestration' },
+            { key: 'plan', label: 'Tier', className: 'hidden md:table-cell' },
+            { key: 'users', label: 'Nodes', className: 'hidden lg:table-cell' },
+            { key: 'status', label: 'Status', className: 'hidden sm:table-cell' },
+            { key: 'created', label: 'Onboarded', className: 'hidden xl:table-cell' },
+            { key: 'actions', label: 'Actions' },
           ]}
           data={filteredOrganizations.map((org) => ({
             org: (
@@ -260,8 +415,9 @@ export default function TenantManagement() {
         <div className="space-y-8 p-2">
           <div className="grid grid-cols-2 gap-6">
             <Input label="Organization Name *" placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
-            <Input label="Subdomain Prefix *" placeholder="hris-global" value={newForm.subdomain} onChange={(e) => setNewForm({ ...newForm, subdomain: e.target.value })} />
+            <Input label="Root Admin Name *" placeholder="e.g. John Doe" value={newForm.adminName} onChange={(e) => setNewForm({ ...newForm, adminName: e.target.value })} />
             <Input label="Root Admin Email *" type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
+            <Input label="Root Admin Password *" type="password" placeholder="••••••••" value={newForm.adminPassword} onChange={(e) => setNewForm({ ...newForm, adminPassword: e.target.value })} />
             <div>
               <label className="mb-2 block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Subscription Tier</label>
               <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer" value={newForm.plan} onChange={(e) => setNewForm({ ...newForm, plan: e.target.value })}>
@@ -286,34 +442,53 @@ export default function TenantManagement() {
         size="lg"
       >
         {selectedOrg && (
-          <div className="space-y-8 p-2">
-            <div className="grid grid-cols-3 gap-6">
-              <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 shadow-sm">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Root Admin</span>
-                <p className="mt-1 text-sm font-black text-slate-900 tracking-tight">{selectedOrg.adminEmail}</p>
+          <div className="space-y-5 p-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Admin Email</span>
+                <p className="mt-0.5 text-xs font-bold text-slate-700 truncate">{selectedOrg.adminEmail}</p>
               </div>
-              <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 shadow-sm">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Billing Cycle</span>
-                <p className="mt-1 text-sm font-black text-slate-900 tracking-tight">{selectedOrg.billingCycle}</p>
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Database Name</span>
+                <p className="mt-0.5 text-[11px] font-mono font-bold text-indigo-500">{selectedOrg.dbName}</p>
               </div>
-              <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 shadow-sm">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Storage Node</span>
-                <p className="mt-1 text-sm font-black text-slate-900 tracking-tight">{selectedOrg.storage}GB / {selectedOrg.maxStorage}GB</p>
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Billing Plan</span>
+                <p className="mt-0.5 text-xs font-bold text-slate-700">{selectedOrg.plan} ({selectedOrg.billingCycle})</p>
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] px-1">Management Controls</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <Button label="Login As Administrator" variant="ghost" icon={HiArrowTopRightOnSquare} className="justify-start font-bold text-slate-600 py-3" onClick={() => handleLoginAs(selectedOrg)} />
-                <Button label="Reset Access Credentials" variant="ghost" icon={HiKey} className="justify-start font-bold text-slate-600 py-3" onClick={() => handleAction('reset_pw', selectedOrg)} />
-                <Button label="Scale Infrastructure" variant="ghost" icon={HiCreditCard} className="justify-start font-bold text-slate-600 py-3" onClick={() => handleEdit(selectedOrg)} />
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Join Date</span>
+                <p className="mt-0.5 text-xs font-bold text-slate-700">{selectedOrg.created}</p>
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-100 flex justify-between items-center gap-4">
-              <Button label="Suspend Ecosystem" variant="ghost" className="text-amber-600 hover:bg-amber-50 font-bold border-transparent" icon={HiClock} onClick={() => handleAction('suspend', selectedOrg)} />
-              <Button label="Terminate Organization" variant="ghost" className="text-red-600 hover:bg-red-50 font-bold border-transparent" icon={HiTrash} onClick={() => handleAction('delete', selectedOrg)} />
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-indigo-50/30 border border-indigo-100/50">
+              <div className="space-y-0.5">
+                <h4 className="text-[10px] font-bold text-indigo-900 uppercase tracking-widest">Management Actions</h4>
+                <p className="text-[10px] text-indigo-600/70">Securely orchestrate organization nodes.</p>
+              </div>
+              <div className="flex gap-2">
+                <div className="group relative">
+                  <Button variant="ghost" size="sm" icon={HiArrowTopRightOnSquare} className="bg-white shadow-sm text-indigo-600 hover:bg-indigo-600 hover:text-white" onClick={() => handleLoginAs(selectedOrg)} />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[9px] font-bold rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">Login as Admin</div>
+                </div>
+                <div className="group relative">
+                  <Button variant="ghost" size="sm" icon={HiKey} className="bg-white shadow-sm text-amber-600 hover:bg-amber-600 hover:text-white" onClick={() => handleAction('reset_pw', selectedOrg)} />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[9px] font-bold rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">Reset Password</div>
+                </div>
+                <div className="group relative">
+                  <Button variant="ghost" size="sm" icon={HiPencil} className="bg-white shadow-sm text-blue-600 hover:bg-blue-600 hover:text-white" onClick={() => handleEdit(selectedOrg)} />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[9px] font-bold rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">Edit Details</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Danger Zone</span>
+              <div className="flex gap-2">
+                <Button label="Suspend" variant="ghost" size="sm" className="text-amber-600 hover:bg-amber-50 font-bold" icon={HiClock} onClick={() => handleAction('suspend', selectedOrg)} />
+                <Button label="Delete" variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 font-bold" icon={HiTrash} onClick={() => handleAction('delete', selectedOrg)} />
+              </div>
             </div>
           </div>
         )}
@@ -347,6 +522,58 @@ export default function TenantManagement() {
           <div className="flex gap-3 pt-6 border-t border-slate-100">
             <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowEditModal(false)} />
             <Button label="Save" variant="primary" className="flex-1" onClick={handleSaveEdit} />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        title="Update Credentials"
+        description={`Set a new administrator password for ${selectedOrg?.name}.`}
+        icon={HiKey}
+      >
+        <div className="space-y-5 p-2">
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 mb-2">
+            <div className="flex gap-3">
+              <HiInformationCircle className="h-5 w-5 text-amber-500 shrink-0" />
+              <p className="text-[11px] font-medium text-amber-800 leading-relaxed">
+                The new password will be updated instantly in the tenant's database and sent to <span className="font-bold underline">{selectedOrg?.adminEmail}</span>.
+              </p>
+            </div>
+          </div>
+          
+          <Input 
+            label="New Password" 
+            type="password"
+            placeholder="••••••••"
+            value={resetForm.password} 
+            onChange={(e) => setResetForm({ ...resetForm, password: e.target.value })} 
+          />
+          <Input 
+            label="Confirm New Password" 
+            type="password"
+            placeholder="••••••••"
+            value={resetForm.confirmPassword} 
+            onChange={(e) => setResetForm({ ...resetForm, confirmPassword: e.target.value })} 
+          />
+
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
+            <Button 
+              label="Cancel" 
+              variant="ghost" 
+              className="flex-1 font-bold text-slate-400" 
+              onClick={() => setShowResetModal(false)} 
+            />
+            <Button 
+              label="Update & Email" 
+              variant="primary" 
+              className="flex-1" 
+              onClick={handleResetPassword} 
+              loading={isLoading}
+              disabled={!resetForm.password || resetForm.password !== resetForm.confirmPassword || isLoading}
+            />
           </div>
         </div>
       </Modal>
