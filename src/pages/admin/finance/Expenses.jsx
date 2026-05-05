@@ -141,6 +141,123 @@ export default function Expenses() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Multi-Level Approval Workflow</h2>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Travel - Client Meeting</div>
+              <div className="text-xs text-gray-500">John Smith • AED 2,500</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge label="Manager Approved" color="green" size="sm" />
+              <Badge label="Pending Finance" color="orange" size="sm" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Equipment - Laptop Stand</div>
+              <div className="text-xs text-gray-500">Sarah Johnson • AED 450</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge label="Manager Approved" color="green" size="sm" />
+              <Badge label="Finance Approved" color="green" size="sm" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Training - Course Fee</div>
+              <div className="text-xs text-gray-500">Michael Brown • AED 3,200</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge label="Pending Manager" color="orange" size="sm" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div>
+              <div className="font-medium text-gray-900">Meals - Team Lunch</div>
+              <div className="text-xs text-gray-500">Emily Davis • AED 850</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge label="Manager Approved" color="green" size="sm" />
+              <Badge label="Finance Approved" color="green" size="sm" />
+              <Badge label="Director Approved" color="green" size="sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Payment Processing</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Approved - Pending Payment</div>
+                <div className="text-xs text-gray-500">8 claims • AED 12,450</div>
+              </div>
+              <Badge label="Processing" color="orange" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Payment in Progress</div>
+                <div className="text-xs text-gray-500">5 claims • AED 8,200</div>
+              </div>
+              <Badge label="Transferring" color="blue" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Paid This Month</div>
+                <div className="text-xs text-gray-500">15 claims • AED 24,800</div>
+              </div>
+              <Badge label="Completed" color="green" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Expense by Category</h2>
+          <div className="mt-4 space-y-3">
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-700">Travel</span>
+                <span className="font-semibold text-gray-900">AED 15,000</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-[45%] rounded-full bg-blue-500" />
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-700">Meals</span>
+                <span className="font-semibold text-gray-900">AED 8,500</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-[25%] rounded-full bg-green-500" />
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-700">Equipment</span>
+                <span className="font-semibold text-gray-900">AED 6,200</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-[18%] rounded-full bg-purple-500" />
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-700">Training</span>
+                <span className="font-semibold text-gray-900">AED 4,000</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-[12%] rounded-full bg-orange-500" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Submit Expense Claim" size="md">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">

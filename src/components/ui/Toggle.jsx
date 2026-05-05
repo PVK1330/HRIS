@@ -1,5 +1,8 @@
-export function Toggle({ checked, onChange, label, disabled }) {
-  const id = `toggle-${label?.replace(/\s+/g, '-').toLowerCase() ?? 'field'}`
+import { useId } from 'react'
+
+export function Toggle({ checked, onChange, label, disabled, id: providedId, name }) {
+  const reactId = useId()
+  const id = providedId || reactId
 
   return (
     <label
@@ -9,6 +12,7 @@ export function Toggle({ checked, onChange, label, disabled }) {
       <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
         <input
           id={id}
+          name={name}
           type="checkbox"
           className="peer sr-only"
           checked={checked}

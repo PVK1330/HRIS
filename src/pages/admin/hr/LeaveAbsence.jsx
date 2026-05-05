@@ -138,6 +138,57 @@ export default function LeaveAbsence() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Holiday Calendar</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">New Year</div>
+                <div className="text-xs text-gray-500">Public Holiday</div>
+              </div>
+              <span className="text-sm text-gray-600">Jan 1</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-purple-50 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Eid al-Fitr</div>
+                <div className="text-xs text-gray-500">Religious Holiday</div>
+              </div>
+              <span className="text-sm text-gray-600">Apr 10</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-green-50 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Company Day</div>
+                <div className="text-xs text-gray-500">Company Holiday</div>
+              </div>
+              <span className="text-sm text-gray-600">Jun 15</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Leave Balance Summary</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Total Annual Leave</span>
+              <span className="font-semibold text-gray-900">30 days</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Used This Year</span>
+              <span className="font-semibold text-gray-900">12 days</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Remaining Balance</span>
+              <span className="font-semibold text-green-600">18 days</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Carry Forward</span>
+              <span className="font-semibold text-gray-900">5 days</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Apply Leave" size="md">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">

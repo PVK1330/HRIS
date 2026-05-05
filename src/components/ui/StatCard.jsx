@@ -12,14 +12,14 @@ export function StatCard({ title, value, subtitle, color = 'blue', icon: Icon })
 
   return (
     <div
-      className={`rounded-xl bg-white p-5 shadow-sm ${cfg.border}`}
+      className={`rounded-xl bg-white p-4 shadow-sm ${cfg.border}`}
     >
-      <div className="mb-2 flex items-start justify-between gap-3">
-        <div className="text-xs font-bold uppercase tracking-wide text-gray-400">{title}</div>
-        {Icon && <Icon className="h-5 w-5 shrink-0 text-gray-400" aria-hidden />}
+      <div className="mb-1.5 flex items-start justify-between gap-2">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{title}</div>
+        {Icon && <Icon className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />}
       </div>
-      <div className={`font-display text-3xl font-bold ${cfg.value}`}>{value}</div>
-      {subtitle && <div className="mt-1 text-xs text-gray-400">{subtitle}</div>}
+      <div className={`font-display text-2xl font-bold ${cfg.value}`}>{value}</div>
+      {subtitle && <div className="mt-0.5 text-[10px] text-gray-400">{subtitle}</div>}
     </div>
   )
 }

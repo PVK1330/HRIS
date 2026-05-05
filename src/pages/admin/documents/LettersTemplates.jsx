@@ -105,6 +105,7 @@ export default function LettersTemplates() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button label="New template" variant="outline" />
+          <Button label="Bulk send" variant="secondary" />
           <Button label="Generate letter" variant="primary" onClick={openModal} />
         </div>
       </div>
@@ -126,6 +127,66 @@ export default function LettersTemplates() {
       </div>
 
       <Table columns={columns} data={filtered} pageSize={5} />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Letter History</h2>
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Offer Letter - John Smith</div>
+                <div className="text-xs text-gray-500">Generated on Apr 10, 2026</div>
+              </div>
+              <Badge label="Sent" color="green" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">Salary Certificate - Sarah Johnson</div>
+                <div className="text-xs text-gray-500">Generated on Apr 8, 2026</div>
+              </div>
+              <Badge label="Sent" color="green" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+              <div>
+                <div className="font-medium text-gray-900">NOC Letter - Michael Brown</div>
+                <div className="text-xs text-gray-500">Generated on Apr 5, 2026</div>
+              </div>
+              <Badge label="Draft" color="orange" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="font-display text-lg font-bold text-gray-900">Dynamic Placeholders</h2>
+          <p className="mt-1 text-sm text-gray-500">Available placeholders for auto-fill</p>
+          <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+              <code className="text-blue-600">{'{Employee Name}'}</code>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+              <code className="text-blue-600">{'{Employee ID}'}</code>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+              <code className="text-blue-600">{'{Department}'}</code>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+              <code className="text-blue-600">{'{Job Title}'}</code>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+              <code className="text-blue-600">{'{Join Date}'}</code>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+              <code className="text-blue-600">{'{Salary}'}</code>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+              <code className="text-blue-600">{'{Company Name}'}</code>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+              <code className="text-blue-600">{'{Reference No}'}</code>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Generate Letter" size="lg">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
