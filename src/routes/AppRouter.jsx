@@ -39,6 +39,8 @@ import SupportTickets from '../pages/superadmin/support/SupportTickets.jsx'
 import AdminUsers from '../pages/superadmin/AdminUsers.jsx'
 import Permissions from '../pages/superadmin/Permissions.jsx'
 import SuperProfile from '../pages/superadmin/Profile.jsx'
+import Register from '../pages/auth/Register.jsx'
+import ForgotPassword from '../pages/auth/ForgotPassword.jsx'
 
 import SettingsLayout from '../pages/superadmin/settings/SettingsLayout.jsx'
 import GeneralSettings from '../pages/superadmin/settings/GeneralSettings.jsx'
@@ -72,8 +74,8 @@ function RootLayout() {
   )
 }
 
-const ADMIN_ROLES = ['hr_admin', 'hr_executive', 'manager', 'employee']
-const SUPER_ROLES = ['super_admin', 'support_admin', 'billing_admin']
+const ADMIN_ROLES = ['admin', 'hr_admin', 'hr_executive', 'manager', 'employee']
+const SUPER_ROLES = ['superadmin', 'support_admin', 'billing_admin']
 
 export const router = createBrowserRouter([
   {
@@ -82,6 +84,8 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/login" replace /> },
       { path: 'login', element: <Login /> },
+      { path: 'register', element: <Register /> },
+      { path: 'forgot-password', element: <ForgotPassword /> },
       {
         path: 'admin',
         element: (

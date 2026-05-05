@@ -3,7 +3,7 @@ import axios from 'axios'
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const BASE = `${API_URL}/api/v1/settings`
 
-const TOKEN_KEYS = ['elitepic_auth_token', 'token', 'jwt']
+const TOKEN_KEYS = ['hris_token', 'elitepic_auth_token', 'token', 'jwt']
 
 function readToken() {
   if (typeof window === 'undefined') return null

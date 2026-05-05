@@ -65,7 +65,7 @@ export function Input({
             onChange={onChange}
             className={`${baseInput} ${borderClass} py-2 pl-3 pr-10 ${inputClassName}`}
           />
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600">
             {suffix}
           </span>
         </div>
