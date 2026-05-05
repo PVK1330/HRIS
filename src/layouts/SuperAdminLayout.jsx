@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useMemo, useState } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   HiBars3,
   HiBell,
@@ -15,11 +15,11 @@ import {
   HiSquares2X2,
   HiUserCircle,
   HiUsers,
-} from 'react-icons/hi2'
-import { Sidebar } from '../components/ui/Sidebar.jsx'
-import { Avatar } from '../components/ui/Avatar.jsx'
-import { Button } from '../components/ui/Button.jsx'
-import { useAuth } from '../context/AuthContext.jsx'
+} from "react-icons/hi2";
+import { Sidebar } from "../components/ui/Sidebar.jsx";
+import { Avatar } from "../components/ui/Avatar.jsx";
+import { Button } from "../components/ui/Button.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const superNavGroups = [
   {
@@ -118,9 +118,9 @@ const superNavGroups = [
 
 function titleCaseSegment(seg) {
   return seg
-    .split('-')
+    .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
+    .join(" ");
 }
 
 const ROLE_DISPLAY = {
@@ -215,5 +215,5 @@ export default function SuperAdminLayout() {
         </main>
       </div>
     </div>
-  )
+  );
 }
