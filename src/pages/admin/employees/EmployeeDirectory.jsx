@@ -312,7 +312,7 @@ export default function EmployeeDirectory() {
           <h1 className="font-display text-2xl font-bold text-gray-900">Employee Directory</h1>
           <p className="mt-1 text-sm text-gray-500">Search, filter, and manage employee records.</p>
         </div>
-        <Button ariaLabel="Add Employee" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
+        <Button label="Add Employee" variant="primary"  onClick={() => setModalOpen(true)} />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -364,7 +364,7 @@ export default function EmployeeDirectory() {
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Employee' : 'Add Employee'} size="xl" showClose>
         <form
           onSubmit={handleSubmit}
-          className="h-full w-full overflow-y-auto pr-1"
+          className=" w-full overflow-y-auto pr-1"
         >
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
             Personal information

@@ -377,7 +377,7 @@ export default function Dashboard() {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Pending Approvals</h2>
+          <h2 className="font-display text-lg font-bold text-gray-900">Pending Approvals`</h2>
           <ul className="mt-4 space-y-3">
             <Link to="/admin/leave" className="flex items-center justify-between text-sm text-gray-700 hover:text-[#004CA5] transition-colors">
               <span>Leave requests</span>
@@ -527,12 +527,7 @@ export default function Dashboard() {
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg font-bold text-gray-900">Upcoming Holidays</h2>
-              <button
-                onClick={() => setSelectedMonthForHolidays(currentMonth.getMonth())}
-                className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-700"
-              >
-                Sync
-              </button>
+              
             </div>
             <div className="mt-4 space-y-3">
               <Input
@@ -594,32 +589,57 @@ export default function Dashboard() {
         </ul>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Quick Access</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link to="/admin/employee-directory">
-            <Button ariaLabel="Employee Directory" variant="secondary" className="w-full justify-start" icon={HiUsers} />
+      <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-white">
+        <h2 className="font-display text-lg font-bold text-gray-900 mb-1">Quick Access</h2>
+        <p className="text-sm text-gray-500 mb-4">Navigate to key modules instantly</p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Link to="/admin/employee-directory" className="group">
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-200 hover:border-[#0f766e] hover:bg-teal-50 transition-all duration-200">
+              <HiUsers className="h-8 w-8 text-[#0f766e] mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 text-center">Employee Directory</span>
+            </div>
           </Link>
-          <Link to="/admin/attendance">
-            <Button ariaLabel="Attendance" variant="secondary" className="w-full justify-start" icon={HiClock} />
+          <Link to="/admin/attendance" className="group">
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-200 hover:border-[#0f766e] hover:bg-teal-50 transition-all duration-200">
+              <HiClock className="h-8 w-8 text-[#0f766e] mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 text-center">Attendance</span>
+            </div>
           </Link>
-          <Link to="/admin/leave">
-            <Button ariaLabel="Leave Management" variant="secondary" className="w-full justify-start" icon={HiCalendar} />
+          <Link to="/admin/leave" className="group">
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-200 hover:border-[#0f766e] hover:bg-teal-50 transition-all duration-200">
+              <HiCalendar className="h-8 w-8 text-[#0f766e] mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 text-center">Leave Management</span>
+            </div>
           </Link>
-          <Link to="/admin/documents">
-            <Button ariaLabel="Documents" variant="secondary" className="w-full justify-start" icon={HiDocument} />
+          <Link to="/admin/documents" className="group">
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-200 hover:border-[#0f766e] hover:bg-teal-50 transition-all duration-200">
+              <HiDocument className="h-8 w-8 text-[#0f766e] mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 text-center">Documents</span>
+            </div>
           </Link>
-          <Link to="/admin/visa">
-            <Button ariaLabel="Visa & Nationality" variant="secondary" className="w-full justify-start" icon={HiCreditCard} />
+          <Link to="/admin/visa" className="group">
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-200 hover:border-[#0f766e] hover:bg-teal-50 transition-all duration-200">
+              <HiCreditCard className="h-8 w-8 text-[#0f766e] mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 text-center">Visa & Nationality</span>
+            </div>
           </Link>
-          <Link to="/admin/policies">
-            <Button ariaLabel="Policies" variant="secondary" className="w-full justify-start" icon={HiClipboardDocumentCheck} />
+          <Link to="/admin/policies" className="group">
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-200 hover:border-[#0f766e] hover:bg-teal-50 transition-all duration-200">
+              <HiClipboardDocumentCheck className="h-8 w-8 text-[#0f766e] mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 text-center">Policies</span>
+            </div>
           </Link>
-          <Link to="/admin/performance">
-            <Button ariaLabel="Performance" variant="secondary" className="w-full justify-start" icon={HiChartBar} />
+          <Link to="/admin/performance" className="group">
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-200 hover:border-[#0f766e] hover:bg-teal-50 transition-all duration-200">
+              <HiChartBar className="h-8 w-8 text-[#0f766e] mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 text-center">Performance</span>
+            </div>
           </Link>
-          <Link to="/admin/departments">
-            <Button ariaLabel="Departments" variant="secondary" className="w-full justify-start" icon={HiBuildingOffice} />
+          <Link to="/admin/departments" className="group">
+            <div className="flex flex-col items-center justify-center p-4 rounded-lg border border-gray-200 hover:border-[#0f766e] hover:bg-teal-50 transition-all duration-200">
+              <HiBuildingOffice className="h-8 w-8 text-[#0f766e] mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 text-center">Departments</span>
+            </div>
           </Link>
         </div>
       </div>
@@ -672,6 +692,66 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-gray-900">Announcements</h2>
+        <ul className="mt-4 space-y-3">
+          {dummyAnnouncements.map((announcement) => (
+            <button
+              key={announcement.id}
+              onClick={() => setSelectedAnnouncement(announcement)}
+              className="w-full text-left rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 hover:bg-orange-100 transition-colors"
+            >
+              <div className="font-medium text-gray-900">{announcement.title}</div>
+              <div className="mt-1 text-xs text-gray-600">{new Date(announcement.date).toLocaleDateString('en-GB')} • {announcement.timing}</div>
+              <div className="mt-2 text-sm text-gray-700 line-clamp-2">{announcement.details}</div>
+              <div className="mt-2 text-xs text-orange-600 font-medium">Click to view full details →</div>
+            </button>
+          ))}
+        </ul>
+      </div>
+
+      <Modal
+        isOpen={!!selectedAnnouncement}
+        onClose={() => setSelectedAnnouncement(null)}
+        title={selectedAnnouncement?.title || 'Announcement'}
+        size="md"
+      >
+        {selectedAnnouncement && (
+          <div className="space-y-4">
+            <div className="border-b border-gray-200 pb-4">
+              <div className="mb-2">
+                <span className="text-sm font-medium text-gray-600">Date & Time</span>
+              </div>
+              <div className="text-gray-900">
+                <p className="font-semibold">{new Date(selectedAnnouncement.date).toLocaleDateString('en-GB', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}</p>
+                <p className="text-sm text-gray-600">{selectedAnnouncement.timing}</p>
+              </div>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-600">Details</span>
+              <p className="mt-2 text-gray-700 leading-relaxed">{selectedAnnouncement.details}</p>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button 
+                variant="primary" 
+                className="flex-1"
+                onClick={() => {
+                  // You can add calendar integration or other actions here
+                  setSelectedAnnouncement(null)
+                }}
+              >
+                Got It
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

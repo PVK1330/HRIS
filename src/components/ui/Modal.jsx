@@ -42,7 +42,7 @@ export function Modal({
   const maxW = sizeClasses[size] ?? sizeClasses.md
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden overflow-x-hidden p-4 sm:p-6">
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300"
