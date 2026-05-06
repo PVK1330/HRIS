@@ -10,6 +10,7 @@ import {
   HiExclamationTriangle,
   HiGlobeAlt,
   HiHome,
+  HiLightBulb,
   HiLockClosed,
   HiServer,
   HiShieldCheck,
@@ -39,9 +40,15 @@ const superNavGroups = [
         roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
       {
-        label: 'Pricing Plans',
+        label: 'Subscription Plans',
         icon: HiCurrencyDollar,
         path: '/superadmin/subscriptions',
+        roles: ['superadmin', 'billing_admin'],
+      },
+      {
+        label: 'Subscription Features',
+        icon: HiLightBulb,
+        path: '/superadmin/subscription-features',
         roles: ['superadmin', 'billing_admin'],
       },
       {

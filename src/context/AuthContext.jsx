@@ -104,10 +104,15 @@ export function AuthProvider({ children }) {
     return userPermissions.includes(permission)
   }, [user])
 
-  const login = useCallback((arg1, arg2) => {
+  const login = useCallback((arg1, arg2, planDetails = [], planFeatures = []) => {
     // Case 1: Real API Auth (user object, token)
     if (typeof arg1 === 'object' && arg2) {
-      const userData = { ...arg1, panel: arg1.role === 'superadmin' ? 'superadmin' : 'admin' }
+      const userData = { 
+        ...arg1, 
+        panel: arg1.role === 'superadmin' ? 'superadmin' : 'admin',
+        plan_details: planDetails,
+        plan_features: planFeatures
+      }
       setUser(userData)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
       localStorage.setItem('hris_token', arg2)
