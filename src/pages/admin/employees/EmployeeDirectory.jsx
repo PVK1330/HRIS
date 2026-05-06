@@ -11,10 +11,10 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { employees } from '../../../data/mockData.js'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 function statusColor(status) {
   if (status === 'Active') return 'green'
@@ -56,12 +56,22 @@ const initialFormData = {
   workEmail: '',
   salary: '',
   employmentStatus: '',
+  grade: '',
+  costCenter: '',
+  maritalStatus: '',
+  dependents: '',
   passportNumber: '',
   passportExpiry: '',
   emiratesIdNumber: '',
   emiratesIdExpiry: '',
   visaType: '',
   visaExpiryDate: '',
+  workMode: '',
+  sponsoringEntity: '',
+  countryOfResidence: '',
+  careerHistory: '',
+  awardsSummary: '',
+  promotionHistory: '',
 }
 
 export default function EmployeeDirectory() {
@@ -71,6 +81,7 @@ export default function EmployeeDirectory() {
   const [job, setJob] = useState('')
   const [loc, setLoc] = useState('')
   const [status, setStatus] = useState('')
+  const [workMode, setWorkMode] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [formData, setFormData] = useState(initialFormData)
   const [files, setFiles] = useState({})
@@ -101,6 +112,12 @@ export default function EmployeeDirectory() {
     { value: 'Notice Period', label: 'Notice Period' },
     { value: 'On Leave', label: 'On Leave' },
   ]
+  const workModeOptions = [
+    { value: '', label: 'All work modes' },
+    { value: 'Remote', label: 'Remote' },
+    { value: 'In Office', label: 'In Office' },
+    { value: 'Hybrid', label: 'Hybrid' },
+  ]
 
   const managerSelectOptions = useMemo(
     () =>
@@ -117,16 +134,23 @@ export default function EmployeeDirectory() {
       ...e,
       manager: idx % 3 === 0 ? 'Sarah Johnson' : idx % 3 === 1 ? 'Michael Brown' : 'Emily Davis',
       joinDate: '2024-01-15',
+      workMode: e.workMode || (idx % 2 === 0 ? 'In Office' : 'Remote'),
     })).filter((e) => {
-      if (dept && e.department !== dept) return false
-      if (job && e.jobTitle !== job) return false
-      if (loc && e.location !== loc) return false
-      if (status && e.status !== status) return false
-      if (!q) return true
-      const blob = `${e.name} ${e.email} ${e.empId} ${e.department}`.toLowerCase()
-      return blob.includes(q)
+      const matchDept = !dept || e.department === dept
+      const matchJob = !job || e.jobTitle === job
+      const matchLoc = !loc || e.location === loc
+      const matchStatus = !status || e.status === status
+      const matchWorkMode = !workMode || e.workMode === workMode
+      
+      let matchQ = true
+      if (q) {
+        const blob = `${e.name} ${e.email} ${e.empId} ${e.department}`.toLowerCase()
+        matchQ = blob.includes(q)
+      }
+
+      return matchDept && matchJob && matchLoc && matchStatus && matchWorkMode && matchQ
     })
-  }, [search, dept, job, loc, status, employeeList])
+  }, [search, dept, job, loc, status, workMode, employeeList])
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
@@ -163,24 +187,24 @@ export default function EmployeeDirectory() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     if (editMode) {
       // Update existing employee
-      setEmployeeList((prev) => 
-        prev.map((emp) => 
-          emp.empId === editingEmployeeId 
-            ? { 
-                ...emp, 
-                name: formData.fullName,
-                email: formData.workEmail || formData.personalEmail,
-                phone: formData.phoneNumber,
-                jobTitle: formData.jobTitle,
-                department: formData.department,
-                location: formData.workLocation,
-                manager: formData.reportingManager,
-                status: formData.employmentStatus,
-                joinDate: formData.joinDate
-              } 
+      setEmployeeList((prev) =>
+        prev.map((emp) =>
+          emp.empId === editingEmployeeId
+            ? {
+              ...emp,
+              name: formData.fullName,
+              email: formData.workEmail || formData.personalEmail,
+              phone: formData.phoneNumber,
+              jobTitle: formData.jobTitle,
+              department: formData.department,
+              location: formData.workLocation,
+              manager: formData.reportingManager,
+              status: formData.employmentStatus,
+              joinDate: formData.joinDate
+            }
             : emp
         )
       )
@@ -204,7 +228,7 @@ export default function EmployeeDirectory() {
       setEmployeeList((prev) => [...prev, newEmployee])
       alert('Employee added successfully!')
     }
-    
+
     handleCloseModal()
   }
 
@@ -253,8 +277,14 @@ export default function EmployeeDirectory() {
       passportExpiry: '',
       emiratesIdNumber: '',
       emiratesIdExpiry: '',
-      visaType: '',
-      visaExpiryDate: '',
+      visaType: employee.visaType || '',
+      visaExpiryDate: employee.visaExpiryDate || '',
+      workMode: employee.workMode || '',
+      sponsoringEntity: employee.sponsoringEntity || '',
+      countryOfResidence: employee.countryOfResidence || '',
+      careerHistory: employee.careerHistory || '',
+      awardsSummary: employee.awardsSummary || '',
+      promotionHistory: employee.promotionHistory || '',
     })
     setEditMode(true)
     setEditingEmployeeId(employee.empId)
@@ -306,65 +336,86 @@ export default function EmployeeDirectory() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">Employee Directory</h1>
-          <p className="mt-1 text-sm text-gray-500">Search, filter, and manage employee records.</p>
+          <h1 className="font-display text-2xl font-bold text-slate-900">Employee Directory</h1>
+          <p className="mt-1 text-sm text-slate-500">Identity management and workforce intelligence.</p>
         </div>
-        <Button ariaLabel="Add Employee" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <Input
-            label="Search"
-            name="search"
-            placeholder="Name, email, ID…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <Input
-            label="Department"
-            name="dept"
-            type="select"
-            value={dept}
-            onChange={(e) => setDept(e.target.value)}
-            options={deptOptions}
-          />
-          <Input
-            label="Job title"
-            name="job"
-            type="select"
-            value={job}
-            onChange={(e) => setJob(e.target.value)}
-            options={jobOptions}
-          />
-          <Input
-            label="Location"
-            name="loc"
-            type="select"
-            value={loc}
-            onChange={(e) => setLoc(e.target.value)}
-            options={locOptions}
-          />
-          <Input
-            label="Status"
-            name="status"
-            type="select"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            options={statusOptions}
-          />
+      {/* Control Bar */}
+      <div className="flex flex-col gap-4 bg-white/50 backdrop-blur-md p-5 rounded-lg border border-slate-200/60 shadow-sm ring-1 ring-slate-900/5">
+        <div className="flex flex-col lg:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Identity Search</label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <svg className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input 
+                type="text"
+                placeholder="Name, ID, or email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-md py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner font-medium"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 items-center">
+            <Button 
+              label="Reset" 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => { setSearch(''); setDept(''); setJob(''); setLoc(''); setStatus(''); setWorkMode('') }}
+              className="text-slate-400 hover:text-rose-600 rounded-md"
+            />
+            <Button ariaLabel="Add Employee" label="New Employee" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} className="rounded-md shadow-lg shadow-emerald-100" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 border-t border-slate-100 pt-4">
+          <div>
+            <label className="mb-1 block text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
+            <select value={dept} onChange={(e) => setDept(e.target.value)} className="w-full bg-slate-50/50 border border-slate-200/60 rounded-md py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer font-bold text-slate-700">
+              {deptOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Designation</label>
+            <select value={job} onChange={(e) => setJob(e.target.value)} className="w-full bg-slate-50/50 border border-slate-200/60 rounded-md py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer font-bold text-slate-700">
+              {jobOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Work Mode</label>
+            <select value={workMode} onChange={(e) => setWorkMode(e.target.value)} className="w-full bg-slate-50/50 border border-slate-200/60 rounded-md py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer font-bold text-slate-700">
+              {workModeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Talent Status</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-slate-50/50 border border-slate-200/60 rounded-md py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer font-bold text-slate-700">
+              {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Region</label>
+            <select value={loc} onChange={(e) => setLoc(e.target.value)} className="w-full bg-slate-50/50 border border-slate-200/60 rounded-md py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer font-bold text-slate-700">
+              {locOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Employee' : 'Add Employee'} size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Employee' : 'Add Employee'} size="xl" showClose>
         <form
           onSubmit={handleSubmit}
-          className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1"
+          className="h-full w-full pr-1"
         >
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
             Personal information
@@ -413,6 +464,37 @@ export default function EmployeeDirectory() {
               value={formData.nationality}
               onChange={handleFormChange}
               required
+            />
+            <Input
+              label="Country of Residence"
+              name="countryOfResidence"
+              value={formData.countryOfResidence}
+              onChange={handleFormChange}
+            />
+            <div className="w-full">
+              <label htmlFor="emp-marital" className="mb-1 block text-sm font-medium text-gray-700">
+                Marital Status
+              </label>
+              <select
+                id="emp-marital"
+                name="maritalStatus"
+                value={formData.maritalStatus}
+                onChange={handleFormChange}
+                className={selectClass}
+              >
+                <option value="">Select status</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </select>
+            </div>
+            <Input
+              label="Number of Dependents"
+              name="dependents"
+              type="number"
+              value={formData.dependents}
+              onChange={handleFormChange}
             />
             <Input
               label="Personal Email"
@@ -547,6 +629,27 @@ export default function EmployeeDirectory() {
               </select>
             </div>
             <div className="w-full">
+              <label htmlFor="emp-work-mode" className="mb-1 block text-sm font-medium text-gray-700">
+                Work Mode
+                <span className="text-red-500"> *</span>
+              </label>
+              <select
+                id="emp-work-mode"
+                name="workMode"
+                value={formData.workMode}
+                onChange={handleFormChange}
+                className={selectClass}
+                required
+              >
+                <option value="" disabled hidden>
+                  Select work mode
+                </option>
+                <option value="In Office">In Office</option>
+                <option value="Remote">Remote</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+            <div className="w-full">
               <label htmlFor="emp-manager" className="mb-1 block text-sm font-medium text-gray-700">
                 Reporting Manager
               </label>
@@ -594,6 +697,20 @@ export default function EmployeeDirectory() {
               type="number"
               placeholder="Amount in AED"
               value={formData.salary}
+              onChange={handleFormChange}
+            />
+            <Input
+              label="Grade / Level"
+              name="grade"
+              placeholder="e.g. G5, L2, Senior"
+              value={formData.grade}
+              onChange={handleFormChange}
+            />
+            <Input
+              label="Cost Center"
+              name="costCenter"
+              placeholder="e.g. CC-100"
+              value={formData.costCenter}
               onChange={handleFormChange}
             />
             <div className="w-full">
@@ -675,6 +792,46 @@ export default function EmployeeDirectory() {
               value={formData.visaExpiryDate}
               onChange={handleFormChange}
             />
+            <Input
+              label="Sponsoring Entity"
+              name="sponsoringEntity"
+              placeholder="e.g. Company Name"
+              value={formData.sponsoringEntity}
+              onChange={handleFormChange}
+            />
+          </div>
+
+          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Career & Highlights
+          </p>
+          <div className="space-y-3">
+            <div className="w-full">
+              <label htmlFor="emp-career" className="mb-1 block text-sm font-medium text-gray-700">
+                Career History (Previous Roles, Promotions, Transfers)
+              </label>
+              <textarea
+                id="emp-career"
+                name="careerHistory"
+                value={formData.careerHistory}
+                onChange={handleFormChange}
+                className={textareaClass}
+                rows={3}
+                placeholder="List previous roles and key career milestones..."
+              />
+            </div>
+            <div className="w-full">
+              <label htmlFor="emp-awards" className="mb-1 block text-sm font-medium text-gray-700">
+                Awards & Recognitions
+              </label>
+              <textarea
+                id="emp-awards"
+                name="awardsSummary"
+                value={formData.awardsSummary}
+                onChange={handleFormChange}
+                className={textareaClass}
+                rows={2}
+              />
+            </div>
           </div>
 
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
@@ -716,16 +873,26 @@ export default function EmployeeDirectory() {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" ariaLabel="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" ariaLabel={editMode ? 'Update Employee' : 'Save Employee'} variant="primary" />
+            <Button
+              type="button"
+              label="Cancel"
+              variant="ghost"
+              onClick={handleCloseModal}
+            />
+
+            <Button
+              type="submit"
+              label={editMode ? 'Update Employee' : 'Save Employee'}
+              variant="primary"
+            />
           </div>
         </form>
       </Modal>
 
-      <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} title="Employee Details" size="4xl">
+      <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} title="Employee Details" size="2xl" showClose={true}>
         {selectedEmployee && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-4 w-full h-full">
               <div className="flex items-center gap-4">
                 <Avatar initials={selectedEmployee.initials} size="lg" />
                 <div>
@@ -754,18 +921,17 @@ export default function EmployeeDirectory() {
                 <button
                   key={tab.id}
                   onClick={() => setViewActiveTab(tab.id)}
-                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap ${
-                    viewActiveTab === tab.id
-                      ? 'border-b-2 border-[#004CA5] text-[#004CA5]'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap ${viewActiveTab === tab.id
+                    ? 'border-b-2 border-[#004CA5] text-[#004CA5]'
+                    : 'text-gray-500 hover:text-gray-700'
+                    }`}
                 >
                   {tab.label}
                 </button>
               ))}
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <div className="pt-2">
               {viewActiveTab === 'personal' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -775,19 +941,21 @@ export default function EmployeeDirectory() {
                     <div><label className="text-xs text-gray-500">Department</label><p className="text-sm font-medium">{selectedEmployee.department}</p></div>
                     <div><label className="text-xs text-gray-500">Reporting Manager</label><p className="text-sm font-medium">{selectedEmployee.manager || 'N/A'}</p></div>
                     <div><label className="text-xs text-gray-500">Work Location</label><p className="text-sm font-medium">{selectedEmployee.location}</p></div>
-                    <div><label className="text-xs text-gray-500">Employment Type</label><p className="text-sm font-medium">Full-time</p></div>
+                    <div><label className="text-xs text-gray-500">Work Mode</label><p className="text-sm font-medium">{selectedEmployee.workMode || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Employment Type</label><p className="text-sm font-medium">{selectedEmployee.employmentType || 'Full-time'}</p></div>
                     <div><label className="text-xs text-gray-500">Join Date</label><p className="text-sm font-medium">{selectedEmployee.joinDate || '2024-01-15'}</p></div>
                     <div><label className="text-xs text-gray-500">Tenure</label><p className="text-sm font-medium">2 Years, 3 Months</p></div>
                     <div><label className="text-xs text-gray-500">Current Day Status</label><p className="text-sm font-medium text-green-600">Present</p></div>
                   </div>
-                  
+
                   <div className="border-t pt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div><label className="text-xs text-gray-500">Date of Birth</label><p className="text-sm font-medium">1990-05-14</p></div>
-                    <div><label className="text-xs text-gray-500">Gender</label><p className="text-sm font-medium">Male</p></div>
-                    <div><label className="text-xs text-gray-500">Marital Status</label><p className="text-sm font-medium">Married</p></div>
+                    <div><label className="text-xs text-gray-500">Date of Birth</label><p className="text-sm font-medium">{selectedEmployee.dateOfBirth || '1990-05-14'}</p></div>
+                    <div><label className="text-xs text-gray-500">Gender</label><p className="text-sm font-medium">{selectedEmployee.gender || 'Male'}</p></div>
+                    <div><label className="text-xs text-gray-500">Marital Status</label><p className="text-sm font-medium">{selectedEmployee.maritalStatus || 'Married'}</p></div>
                     <div><label className="text-xs text-gray-500">Contact Numbers</label><p className="text-sm font-medium">{selectedEmployee.phone || '+971 50 123 4567'}</p></div>
                     <div><label className="text-xs text-gray-500">Personal Email</label><p className="text-sm font-medium">{selectedEmployee.email}</p></div>
-                    <div><label className="text-xs text-gray-500">Number of Dependents</label><p className="text-sm font-medium">2</p></div>
+                    <div><label className="text-xs text-gray-500">Number of Dependents</label><p className="text-sm font-medium">{selectedEmployee.dependents || '0'}</p></div>
+                    <div><label className="text-xs text-gray-500">Country of Residence</label><p className="text-sm font-medium">{selectedEmployee.countryOfResidence || 'UAE'}</p></div>
                   </div>
 
                   <div className="border-t pt-4">
@@ -816,13 +984,14 @@ export default function EmployeeDirectory() {
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div><label className="text-xs text-gray-500">Job Title</label><p className="text-sm font-medium">{selectedEmployee.jobTitle}</p></div>
-                    <div><label className="text-xs text-gray-500">Job Level / Grade</label><p className="text-sm font-medium">L4 / Grade B</p></div>
+                    <div><label className="text-xs text-gray-500">Job Level / Grade</label><p className="text-sm font-medium">{selectedEmployee.grade || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Cost Center</label><p className="text-sm font-medium">{selectedEmployee.costCenter || 'N/A'}</p></div>
                     <div><label className="text-xs text-gray-500">Department</label><p className="text-sm font-medium">{selectedEmployee.department}</p></div>
                     <div><label className="text-xs text-gray-500">Work Location</label><p className="text-sm font-medium">{selectedEmployee.location}</p></div>
                     <div><label className="text-xs text-gray-500">Reporting Manager</label><p className="text-sm font-medium">{selectedEmployee.manager || 'Not assigned'}</p></div>
-                    <div><label className="text-xs text-gray-500">Employment Type</label><p className="text-sm font-medium">Full-time</p></div>
+                    <div><label className="text-xs text-gray-500">Employment Type</label><p className="text-sm font-medium">{selectedEmployee.employmentType || 'Full-time'}</p></div>
                     <div><label className="text-xs text-gray-500">Date of Joining</label><p className="text-sm font-medium">{selectedEmployee.joinDate || '2024-01-15'}</p></div>
-                    <div><label className="text-xs text-gray-500">Probation End Date</label><p className="text-sm font-medium">2024-07-15</p></div>
+                    <div><label className="text-xs text-gray-500">Probation End Date</label><p className="text-sm font-medium">{selectedEmployee.probationEndDate || 'N/A'}</p></div>
                   </div>
 
                   <div className="border-t pt-4 mt-4">
@@ -882,18 +1051,18 @@ export default function EmployeeDirectory() {
               {viewActiveTab === 'visa' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
-                    <div><label className="text-xs text-gray-500">Nationality</label><p className="text-sm font-medium">Indian</p></div>
-                    <div><label className="text-xs text-gray-500">Country of Residence</label><p className="text-sm font-medium">UAE</p></div>
-                    <div><label className="text-xs text-gray-500">Passport Number</label><p className="text-sm font-medium">A12345678</p></div>
-                    <div><label className="text-xs text-gray-500">Passport Issue Date</label><p className="text-sm font-medium">2016-06-30</p></div>
-                    <div><label className="text-xs text-gray-500">Passport Expiry Date</label><p className="text-sm font-medium">2026-06-30</p></div>
-                    
+                    <div><label className="text-xs text-gray-500">Nationality</label><p className="text-sm font-medium">{selectedEmployee.nationality || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Country of Residence</label><p className="text-sm font-medium">{selectedEmployee.countryOfResidence || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Passport Number</label><p className="text-sm font-medium">{selectedEmployee.passportNumber || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Passport Issue Date</label><p className="text-sm font-medium">{selectedEmployee.passportIssueDate || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Passport Expiry Date</label><p className="text-sm font-medium">{selectedEmployee.passportExpiry || 'N/A'}</p></div>
+
                     <div className="col-span-2 mt-2 mb-1 border-t pt-4"><h4 className="text-sm font-semibold">Visa / Work Permit</h4></div>
-                    <div><label className="text-xs text-gray-500">Visa / Work Permit Type</label><p className="text-sm font-medium">Employment Visa</p></div>
-                    <div><label className="text-xs text-gray-500">Visa Number</label><p className="text-sm font-medium">201-1234567-1</p></div>
-                    <div><label className="text-xs text-gray-500">Visa Issue Date</label><p className="text-sm font-medium">2023-01-15</p></div>
-                    <div><label className="text-xs text-gray-500">Visa Expiry Date</label><p className="text-sm font-medium">2025-01-15</p></div>
-                    <div><label className="text-xs text-gray-500">Sponsoring Entity</label><p className="text-sm font-medium">HRIS Solutions LLC</p></div>
+                    <div><label className="text-xs text-gray-500">Visa / Work Permit Type</label><p className="text-sm font-medium">{selectedEmployee.visaType || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Visa Number</label><p className="text-sm font-medium">{selectedEmployee.visaNumber || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Visa Issue Date</label><p className="text-sm font-medium">{selectedEmployee.visaIssueDate || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Visa Expiry Date</label><p className="text-sm font-medium">{selectedEmployee.visaExpiryDate || 'N/A'}</p></div>
+                    <div><label className="text-xs text-gray-500">Sponsoring Entity</label><p className="text-sm font-medium">{selectedEmployee.sponsoringEntity || 'N/A'}</p></div>
                   </div>
 
                   <div className="border-t pt-4">
@@ -1001,7 +1170,7 @@ export default function EmployeeDirectory() {
                     <h4 className="text-sm font-semibold">Leave History</h4>
                     <Button variant="outline" size="sm">Upload Medical Cert</Button>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="p-3 border rounded-lg flex justify-between items-center">
                       <div>
@@ -1060,14 +1229,14 @@ export default function EmployeeDirectory() {
                           <span className="font-medium">Complete Leadership Training</span>
                           <span className="text-blue-600">80%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{width: '80%'}}></div></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{ width: '80%' }}></div></div>
                       </div>
                       <div className="border p-3 rounded-lg">
                         <div className="flex justify-between text-sm mb-1">
                           <span className="font-medium">Improve Team Velocity by 15%</span>
                           <span className="text-blue-600">45%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{width: '45%'}}></div></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{ width: '45%' }}></div></div>
                       </div>
                     </div>
                   </div>

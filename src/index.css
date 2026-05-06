@@ -1,17 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --primary: 10, 147, 81; /* #0a9351 - Emerald */
+    --primary-light: 236, 253, 245;
+  }
+
   body {
-    @apply font-sans bg-gray-50 antialiased;
+    @apply font-sans bg-[#F8FAFC] text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
   }
 }
-button {
-  cursor: pointer;
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+  }
+
+  .premium-shadow {
+    @apply shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)];
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-1.5 h-1.5;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  }
 }
 
-/* Ensure SweetAlert2 is above our Modals (which use z-[9999]) */
+/* Animations */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+/* Ensure SweetAlert2 is above our Modals */
 .swal2-container {
   z-index: 10000 !important;
+}
+
+button {
+  @apply transition-all duration-200 active:scale-[0.98];
+}
+
+/* Global Overrides */
+.h-full {
+  height: auto !important;
 }

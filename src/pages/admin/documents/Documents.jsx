@@ -1,771 +1,444 @@
-import { useMemo, useState, useCallback } from 'react'
-import { HiArrowDownTray, HiArrowPath } from 'react-icons/hi2'
-import { useAuth } from '../../../context/AuthContext.jsx'
-import {
-  employees,
-  mandatoryDocumentTypes,
-  optionalDocumentUploadTypes,
-  initialDocumentSubmissions,
-  initialDocumentAuditLog,
-} from '../../../data/mockData.js'
+import { useMemo, useState } from 'react'
+import { HiEye, HiDocumentCheck, HiClipboardDocumentList, HiExclamationCircle, HiShieldCheck } from 'react-icons/hi2'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
-import FileUpload from '../../../components/ui/FileUpload.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
+import { employees } from '../../../data/mockData.js'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full bg-white/50 border border-slate-200 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700'
 
 const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full min-h-[120px] rounded-md border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-inner'
 
-const uploadTypeOptions = [...mandatoryDocumentTypes, ...optionalDocumentUploadTypes]
+const MANDATORY_DOCS = [
+  'Passport',
+  'National ID',
+  'Education Certificates',
+  'Contract',
+  'Offer Letter',
+  'Experience Letters'
+]
 
-const clone = (x) => JSON.parse(JSON.stringify(x))
-
-function nextSubmissionId() {
-  return `ds-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-}
-
-function nextAuditId() {
-  return `da-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-}
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function formatAuditClock(iso) {
-  try {
-    return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  } catch {
-    return iso
-  }
-}
-
-function maxVersionFor(submissions, employeeId, docType) {
-  const v = submissions
-    .filter((s) => s.employeeId === employeeId && s.docType === docType)
-    .map((s) => s.version)
-  return v.length ? Math.max(...v) : 0
-}
-
-/** Best status for mandatory checklist cell for one document type */
-function checklistStatusForType(submissions, employeeId, docType) {
-  const rows = submissions
-    .filter((s) => s.employeeId === employeeId && s.docType === docType)
-    .sort((a, b) => b.version - a.version)
-  if (!rows.length) return 'missing'
-  const latest = rows[0]
-  if (latest.status === 'Approved') return 'approved'
-  if (latest.status === 'Rejected') return 'rejected'
-  return 'pending'
-}
-
-function resolveSelfEmployee(authUser) {
-  if (!authUser) return null
-  return (
-    employees.find((e) => e.email?.toLowerCase() === authUser.email?.toLowerCase()) ||
-    employees.find((e) => e.name === authUser.name) ||
-    null
-  )
-}
+const initialSubmissions = [
+  { id: 1, employee: 'John Doe', empId: 'EMP001', department: 'Engineering', docType: 'Passport', submittedDate: '2024-05-01', status: 'Pending', hrComments: '', version: 1 },
+  { id: 2, employee: 'Jane Smith', empId: 'EMP002', department: 'HR', docType: 'Offer Letter', submittedDate: '2024-05-02', status: 'Rejected', hrComments: 'ID number blurry, please re-scan.', version: 1 },
+  { id: 3, employee: 'Robert Fox', empId: 'EMP003', department: 'Design', docType: 'Contract', submittedDate: '2024-04-28', status: 'Approved', hrComments: 'Verified and archived.', version: 1 },
+  { id: 4, employee: 'Sarah Wilson', empId: 'EMP004', department: 'Marketing', docType: 'National ID', submittedDate: '2024-05-03', status: 'Pending', hrComments: '', version: 1 },
+]
 
 export default function Documents() {
-  const { user } = useAuth()
-  const isHrReviewer = user?.role === 'hr_admin' || user?.role === 'hr_executive'
-  const isManager = user?.role === 'manager'
-
-  const selfEmployee = useMemo(() => resolveSelfEmployee(user), [user])
-
-  const visibleEmployees = useMemo(() => {
-    if (!user) return []
-    if (isHrReviewer) return [...employees]
-    if (isManager && user.department) {
-      return employees.filter((e) => e.department === user.department)
-    }
-    if (selfEmployee) return [selfEmployee]
-    return []
-  }, [user, isHrReviewer, isManager, selfEmployee])
-
-  const [submissions, setSubmissions] = useState(() => clone(initialDocumentSubmissions))
-  const [auditLog, setAuditLog] = useState(() => clone(initialDocumentAuditLog))
-
-  const [checklistEmployeeId, setChecklistEmployeeId] = useState('')
-
-  const resolvedChecklistEmployeeId = useMemo(() => {
-    const allowed = visibleEmployees.map((e) => e.id)
-    if (checklistEmployeeId && allowed.includes(checklistEmployeeId)) return checklistEmployeeId
-    return visibleEmployees[0]?.id ?? ''
-  }, [visibleEmployees, checklistEmployeeId])
-
+  const [submissions, setSubmissions] = useState(initialSubmissions)
   const [q, setQ] = useState('')
   const [deptFilter, setDeptFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [uploadModalOpen, setUploadModalOpen] = useState(false)
-  const [uploadMode, setUploadMode] = useState('create')
-  const [replaceCtx, setReplaceCtx] = useState(null)
-  const [formData, setFormData] = useState({
-    employeeId: '',
-    documentType: '',
-    documentTitle: '',
-    documentNumber: '',
-    issueDate: '',
-    expiryDate: '',
-    issuedBy: '',
-    notes: '',
-  })
-  const [files, setFiles] = useState({})
-
-  const [viewSubmission, setViewSubmission] = useState(null)
-
-  const [rejectModalOpen, setRejectModalOpen] = useState(false)
-  const [rejectTargetId, setRejectTargetId] = useState(null)
-  const [rejectComment, setRejectComment] = useState('')
-
-  const pushAudit = useCallback((detail, actor) => {
-    const entry = {
-      id: nextAuditId(),
-      at: new Date().toISOString(),
-      actor: actor || user?.name || 'User',
-      detail,
-    }
-    setAuditLog((prev) => [entry, ...prev])
-  }, [user])
-
-  const visibleSubmissions = useMemo(() => {
-    const ids = new Set(visibleEmployees.map((e) => e.id))
-    return submissions.filter((s) => ids.has(s.employeeId))
-  }, [submissions, visibleEmployees])
-
-  const deptOptions = useMemo(() => {
-    const u = [...new Set(visibleSubmissions.map((s) => s.department))].sort()
-    return [{ value: '', label: 'All departments' }, ...u.map((d) => ({ value: d, label: d }))]
-  }, [visibleSubmissions])
-
-  const statusOptions = [
-    { value: '', label: 'All statuses' },
-    { value: 'Pending', label: 'Pending' },
-    { value: 'Approved', label: 'Approved' },
-    { value: 'Rejected', label: 'Rejected' },
-  ]
+  
+  const [actionModalOpen, setActionModalOpen] = useState(false)
+  const [previewModalOpen, setPreviewModalOpen] = useState(false)
+  const [actionType, setActionType] = useState('') 
+  const [actionReason, setActionReason] = useState('')
+  const [selectedRow, setSelectedRow] = useState(null)
 
   const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase()
-    return visibleSubmissions.filter((r) => {
-      if (query && !`${r.employee} ${r.empId} ${r.docType}`.toLowerCase().includes(query)) return false
-      if (deptFilter && r.department !== deptFilter) return false
-      if (statusFilter && r.status !== statusFilter) return false
-      return true
+    return submissions.filter(s => {
+      const matchQ = !q || s.employee.toLowerCase().includes(q.toLowerCase()) || s.empId.toLowerCase().includes(q.toLowerCase())
+      const matchDept = !deptFilter || s.department === deptFilter
+      const matchStatus = !statusFilter || s.status === statusFilter
+      return matchQ && matchDept && matchStatus
     })
-  }, [q, deptFilter, statusFilter, visibleSubmissions])
+  }, [submissions, q, deptFilter, statusFilter])
 
-  const checklistStatuses = useMemo(() => {
-    if (!checklistEmployeeId) return []
-    return mandatoryDocumentTypes.map((docType) => ({
-      docType,
-      state: checklistStatusForType(submissions, checklistEmployeeId, docType),
+  const pendingDocs = useMemo(() => filtered.filter(s => s.status === 'Pending'), [filtered])
+  const rejectedDocs = useMemo(() => filtered.filter(s => s.status === 'Rejected'), [filtered])
+  const approvedDocs = useMemo(() => filtered.filter(s => s.status === 'Approved'), [filtered])
+
+  const stats = useMemo(() => ({
+    pending: submissions.filter(s => s.status === 'Pending').length,
+    approved: submissions.filter(s => s.status === 'Approved').length,
+    rejected: submissions.filter(s => s.status === 'Rejected').length,
+    compliance: Math.round((submissions.filter(s => s.status === 'Approved').length / MANDATORY_DOCS.length) * 100)
+  }), [submissions])
+
+  const handleAction = (row, type) => {
+    setSelectedRow(row)
+    setActionType(type)
+    setActionReason(type === 'Approve' ? 'Approved' : '')
+    setActionModalOpen(true)
+  }
+
+  const handlePreview = (row) => {
+    setSelectedRow(row)
+    setPreviewModalOpen(true)
+  }
+
+  const confirmAction = () => {
+    setSubmissions(prev => prev.map(s => {
+      if (s.id === selectedRow.id) {
+        return {
+          ...s,
+          status: actionType === 'Correction' ? 'Rejected' : actionType,
+          hrComments: actionReason
+        }
+      }
+      return s
     }))
-  }, [submissions, checklistEmployeeId])
-
-  const checklistEmployeeName = useMemo(() => {
-    const e = employees.find((emp) => emp.id === checklistEmployeeId)
-    return e?.name ?? ''
-  }, [checklistEmployeeId])
-
-  /** Latest rows only per employee + type for version panel (top N groups) */
-  const versionSnapshots = useMemo(() => {
-    const map = new Map()
-    visibleSubmissions.forEach((s) => {
-      const key = `${s.employeeId}:::${s.docType}`
-      if (!map.has(key)) map.set(key, [])
-      map.get(key).push(s)
-    })
-    const chains = [...map.entries()].map(([, rows]) => {
-      const sorted = [...rows].sort((a, b) => b.version - a.version)
-      return sorted.map((row, idx) => ({
-        ...row,
-        archived: idx > 0,
-      }))
-    })
-    const flat = chains.flatMap((chain) =>
-      chain.slice(0, 2).map((row) => ({
-        ...row,
-        label: `${row.docType} — ${row.employee}`,
-      })),
-    )
-    return flat.slice(0, 8)
-  }, [visibleSubmissions])
-
-  const openCreateUpload = () => {
-    setUploadMode('create')
-    setReplaceCtx(null)
-    let defaultEmp = ''
-    if (visibleEmployees.length === 1) defaultEmp = visibleEmployees[0].id
-    if (user?.role === 'employee' && selfEmployee) defaultEmp = selfEmployee.id
-    setFormData({
-      employeeId: defaultEmp,
-      documentType: '',
-      documentTitle: '',
-      documentNumber: '',
-      issueDate: '',
-      expiryDate: '',
-      issuedBy: '',
-      notes: '',
-    })
-    setFiles({})
-    setUploadModalOpen(true)
+    setActionModalOpen(false)
+    setSelectedRow(null)
   }
 
-  const openReplaceUpload = (row) => {
-    setUploadMode('replace')
-    const nextVer = maxVersionFor(submissions, row.employeeId, row.docType) + 1
-    setReplaceCtx({ employeeId: row.employeeId, docType: row.docType, nextVersion: nextVer })
-    setFormData({
-      employeeId: row.employeeId,
-      documentType: row.docType,
-      documentTitle: `${row.docType} — replaced`,
-      documentNumber: '',
-      issueDate: '',
-      expiryDate: '',
-      issuedBy: '',
-      notes: '',
-    })
-    setFiles({})
-    setUploadModalOpen(true)
-  }
-
-  const handleCloseUpload = () => {
-    setUploadModalOpen(false)
-    setReplaceCtx(null)
-    setFiles({})
-  }
-
-  const handleSubmitUpload = (e) => {
-    e.preventDefault()
-    const emp = employees.find((x) => x.id === formData.employeeId)
-    if (!emp || !formData.documentType || !files.documentFile?.length) {
-      handleCloseUpload()
-      return
-    }
-
-    const nextVersion =
-      uploadMode === 'replace' && replaceCtx
-        ? replaceCtx.nextVersion
-        : maxVersionFor(submissions, emp.id, formData.documentType) + 1
-
-    const newRow = {
-      id: nextSubmissionId(),
-      employeeId: emp.id,
-      employee: emp.name,
-      empId: emp.empId,
-      department: emp.department,
-      docType: formData.documentType,
-      version: nextVersion,
-      submittedDate: todayStr(),
-      updated: todayStr(),
-      status: 'Pending',
-      hrComments: '',
-    }
-
-    setSubmissions((prev) => [newRow, ...prev])
-    pushAudit(
-      `${emp.name} uploaded ${formData.documentType} v${nextVersion}${uploadMode === 'replace' ? ' (replacement)' : ''}`,
-      emp.name,
-    )
-    handleCloseUpload()
-  }
-
-  const approveRow = (row) => {
-    if (!(row.status === 'Pending')) return
-    setSubmissions((prev) =>
-      prev.map((s) =>
-        s.id === row.id
-          ? {
-              ...s,
-              status: 'Approved',
-              hrComments: '',
-              updated: todayStr(),
-            }
-          : s,
-      ),
-    )
-    pushAudit(`${row.employee}'s ${row.docType} v${row.version} approved by HR`)
-  }
-
-  const openReject = (row) => {
-    if (!(row.status === 'Pending')) return
-    setRejectTargetId(row.id)
-    setRejectComment('')
-    setRejectModalOpen(true)
-  }
-
-  const confirmReject = () => {
-    const trimmed = rejectComment.trim()
-    if (trimmed.length < 8) return
-    const row = submissions.find((s) => s.id === rejectTargetId)
-    if (!row) {
-      setRejectModalOpen(false)
-      return
-    }
-    setSubmissions((prev) =>
-      prev.map((s) =>
-        s.id === rejectTargetId
-          ? {
-              ...s,
-              status: 'Rejected',
-              hrComments: trimmed,
-              updated: todayStr(),
-            }
-          : s,
-      ),
-    )
-    pushAudit(`${row.employee}'s ${row.docType} v${row.version} rejected — ${trimmed}`)
-    setRejectModalOpen(false)
-    setRejectTargetId(null)
-    setRejectComment('')
-  }
-
-  const canEmployeeActOnRow = (row) => selfEmployee?.id === row.employeeId
-
-  const rowCanReplace = (row) => {
-    if (isHrReviewer) return true
-    if (user?.role === 'employee' && canEmployeeActOnRow(row)) return true
-    return false
-  }
-
-  const showReviewActions = (row) => isHrReviewer && row.status === 'Pending'
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const checklistIcon = (state) => {
-    if (state === 'approved') {
-      return (
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-700 text-xs font-bold">
-          ✓
+  const sectionHeader = (title, Icon) => (
+    <div className="flex items-center gap-3 mb-6">
+      <div className="relative">
+        <div className="absolute -inset-1 bg-emerald-500/20 rounded-full blur-sm" />
+        <div className="relative bg-[#005c8d] text-white p-2 rounded-lg shadow-lg">
+          <Icon className="w-5 h-5" />
         </div>
-      )
-    }
-    if (state === 'pending') {
-      return (
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
-          ⋯
-        </div>
-      )
-    }
-    if (state === 'rejected') {
-      return (
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700 text-xs font-bold">
-          !
-        </div>
-      )
-    }
-    return (
-      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 text-xs">
-        —
       </div>
-    )
-  }
+      <div>
+        <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight leading-none">{title}</h2>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Registry Workflow • Section 0{title.includes('Pending') ? '1' : title.includes('Rejected') ? '2' : '3'}</p>
+      </div>
+    </div>
+  )
 
-  const checklistLabel = (state) => {
-    if (state === 'approved') return 'Approved on file'
-    if (state === 'pending') return 'Awaiting HR review'
-    if (state === 'rejected') return 'Rejected — re-upload required'
-    return 'Missing'
-  }
-
-  const columns = [
+  const commonColumns = [
     {
       key: 'employee',
-      label: 'Employee',
+      label: 'Employee Name',
       render: (_, row) => (
-        <div>
-          <div className="font-medium text-gray-900">{row.employee}</div>
-          <div className="text-xs text-gray-500">{row.empId}</div>
+        <div className="flex items-center gap-3 py-1">
+          <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-600 border border-slate-200 shadow-sm">
+            {row.employee.split(' ').map(n => n[0]).join('')}
+          </div>
+          <div>
+            <div className="text-sm font-bold text-slate-900 leading-none">{row.employee}</div>
+            <div className="mt-1 text-[10px] text-slate-400 font-bold uppercase tracking-tight">{row.empId}</div>
+          </div>
         </div>
-      ),
+      )
     },
-    { key: 'department', label: 'Department' },
     { key: 'docType', label: 'Document Type' },
-    {
-      key: 'version',
-      label: 'Version',
-      render: (v) => <span className="tabular-nums">v{v}</span>,
-    },
-    { key: 'submittedDate', label: 'Submitted' },
-    { key: 'updated', label: 'Updated' },
+    { key: 'submittedDate', label: 'Submission Date' },
     {
       key: 'status',
       label: 'Status',
-      render: (v) => {
-        const color = v === 'Pending' ? 'orange' : v === 'Rejected' ? 'red' : 'green'
-        return <Badge label={v} color={color} />
-      },
-    },
-    {
-      key: 'hrComments',
-      label: 'HR Comments',
-      render: (v) => <span className="text-xs text-gray-600">{v || '—'}</span>,
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (_, row) => (
-        <div className="flex flex-wrap items-center gap-1">
-          <Button label="View" variant="ghost" size="sm" onClick={() => setViewSubmission(row)} />
-          <Button
-            label="Download"
-            variant="ghost"
-            size="sm"
-            icon={HiArrowDownTray}
-            onClick={() =>
-              alert('Demo only: file download would be served from HRIS API / document storage.')
-            }
-          />
-          {rowCanReplace(row) && (
-            <Button
-              label="Replace"
-              variant="outline"
-              size="sm"
-              icon={HiArrowPath}
-              title="Upload a newer version"
-              onClick={() => openReplaceUpload(row)}
-            />
-          )}
-          {showReviewActions(row) && (
-            <>
-              <Button label="Approve" variant="outline" size="sm" onClick={() => approveRow(row)} />
-              <Button label="Reject" variant="ghost" size="sm" onClick={() => openReject(row)} />
-            </>
-          )}
-        </div>
-      ),
-    },
+      render: (v) => (
+        <Badge 
+          label={v} 
+          color={v === 'Pending' ? 'orange' : v === 'Rejected' ? 'red' : 'green'} 
+          className="rounded-md px-2 py-0.5 font-bold uppercase text-[9px] tracking-widest" 
+        />
+      )
+    }
   ]
 
-  const rejectTargetRow = submissions.find((s) => s.id === rejectTargetId)
+  const pendingColumns = [
+    ...commonColumns,
+    {
+      key: 'actions',
+      label: 'Verification Actions',
+      render: (_, row) => (
+        <div className="flex gap-1.5">
+          <button onClick={() => handlePreview(row)} className="px-3 py-1 text-[10px] font-black text-white bg-[#005c8d] hover:bg-[#004a72] rounded-md transition-all uppercase shadow-sm">Preview</button>
+          <button onClick={() => handleAction(row, 'Approve')} className="px-3 py-1 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-all uppercase">Approve</button>
+          <button onClick={() => handleAction(row, 'Reject')} className="px-3 py-1 text-[10px] font-black text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-md transition-all uppercase">Reject</button>
+        </div>
+      )
+    }
+  ]
+
+  const rejectedColumns = [
+    ...commonColumns,
+    {
+      key: 'hrComments',
+      label: 'Reason for Rejection',
+      render: (v) => <span className="text-[11px] text-rose-600 font-bold italic truncate block max-w-[150px]" title={v}>{v || 'Policy Mismatch'}</span>
+    },
+    {
+      key: 'actions_rejected',
+      label: 'Actions',
+      render: (_, row) => (
+        <button onClick={() => handlePreview(row)} className="px-3 py-1 text-[10px] font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-all uppercase">Preview</button>
+      )
+    }
+  ]
+
+  const approvedColumns = [
+    ...commonColumns,
+    {
+      key: 'actions_approved',
+      label: 'Actions',
+      render: (_, row) => (
+        <button onClick={() => handlePreview(row)} className="px-3 py-1 text-[10px] font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-all uppercase">Preview</button>
+      )
+    }
+  ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">Documents &amp; Approval</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Mandatory uploads, HR review, and compliance tracking —{' '}
-            {user?.role === 'employee'
-              ? 'your uploads only.'
-              : isManager
-                ? `${user?.department ?? 'your'} team.`
-                : 'full organization view.'}
-          </p>
-        </div>
-        <Button label="Upload document" variant="primary" onClick={openCreateUpload} />
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <Input
-            label="Search"
-            name="q"
-            placeholder="Employee name, ID, or document type"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <Input
-            label="Department"
-            name="dept"
-            type="select"
-            value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
-            options={deptOptions}
-          />
-          <Input
-            label="Document status"
-            name="status"
-            type="select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            options={statusOptions}
-          />
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      {/* Premium Hero Section */}
+      <div className="relative bg-slate-900 rounded-2xl p-8 mb-8 overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-emerald-500/10 to-transparent pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div>
-            <h2 className="font-display text-lg font-bold text-gray-900">Mandatory document checklist</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Per HRIS doc: Passport, IDs, certificates, contract, offer, experience letters — tracked per employee.
-            </p>
-          </div>
-          {(isHrReviewer || isManager || visibleEmployees.length > 1) && (
-            <div className="w-full max-w-xs">
-              <label htmlFor="checklist-employee" className="mb-1 block text-xs font-semibold uppercase text-gray-500">
-                Employee
-              </label>
-              <select
-                id="checklist-employee"
-                value={resolvedChecklistEmployeeId}
-                onChange={(e) => setChecklistEmployeeId(e.target.value)}
-                className={selectClass}
-              >
-                {visibleEmployees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name} ({e.empId})
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2 text-emerald-400 mb-2">
+              <HiShieldCheck className="w-5 h-5" />
+              <span className="text-xs font-black uppercase tracking-[0.3em]">Compliance Registry</span>
             </div>
-          )}
-        </div>
+            <h1 className="text-4xl font-black text-white tracking-tight">Documents & Approval</h1>
+            <p className="text-slate-400 mt-2 font-medium max-w-md">Enterprise-grade document verification and workforce compliance tracking system.</p>
+          </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {checklistStatuses.map(({ docType, state }) => (
-            <div
-              key={docType}
-              className="flex items-start gap-3 rounded-lg border border-gray-200 px-4 py-3"
-            >
-              {checklistIcon(state)}
-              <div className="min-w-0">
-                <div className="text-sm font-medium text-gray-800">{docType}</div>
-                <div className="mt-0.5 text-xs text-gray-500">
-                  {checklistEmployeeName ? `${checklistLabel(state)} (${checklistEmployeeName})` : checklistLabel(state)}
-                </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-xl">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Awaiting</p>
+              <p className="text-2xl font-black text-white leading-none">{stats.pending}</p>
+              <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-500" style={{ width: '40%' }} />
               </div>
             </div>
-          ))}
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-xl">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Approved</p>
+              <p className="text-2xl font-black text-white leading-none">{stats.approved}</p>
+              <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500" style={{ width: '85%' }} />
+              </div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-xl">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Rejected</p>
+              <p className="text-2xl font-black text-white leading-none">{stats.rejected}</p>
+              <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-rose-500" style={{ width: '15%' }} />
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md border border-emerald-500/30 p-4 rounded-xl shadow-lg shadow-emerald-500/10">
+              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Compliance</p>
+              <p className="text-2xl font-black text-white leading-none">{stats.compliance}%</p>
+              <p className="text-[9px] font-bold text-emerald-400 mt-1 uppercase">Health Check</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <Table columns={columns} data={filtered} pageSize={8} />
-
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Document version tracking</h2>
-        <p className="mt-1 text-sm text-gray-500">Recent versions visible in your scope (current vs archived).</p>
-        <div className="mt-4 space-y-3">
-          {versionSnapshots.length === 0 && (
-            <p className="text-sm text-gray-500">No submissions in this view.</p>
-          )}
-          {versionSnapshots.map((row) => (
-            <div key={`${row.id}-ver`} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">
-                  {row.docType} — {row.employee}
-                </div>
-                <div className="text-xs text-gray-500">
-                  v{row.version} • Updated {row.updated}{row.archived ? ' (superseded)' : ''}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        {/* Sidebar: Checklist & Filters */}
+        <div className="xl:col-span-1 space-y-6">
+          {/* Glassmorphism Filter Card */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-[#005c8d] rounded-full" />
+              Registry Filters
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Talent</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
+                  <input 
+                    type="text" 
+                    placeholder="Name or ID..." 
+                    value={q} 
+                    onChange={e => setQ(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-md py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-[#005c8d] font-medium" 
+                  />
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge
-                  label={row.archived ? 'Archived' : 'Current'}
-                  color={row.archived ? 'gray' : 'green'}
-                  size="sm"
-                />
-                <Button label="View" variant="ghost" size="sm" onClick={() => setViewSubmission(row)} />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
+                <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)} className={selectClass}>
+                  <option value="">All Divisions</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="HR">HR</option>
+                  <option value="Design">Design</option>
+                </select>
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Doc Status</label>
+                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectClass}>
+                  <option value="">Global Status</option>
+                  <option value="Pending">Pending Audit</option>
+                  <option value="Approved">Verified</option>
+                  <option value="Rejected">Flagged</option>
+                </select>
+              </div>
+              <button 
+                onClick={() => { setQ(''); setDeptFilter(''); setStatusFilter('') }}
+                className="w-full py-2.5 text-[10px] font-black text-slate-400 hover:text-rose-500 uppercase tracking-widest border border-dashed border-slate-200 rounded-md hover:border-rose-200 transition-all"
+              >
+                Reset Parameters
+              </button>
             </div>
-          ))}
+          </div>
+
+          {/* Mandatory Checklist Sidebar */}
+          <div className="bg-[#005c8d] rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12 blur-2xl" />
+            <h3 className="text-xs font-black text-white/60 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+              <HiClipboardDocumentList className="w-4 h-4 text-white" />
+              Baseline Audit
+            </h3>
+            <div className="space-y-3">
+              {MANDATORY_DOCS.map(doc => (
+                <div key={doc} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl border border-white/10 group hover:bg-white/20 transition-all cursor-default">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+                  <span className="text-xs font-bold text-white group-hover:translate-x-1 transition-transform">{doc}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <p className="text-[10px] text-white/50 leading-relaxed italic">System automatically flags employees missing these core credentials.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content: Document Lists */}
+        <div className="xl:col-span-3 space-y-8">
+          {/* Pending Section */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            {sectionHeader('Pending Verification', HiClipboardDocumentList)}
+            <div className="overflow-hidden rounded-xl border border-slate-100">
+              <Table columns={pendingColumns} data={pendingDocs} pageSize={5} />
+            </div>
+          </div>
+
+          {/* Rejected Section */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            {sectionHeader('Flagged & Rejected', HiExclamationCircle)}
+            <div className="overflow-hidden rounded-xl border border-slate-100">
+              <Table columns={rejectedColumns} data={rejectedDocs} pageSize={5} />
+            </div>
+          </div>
+
+          {/* Approved Section */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            {sectionHeader('Verified Repository', HiDocumentCheck)}
+            <div className="overflow-hidden rounded-xl border border-slate-100">
+              <Table columns={approvedColumns} data={approvedDocs} pageSize={5} />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Audit &amp; compliance tracking</h2>
-        <p className="mt-1 text-sm text-gray-500">Latest activity (stored in-session for demo).</p>
-        <div className="mt-4 max-h-64 space-y-3 overflow-y-auto">
-          {[...auditLog]
-            .sort((a, b) => String(b.at).localeCompare(String(a.at)))
-            .map((entry) => (
-              <div key={entry.id} className="flex items-start gap-2 text-sm">
-                <span className="whitespace-nowrap text-gray-400">{formatAuditClock(entry.at)}</span>
-                <span>
-                  <span className="font-medium text-gray-700">{entry.actor}:</span> {entry.detail}
-                </span>
-              </div>
-            ))}
-        </div>
-      </div>
-
-      <Modal isOpen={uploadModalOpen} onClose={handleCloseUpload} title="Upload document" size="md">
-        <form onSubmit={handleSubmitUpload} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Document details</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 w-full sm:col-span-1">
-              <label htmlFor="doc-employee" className="mb-1 block text-sm font-medium text-gray-700">
-                Employee
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="doc-employee"
-                name="employeeId"
-                value={formData.employeeId}
-                onChange={handleFormChange}
-                disabled={uploadMode === 'replace' || user?.role === 'employee'}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select employee
-                </option>
-                {(user?.role === 'employee' && selfEmployee
-                  ? [selfEmployee]
-                  : isHrReviewer
-                    ? employees
-                    : isManager && user?.department
-                      ? employees.filter((e) => e.department === user.department)
-                      : visibleEmployees
-                ).map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name} ({e.empId})
-                  </option>
-                ))}
-              </select>
-              {uploadMode === 'replace' && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Replacing raises version to v{replaceCtx?.nextVersion ?? '?'}. Goes to Pending for HR approval.
-                </p>
-              )}
-            </div>
-            <div className="col-span-2 w-full">
-              <label htmlFor="doc-type" className="mb-1 block text-sm font-medium text-gray-700">
-                Document type
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="doc-type"
-                name="documentType"
-                value={formData.documentType}
-                onChange={handleFormChange}
-                disabled={uploadMode === 'replace'}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select type
-                </option>
-                {uploadTypeOptions.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Input
-              label="Document title"
-              name="documentTitle"
-              value={formData.documentTitle}
-              onChange={handleFormChange}
-              placeholder="e.g. Passport — front & back"
-              required
-              className="col-span-2"
-            />
-            <Input label="Document number" name="documentNumber" value={formData.documentNumber} onChange={handleFormChange} />
-            <Input label="Issue date" name="issueDate" type="date" value={formData.issueDate} onChange={handleFormChange} />
-            <Input label="Expiry date" name="expiryDate" type="date" value={formData.expiryDate} onChange={handleFormChange} />
-            <div className="col-span-2">
-              <Input
-                label="Issued by / authority"
-                name="issuedBy"
-                value={formData.issuedBy}
-                onChange={handleFormChange}
-              />
-            </div>
-          </div>
-          <div className="mt-3 w-full">
-            <label htmlFor="doc-notes" className="mb-1 block text-sm font-medium text-gray-700">
-              Notes
-            </label>
-            <textarea
-              id="doc-notes"
-              name="notes"
-              value={formData.notes}
-              onChange={handleFormChange}
-              className={textareaClass}
-              rows={3}
-            />
-          </div>
-
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Upload</p>
-          <FileUpload
-            label="Document file"
-            name="documentFile"
-            accept=".jpg,.png,.pdf,.doc,.docx"
-            onChange={(fileList) => setFiles((prev) => ({ ...prev, documentFile: fileList }))}
-            helpText="Max 10MB"
-            required
-          />
-
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseUpload} />
-            <Button type="submit" label={uploadMode === 'replace' ? 'Upload replacement' : 'Submit'} variant="primary" />
-          </div>
-        </form>
-      </Modal>
-
-      <Modal
-        isOpen={!!viewSubmission}
-        onClose={() => setViewSubmission(null)}
-        title="Submission details"
-        size="sm"
+      {/* Action Modal */}
+      <Modal 
+        isOpen={actionModalOpen} 
+        onClose={() => setActionModalOpen(false)} 
+        title={`${actionType} Regulatory Submission`} 
+        size="md"
       >
-        {viewSubmission && (
-          <div className="space-y-2 py-4 text-sm text-gray-700">
-            <p>
-              <span className="font-semibold text-gray-900">{viewSubmission.employee}</span> ({viewSubmission.empId})
-            </p>
-            <p>Department: {viewSubmission.department}</p>
-            <p>Type: {viewSubmission.docType}</p>
-            <p>Version: v{viewSubmission.version}</p>
-            <p>Status: {viewSubmission.status}</p>
-            <p>Submitted: {viewSubmission.submittedDate}</p>
-            <p>Updated: {viewSubmission.updated}</p>
-            <p className="pt-2 text-xs text-gray-600">
-              HR comment:{' '}
-              <span className="font-medium text-gray-900">{viewSubmission.hrComments || '—'}</span>
-            </p>
+        <div className="space-y-6 pt-2">
+          <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl" />
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Target Compliance Record</p>
+            <p className="text-sm font-black text-white">{selectedRow?.docType}</p>
+            <p className="text-xs font-bold text-emerald-400 mt-1">{selectedRow?.employee} ({selectedRow?.empId})</p>
           </div>
-        )}
+          
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Administrative Remarks</label>
+            <textarea 
+              className={textareaClass}
+              value={actionReason}
+              onChange={e => setActionReason(e.target.value)}
+              placeholder={actionType === 'Approve' ? 'Optional remarks for the employee profile...' : 'Detailed justification required for audit rejection...'}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button label="Abort Action" variant="ghost" onClick={() => setActionModalOpen(false)} className="flex-1 font-bold" />
+            <Button 
+              label={`Execute ${actionType}`} 
+              variant="primary" 
+              onClick={confirmAction}
+              className={`flex-1 rounded-md shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] ${actionType === 'Approve' ? 'bg-emerald-600' : actionType === 'Reject' ? 'bg-rose-600' : 'bg-amber-600'}`}
+              disabled={actionType !== 'Approve' && !actionReason.trim()}
+            />
+          </div>
+        </div>
       </Modal>
 
-      <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)} title="Reject document" size="sm">
-        {rejectTargetRow && (
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-gray-600">
-              {rejectTargetRow.employee} — {rejectTargetRow.docType} v{rejectTargetRow.version}
-            </p>
-            <div>
-              <label htmlFor="reject-comment" className="mb-1 block text-sm font-medium text-gray-700">
-                Reason for rejection (shown to employee)
-              </label>
-              <textarea
-                id="reject-comment"
-                value={rejectComment}
-                onChange={(e) => setRejectComment(e.target.value)}
-                className={textareaClass}
-                rows={4}
-                placeholder="Minimum 8 characters"
-              />
-              {rejectComment.trim().length > 0 && rejectComment.trim().length < 8 && (
-                <p className="mt-1 text-xs text-red-600">Provide a clear HR comment (at least 8 characters).</p>
-              )}
+      {/* Preview Modal */}
+      <Modal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        title="Secure Document Analysis"
+        size="xl"
+      >
+        <div className="flex flex-col lg:flex-row gap-8 py-4">
+          {/* Document Viewer Simulation */}
+          <div className="flex-1 bg-slate-900 rounded-2xl border border-slate-800 min-h-[500px] flex flex-col items-center justify-center p-12 text-center relative group overflow-hidden shadow-2xl">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent animate-pulse" />
+            <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-6 z-10">
+              <button className="p-4 bg-white rounded-full shadow-2xl text-slate-900 hover:text-emerald-600 transition-all hover:scale-110 active:scale-95"><HiEye className="w-6 h-6" /></button>
+              <button className="p-4 bg-white rounded-full shadow-2xl text-slate-900 hover:text-emerald-600 transition-all hover:scale-110 active:scale-95">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              </button>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" label="Cancel" variant="ghost" onClick={() => setRejectModalOpen(false)} />
-              <Button
-                type="button"
-                label="Confirm rejection"
-                variant="primary"
-                onClick={confirmReject}
-                disabled={rejectComment.trim().length < 8}
-              />
+            
+            <div className="w-full max-w-[320px] bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-sm p-8 space-y-6 border border-slate-200 transform group-hover:rotate-1 group-hover:scale-[1.03] transition-all duration-700">
+              <div className="h-6 bg-slate-100 rounded-sm w-3/4 mb-8" />
+              <div className="space-y-4">
+                <div className="h-3 bg-slate-50 rounded-sm w-full" />
+                <div className="h-3 bg-slate-50 rounded-sm w-full" />
+                <div className="h-3 bg-slate-50 rounded-sm w-5/6" />
+              </div>
+              <div className="aspect-[4/3] bg-slate-50 rounded-sm border border-slate-100 flex items-center justify-center my-8">
+                <div className="relative">
+                   <div className="absolute -inset-4 bg-emerald-500/10 rounded-full blur-xl" />
+                   <HiShieldCheck className="w-16 h-16 text-slate-200 relative" />
+                </div>
+              </div>
+              <div className="h-3 bg-slate-100 rounded-sm w-1/2 ml-auto" />
             </div>
+            <p className="mt-10 text-[10px] font-black text-emerald-500/50 uppercase tracking-[0.4em] animate-pulse">Encryption Protocol Active</p>
           </div>
-        )}
+
+          {/* Metadata Sidebar */}
+          <div className="w-full lg:w-80 space-y-6">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-1 h-full bg-emerald-500" />
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Credential Intelligence</h4>
+              <div className="space-y-5">
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Talent Profile</p>
+                  <p className="text-base font-black text-slate-900 mt-0.5">{selectedRow?.employee}</p>
+                  <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">{selectedRow?.empId} • {selectedRow?.department}</p>
+                </div>
+                <div className="pt-4 border-t border-slate-50">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Classification</p>
+                  <p className="text-sm font-black text-slate-800 mt-0.5">{selectedRow?.docType}</p>
+                </div>
+                <div className="pt-4 border-t border-slate-50">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Registry Status</p>
+                  <div className="mt-2">
+                    <Badge label={selectedRow?.status} color={selectedRow?.status === 'Approved' ? 'green' : 'orange'} className="rounded-lg font-black text-[10px] uppercase px-3 py-1 tracking-widest shadow-sm" />
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-slate-50">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Timestamp</p>
+                  <p className="text-xs font-bold text-slate-600 mt-0.5">{selectedRow?.submittedDate} • 09:42 AM</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed">
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Audit Remarks</h4>
+              <p className="text-xs text-slate-500 font-medium italic leading-relaxed">
+                {selectedRow?.hrComments || "No administrative compliance remarks recorded for this version. System default validation passed."}
+              </p>
+            </div>
+
+            <Button 
+              label="Terminate Preview" 
+              variant="secondary" 
+              onClick={() => setPreviewModalOpen(false)} 
+              className="w-full rounded-xl font-bold py-4 shadow-lg hover:shadow-xl transition-all" 
+            />
+          </div>
+        </div>
       </Modal>
     </div>
   )

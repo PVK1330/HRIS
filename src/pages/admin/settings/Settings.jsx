@@ -10,7 +10,7 @@ import { dashboardStats } from '../../../data/mockData.js'
 import { HiBuildingOffice, HiUsers, HiKey, HiCog6Tooth, HiShieldCheck, HiPencil, HiTrash, HiCalendarDays, HiPlus, HiPhoto, HiDevicePhoneMobile, HiQrCode } from 'react-icons/hi2'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const MOCK_LEAVE_TYPES = [
   { id: 1, name: 'Annual Leave', days: 30, carryForward: true, carryLimit: 10, color: 'blue' },
@@ -290,13 +290,13 @@ export default function Settings() {
       {activeTab === 'company' && (
         <div className="space-y-6">
           <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
               <h2 className="font-display text-lg font-bold text-gray-900">Company Profile</h2>
               <div className="mt-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
                     <label className="text-[11px] font-bold text-slate-500 px-1 uppercase tracking-widest">Company Logo</label>
-                    <div className="relative group overflow-hidden rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center transition-all hover:border-blue-500 hover:bg-white">
+                    <div className="relative group overflow-hidden rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center transition-all hover:border-blue-500 hover:bg-white">
                         <img src="/HRIS_Logo.png" alt="Current Logo" className="h-12 w-auto object-contain mb-4 group-hover:scale-105 transition-transform" />
                         <div className="text-center">
                           <p className="text-[10px] font-bold text-slate-900 mb-0.5">Change Logo</p>
@@ -308,7 +308,7 @@ export default function Settings() {
 
                   <div className="space-y-4">
                     <label className="text-[11px] font-bold text-slate-500 px-1 uppercase tracking-widest">Favicon Icon</label>
-                    <div className="relative group overflow-hidden rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center transition-all hover:border-blue-500 hover:bg-white h-full">
+                    <div className="relative group overflow-hidden rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center transition-all hover:border-blue-500 hover:bg-white h-full">
                         <div className="h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                           <img src="/HRIS_Logo.png" alt="Current Favicon" className="h-5 w-5 object-contain" />
                         </div>
@@ -345,7 +345,7 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
               <h2 className="font-display text-lg font-bold text-gray-900">Localization</h2>
               <div className="mt-4 space-y-4">
                  <Input label="Fiscal Year Start" type="select" options={[{value: 'Jan', label: 'January'}]} value="Jan" />
@@ -367,13 +367,13 @@ export default function Settings() {
             <Button label="Add Team Member" variant="primary" icon={HiPlus} onClick={() => setTeamModalOpen(true)} />
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <Input label="Search" name="search" placeholder="Search team members..." value={searchTeam} onChange={(e) => setSearchTeam(e.target.value)} />
           </div>
 
           <Table columns={teamColumns} data={filteredTeam} pageSize={10} />
 
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm mt-8">
+          <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm mt-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg font-bold text-gray-900">Roles</h2>
               <Button label="Add Role" variant="outline" size="sm" onClick={() => { resetRoleModal(); setRoleModalOpen(true) }} />
@@ -411,10 +411,10 @@ export default function Settings() {
 
           <div className="grid gap-4 md:grid-cols-2">
             {MOCK_LEAVE_TYPES.map((type) => (
-              <div key={type.id} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all">
+              <div key={type.id} className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all">
                 <div className="flex justify-between items-start">
                   <div className="flex gap-4">
-                    <div className={`h-12 w-12 rounded-xl bg-${type.color}-100 flex items-center justify-center text-${type.color}-600`}>
+                    <div className={`h-12 w-12 rounded-lg bg-${type.color}-100 flex items-center justify-center text-${type.color}-600`}>
                       <HiCalendarDays className="h-6 w-6" />
                     </div>
                     <div>
@@ -479,12 +479,12 @@ export default function Settings() {
 
       {activeTab === 'security' && (
         <div className="max-w-2xl">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm space-y-6">
             <h2 className="font-display text-lg font-bold text-gray-900">Security Configuration</h2>
             <div className="space-y-4">
               <Toggle checked={twoFactorAuth} onChange={setTwoFactorAuth} label="Require 2FA for all Admin users" />
               
-              <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-50/50 border border-indigo-100 mt-6">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-indigo-50/50 border border-indigo-100 mt-6">
                 <div className="flex gap-4">
                   <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center text-indigo-600 shadow-sm">
                     <HiDevicePhoneMobile className="h-5 w-5" />
@@ -569,7 +569,7 @@ export default function Settings() {
         <div className="p-2">
           {faStep === 1 ? (
             <div className="space-y-6 text-center">
-              <div className="mx-auto h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <div className="mx-auto h-16 w-16 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
                 <HiQrCode className="h-10 w-10" />
               </div>
               <div className="space-y-2">
@@ -580,7 +580,7 @@ export default function Settings() {
               </div>
               
               {/* Live Scannable QR Code */}
-              <div className="mx-auto w-44 h-44 bg-white border-2 border-slate-100 rounded-2xl p-4 shadow-xl flex items-center justify-center relative overflow-hidden">
+              <div className="mx-auto w-44 h-44 bg-white border-2 border-slate-100 rounded-lg p-4 shadow-xl flex items-center justify-center relative overflow-hidden">
                 <img 
                    src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=otpauth://totp/HRIS:Admin?secret=B477H7S8L99S&issuer=HRIS" 
                    alt="Authenticator QR Code" 
@@ -605,13 +605,13 @@ export default function Settings() {
               <Button 
                 label="Next: Verify Token" 
                 variant="primary" 
-                className="w-full py-3 bg-slate-900 rounded-xl" 
+                className="w-full py-3 bg-slate-900 rounded-lg" 
                 onClick={() => setFaStep(2)}
               />
             </div>
           ) : (
             <div className="space-y-6 text-center">
-              <div className="mx-auto h-16 w-16 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <div className="mx-auto h-16 w-16 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
                 <HiShieldCheck className="h-10 w-10" />
               </div>
               <div className="space-y-2">
@@ -633,7 +633,7 @@ export default function Settings() {
 
               <div className="flex gap-2">
                 <Button label="Back" variant="ghost" className="flex-1" onClick={() => setFaStep(1)} />
-                <Button label="Enable 2FA" variant="primary" className="flex-2 bg-indigo-600 rounded-xl" onClick={() => {
+                <Button label="Enable 2FA" variant="primary" className="flex-2 bg-indigo-600 rounded-lg" onClick={() => {
                   alert('2FA enabled!');
                   setShow2FAModal(false);
                 }} />

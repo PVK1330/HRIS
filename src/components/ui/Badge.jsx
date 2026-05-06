@@ -6,6 +6,7 @@ const colorClasses = {
   gray: 'bg-gray-100 text-gray-600',
   yellow: 'bg-yellow-100 text-yellow-700',
   purple: 'bg-purple-100 text-purple-700',
+  emerald: 'bg-emerald-100 text-emerald-700',
 }
 
 export function Badge({ label, color = 'gray' }) {

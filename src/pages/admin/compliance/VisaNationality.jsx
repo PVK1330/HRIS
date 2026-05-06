@@ -9,7 +9,7 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { employees, visaSummary } from '../../../data/mockData.js'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const initialFormData = {
   employeeId: '',
@@ -183,7 +183,7 @@ export default function VisaNationality() {
       render: (_, row) => (
         <Button
           label="Renew"
-          variant="outline"
+          variant="primary"
           size="sm"
           onClick={(e) => {
             e.stopPropagation()
@@ -223,7 +223,7 @@ export default function VisaNationality() {
         />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           <Input
             label="Search"
@@ -273,7 +273,7 @@ export default function VisaNationality() {
         isOpen={modalOpen}
         onClose={handleCloseModal}
         title={isRenewal ? 'Renew visa' : 'Add Visa Record'}
-        size="lg"
+        size="xl"
       >
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">

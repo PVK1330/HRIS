@@ -10,6 +10,7 @@ import {
   HiExclamationTriangle,
   HiGlobeAlt,
   HiHome,
+  HiLightBulb,
   HiLockClosed,
   HiServer,
   HiShieldCheck,
@@ -26,28 +27,34 @@ const superNavGroups = [
   {
     groupLabel: 'PLATFORM',
     items: [
-      { 
-        label: 'Dashboard', 
-        icon: HiHome, 
-        path: '/superadmin/dashboard', 
+      {
+        label: 'Dashboard',
+        icon: HiHome,
+        path: '/superadmin/dashboard',
         roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
-      { 
-        label: 'Organizations', 
-        icon: HiDocumentText, 
-        path: '/superadmin/tenants', 
+      {
+        label: 'Organizations',
+        icon: HiDocumentText,
+        path: '/superadmin/tenants',
         roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
-      { 
-        label: 'Pricing Plans', 
-        icon: HiCurrencyDollar, 
-        path: '/superadmin/subscriptions', 
+      {
+        label: 'Subscription Plans',
+        icon: HiCurrencyDollar,
+        path: '/superadmin/subscriptions',
         roles: ['superadmin', 'billing_admin'],
       },
-      { 
-        label: 'Billing', 
-        icon: HiCurrencyDollar, 
-        path: '/superadmin/billing', 
+      {
+        label: 'Subscription Features',
+        icon: HiLightBulb,
+        path: '/superadmin/subscription-features',
+        roles: ['superadmin', 'billing_admin'],
+      },
+      {
+        label: 'Billing',
+        icon: HiCurrencyDollar,
+        path: '/superadmin/billing',
         roles: ['superadmin', 'billing_admin'],
       },
     ],
@@ -55,28 +62,28 @@ const superNavGroups = [
   {
     groupLabel: 'TEAM & SECURITY',
     items: [
-      { 
-        label: 'Admin Users', 
-        icon: HiUserCircle, 
-        path: '/superadmin/admin-users', 
+      {
+        label: 'Admin Users',
+        icon: HiUserCircle,
+        path: '/superadmin/admin-users',
         roles: ['superadmin'],
       },
-      { 
-        label: 'Permissions', 
-        icon: HiLockClosed, 
-        path: '/superadmin/permissions', 
+      {
+        label: 'Permissions',
+        icon: HiLockClosed,
+        path: '/superadmin/permissions',
         roles: ['superadmin'],
       },
-      { 
-        label: 'Modules', 
-        icon: HiSquares2X2, 
-        path: '/superadmin/modules', 
+      {
+        label: 'Modules',
+        icon: HiSquares2X2,
+        path: '/superadmin/modules',
         roles: ['superadmin'],
       },
-      { 
-        label: 'Announcements', 
-        icon: HiDocumentText, 
-        path: '/superadmin/announcements', 
+      {
+        label: 'Announcements',
+        icon: HiDocumentText,
+        path: '/superadmin/announcements',
         roles: ['superadmin'],
       },
     ],
@@ -84,22 +91,22 @@ const superNavGroups = [
   {
     groupLabel: 'SYSTEM',
     items: [
-      { 
-        label: 'Audit Logs', 
-        icon: HiShieldCheck, 
-        path: '/superadmin/audit', 
+      {
+        label: 'Audit Logs',
+        icon: HiShieldCheck,
+        path: '/superadmin/audit',
         roles: ['superadmin', 'support_admin'],
       },
-      { 
-        label: 'Support', 
-        icon: HiExclamationTriangle, 
-        path: '/superadmin/support', 
+      {
+        label: 'Support',
+        icon: HiExclamationTriangle,
+        path: '/superadmin/support',
         roles: ['superadmin', 'support_admin'],
       },
-      { 
-        label: 'Settings', 
-        icon: HiCog6Tooth, 
-        path: '/superadmin/settings', 
+      {
+        label: 'Settings',
+        icon: HiCog6Tooth,
+        path: '/superadmin/settings',
         roles: ['superadmin'],
       },
     ],

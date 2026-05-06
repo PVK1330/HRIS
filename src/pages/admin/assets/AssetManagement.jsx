@@ -74,11 +74,10 @@ export default function AssetManagement() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3 text-sm font-semibold capitalize transition-all ${
-              activeTab === tab
+            className={`px-6 py-3 text-sm font-semibold capitalize transition-all ${activeTab === tab
                 ? 'border-b-2 border-primary text-primary'
                 : 'text-text-secondary hover:text-text-primary'
-            }`}
+              }`}
           >
             {tab === 'inventory' ? 'Asset Inventory' : tab === 'requests' ? 'Asset Requests' : 'Return Tracker'}
           </button>
@@ -127,16 +126,14 @@ export default function AssetManagement() {
                   <td className="px-6 py-4 text-text-secondary">{asset.department}</td>
                   <td className="px-6 py-4 text-text-secondary">{asset.issueDate}</td>
                   <td className="px-6 py-4">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
-                      asset.condition === 'Good' ? 'bg-success-DEFAULT/10 text-success-DEFAULT' : 'bg-warning-DEFAULT/10 text-warning-DEFAULT'
-                    }`}>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${asset.condition === 'Good' ? 'bg-success-DEFAULT/10 text-success-DEFAULT' : 'bg-warning-DEFAULT/10 text-warning-DEFAULT'
+                      }`}>
                       {asset.condition}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
-                      asset.status === 'Issued' ? 'bg-primary/10 text-primary' : 'bg-success-DEFAULT/10 text-success-DEFAULT'
-                    }`}>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${asset.status === 'Issued' ? 'bg-primary/10 text-primary' : 'bg-success-DEFAULT/10 text-success-DEFAULT'
+                      }`}>
                       {asset.status}
                     </span>
                   </td>
@@ -166,16 +163,15 @@ export default function AssetManagement() {
                   <td className="px-6 py-4 text-text-secondary">{req.type}</td>
                   <td className="px-6 py-4 text-text-secondary">{req.requestedOn}</td>
                   <td className="px-6 py-4">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
-                      req.status === 'Pending' ? 'bg-warning-DEFAULT/10 text-warning-DEFAULT' : 'bg-success-DEFAULT/10 text-success-DEFAULT'
-                    }`}>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${req.status === 'Pending' ? 'bg-warning-DEFAULT/10 text-warning-DEFAULT' : 'bg-success-DEFAULT/10 text-success-DEFAULT'
+                      }`}>
                       {req.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <button className="rounded-lg p-1 text-success-DEFAULT hover:bg-success-DEFAULT/10" title="Approve"><HiCheck className="h-5 w-5" /></button>
-                      <button className="rounded-lg p-1 text-danger-DEFAULT hover:bg-danger-DEFAULT/10" title="Reject"><HiXMark className="h-5 w-5" /></button>
+                      <button className="rounded-lg p-1 text-success-DEFAULT hover:bg-success-DEFAULT/10" title="Approve"><HiCheck className="h-5 w-5 bg-green-100 text-green-600 hover:bg-green-200" /></button>
+                      <button className="rounded-lg p-1 text-danger-DEFAULT hover:bg-danger-DEFAULT/10" title="Reject"><HiXMark className="h-5 w-5 bg-red-100 text-red-600 hover:bg-red-200" /></button>
                     </div>
                   </td>
                 </tr>
@@ -205,7 +201,7 @@ export default function AssetManagement() {
                   <td className="px-6 py-4 text-text-secondary">{ret.condition}</td>
                   <td className="px-6 py-4 text-text-secondary">{ret.remarks}</td>
                   <td className="px-6 py-4 text-right">
-                    <Button label="Mark Returned" size="sm" variant="outline" icon={HiArrowPath} />
+                    <Button label="Mark Returned" size="sm" variant="primary" icon={HiArrowPath} />
                   </td>
                 </tr>
               ))}
@@ -214,11 +210,11 @@ export default function AssetManagement() {
         )}
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Add New Asset" size="md">
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Add New Asset" size="xl">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input 
-            label="Asset Type" 
-            name="type" 
+          <Input
+            label="Asset Type"
+            name="type"
             type="select"
             options={[
               { value: 'Laptop', label: 'Laptop' },
@@ -226,14 +222,14 @@ export default function AssetManagement() {
               { value: 'Access Card', label: 'Access Card' },
               { value: 'Uniform', label: 'Uniform' },
             ]}
-            value={formData.type} 
-            onChange={handleInputChange} 
-            required 
+            value={formData.type}
+            onChange={handleInputChange}
+            required
           />
           <Input label="Serial No" name="serial" value={formData.serial} onChange={handleInputChange} required />
-          <Input 
-            label="Condition" 
-            name="condition" 
+          <Input
+            label="Condition"
+            name="condition"
             type="select"
             options={[
               { value: 'New', label: 'New' },
@@ -241,22 +237,22 @@ export default function AssetManagement() {
               { value: 'Fair', label: 'Fair' },
               { value: 'Damaged', label: 'Damaged' },
             ]}
-            value={formData.condition} 
-            onChange={handleInputChange} 
-            required 
+            value={formData.condition}
+            onChange={handleInputChange}
+            required
           />
-          <Input 
-            label="Assign To" 
-            name="assignedTo" 
+          <Input
+            label="Assign To"
+            name="assignedTo"
             type="select"
             options={employees.map(e => ({ value: e.name, label: `${e.name} (${e.empId})` }))}
-            value={formData.assignedTo} 
-            onChange={handleInputChange} 
+            value={formData.assignedTo}
+            onChange={handleInputChange}
           />
           <Input label="Issue Date" name="issueDate" type="date" value={formData.issueDate} onChange={handleInputChange} />
           <div>
             <label className="block text-sm font-semibold text-text-secondary mb-1">Notes</label>
-            <textarea 
+            <textarea
               name="notes"
               className="w-full rounded-lg border border-border-tertiary bg-background-primary px-4 py-2 text-sm outline-none focus:border-primary"
               rows={3}

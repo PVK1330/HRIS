@@ -45,8 +45,8 @@ export default function Reports() {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {REPORTS.map((report) => (
-          <div key={report.id} className="flex flex-col rounded-xl border border-border-tertiary bg-background-primary p-5 shadow-sm transition-all hover:shadow-md">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div key={report.id} className="flex flex-col rounded-lg border border-border-tertiary bg-background-primary p-5 shadow-sm transition-all hover:shadow-md">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <HiChartBar className="h-6 w-6" />
             </div>
             <h3 className="mb-2 text-lg font-bold text-text-primary">{report.title}</h3>
@@ -55,9 +55,9 @@ export default function Reports() {
             </p>
             
             {generating === report.id ? (
-              <div className="mb-4 h-32 w-full animate-pulse rounded-lg bg-background-tertiary" />
+              <div className="mb-4 h-32 w-full animate-pulse rounded-md bg-background-tertiary" />
             ) : (
-              <div className="mb-4 h-32 w-full overflow-hidden rounded-lg bg-background-tertiary/30 p-2">
+              <div className="mb-4 h-32 w-full overflow-hidden rounded-md bg-background-tertiary/30 p-2">
                 {report.type === 'bar' ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={MOCK_DATA}>

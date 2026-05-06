@@ -197,10 +197,10 @@ export default function TemplateGenerator() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex gap-2">
-          <Button label="Use" variant="ghost" size="sm" icon={HiDocumentText} onClick={() => handleUseTemplate(row.id)} />
-          <Button label="Download" variant="ghost" size="sm" icon={HiArrowDown} onClick={() => handleDownload(row.id)} />
-          <Button label="Edit" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
-          <Button label="Delete" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
+          <Button label="Use" className='bg-orange-400 text-orange-600 hover:bg-orange-200' size="sm" icon={HiDocumentText} onClick={() => handleUseTemplate(row.id)} />
+          <Button label="Download" className='bg-blue-500 text-blue-800 hover:bg-blue-500' size="sm" icon={HiArrowDown} onClick={() => handleDownload(row.id)} />
+          <Button label="Edit" className='bg-green-500 text-green-800 hover:bg-green-500' size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
+          <Button label="Delete" className='bg-red-500 text-red-800 hover:bg-red-500' size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
         </div>
       ),
     },
@@ -261,7 +261,7 @@ export default function TemplateGenerator() {
 
       <Table columns={columns} data={filtered} pageSize={10} />
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Template' : 'Create Template'} size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Template' : 'Create Template'} size="xl">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <Input

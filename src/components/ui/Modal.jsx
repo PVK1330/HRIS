@@ -8,6 +8,7 @@ const sizeClasses = {
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
   '2xl': 'max-w-6xl',
+  'custom': 'max-w-[1200px]'
 }
 
 export function Modal({ 
@@ -51,7 +52,7 @@ export function Modal({
 
       {/* Modal Box */}
       <div 
-        className={`relative w-full ${maxW} transform rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} h-full transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
       >
@@ -60,7 +61,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-4 top-4 z-20 rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+            className="absolute right-4 top-4 z-20 rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
             aria-label="Close"
           >
             <HiXMark className="h-5 w-5" />
@@ -69,10 +70,10 @@ export function Modal({
 
         <div className="flex flex-col">
           {/* Header */}
-          <div className="px-6 pt-8 pb-4 sm:px-8">
+          <div className="px-5 pt-6 pb-2 sm:px-6">
             <div className="flex items-center gap-4">
               {Icon && (
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                   <Icon className="h-6 w-6" />
                 </div>
               )}
@@ -90,7 +91,7 @@ export function Modal({
           </div>
 
           {/* Body */}
-          <div className="px-6 py-2 sm:px-8 max-h-[calc(100vh-16rem)] overflow-y-auto custom-scrollbar">
+          <div className="px-5 py-1 sm:px-6 max-h-[calc(100vh-16rem)] overflow-y-auto custom-scrollbar">
             <div className="pb-8">
               {children}
             </div>

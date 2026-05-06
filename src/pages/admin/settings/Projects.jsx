@@ -248,10 +248,10 @@ export default function ProjectManagement() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex gap-2">
-          <Button ariaLabel="Edit Project" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
+          <Button ariaLabel="Edit Project" variant="Approve" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
           <Button
             ariaLabel="Delete Project"
-            variant="ghost"
+            variant="danger"
             size="sm"
             icon={HiTrash}
             onClick={() => handleDelete(row.id)}
@@ -269,7 +269,7 @@ export default function ProjectManagement() {
           <h1 className="font-display text-2xl font-bold text-gray-900">Project Management</h1>
           <p className="mt-1 text-sm text-gray-500">Create and manage organizational projects.</p>
         </div>
-        <Button ariaLabel="Add Project" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
+        <Button label="Add Project" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -322,7 +322,7 @@ export default function ProjectManagement() {
 
       <Table columns={columns} data={filtered} pageSize={10} />
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Project' : 'Add Project'} size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Project' : 'Add Project'} size="xl">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <Input
@@ -430,8 +430,8 @@ export default function ProjectManagement() {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" ariaLabel="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" ariaLabel="Save Project" variant="primary" icon={HiCheck} />
+            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
+            <Button type="submit" label="Save Project" variant="primary" />
           </div>
         </form>
       </Modal>

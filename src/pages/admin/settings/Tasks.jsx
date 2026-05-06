@@ -7,10 +7,10 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { HiCheckCircle, HiPencil, HiTrash, HiUser, HiClock, HiFlag, HiPlus, HiCheck } from 'react-icons/hi2'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const initialFormData = {
   taskTitle: '',
@@ -308,15 +308,15 @@ export default function TaskManagement() {
       render: (_, row) => (
         <div className="flex gap-2">
           <Button
-            ariaLabel="Complete"
-            variant="ghost"
+            label="Complete"
+            variant="Approve"
             size="sm"
             icon={HiCheckCircle}
             onClick={() => handleStatusChange(row.id, 'Completed')}
             disabled={row.status === 'Completed'}
           />
-          <Button ariaLabel="Edit Task" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
-          <Button ariaLabel="Delete Task" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
+          <Button label="Edit Task" className="bg-blue-500 text-blue-600 hover:bg-blue-500" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
+          <Button label="Delete Task" variant="danger" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
         </div>
       ),
     },
@@ -329,11 +329,11 @@ export default function TaskManagement() {
           <h1 className="font-display text-2xl font-bold text-gray-900">Task Management</h1>
           <p className="mt-1 text-sm text-gray-500">Create and manage tasks with team assignments.</p>
         </div>
-        <Button ariaLabel="Add Task" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
+        <Button label="Add Task" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-600">
               <HiFlag className="h-6 w-6" />
@@ -344,7 +344,7 @@ export default function TaskManagement() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
               <HiClock className="h-6 w-6" />
@@ -355,7 +355,7 @@ export default function TaskManagement() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600">
               <HiCheckCircle className="h-6 w-6" />
@@ -366,7 +366,7 @@ export default function TaskManagement() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
               <HiFlag className="h-6 w-6" />
@@ -379,7 +379,7 @@ export default function TaskManagement() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-4">
           <Input label="Search" name="search" placeholder="Search tasks..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <Input label="Project" name="project" type="select" value={project} onChange={(e) => setProject(e.target.value)} options={projectOptions} />
@@ -390,7 +390,8 @@ export default function TaskManagement() {
 
       <Table columns={columns} data={filtered} pageSize={10} />
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Task' : 'Add Task'} size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Task' : 'Add Task'} size="xl
+      " showClose>
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <Input

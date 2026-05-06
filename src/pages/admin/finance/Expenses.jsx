@@ -9,10 +9,10 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { employees, expenseClaims, expenseKpis } from '../../../data/mockData.js'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const initialFormData = {
   employeeId: '',
@@ -128,7 +128,7 @@ export default function Expenses() {
         <StatCard title="Rejected" value={expenseKpis.rejected} subtitle="This month" color="red" />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <Input
           label="Status"
           name="status"
@@ -141,10 +141,10 @@ export default function Expenses() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         <h2 className="font-display text-lg font-bold text-gray-900">Multi-Level Approval Workflow</h2>
         <div className="mt-4 space-y-3">
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">Travel - Client Meeting</div>
               <div className="text-xs text-gray-500">John Smith • AED 2,500</div>
@@ -154,7 +154,7 @@ export default function Expenses() {
               <Badge label="Pending Finance" color="orange" size="sm" />
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">Equipment - Laptop Stand</div>
               <div className="text-xs text-gray-500">Sarah Johnson • AED 450</div>
@@ -164,7 +164,7 @@ export default function Expenses() {
               <Badge label="Finance Approved" color="green" size="sm" />
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">Training - Course Fee</div>
               <div className="text-xs text-gray-500">Michael Brown • AED 3,200</div>
@@ -173,7 +173,7 @@ export default function Expenses() {
               <Badge label="Pending Manager" color="orange" size="sm" />
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">Meals - Team Lunch</div>
               <div className="text-xs text-gray-500">Emily Davis • AED 850</div>
@@ -188,24 +188,24 @@ export default function Expenses() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Payment Processing</h2>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Approved - Pending Payment</div>
                 <div className="text-xs text-gray-500">8 claims • AED 12,450</div>
               </div>
               <Badge label="Processing" color="orange" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Payment in Progress</div>
                 <div className="text-xs text-gray-500">5 claims • AED 8,200</div>
               </div>
               <Badge label="Transferring" color="blue" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Paid This Month</div>
                 <div className="text-xs text-gray-500">15 claims • AED 24,800</div>
@@ -215,7 +215,7 @@ export default function Expenses() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Expense by Category</h2>
           <div className="mt-4 space-y-3">
             <div>
@@ -258,7 +258,7 @@ export default function Expenses() {
         </div>
       </div>
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Submit Expense Claim" size="md">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Submit Expense Claim" size="xl">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
             Claim details
