@@ -17,6 +17,9 @@ export const SUPERADMIN_ENDPOINTS = {
   PLANS: '/superadmin/plans',
   PLAN_BY_ID: (id) => `/superadmin/plans/${id}`,
   PLAN_FEATURES: (id) => `/superadmin/plans/${id}/features`,
+  PAYMENTS: '/superadmin/payments',
+  PAYMENT_STATS: '/superadmin/payments/stats',
+  PAYMENT_STATUS: (id) => `/superadmin/payments/${id}/status`,
 }
 
 export const superadminService = {
@@ -108,5 +111,16 @@ export const superadminService = {
   },
   updatePlanFeatures(id, featureIds) {
     return api.put(SUPERADMIN_ENDPOINTS.PLAN_FEATURES(id), { featureIds })
+  },
+  
+  // Payments / Billing
+  getPayments(params) {
+    return api.get(SUPERADMIN_ENDPOINTS.PAYMENTS, { params })
+  },
+  getPaymentStats() {
+    return api.get(SUPERADMIN_ENDPOINTS.PAYMENT_STATS)
+  },
+  updatePaymentStatus(id, status) {
+    return api.patch(SUPERADMIN_ENDPOINTS.PAYMENT_STATUS(id), { status })
   }
 }

@@ -25,6 +25,8 @@ export default function SubscriptionsPlans() {
   const [showEditPlanModal, setShowEditPlanModal] = useState(false)
   const [showDeletePlanModal, setShowDeletePlanModal] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const [plans, setPlans] = useState([])
   const [allFeatures, setAllFeatures] = useState([])
@@ -64,7 +66,7 @@ export default function SubscriptionsPlans() {
     try {
       setLoading(true)
       setError(null)
-      const response = await superadminService.getPlans()
+      const response = await superadminService.getPlans({ search: searchQuery })
       if (response.data?.success) {
         setPlans(response.data.data || [])
       } else {
@@ -91,7 +93,45 @@ export default function SubscriptionsPlans() {
   useEffect(() => {
     fetchPlans()
     fetchFeatures()
-  }, [])
+  }, [searchQuery])
+
+  const handleViewClick = async (plan) => {
+    try {
+      setLoading(true)
+      const response = await superadminService.getPlanById(plan.id)
+      setSelectedPlan(response.data.data)
+      setShowDetailModal(true)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch plan details')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleExport = () => {
+    const headers = ['ID', 'Name', 'Code', 'Monthly Price', 'Annual Price', 'Users', 'Storage', 'Status']
+    const csvData = plans.map(p => [
+      p.id,
+      p.plan_name,
+      p.plan_code,
+      p.monthly_price,
+      p.annual_price,
+      p.user_quota,
+      p.storage_quota_gb,
+      p.is_active ? 'Active' : 'Inactive'
+    ])
+    
+    const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `plans_export_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const handleEditClick = async (plan) => {
     try {
@@ -208,7 +248,25 @@ export default function SubscriptionsPlans() {
           </div>
           <p className="text-[11px] font-medium text-slate-500">Manage your subscription plans and system limits.</p>
         </div>
-        <Button label="Add Plan" variant="primary" size="sm" icon={HiPlus} onClick={() => setShowAddPlanModal(true)} />
+        <div className="flex gap-2">
+          <Button label="Export CSV" variant="ghost" size="sm" icon={HiChartBar} onClick={handleExport} className="text-slate-500 font-bold" />
+          <Button label="Add Plan" variant="primary" size="sm" icon={HiPlus} onClick={() => setShowAddPlanModal(true)} />
+        </div>
+      </div>
+
+      {/* Filter Section */}
+      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Input 
+            label="Search Plans" 
+            placeholder="Name or code..." 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+          />
+          <div className="flex items-end lg:col-span-3">
+             <Button label="Reset Filters" variant="ghost" className="font-bold text-slate-400" onClick={() => { setSearchQuery(''); }} />
+          </div>
+        </div>
       </div>
 
       {/* Premium Stats */}
@@ -289,6 +347,7 @@ export default function SubscriptionsPlans() {
             </div>
 
             <div className="flex gap-3 pt-6 border-t border-slate-50">
+              <Button label="View" variant="ghost" className="flex-1 font-black uppercase text-[10px] tracking-widest text-slate-400" onClick={() => handleViewClick(plan)} />
               <Button label="Edit" variant="ghost" className="flex-1 font-black uppercase text-[10px] tracking-widest text-slate-400" onClick={() => handleEditClick(plan)} />
             </div>
           </div>
@@ -470,6 +529,63 @@ export default function SubscriptionsPlans() {
             <Button label="Save" variant="primary" className="flex-1 bg-indigo-600 border-none shadow-lg shadow-indigo-100" onClick={handleCreatePlan} disabled={!newPlan.plan_name || !newPlan.plan_code} />
           </div>
         </div>
+      </Modal>
+      {/* Detail Modal */}
+      <Modal
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        title={selectedPlan?.plan_name}
+        description={`Plan ID: ${selectedPlan?.id} · Code: ${selectedPlan?.plan_code}`}
+        icon={HiBriefcase}
+        size="lg"
+      >
+        {selectedPlan && (
+          <div className="space-y-6 p-2">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Monthly Price</span>
+                <p className="mt-1 text-lg font-black text-slate-900">${selectedPlan.monthly_price}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Annual Price</span>
+                <p className="mt-1 text-lg font-black text-indigo-600">${selectedPlan.annual_price}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">User Quota</span>
+                <p className="mt-1 text-lg font-black text-slate-900">{selectedPlan.user_quota} Max</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Storage</span>
+                <p className="mt-1 text-lg font-black text-slate-900">{selectedPlan.storage_quota_gb} GB</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Company Quota</span>
+                <p className="mt-1 text-lg font-black text-slate-900">{selectedPlan.company_quota}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trial Days</span>
+                <p className="mt-1 text-lg font-black text-slate-900">{selectedPlan.trial_days} Days</p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Included Features</span>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {selectedPlan.features?.map(f => (
+                  <Badge key={f.id} label={f.feature_name} color="indigo" variant="soft" />
+                ))}
+                {(!selectedPlan.features || selectedPlan.features.length === 0) && (
+                  <span className="text-xs text-slate-400 italic">No features assigned to this plan.</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-slate-100">
+              <Button label="Close" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowDetailModal(false)} />
+              <Button label="Edit Plan" variant="primary" className="flex-1" onClick={() => { setShowDetailModal(false); handleEditClick(selectedPlan); }} />
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

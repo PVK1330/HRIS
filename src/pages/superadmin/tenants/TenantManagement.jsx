@@ -48,7 +48,7 @@ export default function TenantManagement() {
   useEffect(() => {
     fetchTenants(currentPage)
     fetchPlans()
-  }, [currentPage])
+  }, [currentPage, searchQuery, planFilter, statusFilter])
 
   const fetchPlans = async () => {
     try {
@@ -71,7 +71,10 @@ export default function TenantManagement() {
       const response = await api.get('/tenants', {
         params: {
           page: page + 1,
-          limit: pageSize
+          limit: pageSize,
+          search: searchQuery,
+          plan: planFilter,
+          status: statusFilter
         }
       })
       const { tenants, total } = response.data.data
@@ -99,7 +102,6 @@ export default function TenantManagement() {
           billingCycle: 'Monthly'
         }
       })
-      // console.log('Tenants fetched:', transformed)
       setOrganizations(transformed)
       setTotalCount(total)
     } catch (error) {
@@ -126,26 +128,37 @@ export default function TenantManagement() {
   const [newForm, setNewForm] = useState({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: '', billingCycle: 'Monthly' })
   const [errors, setErrors] = useState({})
 
-  const filteredOrganizations = useMemo(() => {
-    return organizations.filter((org) => {
-      const matchesSearch = org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        org.domain.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        org.adminEmail.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesPlan = planFilter === 'all' || org.plan === planFilter
-      const matchesStatus = statusFilter === 'all' || org.status === statusFilter
-      return matchesSearch && matchesPlan && matchesStatus
-    })
-  }, [organizations, searchQuery, planFilter, statusFilter])
+  const filteredOrganizations = organizations; // Now filtered on the server
 
   const handleExport = () => {
+    const headers = ['ID', 'Name', 'Domain', 'Admin Email', 'Plan', 'Status', 'Onboarded']
+    const csvData = organizations.map(org => [
+      org.id,
+      org.name,
+      org.domain,
+      org.adminEmail,
+      org.plan,
+      org.status,
+      org.created
+    ])
+    
+    const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `organizations_export_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
     Swal.fire({
-      icon: 'info',
-      title: 'Exporting Data',
-      text: `Preparing ${organizations.length} organizations for CSV export...`,
+      icon: 'success',
+      title: 'Export Successful',
+      text: 'Organization data has been downloaded as CSV.',
       timer: 2000,
       showConfirmButton: false,
-      background: '#fff',
-      color: '#1e293b'
     })
   }
 

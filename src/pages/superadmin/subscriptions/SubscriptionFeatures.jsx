@@ -31,6 +31,9 @@ export default function SubscriptionFeatures() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [formError, setFormError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [showDetailModal, setShowDetailModal] = useState(false)
   
   // Pagination state
   const [pagination, setPagination] = useState({
@@ -63,7 +66,9 @@ export default function SubscriptionFeatures() {
       setError(null)
       const response = await superadminService.getFeatures({ 
         page, 
-        limit: pagination.limit 
+        limit: pagination.limit,
+        search: searchQuery,
+        isActive: statusFilter === 'active' ? true : statusFilter === 'inactive' ? false : undefined
       })
       
       // Handle the API response structure
@@ -88,7 +93,7 @@ export default function SubscriptionFeatures() {
 
   useEffect(() => {
     fetchFeatures()
-  }, [])
+  }, [searchQuery, statusFilter])
 
   const handleCreateFeature = async () => {
     try {
@@ -178,6 +183,34 @@ export default function SubscriptionFeatures() {
     }
   }
 
+  const handleViewClick = (feature) => {
+    setSelectedFeature(feature)
+    setShowDetailModal(true)
+  }
+
+  const handleExport = () => {
+    const headers = ['ID', 'Name', 'Code', 'Description', 'Sort Order', 'Status']
+    const csvData = features.map(f => [
+      f.id,
+      f.feature_name,
+      f.feature_code,
+      f.feature_description || '',
+      f.feature_sort_order,
+      f.feature_is_active ? 'Active' : 'Inactive'
+    ])
+    
+    const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `features_export_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const handleEditClick = (feature) => {
     setSelectedFeature(feature)
     setEditForm({
@@ -252,18 +285,24 @@ export default function SubscriptionFeatures() {
       render: (value, row) => (
         <div className="flex items-center justify-end gap-2">
           <Button 
-            label="Edit" 
+            variant="ghost" 
+            size="sm" 
+            icon={HiChartBar}
+            className="text-slate-400 hover:text-indigo-600"
+            onClick={() => handleViewClick(row)}
+          />
+          <Button 
             variant="ghost" 
             size="sm" 
             icon={HiPencil}
+            className="text-slate-400 hover:text-blue-600"
             onClick={() => handleEditClick(row)}
           />
           <Button 
-            label="Delete" 
             variant="ghost" 
             size="sm" 
             icon={HiTrash}
-            className="text-red-500 hover:text-red-600"
+            className="text-slate-400 hover:text-red-600"
             onClick={() => handleDeleteClick(row)}
           />
         </div>
@@ -292,10 +331,40 @@ export default function SubscriptionFeatures() {
           </div>
           <p className="text-[11px] font-medium text-slate-500">Manage feature availability across different subscription plans.</p>
         </div>
-        <Button label="Add Feature" variant="primary" size="sm" icon={HiPlus} onClick={() => {
-          setFormError(null)
-          setShowAddFeatureModal(true)
-        }} />
+        <div className="flex gap-2">
+          <Button label="Export CSV" variant="ghost" size="sm" icon={HiChartBar} onClick={handleExport} className="text-slate-500 font-bold" />
+          <Button label="Add Feature" variant="primary" size="sm" icon={HiPlus} onClick={() => {
+            setFormError(null)
+            setShowAddFeatureModal(true)
+          }} />
+        </div>
+      </div>
+
+      {/* Filter Section */}
+      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Input 
+            label="Search Features" 
+            placeholder="Name or code..." 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+          />
+          <div>
+            <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</label>
+            <select 
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none cursor-pointer" 
+              value={statusFilter} 
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <Button label="Reset Filters" variant="ghost" className="w-full font-bold text-slate-400" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }} />
+          </div>
+        </div>
       </div>
 
       {/* Stats Section - Dynamic from API */}
@@ -620,6 +689,55 @@ export default function SubscriptionFeatures() {
             />
           </div>
         </div>
+      </Modal>
+      {/* Detail Modal */}
+      <Modal
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        title={selectedFeature?.feature_name}
+        description={`Feature ID: ${selectedFeature?.id} · Code: ${selectedFeature?.feature_code}`}
+        icon={HiCube}
+        size="lg"
+      >
+        {selectedFeature && (
+          <div className="space-y-6 p-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Code Identifier</span>
+                <p className="mt-1 text-sm font-mono font-bold text-indigo-600">{selectedFeature.feature_code}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</span>
+                <div className="mt-1">
+                  <Badge 
+                    label={selectedFeature.feature_is_active ? 'Active' : 'Inactive'} 
+                    color={selectedFeature.feature_is_active ? 'green' : 'gray'} 
+                  />
+                </div>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sort Priority</span>
+                <p className="mt-1 text-sm font-bold text-slate-900">{selectedFeature.feature_sort_order}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System Created</span>
+                <p className="mt-1 text-sm font-bold text-slate-900">{new Date(selectedFeature.created_at).toLocaleDateString()}</p>
+              </div>
+            </div>
+            
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Description</span>
+              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                {selectedFeature.feature_description || 'No description provided for this feature.'}
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-slate-100">
+              <Button label="Close" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowDetailModal(false)} />
+              <Button label="Edit Feature" variant="primary" className="flex-1" onClick={() => { setShowDetailModal(false); handleEditClick(selectedFeature); }} />
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )
