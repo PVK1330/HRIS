@@ -7,7 +7,7 @@ export function Toggle({ checked, onChange, label, disabled, id: providedId, nam
   return (
     <label
       htmlFor={id}
-      className={`inline-flex items-center gap-3 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+      className={`grid grid-cols-[min-content_1fr] items-center gap-6 pt-2 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
     >
       <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
         <input
