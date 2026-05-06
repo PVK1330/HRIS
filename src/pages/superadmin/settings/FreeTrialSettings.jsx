@@ -1,183 +1,236 @@
-import { useCallback, useState } from 'react'
-import { HiTicket, HiShieldCheck, HiArrowPath } from 'react-icons/hi2'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { HiClock, HiShieldCheck, HiTicket } from 'react-icons/hi2'
 import toast from 'react-hot-toast'
 
-import useSettings from '../../../hooks/useSettings.js'
+import { Toggle } from '../../../components/ui/Toggle.jsx'
 import settingsService from '../../../services/settingsService.js'
 
-const DEFAULT_STATE = {
-  enableFreeTrial: true,
-  trialDurationDays: 14,
-  requireCardForTrial: false,
-  maxTenantsPerTrial: 1,
+const DEFAULTS = {
+  trialEnabled: false,
+  trialDays: 14,
+  mandatoryPaymentMethod: false,
+  maxTenantsPerIdentity: 1,
 }
 
 function fromApi(api) {
-  if (!api) return DEFAULT_STATE
+  if (!api) return { ...DEFAULTS }
   return {
-    enableFreeTrial:    !!api.enableFreeTrial,
-    trialDurationDays:  Number(api.trialDurationDays || 14),
-    requireCardForTrial: !!api.requireCardForTrial,
-    maxTenantsPerTrial: Number(api.maxTenantsPerTrial || 1),
+    trialEnabled: !!api.trialEnabled,
+    trialDays: Number(api.trialDays) || 14,
+    mandatoryPaymentMethod: !!api.mandatoryPaymentMethod,
+    maxTenantsPerIdentity: Number(api.maxTenantsPerIdentity) || 1,
   }
 }
 
-function FormSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="h-64 w-full animate-pulse rounded-[2.5rem] bg-slate-100" />
-      <div className="h-64 w-full animate-pulse rounded-[2.5rem] bg-slate-100" />
-    </div>
-  )
+function deepClone(v) { return JSON.parse(JSON.stringify(v)) }
+
+function clampInt(value, min, max) {
+  const n = Math.floor(Number(value))
+  if (Number.isNaN(n)) return min
+  return Math.min(Math.max(n, min), max)
 }
 
 export default function FreeTrialSettings() {
-  const fetchFn = useCallback(async () => {
-    // Note: Assuming a settingsService.getFreeTrial method exists or using general settings
-    // For now, using a mock behavior if service not yet updated
+  const [data, setData] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const original = useRef(null)
+
+  const load = useCallback(async () => {
     try {
-        const res = await settingsService.getGeneral()
-        return fromApi(res.data)
-    } catch (e) {
-        return DEFAULT_STATE
+      const res = await settingsService.getFreeTrial()
+      const next = fromApi(res?.data)
+      setData(next)
+      original.current = deepClone(next)
+    } catch (err) {
+      toast.error(err?.message || 'Failed to load free trial settings')
+      setData({ ...DEFAULTS })
+      original.current = { ...DEFAULTS }
     }
   }, [])
 
-  const saveFn = useCallback(async (state) => {
-    // Assuming settingsService.updateGeneral can handle these keys
-    const res = await settingsService.updateGeneral(state)
-    return fromApi(res.data)
-  }, [])
+  useEffect(() => { load() }, [load])
 
-  const { data, setData, loading, save, saving } = useSettings(fetchFn, saveFn)
-  const state = data || DEFAULT_STATE
-  const set = (patch) => setData((prev) => ({ ...(prev || DEFAULT_STATE), ...patch }))
+  const isDirty = useMemo(() => {
+    if (!data || !original.current) return false
+    return JSON.stringify(data) !== JSON.stringify(original.current)
+  }, [data])
+
+  const set = (patch) => setData((prev) => ({ ...(prev || DEFAULTS), ...patch }))
+
+  const handleDiscard = () => {
+    if (!original.current) return
+    setData(deepClone(original.current))
+  }
+
+  const handleSave = async () => {
+    if (!data) return
+    setSaving(true)
+    try {
+      const payload = {
+        trialEnabled: data.trialEnabled,
+        trialDays: clampInt(data.trialDays, 1, 365),
+        mandatoryPaymentMethod: data.mandatoryPaymentMethod,
+        maxTenantsPerIdentity: clampInt(data.maxTenantsPerIdentity, 1, 10),
+      }
+      const res = await settingsService.updateFreeTrial(payload)
+      const next = fromApi(res?.data)
+      setData(next)
+      original.current = deepClone(next)
+      toast.success('Settings saved successfully')
+    } catch (err) {
+      toast.error(err?.message || 'Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const baseInput =
+    'w-full rounded-lg border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent'
 
   return (
-    <div className="mx-auto max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700 px-4 md:px-0">
-      {/* Page Header */}
-      <div className="mb-5 flex items-center justify-between">
+    <div className="mx-auto max-w-3xl px-4 md:px-0 pb-24">
+      {/* Page header */}
+      <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Acquisition Strategy</h1>
-          <p className="mt-0.5 text-slate-500 text-[11px] font-medium">Configure free trial parameters and onboarding governance.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Acquisition Strategy</h1>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Configure free trial parameters and onboarding governance.
+          </p>
         </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white shadow-md">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-900 text-white shadow-md">
           <HiTicket className="h-5 w-5" />
         </div>
       </div>
 
-      {loading ? (
-        <FormSkeleton />
-      ) : (
-        <form
-          className="space-y-6 pb-24"
-          onSubmit={(e) => {
-            e.preventDefault()
-            save()
-          }}
-        >
-          {/* Trial Logic */}
-          <div className="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
-             <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-white shadow-lg shadow-amber-100">
-                    <HiTicket className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 tracking-tight">Trial Mechanism</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Time-based Access</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => set({ enableFreeTrial: !state.enableFreeTrial })}
-                  className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${state.enableFreeTrial ? 'bg-amber-500' : 'bg-slate-200'}`}
-                >
-                  <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${state.enableFreeTrial ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-             </div>
+      {/* Skeleton */}
+      {data === null && (
+        <div className="space-y-4">
+          <div className="h-[200px] animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
+          <div className="h-[180px] animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
+        </div>
+      )}
 
-             <div className={`space-y-4 transition-opacity ${state.enableFreeTrial ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Trial Window (Days)</label>
-                  <input
-                    type="number"
-                    value={state.trialDurationDays}
-                    onChange={(e) => set({ trialDurationDays: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-amber-500 focus:bg-white"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4 border border-slate-100">
-                   <div>
-                      <h4 className="text-xs font-black text-slate-900">Mandatory Payment Method</h4>
-                      <p className="text-[10px] font-medium text-slate-400">Require card to initiate trial.</p>
-                   </div>
-                   <button
-                      type="button"
-                      onClick={() => set({ requireCardForTrial: !state.requireCardForTrial })}
-                      className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${state.requireCardForTrial ? 'bg-slate-900' : 'bg-slate-200'}`}
-                    >
-                      <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${state.requireCardForTrial ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                </div>
-             </div>
-          </div>
-
-          {/* Infrastructure Guardrails */}
-          <div className="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
-             <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-100">
-                  <HiShieldCheck className="h-5 w-5" />
+      {data !== null && (
+        <div className="space-y-4">
+          {/* Card 1 — Trial Mechanism */}
+          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <header className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-400 text-white">
+                  <HiClock className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">Onboarding Guardrails</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Allocation Policy</p>
+                  <div className="text-base font-semibold text-gray-900">Trial Mechanism</div>
+                  <div className="mt-0.5 text-xs uppercase tracking-widest text-gray-400">
+                    TIME-BASED ACCESS
+                  </div>
                 </div>
-             </div>
+              </div>
+              <Toggle checked={data.trialEnabled} onChange={(v) => set({ trialEnabled: v })} />
+            </header>
 
-             <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Max Tenants per Identity</label>
+            <div
+              className={`overflow-hidden transition-all duration-300 ${
+                data.trialEnabled ? 'mt-5 max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+              }`}
+            >
+              <div className="space-y-5">
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    Trial Window (Days)
+                  </label>
                   <input
                     type="number"
-                    value={state.maxTenantsPerTrial}
-                    onChange={(e) => set({ maxTenantsPerTrial: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white"
+                    min={1}
+                    max={365}
+                    value={data.trialDays}
+                    onChange={(e) => set({ trialDays: e.target.value })}
+                    onBlur={(e) => set({ trialDays: clampInt(e.target.value, 1, 365) })}
+                    className={baseInput}
                   />
-                  <p className="px-1 text-[9px] font-bold text-slate-400 italic">Limits distinct trial accounts per identity.</p>
                 </div>
-             </div>
-          </div>
 
-          {/* Action Footer */}
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex w-[90%] md:w-full max-w-[400px] items-center justify-between rounded-2xl border border-slate-200 bg-white/80 p-2 shadow-xl backdrop-blur-xl animate-in fade-in zoom-in duration-500">
-             <div className="flex items-center gap-2 pl-3">
-                <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Growth Synchronized</span>
-             </div>
-             <div className="flex gap-2">
-                <button 
-                  type="button"
-                  onClick={() => window.location.reload()}
-                  className="rounded-xl px-4 py-2 text-[10px] font-bold text-slate-500 hover:bg-slate-100 transition-all"
-                >
-                  Discard
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-black text-white shadow-lg transition-all hover:bg-black active:scale-95 disabled:opacity-50"
-                >
-                  {saving ? (
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                  ) : (
-                    <span>Save Changes</span>
-                  )}
-                </button>
-             </div>
+                <div className="border-t border-gray-100 pt-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">Mandatory Payment Method</div>
+                      <div className="text-xs text-gray-500">
+                        Require card to initiate trial.
+                      </div>
+                    </div>
+                    <Toggle
+                      checked={data.mandatoryPaymentMethod}
+                      onChange={(v) => set({ mandatoryPaymentMethod: v })}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Card 2 — Onboarding Guardrails */}
+          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <header className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white">
+                <HiShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-base font-semibold text-gray-900">Onboarding Guardrails</div>
+                <div className="mt-0.5 text-xs uppercase tracking-widest text-gray-400">
+                  ALLOCATION POLICY
+                </div>
+              </div>
+            </header>
+
+            <div className="mt-5 space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                Max Tenants Per Identity
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={data.maxTenantsPerIdentity}
+                onChange={(e) => set({ maxTenantsPerIdentity: e.target.value })}
+                onBlur={(e) => set({ maxTenantsPerIdentity: clampInt(e.target.value, 1, 10) })}
+                className={baseInput}
+              />
+              <p className="text-xs italic text-gray-400">
+                Limits distinct trial accounts per identity.
+              </p>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* Bottom save bar */}
+      {isDirty && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-gray-200 bg-white px-8 py-4 shadow-lg">
+          <div className="flex items-center">
+            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-green-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              GROWTH SYNCHRONIZED
+            </span>
           </div>
-        </form>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleDiscard}
+              disabled={saving}
+              className="rounded-lg border border-gray-300 px-6 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Discard
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-lg bg-gray-900 px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

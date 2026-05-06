@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import { HiArrowRightOnRectangle, HiGlobeAlt, HiQuestionMarkCircle } from 'react-icons/hi2'
 import { Avatar } from './Avatar.jsx'
 import { Button } from './Button.jsx'
+
+const FALLBACK_LOGO = '/HRIS_Logo.png'
 
 function roleSubtitle(role) {
   if (role === 'superadmin') return 'SUPER ADMIN'
@@ -19,8 +22,15 @@ function panelName(role) {
   return ''
 }
 
-export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileClose }) {
+export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileClose, logoUrl }) {
   const avatarPalette = role === 'superadmin' ? 'bg-purple-100 text-[#6D28D9]' : undefined
+
+  const initialSrc = logoUrl && logoUrl.trim() ? logoUrl : FALLBACK_LOGO
+  const [imgSrc, setImgSrc] = useState(initialSrc)
+
+  useEffect(() => {
+    setImgSrc(logoUrl && logoUrl.trim() ? logoUrl : FALLBACK_LOGO)
+  }, [logoUrl])
 
   return (
     <>
@@ -38,7 +48,14 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
         }`}
       >
         <div className="flex shrink-0 items-center justify-center p-[5px] border-b border-slate-50">
-          <img src="/HRIS_Logo.png" alt="HRIS Logo" className="h-16 w-auto object-contain" />
+          <img
+            src={imgSrc}
+            alt="HRIS Logo"
+            className="h-16 w-auto object-contain"
+            onError={() => {
+              if (imgSrc !== FALLBACK_LOGO) setImgSrc(FALLBACK_LOGO)
+            }}
+          />
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-2">

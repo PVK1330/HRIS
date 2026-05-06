@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import settingsService from "../services/settingsService.js";
 import {
   HiBars3,
   HiBell,
@@ -122,6 +123,30 @@ export default function SuperAdminLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [sidebarLogo, setSidebarLogo] = useState('')
+
+  const fetchLogo = useCallback(async () => {
+    try {
+      const res = await settingsService.getLogo()
+      setSidebarLogo(res?.data?.largeLogo || '')
+    } catch {
+      setSidebarLogo('')
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchLogo()
+    const handler = (e) => {
+      if (e?.detail?.type && e.detail.type !== 'large') return
+      if (e?.detail?.url !== undefined) {
+        setSidebarLogo(e.detail.url || '')
+      } else {
+        fetchLogo()
+      }
+    }
+    window.addEventListener('platform-logo-updated', handler)
+    return () => window.removeEventListener('platform-logo-updated', handler)
+  }, [fetchLogo])
 
   const filteredNavGroups = useMemo(() => {
     return superNavGroups.map(group => ({
@@ -147,6 +172,7 @@ export default function SuperAdminLayout() {
         onLogout={logout}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
+        logoUrl={sidebarLogo}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
         <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-border-tertiary bg-background-primary px-3 sm:h-16 sm:px-4">

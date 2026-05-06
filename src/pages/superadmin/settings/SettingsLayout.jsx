@@ -22,7 +22,7 @@ import {
 const TOP_ITEMS = [
   { label: 'General Settings', to: '/superadmin/settings/general', icon: HiCog6Tooth },
   { label: 'Domain Settings', to: '/superadmin/settings/domain', icon: HiGlobeAlt },
-  { label: 'Account Settings', to: '/superadmin/settings/account', icon: HiShieldCheck },
+  { label: 'Account Settings', to: '/superadmin/settings/account-settings', icon: HiShieldCheck },
   { label: 'Company Details', to: '/superadmin/settings/company', icon: HiBuildingOffice },
 ]
 

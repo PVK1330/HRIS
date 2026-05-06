@@ -164,6 +164,9 @@ function LogoSlot({ title, caption, hint, type, currentUrl, onUploaded }) {
       const url = res?.data?.url
       toast.success(`${title} Updated`)
       onUploaded?.(url)
+      window.dispatchEvent(
+        new CustomEvent('platform-logo-updated', { detail: { type, url } })
+      )
     } catch (err) {
       toast.error(err?.message || 'Upload failed')
     } finally {
