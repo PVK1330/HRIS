@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import Swal from 'sweetalert2'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import {
-  HiOutlineChatBubbleLeftRight,
   HiPencilSquare,
   HiTrash,
   HiMegaphone,
@@ -18,37 +17,12 @@ import {
   HiSparkles,
   HiSignal
 } from 'react-icons/hi2'
+import { Input } from '../../../components/ui/Input.jsx'
+import { superadminService } from '../../../services/superadminService'
 
 export default function Announcements() {
-  const [announcements, setAnnouncements] = useState([
-    {
-      id: 1,
-      title: 'Platform Upgrade v2.4.0',
-      message: 'New performance improvements and bug fixes deployed.',
-      audience: 'All Organizations',
-      type: 'Info',
-      sentDate: '01 Apr 2026',
-      recipients: 48,
-    },
-    {
-      id: 2,
-      title: 'Scheduled Maintenance',
-      message: 'Planned downtime on 15 Apr from 02:00–04:00 UTC.',
-      audience: 'All Organizations',
-      type: 'Warning',
-      sentDate: '08 Apr 2026',
-      recipients: 48,
-    },
-    {
-      id: 3,
-      title: 'Trial Expiry Reminder',
-      message: 'Your trial ends in 3 days. Please upgrade to continue.',
-      audience: 'Trial Orgs',
-      type: 'Critical',
-      sentDate: '09 Apr 2026',
-      recipients: 6,
-    },
-  ])
+  const [announcements, setAnnouncements] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
 
   // New Announcement Form State
   const [newAnnouncement, setNewAnnouncement] = useState({ title: '', message: '', audience: 'All Organizations', type: 'Info', schedule: '' })
@@ -59,14 +33,74 @@ export default function Announcements() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
   const [editForm, setEditForm] = useState({ title: '', message: '', audience: 'All Organizations', type: 'Info' })
 
-  const handleSend = () => {
+  useEffect(() => {
+    fetchAnnouncements()
+  }, [])
+
+  const mapAnnouncement = (row) => ({
+    id: row.id,
+    title: row.title,
+    message: row.message,
+    audience: row.audience,
+    type: row.type,
+    sentDate: row.sent_date ? new Date(row.sent_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
+    recipients: row.recipients ?? 0,
+  })
+
+  const fetchAnnouncements = async () => {
+    try {
+      setIsLoading(true)
+      const response = await superadminService.getAnnouncements()
+      const list = response?.data?.data?.announcements || []
+      setAnnouncements(list.map(mapAnnouncement))
+    } catch (error) {
+      console.error('Failed to fetch announcements:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Load Failed',
+        text: error.response?.data?.message || 'Failed to load announcements.',
+        confirmButtonColor: '#f59e0b',
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSend = async () => {
     if (!newAnnouncement.title || !newAnnouncement.message) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Missing Fields',
+        text: 'Title and message are required.',
+        confirmButtonColor: '#f59e0b',
+      })
       return
     }
-    const id = Date.now()
-    const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    setAnnouncements([{ ...newAnnouncement, id, sentDate: date, recipients: 48 }, ...announcements])
-    setNewAnnouncement({ title: '', message: '', audience: 'All Organizations', type: 'Info', schedule: '' })
+    try {
+      await superadminService.createAnnouncement({
+        title: newAnnouncement.title,
+        message: newAnnouncement.message,
+        audience: newAnnouncement.audience,
+        type: newAnnouncement.type,
+      })
+      await fetchAnnouncements()
+      setNewAnnouncement({ title: '', message: '', audience: 'All Organizations', type: 'Info', schedule: '' })
+      Swal.fire({
+        icon: 'success',
+        title: 'Announcement Sent',
+        text: 'Announcement has been published successfully.',
+        timer: 1400,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('Failed to create announcement:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Create Failed',
+        text: error.response?.data?.message || 'Failed to create announcement.',
+        confirmButtonColor: '#f59e0b',
+      })
+    }
   }
 
   const handleEditClick = (ann) => {
@@ -75,14 +109,50 @@ export default function Announcements() {
     setShowEditModal(true)
   }
 
-  const handleSaveEdit = () => {
-    setAnnouncements(announcements.map(a => a.id === selectedAnnouncement.id ? { ...a, ...editForm } : a))
-    setShowEditModal(false)
+  const handleSaveEdit = async () => {
+    if (!selectedAnnouncement) return
+    try {
+      await superadminService.updateAnnouncement(selectedAnnouncement.id, editForm)
+      await fetchAnnouncements()
+      setShowEditModal(false)
+      Swal.fire({
+        icon: 'success',
+        title: 'Announcement Updated',
+        timer: 1200,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('Failed to update announcement:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: error.response?.data?.message || 'Failed to update announcement.',
+        confirmButtonColor: '#f59e0b',
+      })
+    }
   }
 
-  const handleRevoke = () => {
-    setAnnouncements(announcements.filter(a => a.id !== selectedAnnouncement.id))
-    setShowRevokeModal(false)
+  const handleRevoke = async () => {
+    if (!selectedAnnouncement) return
+    try {
+      await superadminService.deleteAnnouncement(selectedAnnouncement.id)
+      await fetchAnnouncements()
+      setShowRevokeModal(false)
+      Swal.fire({
+        icon: 'success',
+        title: 'Announcement Deleted',
+        timer: 1200,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('Failed to delete announcement:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Delete Failed',
+        text: error.response?.data?.message || 'Failed to delete announcement.',
+        confirmButtonColor: '#f59e0b',
+      })
+    }
   }
 
   return (
@@ -160,7 +230,7 @@ export default function Announcements() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between px-4">
             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Transmission History</h2>
-            <Badge label={`${announcements.length} Dispatches Sent`} color="gray" variant="glass" />
+            <Badge label={isLoading ? 'Loading...' : `${announcements.length} Dispatches Sent`} color="gray" variant="glass" />
           </div>
 
           <div className="space-y-4">

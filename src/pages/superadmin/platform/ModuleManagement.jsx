@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import Swal from 'sweetalert2'
 import { Button } from '../../../components/ui/Button.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
 import { Toggle } from '../../../components/ui/Toggle.jsx'
 import { Badge } from '../../../components/ui/Badge.jsx'
+import { superadminService } from '../../../services/superadminService'
 import {
   HiSquares2X2,
   HiUsers,
@@ -20,47 +21,109 @@ import {
 } from 'react-icons/hi2'
 
 export default function ModuleManagement() {
-  const [globalModules, setGlobalModules] = useState({
-    employeeDirectory: true,
-    attendance: true,
-    leave: true,
-    payroll: true,
-    performance: true,
-    onboardingExit: true,
-    api: true,
-  })
+  const [globalModules, setGlobalModules] = useState({})
+  const [orgModules, setOrgModules] = useState({})
+  const [globalModuleList, setGlobalModuleList] = useState([])
+  const [orgModuleList, setOrgModuleList] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
 
-  const [orgModules, setOrgModules] = useState({
-    visa: true,
-    expenses: true,
-    assetManagement: false,
-    apiOverride: false,
-  })
-
-  const handleGlobalToggle = (module) => {
-    setGlobalModules((prev) => ({ ...prev, [module]: !prev[module] }))
+  const iconByModuleKey = {
+    employee_directory: HiUsers,
+    attendance: HiClock,
+    leave: HiCalendarDays,
+    payroll: HiBanknotes,
+    performance: HiChartBar,
+    onboarding_exit: HiUserPlus,
+    api: HiCommandLine,
+    visa: HiGlobeAlt,
+    expenses: HiBanknotes,
+    asset_management: HiSquares2X2,
+    api_override: HiWrenchScrewdriver,
   }
 
-  const handleOrgToggle = (module) => {
-    setOrgModules((prev) => ({ ...prev, [module]: !prev[module] }))
+  const fetchModules = async () => {
+    try {
+      setIsLoading(true)
+      const response = await superadminService.getModules()
+      const modules = response?.data?.data?.modules || []
+      const globals = modules.filter((m) => m.scope === 'global')
+      const orgs = modules.filter((m) => m.scope === 'organization')
+      setGlobalModuleList(globals.map((m) => ({
+        key: m.module_key,
+        name: m.module_name,
+        description: m.description,
+        icon: iconByModuleKey[m.module_key] || HiSquares2X2,
+        tier: m.tier || 'Standard',
+      })))
+      setOrgModuleList(orgs.map((m) => ({
+        key: m.module_key,
+        name: m.module_name,
+        icon: iconByModuleKey[m.module_key] || HiSquares2X2,
+      })))
+      setGlobalModules(Object.fromEntries(globals.map((m) => [m.module_key, Boolean(m.is_enabled)])))
+      setOrgModules(Object.fromEntries(orgs.map((m) => [m.module_key, Boolean(m.is_enabled)])))
+    } catch (error) {
+      console.error('Failed to load modules:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Load Failed',
+        text: error.response?.data?.message || 'Failed to load modules.',
+        confirmButtonColor: '#2563eb',
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const globalModuleList = [
-    { key: 'employeeDirectory', name: 'Employee Directory', description: 'Core human resource directory and profile management.', icon: HiUsers, tier: 'Essential' },
-    { key: 'attendance', name: 'Attendance & Timesheet', description: 'Real-time clock-in/out and automated timesheet generation.', icon: HiClock, tier: 'Essential' },
-    { key: 'leave', name: 'Leave Management', description: 'Policy-based leave requests and approval workflows.', icon: HiCalendarDays, tier: 'Essential' },
-    { key: 'payroll', name: 'Payroll & Salary', description: 'Automated salary calculation and pay slip generation.', icon: HiBanknotes, tier: 'Advanced' },
-    { key: 'performance', name: 'Performance Management', description: 'KPI tracking, appraisal cycles, and feedback loops.', icon: HiChartBar, tier: 'Strategic' },
-    { key: 'onboardingExit', name: 'Onboarding & Exit', description: 'Structured workflows for employee lifecycle transitions.', icon: HiUserPlus, tier: 'Strategic' },
-    { key: 'api', name: 'Advanced API access', description: 'Secure GraphQL/REST endpoints for third-party integration.', icon: HiCommandLine, tier: 'Enterprise' },
-  ]
+  useEffect(() => {
+    fetchModules()
+  }, [])
 
-  const orgModuleList = [
-    { key: 'visa', name: 'Visa & Nationality', icon: HiGlobeAlt },
-    { key: 'expenses', name: 'Expense Management', icon: HiBanknotes },
-    { key: 'assetManagement', name: 'Asset Inventory', icon: HiSquares2X2 },
-    { key: 'apiOverride', name: 'Infrastructure API Override', icon: HiWrenchScrewdriver },
-  ]
+  const handleGlobalToggle = async (moduleKey) => {
+    const next = !globalModules[moduleKey]
+    try {
+      await superadminService.updateModule(moduleKey, { isEnabled: next })
+      setGlobalModules((prev) => ({ ...prev, [moduleKey]: next }))
+      Swal.fire({
+        icon: 'success',
+        title: 'Module Updated',
+        text: `Global module ${next ? 'enabled' : 'disabled'} successfully.`,
+        timer: 1200,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('Failed to update module:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: error.response?.data?.message || 'Failed to update module.',
+        confirmButtonColor: '#2563eb',
+      })
+    }
+  }
+
+  const handleOrgToggle = async (moduleKey) => {
+    const next = !orgModules[moduleKey]
+    try {
+      await superadminService.updateModule(moduleKey, { isEnabled: next })
+      setOrgModules((prev) => ({ ...prev, [moduleKey]: next }))
+      Swal.fire({
+        icon: 'success',
+        title: 'Override Updated',
+        text: `Organization module ${next ? 'enabled' : 'disabled'} successfully.`,
+        timer: 1200,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('Failed to update module:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: error.response?.data?.message || 'Failed to update module.',
+        confirmButtonColor: '#2563eb',
+      })
+    }
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -124,12 +187,12 @@ export default function ModuleManagement() {
                       <div className="text-[11px] font-medium text-slate-400 mt-0.5 leading-relaxed">{module.description}</div>
                     </div>
                   </div>
-                  <Toggle checked={globalModules[module.key]} onChange={() => handleGlobalToggle(module.key)} />
+                      <Toggle checked={Boolean(globalModules[module.key])} onChange={() => handleGlobalToggle(module.key)} />
                 </div>
               )
             })}
           </div>
-          <Button label="Save" variant="primary" className="w-full mt-8 py-4 shadow-lg shadow-blue-200" />
+          <Button label={isLoading ? 'Loading...' : 'Synced'} variant="primary" className="w-full mt-8 py-4 shadow-lg shadow-blue-200" disabled />
         </div>
 
         {/* Override Section */}
@@ -169,12 +232,12 @@ export default function ModuleManagement() {
                     </div>
                     <span className="text-sm font-semibold text-slate-900 tracking-tight">{module.name}</span>
                   </div>
-                  <Toggle checked={orgModules[module.key]} onChange={() => handleOrgToggle(module.key)} />
+                  <Toggle checked={Boolean(orgModules[module.key])} onChange={() => handleOrgToggle(module.key)} />
                 </div>
               )
             })}
           </div>
-          <Button label="Save Changes" variant="primary" size="sm" className="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 border-none" />
+          <Button label={isLoading ? 'Loading...' : 'Synced'} variant="primary" size="sm" className="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 border-none" disabled />
         </div>
       </div>
     </div>

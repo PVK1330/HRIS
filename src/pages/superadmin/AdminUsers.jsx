@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
-import { 
-  HiPencilSquare, 
-  HiUserPlus, 
-  HiTrash, 
-  HiEnvelope, 
+import { useEffect, useMemo, useState } from 'react'
+import Swal from 'sweetalert2'
+import {
+  HiPencilSquare,
+  HiUserPlus,
+  HiTrash,
+  HiEnvelope,
   HiShieldCheck,
   HiMagnifyingGlass,
   HiXMark,
@@ -18,10 +19,11 @@ import { Button } from '../../components/ui/Button.jsx'
 import { Input } from '../../components/ui/Input.jsx'
 import { Table } from '../../components/ui/Table.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
-import { adminUsers as initialUsers } from '../../data/mockData.js'
+import { superadminService } from '../../services/superadminService'
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState(initialUsers)
+  const [users, setUsers] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
   const [q, setQ] = useState('')
 
   // Modal states
@@ -34,31 +36,88 @@ export default function AdminUsers() {
   const [editForm, setEditForm] = useState({ name: '', email: '', role: 'Super Admin', status: 'Active' })
   const [errors, setErrors] = useState({})
 
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const generateTempPassword = () => {
+    const random = Math.random().toString(36).slice(-6)
+    return `Tmp@${random}A1`
+  }
+
+  const mapRoleLabel = (roleKey) => String(roleKey || 'superadmin')
+    .split('_')
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ')
+
+  const mapApiUser = (user) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: mapRoleLabel(user.role),
+    status: user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Active',
+    lastLogin: user.last_login_at ? new Date(user.last_login_at).toLocaleString() : 'Never',
+  })
+
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true)
+      const response = await superadminService.getAdminUsers()
+      const list = response?.data?.data?.users || []
+      setUsers(list.map(mapApiUser))
+    } catch (error) {
+      console.error('Failed to fetch admin users:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Load Failed',
+        text: error.response?.data?.message || 'Failed to load admin users.',
+        confirmButtonColor: '#2563eb',
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
     if (!query) return users
     return users.filter((u) => `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(query))
   }, [q, users])
 
-  const handleInvite = () => {
+  const handleInvite = async () => {
     if (!inviteForm.name || !inviteForm.email) {
       setErrors({ name: !inviteForm.name, email: !inviteForm.email })
       return
     }
 
-    const newUser = {
-      id: `au${Date.now()}`,
-      name: inviteForm.name,
-      email: inviteForm.email,
-      role: inviteForm.role,
-      lastLogin: 'Never',
-      status: 'Pending',
+    try {
+      const tempPassword = generateTempPassword()
+      await superadminService.createAdminUser({
+        name: inviteForm.name,
+        email: inviteForm.email,
+        password: tempPassword,
+        role: inviteForm.role.toLowerCase().replace(/\s+/g, '_'),
+        status: 'pending',
+      })
+      await fetchUsers()
+      setShowInviteModal(false)
+      setInviteForm({ name: '', email: '', role: 'Super Admin', sendEmail: true })
+      setErrors({})
+      Swal.fire({
+        icon: 'success',
+        title: 'User Invited',
+        text: `Admin user created successfully. Temporary password: ${tempPassword}`,
+        confirmButtonColor: '#2563eb',
+      })
+    } catch (error) {
+      console.error('Failed to create admin user:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Invite Failed',
+        text: error.response?.data?.message || 'Failed to create admin user.',
+        confirmButtonColor: '#2563eb',
+      })
     }
-
-    setUsers([newUser, ...users])
-    setShowInviteModal(false)
-    setInviteForm({ name: '', email: '', role: 'Super Admin', sendEmail: true })
-    setErrors({})
   }
 
   const handleEditClick = (user) => {
@@ -67,20 +126,60 @@ export default function AdminUsers() {
     setShowEditModal(true)
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editForm.name) {
       setErrors({ name: true })
       return
     }
-    setUsers(users.map(u => u.id === selectedUser.id ? { ...u, ...editForm } : u))
-    setShowEditModal(false)
-    setErrors({})
+    try {
+      await superadminService.updateAdminUser(selectedUser.id, {
+        name: editForm.name,
+        role: editForm.role.toLowerCase().replace(/\s+/g, '_'),
+        status: editForm.status.toLowerCase(),
+      })
+      await fetchUsers()
+      setShowEditModal(false)
+      setErrors({})
+      Swal.fire({
+        icon: 'success',
+        title: 'User Updated',
+        text: 'Admin user details have been updated.',
+        timer: 1500,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('Failed to update admin user:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: error.response?.data?.message || 'Failed to update admin user.',
+        confirmButtonColor: '#2563eb',
+      })
+    }
   }
 
-  const handleRevoke = () => {
+  const handleRevoke = async () => {
     if (window.confirm(`Are you sure you want to revoke access for ${selectedUser.name}?`)) {
-      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, status: 'Inactive' } : u))
-      setShowEditModal(false)
+      try {
+        await superadminService.updateAdminUser(selectedUser.id, { status: 'inactive' })
+        await fetchUsers()
+        setShowEditModal(false)
+        Swal.fire({
+          icon: 'success',
+          title: 'Access Revoked',
+          text: `${selectedUser.name} is now inactive.`,
+          timer: 1500,
+          showConfirmButton: false,
+        })
+      } catch (error) {
+        console.error('Failed to revoke admin user:', error)
+        Swal.fire({
+          icon: 'error',
+          title: 'Revoke Failed',
+          text: error.response?.data?.message || 'Failed to revoke admin user.',
+          confirmButtonColor: '#2563eb',
+        })
+      }
     }
   }
 
@@ -92,18 +191,18 @@ export default function AdminUsers() {
       <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-             <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
-                <HiUserCircle className="h-4.5 w-4.5" />
-             </div>
-             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Admin Users</h1>
-             <div className="group relative">
-                <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-blue-500 transition-colors" />
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
-                   <p className="font-bold text-blue-400 mb-1 uppercase tracking-widest">Internal Team</p>
-                   Manage your internal staff who have access to this superadmin panel.
-                   <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
-                </div>
-             </div>
+            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
+              <HiUserCircle className="h-4.5 w-4.5" />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Admin Users</h1>
+            <div className="group relative">
+              <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-blue-500 transition-colors" />
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
+                <p className="font-bold text-blue-400 mb-1 uppercase tracking-widest">Internal Team</p>
+                Manage your internal staff who have access to this superadmin panel.
+                <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+              </div>
+            </div>
           </div>
           <p className="text-[11px] font-medium text-slate-500">Manage internal staff members.</p>
         </div>
@@ -113,7 +212,7 @@ export default function AdminUsers() {
       <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
         <div className="relative flex-1 group w-full">
           <HiMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-          <input 
+          <input
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-transparent rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:border-blue-500/20 transition-all outline-none"
             placeholder="Search team members..."
             value={q}
@@ -121,21 +220,21 @@ export default function AdminUsers() {
           />
         </div>
         <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100 w-full sm:w-auto">
-           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Pool</span>
-           <span className="text-xs font-bold text-slate-900">{filtered.length} Staff</span>
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Pool</span>
+          <span className="text-xs font-bold text-slate-900">{isLoading ? 'Loading...' : `${filtered.length} Staff`}</span>
         </div>
       </div>
 
       {/* Team Member Table */}
       <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-        <Table 
+        <Table
           columns={[
             { key: 'user', label: 'Admin User' },
             { key: 'role', label: 'Role' },
             { key: 'lastLogin', label: 'Last Login' },
             { key: 'status', label: 'Status' },
             { key: 'actions', label: 'Actions' },
-          ]} 
+          ]}
           data={filtered.map(u => ({
             user: (
               <div className="flex items-center gap-4 py-2">
@@ -154,27 +253,27 @@ export default function AdminUsers() {
             actions: (
               <Button variant="ghost" size="sm" icon={HiPencilSquare} className="text-slate-400 hover:text-blue-600" onClick={() => handleEditClick(u)} />
             )
-          }))} 
+          }))}
         />
       </div>
 
       {/* Invite Modal */}
-      <Modal 
-        isOpen={showInviteModal} 
-        onClose={() => setShowInviteModal(false)} 
-        title="Provision Team Member" 
+      <Modal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        title="Provision Team Member"
         description="Initialize a new administrative credentials for an HRIS staff member."
         icon={HiPlus}
         size="lg"
       >
         <div className="space-y-8 p-2">
           <div className="p-6 bg-blue-50/50 rounded-[1.5rem] border border-blue-100 flex gap-4 items-start">
-             <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm">
-                <HiFingerPrint className="h-6 w-6" />
-             </div>
-             <p className="text-xs text-blue-700 font-medium leading-relaxed">
-               Secure credentials will be dispatched via encrypted email. The staff member will be required to configure multi-factor authentication (MFA) upon first access.
-             </p>
+            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm">
+              <HiFingerPrint className="h-6 w-6" />
+            </div>
+            <p className="text-xs text-blue-700 font-medium leading-relaxed">
+              Secure credentials will be dispatched via encrypted email. The staff member will be required to configure multi-factor authentication (MFA) upon first access.
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input label="Staff Identity *" placeholder="e.g. Sarah Wilson" value={inviteForm.name} onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })} />
@@ -194,9 +293,9 @@ export default function AdminUsers() {
       </Modal>
 
       {/* Edit Modal */}
-      <Modal 
-        isOpen={showEditModal} 
-        onClose={() => setShowEditModal(false)} 
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
         title="Manage Staff Credentials"
         description="Modify internal administrative metadata and orchestration rights."
         icon={HiPencilSquare}
