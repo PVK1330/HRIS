@@ -39,6 +39,7 @@ export default function TenantManagement() {
 
   // Data State
   const [organizations, setOrganizations] = useState([])
+  const [plans, setPlans] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(0) // 0-indexed for UI, 1-indexed for API
@@ -46,7 +47,23 @@ export default function TenantManagement() {
 
   useEffect(() => {
     fetchTenants(currentPage)
+    fetchPlans()
   }, [currentPage])
+
+  const fetchPlans = async () => {
+    try {
+      const response = await api.get('/superadmin/plans/active')
+      setPlans(response.data.data)
+      
+      // Update initial form states if plans are loaded
+      if (response.data.data.length > 0) {
+        setNewForm(prev => ({ ...prev, plan: response.data.data[0].id }))
+        setEditForm(prev => ({ ...prev, plan: response.data.data[0].id }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch plans:', error)
+    }
+  }
 
   const fetchTenants = async (page = 0) => {
     try {
@@ -69,7 +86,7 @@ export default function TenantManagement() {
           dbName: t.db_name,
           domain: `${slug}.${baseDomain}`,
           adminEmail: t.admin_email,
-          plan: 'Starter', // Default for now
+          plan: t.plan || 'Free', // Use plan from API or default to Free
           users: 0,
           maxUsers: 100,
           storage: 0,
@@ -105,8 +122,8 @@ export default function TenantManagement() {
 
   // Form States
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' })
-  const [editForm, setEditForm] = useState({ name: '', adminEmail: '', plan: 'Starter', billingCycle: 'Monthly', maxUsers: 50, status: 'Active' })
-  const [newForm, setNewForm] = useState({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' })
+  const [editForm, setEditForm] = useState({ name: '', adminEmail: '', plan: '', billingCycle: 'Monthly', maxUsers: 50, status: 'Active' })
+  const [newForm, setNewForm] = useState({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: '', billingCycle: 'Monthly' })
   const [errors, setErrors] = useState({})
 
   const filteredOrganizations = useMemo(() => {
@@ -195,7 +212,8 @@ export default function TenantManagement() {
         name: newForm.name,
         adminEmail: newForm.adminEmail,
         adminName: newForm.adminName,
-        adminPassword: newForm.adminPassword
+        adminPassword: newForm.adminPassword,
+        plan_id: newForm.plan
       })
 
       setShowNewModal(false)
@@ -334,10 +352,9 @@ export default function TenantManagement() {
             <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Subscription Plan</label>
             <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all appearance-none cursor-pointer" value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
               <option value="all">All Ecosystem Tiers</option>
-              <option>Starter</option>
-              <option>Growth</option>
-              <option>Pro</option>
-              <option>Enterprise</option>
+              {plans.map(plan => (
+                <option key={plan.id} value={plan.plan_name}>{plan.plan_name}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -421,7 +438,9 @@ export default function TenantManagement() {
             <div>
               <label className="mb-2 block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Subscription Tier</label>
               <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer" value={newForm.plan} onChange={(e) => setNewForm({ ...newForm, plan: e.target.value })}>
-                <option>Starter</option><option>Growth</option><option>Pro</option><option>Enterprise</option>
+                {plans.map(plan => (
+                  <option key={plan.id} value={plan.id}>{plan.plan_name}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -509,7 +528,9 @@ export default function TenantManagement() {
             <div>
               <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Ecosystem Plan</label>
               <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all" value={editForm.plan} onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}>
-                <option>Starter</option><option>Growth</option><option>Pro</option><option>Enterprise</option>
+                {plans.map(plan => (
+                  <option key={plan.id} value={plan.plan_name}>{plan.plan_name}</option>
+                ))}
               </select>
             </div>
             <div>

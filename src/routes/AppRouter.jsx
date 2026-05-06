@@ -36,6 +36,7 @@ import Payroll from "../pages/admin/finance/Payroll.jsx";
 import PlatformDashboard from "../pages/superadmin/platform/Dashboard.jsx";
 import TenantManagement from "../pages/superadmin/tenants/TenantManagement.jsx";
 import SubscriptionsPlans from "../pages/superadmin/subscriptions/SubscriptionsPlans.jsx";
+import SubscriptionFeatures from "../pages/superadmin/subscriptions/SubscriptionFeatures.jsx";
 import Billing from "../pages/superadmin/billing/Billing.jsx";
 import ModuleManagement from "../pages/superadmin/platform/ModuleManagement.jsx";
 import Announcements from "../pages/superadmin/platform/Announcements.jsx";
@@ -143,6 +144,7 @@ export const router = createBrowserRouter([
           { path: "dashboard", element: <PlatformDashboard /> },
           { path: "tenants", element: <TenantManagement /> },
           { path: "subscriptions", element: <SubscriptionsPlans /> },
+          { path: "subscription-features", element: <SubscriptionFeatures /> },
           { path: "billing", element: <Billing /> },
           { path: "modules", element: <ModuleManagement /> },
           { path: "announcements", element: <Announcements /> },

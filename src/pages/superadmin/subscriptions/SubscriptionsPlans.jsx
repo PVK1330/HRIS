@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { StatCard } from '../../../components/ui/StatCard.jsx'
-import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
+import { superadminService } from '../../../services/superadminService.js'
 import { 
-  HiCheck, 
+  HiCheck,
   HiCurrencyDollar, 
   HiUsers, 
   HiExclamationTriangle,
@@ -17,7 +17,7 @@ import {
   HiServerStack,
   HiCheckCircle,
   HiPlus,
-  HiTrash
+  HiXCircle
 } from 'react-icons/hi2'
 
 export default function SubscriptionsPlans() {
@@ -26,66 +26,29 @@ export default function SubscriptionsPlans() {
   const [showDeletePlanModal, setShowDeletePlanModal] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState(null)
 
-  const [plans, setPlans] = useState([
-    {
-      id: 1,
-      name: 'Starter',
-      monthlyPrice: 299,
-      annualPrice: 2691,
-      maxUsers: 50,
-      storage: 5,
-      modules: ['Employee Directory', 'Attendance', 'Leave', 'Documents'],
-      orgs: 12,
-      color: 'gray',
-    },
-    {
-      id: 2,
-      name: 'Growth',
-      monthlyPrice: 699,
-      annualPrice: 6291,
-      maxUsers: 200,
-      storage: 20,
-      modules: ['Employee Directory', 'Attendance', 'Leave', 'Documents', 'Performance', 'Onboarding', 'Exit'],
-      orgs: 18,
-      color: 'cyan',
-    },
-    {
-      id: 3,
-      name: 'Pro',
-      monthlyPrice: 1299,
-      annualPrice: 11691,
-      maxUsers: 300,
-      storage: 30,
-      modules: ['Employee Directory', 'Attendance', 'Leave', 'Documents', 'Performance', 'Onboarding', 'Exit', 'Payroll', 'Visa', 'Expenses'],
-      orgs: 11,
-      color: 'indigo',
-    },
-    {
-      id: 4,
-      name: 'Enterprise',
-      monthlyPrice: 2999,
-      annualPrice: 26991,
-      maxUsers: 500,
-      storage: 50,
-      modules: ['All Modules', 'API Access', 'Priority Support'],
-      orgs: 7,
-      color: 'amber',
-    },
-  ])
+  const [plans, setPlans] = useState([])
+  const [allFeatures, setAllFeatures] = useState([])
+  const [selectedFeatures, setSelectedFeatures] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [formError, setFormError] = useState(null)
 
-  const [editForm, setEditForm] = useState({
-    name: '',
-    monthlyPrice: 0,
-    annualPrice: 0,
-    maxUsers: 0,
-    storage: 0,
-    modules: []
-  })
+  const initialForm = {
+    plan_name: '',
+    plan_code: '',
+    plan_description: '',
+    monthly_price: 0,
+    annual_price: 0,
+    user_quota: 0,
+    storage_quota_gb: 0,
+    company_quota: 1,
+    trial_days: 0,
+    support_level: '',
+    isActive: true
+  }
 
-  const modulesList = [
-    'Employee Directory', 'Attendance', 'Leave', 'Documents', 'Payroll', 'Performance',
-    'Onboarding', 'Exit', 'Expenses', 'Visa', 'API Access', 'Priority Support'
-  ]
+  const [newPlan, setNewPlan] = useState(initialForm)
+  const [editForm, setEditForm] = useState(initialForm)
 
   const planColor = (plan) => {
     const colors = {
@@ -97,22 +60,87 @@ export default function SubscriptionsPlans() {
     return colors[plan] || 'gray'
   }
 
-  const handleEditClick = (plan) => {
-    setSelectedPlan(plan)
-    setEditForm({
-      name: plan.name,
-      monthlyPrice: plan.monthlyPrice,
-      annualPrice: plan.annualPrice,
-      maxUsers: plan.maxUsers,
-      storage: plan.storage,
-      modules: plan.modules
-    })
-    setShowEditPlanModal(true)
+  const fetchPlans = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await superadminService.getPlans()
+      if (response.data?.success) {
+        setPlans(response.data.data || [])
+      } else {
+        setPlans([])
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch plans')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleSavePlan = () => {
-    setPlans(plans.map(p => p.id === selectedPlan.id ? { ...p, ...editForm } : p))
-    setShowEditPlanModal(false)
+  const fetchFeatures = async () => {
+    try {
+      const response = await superadminService.getActiveFeatures()
+      if (response.data?.success) {
+        setAllFeatures(response.data.data || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch features:', err)
+    }
+  }
+
+  useEffect(() => {
+    fetchPlans()
+    fetchFeatures()
+  }, [])
+
+  const handleEditClick = async (plan) => {
+    try {
+      setLoading(true)
+      const response = await superadminService.getPlanById(plan.id)
+      const planData = response.data.data
+      
+      setSelectedPlan(planData)
+      setEditForm({
+        plan_name: planData.plan_name || '',
+        plan_code: planData.plan_code || '',
+        plan_description: planData.plan_description || '',
+        monthly_price: Number(planData.monthly_price || 0),
+        annual_price: Number(planData.annual_price || 0),
+        user_quota: Number(planData.user_quota || 0),
+        storage_quota_gb: Number(planData.storage_quota_gb || 0),
+        company_quota: Number(planData.company_quota || 1),
+        trial_days: Number(planData.trial_days || 0),
+        support_level: planData.support_level || '',
+        isActive: Boolean(planData.is_active)
+      })
+      
+      // Set selected features from plan details
+      setSelectedFeatures(planData.features ? planData.features.map(f => f.id) : [])
+      
+      setFormError(null)
+      setShowEditPlanModal(true)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch plan details')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSavePlan = async () => {
+    try {
+      setFormError(null)
+      await superadminService.updatePlan(selectedPlan.id, editForm)
+      
+      // Update features
+      await superadminService.updatePlanFeatures(selectedPlan.id, selectedFeatures)
+      
+      await fetchPlans()
+      setShowEditPlanModal(false)
+      setSelectedPlan(null)
+      setSelectedFeatures([])
+    } catch (err) {
+      setFormError(err.response?.data?.message || 'Failed to update plan')
+    }
   }
 
   const handleDeleteClick = () => {
@@ -120,18 +148,43 @@ export default function SubscriptionsPlans() {
     setShowDeletePlanModal(true)
   }
 
-  const executeDelete = () => {
-    setPlans(plans.filter(p => p.id !== selectedPlan.id))
-    setShowDeletePlanModal(false)
+  const executeDelete = async () => {
+    try {
+      await superadminService.deletePlan(selectedPlan.id)
+      await fetchPlans()
+      setShowDeletePlanModal(false)
+      setSelectedPlan(null)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete plan')
+      setShowDeletePlanModal(false)
+    }
   }
 
-  const toggleModule = (module) => {
-    setEditForm(prev => ({
-      ...prev,
-      modules: prev.modules.includes(module) 
-        ? prev.modules.filter(m => m !== module)
-        : [...prev.modules, module]
-    }))
+  const handleCreatePlan = async () => {
+    try {
+      setFormError(null)
+      const response = await superadminService.createPlan(newPlan)
+      
+      // If plan created, sync features
+      if (response.data?.success && response.data.data?.id) {
+        await superadminService.updatePlanFeatures(response.data.data.id, selectedFeatures)
+      }
+      
+      await fetchPlans()
+      setShowAddPlanModal(false)
+      setNewPlan(initialForm)
+      setSelectedFeatures([])
+    } catch (err) {
+      setFormError(err.response?.data?.message || 'Failed to create plan')
+    }
+  }
+
+  const toggleFeature = (featureId) => {
+    setSelectedFeatures(prev => 
+      prev.includes(featureId) 
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
+    )
   }
 
   return (
@@ -160,61 +213,79 @@ export default function SubscriptionsPlans() {
 
       {/* Premium Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="ACTIVE PLANS" value={plans.length.toString()} icon={HiCheckCircle} trendColor="blue" />
-        <StatCard title="TOTAL CLIENTS" value="48" icon={HiUsers} trendColor="indigo" />
-        <StatCard title="MONTHLY REVENUE" value="$47.2k" valueColor="green" icon={HiCurrencyDollar} trendColor="green" />
-        <StatCard title="ANNUAL REVENUE" value="$566.4k" valueColor="indigo" icon={HiChartBar} trendColor="indigo" />
+        <StatCard title="ACTIVE PLANS" value={plans.filter((p) => p.is_active).length.toString()} icon={HiCheckCircle} trendColor="blue" />
+        <StatCard title="TOTAL PLAN SLOTS" value={plans.reduce((sum, p) => sum + Number(p.company_quota || 0), 0).toString()} icon={HiUsers} trendColor="indigo" />
+        <StatCard title="MONTHLY POTENTIAL" value={`$${plans.reduce((sum, p) => sum + Number(p.monthly_price || 0), 0)}`} valueColor="green" icon={HiCurrencyDollar} trendColor="green" />
+        <StatCard title="ANNUAL POTENTIAL" value={`$${plans.reduce((sum, p) => sum + Number(p.annual_price || 0), 0)}`} valueColor="indigo" icon={HiChartBar} trendColor="indigo" />
       </div>
 
+      {error && (
+        <div className="rounded-2xl bg-red-50 p-4 flex items-center gap-3 border border-red-100">
+          <HiXCircle className="h-5 w-5 text-red-500" />
+          <p className="text-sm font-medium text-red-700">{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">×</button>
+        </div>
+      )}
+
       {/* Plans Matrix */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan) => (
           <div key={plan.id} className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:shadow-md group flex flex-col">
             <div className="mb-4 flex justify-between items-start">
-               <Badge label={plan.name} color={planColor(plan.name)} variant="glass" />
+               <Badge label={plan.plan_name} color={planColor(plan.plan_name)} variant="glass" />
                <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
                   <HiCreditCard className="h-5 w-5" />
                </div>
             </div>
             
             <div className="mb-1 flex items-baseline gap-1">
-              <span className="text-4xl font-black text-slate-900 tracking-tighter">${plan.monthlyPrice}</span>
+              <span className="text-4xl font-black text-slate-900 tracking-tighter">${Number(plan.monthly_price || 0)}</span>
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">/ Month</span>
             </div>
             <div className="mb-8 text-[11px] font-black text-emerald-500 uppercase tracking-widest">
-              ${plan.annualPrice} / Year (Billed Annually)
+              ${Number(plan.annual_price || 0)} / Year (Billed Annually)
             </div>
 
             <div className="space-y-4 mb-8 flex-1">
               <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 border border-slate-50 transition-colors group-hover:bg-white group-hover:border-slate-100">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Users</span>
-                <span className="text-sm font-black text-slate-900">{plan.maxUsers} Max</span>
+                <span className="text-sm font-black text-slate-900">{Number(plan.user_quota || 0)} Max</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 border border-slate-50 transition-colors group-hover:bg-white group-hover:border-slate-100">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Storage</span>
-                <span className="text-sm font-black text-slate-900">{plan.storage} GB</span>
+                <span className="text-sm font-black text-slate-900">{Number(plan.storage_quota_gb || 0)} GB</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 border border-slate-50 transition-colors group-hover:bg-white group-hover:border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clients</span>
-                <span className="text-sm font-black text-slate-900">{plan.orgs} Active</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Companies</span>
+                <span className="text-sm font-black text-slate-900">{Number(plan.company_quota || 1)} Max</span>
               </div>
             </div>
 
             <div className="space-y-3 mb-8">
-               <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4">Features</h4>
-               {plan.modules.slice(0, 4).map((module, idx) => (
-                  <div key={idx} className="flex items-center gap-2.5 text-[11px] font-bold text-slate-600">
-                    <div className="h-4 w-4 rounded-full bg-emerald-50 flex items-center justify-center">
-                       <HiCheck className="h-2.5 w-2.5 text-emerald-600" />
-                    </div>
-                    {module}
-                  </div>
-                ))}
-                {plan.modules.length > 4 && (
-                  <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest pt-1">
-                    + {plan.modules.length - 4} Strategic Modules
-                  </div>
-                )}
+              <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4">Plan Meta</h4>
+              <div className="flex items-center gap-2.5 text-[11px] font-bold text-slate-600">
+                <div className="h-4 w-4 rounded-full bg-emerald-50 flex items-center justify-center">
+                  <HiCheck className="h-2.5 w-2.5 text-emerald-600" />
+                </div>
+                Code: {plan.plan_code}
+              </div>
+              <div className="flex items-center gap-2.5 text-[11px] font-bold text-slate-600">
+                <div className="h-4 w-4 rounded-full bg-emerald-50 flex items-center justify-center">
+                  <HiCheck className="h-2.5 w-2.5 text-emerald-600" />
+                </div>
+                Trial: {Number(plan.trial_days || 0)} Days
+              </div>
+              <div className="flex items-center gap-2.5 text-[11px] font-bold text-slate-600">
+                <div className="h-4 w-4 rounded-full bg-emerald-50 flex items-center justify-center">
+                  <HiCheck className="h-2.5 w-2.5 text-emerald-600" />
+                </div>
+                Support: {plan.support_level || 'Standard'}
+              </div>
             </div>
 
             <div className="flex gap-3 pt-6 border-t border-slate-50">
@@ -223,28 +294,31 @@ export default function SubscriptionsPlans() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Edit Tier Modal */}
       <Modal
         isOpen={showEditPlanModal}
         onClose={() => setShowEditPlanModal(false)}
-        title={selectedPlan ? `Edit Plan: ${selectedPlan.name}` : 'Edit Plan'}
+        title={selectedPlan ? `Edit Plan: ${selectedPlan.plan_name}` : 'Edit Plan'}
         description="Modify pricing, user limits, and features."
         icon={HiCreditCard}
         size="lg"
       >
         <div className="space-y-8 p-2">
+          {formError && <p className="text-xs font-medium text-red-600">{formError}</p>}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <Input label="Plan Name *" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+            <Input label="Plan Name *" value={editForm.plan_name} onChange={(e) => setEditForm({ ...editForm, plan_name: e.target.value })} />
+            <Input label="Plan Code *" value={editForm.plan_code} onChange={(e) => setEditForm({ ...editForm, plan_code: e.target.value.toLowerCase().replace(/\s/g, '_') })} />
             <div className="space-y-1">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Monthly Price ($) *</label>
               <input
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-3.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                 type="number"
-                value={editForm.monthlyPrice}
+                value={editForm.monthly_price}
                 onChange={(e) => {
                    const monthly = parseInt(e.target.value) || 0
-                   setEditForm({ ...editForm, monthlyPrice: monthly, annualPrice: Math.round(monthly * 10.8) })
+                   setEditForm({ ...editForm, monthly_price: monthly, annual_price: Math.round(monthly * 10.8) })
                 }}
               />
             </div>
@@ -253,28 +327,43 @@ export default function SubscriptionsPlans() {
               <input
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-3.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                 type="number"
-                value={editForm.annualPrice}
-                onChange={(e) => setEditForm({ ...editForm, annualPrice: parseInt(e.target.value) || 0 })}
+                value={editForm.annual_price}
+                onChange={(e) => setEditForm({ ...editForm, annual_price: parseInt(e.target.value) || 0 })}
               />
-              <p className="mt-1 px-1 text-[9px] text-emerald-500 font-black uppercase tracking-widest">Recommended: ${Math.round(editForm.monthlyPrice * 10.8)} (10% Optimization)</p>
+              <p className="mt-1 px-1 text-[9px] text-emerald-500 font-black uppercase tracking-widest">Recommended: ${Math.round(editForm.monthly_price * 10.8)} (10% Optimization)</p>
             </div>
-            <Input label="User Limit" type="number" value={editForm.maxUsers} onChange={(e) => setEditForm({ ...editForm, maxUsers: parseInt(e.target.value) || 0 })} />
-            <Input label="Storage Limit (GB)" type="number" value={editForm.storage} onChange={(e) => setEditForm({ ...editForm, storage: parseInt(e.target.value) || 0 })} />
+            <Input label="User Limit" type="number" value={editForm.user_quota} onChange={(e) => setEditForm({ ...editForm, user_quota: parseInt(e.target.value) || 0 })} />
+            <Input label="Storage Limit (GB)" type="number" value={editForm.storage_quota_gb} onChange={(e) => setEditForm({ ...editForm, storage_quota_gb: parseInt(e.target.value) || 0 })} />
+            <Input label="Company Limit" type="number" value={editForm.company_quota} onChange={(e) => setEditForm({ ...editForm, company_quota: parseInt(e.target.value) || 1 })} />
+            <Input label="Trial Days" type="number" value={editForm.trial_days} onChange={(e) => setEditForm({ ...editForm, trial_days: parseInt(e.target.value) || 0 })} />
+            <Input label="Support Level" value={editForm.support_level} onChange={(e) => setEditForm({ ...editForm, support_level: e.target.value })} />
           </div>
+          <Input label="Description" value={editForm.plan_description} onChange={(e) => setEditForm({ ...editForm, plan_description: e.target.value })} />
 
-          <div>
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1 mb-4 block">Feature Access</label>
-            <div className="grid grid-cols-2 gap-4">
-              {modulesList.map((module) => (
-                <label key={module} className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/30 hover:bg-white hover:shadow-xl transition-all cursor-pointer">
-                  <span className="text-xs font-bold text-slate-700">{module}</span>
-                  <input 
-                    type="checkbox" 
-                    className="h-5 w-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500/20 transition-all cursor-pointer" 
-                    checked={editForm.modules.includes(module)}
-                    onChange={() => toggleModule(module)}
-                  />
-                </label>
+          {/* Feature Selection */}
+          <div className="space-y-4">
+            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Included Features</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-1 pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+              {allFeatures.map(feature => (
+                <div 
+                  key={feature.id} 
+                  className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                    selectedFeatures.includes(feature.id) 
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                      : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:border-slate-200'
+                  }`}
+                  onClick={() => toggleFeature(feature.id)}
+                >
+                  <div className={`h-5 w-5 rounded-lg flex items-center justify-center transition-colors ${
+                    selectedFeatures.includes(feature.id) ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200'
+                  }`}>
+                    {selectedFeatures.includes(feature.id) && <HiCheck className="h-3.5 w-3.5" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold truncate">{feature.feature_name}</p>
+                    <p className="text-[9px] font-medium opacity-70 truncate">{feature.feature_code}</p>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -283,7 +372,7 @@ export default function SubscriptionsPlans() {
             <Button label="Purge Tier" variant="ghost" className="text-red-500 font-black uppercase tracking-widest text-[10px] border-none" onClick={handleDeleteClick} />
             <div className="flex gap-4">
               <Button label="Cancel" variant="ghost" className="font-black uppercase tracking-widest text-[10px] text-slate-400" onClick={() => setShowEditPlanModal(false)} />
-              <Button label="Save" variant="primary" className="bg-indigo-600 border-none shadow-lg shadow-indigo-100" onClick={handleSavePlan} />
+              <Button label="Save" variant="primary" className="bg-indigo-600 border-none shadow-lg shadow-indigo-100" onClick={handleSavePlan} disabled={!editForm.plan_name || !editForm.plan_code} />
             </div>
           </div>
         </div>
@@ -293,12 +382,12 @@ export default function SubscriptionsPlans() {
       <Modal
         isOpen={showDeletePlanModal}
         onClose={() => setShowDeletePlanModal(false)}
-        title={`Delete Plan: ${selectedPlan?.name}`}
-        description={`Warning: This plan is used by ${selectedPlan?.orgs} active organizations.`}
+        title={`Delete Plan: ${selectedPlan?.plan_name}`}
+        description="This action will deactivate the plan."
         icon={HiExclamationTriangle}
       >
         <div className="space-y-6 p-2">
-          {selectedPlan?.orgs > 0 && (
+          {Number(selectedPlan?.company_quota || 0) > 0 && (
             <div className="rounded-2xl bg-amber-50 p-5 flex items-start gap-4 border border-amber-100">
                <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
                   <HiServerStack className="h-6 w-6" />
@@ -306,7 +395,7 @@ export default function SubscriptionsPlans() {
                <div>
                   <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Active Organizations</p>
                   <p className="text-xs font-medium text-amber-800 leading-relaxed">
-                    You must move all {selectedPlan.orgs} organizations to another plan before you can delete this one.
+                    This plan allows up to {selectedPlan?.company_quota} organizations. Deleting sets the plan to inactive.
                   </p>
                </div>
             </div>
@@ -318,7 +407,6 @@ export default function SubscriptionsPlans() {
               label="Delete" 
               variant="danger" 
               className="bg-red-600 border-none text-[10px] font-black uppercase tracking-widest shadow-lg shadow-red-100"
-              disabled={selectedPlan?.orgs > 0} 
               onClick={executeDelete}
             />
           </div>
@@ -335,29 +423,51 @@ export default function SubscriptionsPlans() {
         size="lg"
       >
         <div className="space-y-8 p-2">
+          {formError && <p className="text-xs font-medium text-red-600">{formError}</p>}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <Input label="Tier Identity *" placeholder="e.g. Scaling Enterprise" />
-            <Input label="Monthly Billing ($) *" placeholder="999" type="number" />
-            <Input label="Annual Billing ($)" placeholder="9990" type="number" />
-            <Input label="User Node Quota" placeholder="500" type="number" />
-            <Input label="Storage Quota (GB)" placeholder="100" type="number" />
+            <Input label="Tier Identity *" placeholder="e.g. Scaling Enterprise" value={newPlan.plan_name} onChange={(e) => setNewPlan({ ...newPlan, plan_name: e.target.value })} />
+            <Input label="Plan Code *" placeholder="e.g. growth" value={newPlan.plan_code} onChange={(e) => setNewPlan({ ...newPlan, plan_code: e.target.value.toLowerCase().replace(/\s/g, '_') })} />
+            <Input label="Monthly Billing ($) *" placeholder="999" type="number" value={newPlan.monthly_price} onChange={(e) => setNewPlan({ ...newPlan, monthly_price: parseInt(e.target.value) || 0 })} />
+            <Input label="Annual Billing ($)" placeholder="9990" type="number" value={newPlan.annual_price} onChange={(e) => setNewPlan({ ...newPlan, annual_price: parseInt(e.target.value) || 0 })} />
+            <Input label="User Node Quota" placeholder="500" type="number" value={newPlan.user_quota} onChange={(e) => setNewPlan({ ...newPlan, user_quota: parseInt(e.target.value) || 0 })} />
+            <Input label="Storage Quota (GB)" placeholder="100" type="number" value={newPlan.storage_quota_gb} onChange={(e) => setNewPlan({ ...newPlan, storage_quota_gb: parseInt(e.target.value) || 0 })} />
+            <Input label="Company Quota" placeholder="1" type="number" value={newPlan.company_quota} onChange={(e) => setNewPlan({ ...newPlan, company_quota: parseInt(e.target.value) || 1 })} />
+            <Input label="Trial Days" placeholder="0" type="number" value={newPlan.trial_days} onChange={(e) => setNewPlan({ ...newPlan, trial_days: parseInt(e.target.value) || 0 })} />
+            <Input label="Support Level" placeholder="e.g. priority" value={newPlan.support_level} onChange={(e) => setNewPlan({ ...newPlan, support_level: e.target.value })} />
           </div>
+          <Input label="Description" placeholder="Plan details" value={newPlan.plan_description} onChange={(e) => setNewPlan({ ...newPlan, plan_description: e.target.value })} />
 
-          <div>
-             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1 mb-4 block">Default Capability Set</label>
-             <div className="grid grid-cols-2 gap-4">
-                {['Employee Directory', 'Attendance', 'Leave', 'Payroll', 'Documents', 'API Access', 'Priority Support'].map((module) => (
-                  <label key={module} className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/30 hover:bg-white hover:shadow-xl transition-all cursor-pointer">
-                    <span className="text-xs font-bold text-slate-700">{module}</span>
-                    <input type="checkbox" className="h-5 w-5 rounded-lg border-slate-300 text-indigo-600 transition-all" defaultChecked={['Employee Directory', 'Attendance', 'Leave', 'Documents'].includes(module)} />
-                  </label>
-                ))}
-             </div>
+          {/* Feature Selection */}
+          <div className="space-y-4">
+            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Included Features</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-1 pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+              {allFeatures.map(feature => (
+                <div 
+                  key={feature.id} 
+                  className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                    selectedFeatures.includes(feature.id) 
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                      : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:border-slate-200'
+                  }`}
+                  onClick={() => toggleFeature(feature.id)}
+                >
+                  <div className={`h-5 w-5 rounded-lg flex items-center justify-center transition-colors ${
+                    selectedFeatures.includes(feature.id) ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200'
+                  }`}>
+                    {selectedFeatures.includes(feature.id) && <HiCheck className="h-3.5 w-3.5" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold truncate">{feature.feature_name}</p>
+                    <p className="text-[9px] font-medium opacity-70 truncate">{feature.feature_code}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="flex gap-4 pt-6 border-t border-slate-50">
             <Button label="Cancel" variant="ghost" className="flex-1 font-black uppercase text-[10px] tracking-widest text-slate-400" onClick={() => setShowAddPlanModal(false)} />
-            <Button label="Save" variant="primary" className="flex-1 bg-indigo-600 border-none shadow-lg shadow-indigo-100" onClick={() => setShowAddPlanModal(false)} />
+            <Button label="Save" variant="primary" className="flex-1 bg-indigo-600 border-none shadow-lg shadow-indigo-100" onClick={handleCreatePlan} disabled={!newPlan.plan_name || !newPlan.plan_code} />
           </div>
         </div>
       </Modal>

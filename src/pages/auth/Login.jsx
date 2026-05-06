@@ -75,7 +75,12 @@ export default function Login() {
 
       // Standard login success
       const userData = isSuperAdmin ? result.data.superadmin : result.data.user
-      login(userData, result.data.token)
+      login(
+        userData, 
+        result.data.token, 
+        result.data.plan_details || [], 
+        result.data.plan_features || []
+      )
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Login failed'
       setError(msg)
@@ -99,7 +104,12 @@ export default function Login() {
         throw new Error(result.message || 'Verification failed')
       }
 
-      login(result.data.superadmin, result.data.token)
+      login(
+        result.data.superadmin, 
+        result.data.token, 
+        result.data.plan_details || [], 
+        result.data.plan_features || []
+      )
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Verification failed'
       setError(msg)
