@@ -8,6 +8,7 @@ const sizeClasses = {
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
   '2xl': 'max-w-6xl',
+  'custom': 'max-w-[1200px]'
 }
 
 export function Modal({ 
@@ -51,7 +52,7 @@ export function Modal({
 
       {/* Modal Box */}
       <div 
-        className={`relative w-full ${maxW} transform rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} h-full transform rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
       >

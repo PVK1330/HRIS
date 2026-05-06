@@ -83,7 +83,7 @@ export default function ExitManagement() {
     {
       key: 'actions',
       label: 'Actions',
-      render: () => <Button label="Open checklist" variant="ghost" size="sm" />,
+      render: () => <Button label="Open checklist" variant="danger" size="sm" />,
     },
   ]
 
@@ -226,7 +226,7 @@ export default function ExitManagement() {
               </div>
               <div className="flex items-center gap-2">
                 <Badge label="Generated" color="green" size="sm" />
-                <Button label="Download" variant="ghost" size="sm" />
+                <Button label="Download" size="sm" variant='danger' />
               </div>
             </div>
             <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
@@ -236,7 +236,7 @@ export default function ExitManagement() {
               </div>
               <div className="flex items-center gap-2">
                 <Badge label="Generated" color="green" size="sm" />
-                <Button label="Download" variant="ghost" size="sm" />
+                <Button label="Download" variant='danger'  size="sm" />
               </div>
             </div>
             <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
@@ -246,7 +246,7 @@ export default function ExitManagement() {
               </div>
               <div className="flex items-center gap-2">
                 <Badge label="Pending" color="orange" size="sm" />
-                <Button label="Generate" variant="ghost" size="sm" />
+                <Button label="Generate" variant='Approve' size="sm" />
               </div>
             </div>
           </div>
@@ -342,7 +342,7 @@ export default function ExitManagement() {
         </div>
       </div>
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Initiate Exit" size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Initiate Exit" size="xl">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
             Exit process

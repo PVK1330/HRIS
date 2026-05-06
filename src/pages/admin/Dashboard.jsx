@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button.jsx'
 import { Input } from '../../components/ui/Input.jsx'
 import { StatCard } from '../../components/ui/StatCard.jsx'
 import { Table } from '../../components/ui/Table.jsx'
+import { Modal } from '../../components/ui/Modal.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { employees } from '../../data/mockData.js'
 
@@ -22,6 +23,71 @@ const alertTone = {
   green: 'border-green-100 bg-green-50 text-green-800',
 }
 
+// Dummy announcements data
+const dummyAnnouncements = [
+  {
+    id: 1,
+    title: 'Company Annual Event',
+    date: '2026-04-25',
+    timing: '3:00 PM - 5:00 PM',
+    details: 'Join us for our annual company event featuring awards, networking, and light refreshments. Location: Main Conference Hall. RSVP required.',
+  },
+  {
+    id: 2,
+    title: 'System Maintenance',
+    date: '2026-04-20',
+    timing: '10:00 PM - 2:00 AM',
+    details: 'The HR system will be under maintenance. Please save your work before 10:00 PM. Expected downtime: 4 hours.',
+  },
+  {
+    id: 3,
+    title: 'Training Session: Professional Development',
+    date: '2026-05-10',
+    timing: '2:00 PM - 4:00 PM',
+    details: 'Mandatory training session on professional development and workplace ethics. Location: Training Room 1. Attendance required.',
+  },
+]
+
+// Full year holidays organized by month with day numbers
+const fullYearHolidays = {
+  0: [ // January
+    { name: 'New Year Day', date: 'Jan 1', day: 1 },
+  ],
+  1: [], // February
+  2: [], // March
+  3: [ // April
+    { name: 'Eid al-Fitr', date: 'Apr 10-11', days: [10, 11] },
+    { name: 'Founding Day', date: 'Apr 18', day: 18 },
+  ],
+  4: [ // May
+    { name: 'Labor Day', date: 'May 1', day: 1 },
+    { name: 'Memorial Day', date: 'May 26', day: 26 },
+  ],
+  5: [ // June
+    { name: 'Mid Year Event', date: 'Jun 15', day: 15 },
+  ],
+  6: [ // July
+    { name: 'Independence Day', date: 'Jul 4', day: 4 },
+  ],
+  7: [ // August
+    { name: 'Summer Break', date: 'Aug 1-15', days: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] },
+  ],
+  8: [ // September
+    { name: 'Labor Day', date: 'Sep 2', day: 2 },
+  ],
+  9: [ // October
+    { name: 'Diwali', date: 'Oct 20', day: 20 },
+  ],
+  10: [ // November
+    { name: 'Thanksgiving', date: 'Nov 27', day: 27 },
+  ],
+  11: [ // December
+    { name: 'Christmas Day', date: 'Dec 25', day: 25 },
+    { name: 'New Year Eve', date: 'Dec 31', day: 31 },
+    { name: 'Company Annual Event', date: 'Dec 28', day: 28 },
+  ],
+}
+
 export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -30,6 +96,8 @@ export default function Dashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [searchResults, setSearchResults] = useState([])
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
+  const [selectedMonthForHolidays, setSelectedMonthForHolidays] = useState(new Date().getMonth())
   
   const todayLabel = useMemo(
     () =>
@@ -144,17 +212,38 @@ export default function Dashboard() {
       const dayOfWeek = date.getDay()
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
       const isToday = date.toDateString() === today.toDateString()
-      const isHoliday = (i === 10 || i === 11) && month === 3
+      
+      // Check for holidays from fullYearHolidays
+      let isHoliday = false
+      let holidayName = null
+      const monthHolidays = fullYearHolidays[month] || []
+      for (const holiday of monthHolidays) {
+        const dayList = holiday.days || (holiday.day ? [holiday.day] : [])
+        if (dayList.includes(i)) {
+          isHoliday = true
+          holidayName = holiday.name
+          break
+        }
+      }
+      
       const isBirthday = i === 13 && month === 3
       const isAnniversary = i === 15 && month === 3
+      
+      // Check if there's an announcement on this day
+      const announcementOnDay = dummyAnnouncements.find((ann) => {
+        const annDate = new Date(ann.date)
+        return annDate.getDate() === i && annDate.getMonth() === month && annDate.getFullYear() === year
+      })
       
       days.push({
         day: i,
         isWeekend,
         isToday,
         isHoliday,
+        holidayName,
         isBirthday,
         isAnniversary,
+        announcement: announcementOnDay,
       })
     }
     return days
@@ -344,23 +433,40 @@ export default function Dashboard() {
                 return <div key={i} className="h-10" />
               }
               return (
-                <div
-                  key={i}
-                  className={`flex h-10 items-center justify-center rounded-lg text-xs cursor-pointer transition-colors ${
-                    day.isWeekend
-                      ? 'bg-gray-100 text-gray-400'
-                      : day.isToday
-                      ? 'bg-blue-500 text-white font-semibold'
-                      : day.isHoliday
-                      ? 'bg-purple-50 text-purple-600 font-semibold'
-                      : day.isBirthday
-                      ? 'bg-blue-50 text-blue-600 font-semibold'
-                      : day.isAnniversary
-                      ? 'bg-green-50 text-green-600 font-semibold'
-                      : 'bg-white border border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {day.day}
+                <div key={i} className="relative group">
+                  <button
+                    onClick={() => day.announcement && setSelectedAnnouncement(day.announcement)}
+                    disabled={!day.announcement}
+                    className={`flex h-10 items-center justify-center rounded-lg text-xs cursor-pointer transition-colors relative w-full ${
+                      day.isWeekend
+                        ? 'bg-gray-100 text-gray-400'
+                        : day.isToday
+                        ? 'bg-blue-500 text-white font-semibold'
+                        : day.isHoliday
+                        ? 'bg-purple-50 text-purple-600 font-semibold'
+                        : day.isBirthday
+                        ? 'bg-blue-50 text-blue-600 font-semibold'
+                        : day.isAnniversary
+                        ? 'bg-green-50 text-green-600 font-semibold'
+                        : day.announcement
+                        ? 'bg-orange-50 text-orange-600 font-semibold hover:bg-orange-100'
+                        : 'bg-white border border-gray-200 hover:bg-gray-50'
+                    }`}
+                    title={day.holidayName || day.announcement?.title || ''}
+                  >
+                    {day.day}
+                    {day.announcement && (
+                      <span className="absolute bottom-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-orange-500" />
+                    )}
+                    {day.isHoliday && (
+                      <span className="absolute bottom-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-purple-500" />
+                    )}
+                  </button>
+                  {(day.holidayName || day.announcement) && (
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-20 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                      {day.holidayName || day.announcement?.title}
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -371,19 +477,23 @@ export default function Dashboard() {
               <span className="text-gray-600">Today</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-purple-50" />
+              <div className="h-3 w-3 rounded bg-purple-500" />
               <span className="text-gray-600">Holiday</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-blue-50" />
+              <div className="h-3 w-3 rounded bg-blue-600" />
               <span className="text-gray-600">Birthday</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-green-50" />
+              <div className="h-3 w-3 rounded bg-green-600" />
               <span className="text-gray-600">Anniversary</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-gray-100" />
+              <div className="h-3 w-3 rounded bg-orange-500" />
+              <span className="text-gray-600">Announcement</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-gray-100 border border-gray-300" />
               <span className="text-gray-600">Weekend</span>
             </div>
           </div>
@@ -415,17 +525,51 @@ export default function Dashboard() {
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-lg font-bold text-gray-900">Upcoming Holidays</h2>
-            <ul className="mt-4 space-y-2 text-sm">
-              <li className="flex items-center justify-between text-gray-600">
-                <span>Eid al-Fitr</span>
-                <span className="font-medium text-gray-900">Apr 10-11</span>
-              </li>
-              <li className="flex items-center justify-between text-gray-600">
-                <span>Labor Day</span>
-                <span className="font-medium text-gray-900">May 1</span>
-              </li>
-            </ul>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-bold text-gray-900">Upcoming Holidays</h2>
+              <button
+                onClick={() => setSelectedMonthForHolidays(currentMonth.getMonth())}
+                className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-700"
+              >
+                Sync
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <Input
+                type="select"
+                label="Select Month"
+                name="holiday-month"
+                placeholder="Choose a month"
+                value={selectedMonthForHolidays}
+                onChange={(e) => setSelectedMonthForHolidays(Number(e.target.value))}
+                options={[
+                  { value: '0', label: 'January' },
+                  { value: '1', label: 'February' },
+                  { value: '2', label: 'March' },
+                  { value: '3', label: 'April' },
+                  { value: '4', label: 'May' },
+                  { value: '5', label: 'June' },
+                  { value: '6', label: 'July' },
+                  { value: '7', label: 'August' },
+                  { value: '8', label: 'September' },
+                  { value: '9', label: 'October' },
+                  { value: '10', label: 'November' },
+                  { value: '11', label: 'December' },
+                ]}
+              />
+              {fullYearHolidays[selectedMonthForHolidays].length > 0 ? (
+                <ul className="mt-4 space-y-2 text-sm">
+                  {fullYearHolidays[selectedMonthForHolidays].map((holiday, idx) => (
+                    <li key={idx} className="flex items-center justify-between text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
+                      <span>{holiday.name}</span>
+                      <span className="font-medium text-gray-900">{holiday.date}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="mt-4 text-sm text-gray-500 text-center py-4">No holidays in this month</div>
+              )}
+            </div>
           </div>
         </div>
       </div>

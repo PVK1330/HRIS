@@ -200,10 +200,10 @@ export default function DepartmentManagement() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex gap-2">
-          <Button ariaLabel="Edit Department" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
+          <Button ariaLabel="Edit Department" variant="Approve" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
           <Button
             ariaLabel="Delete Department"
-            variant="ghost"
+            variant="danger"
             size="sm"
             icon={HiTrash}
             onClick={() => handleDelete(row.id)}
@@ -270,7 +270,7 @@ export default function DepartmentManagement() {
 
       <Table columns={columns} data={filtered} pageSize={10} />
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Department' : 'Add Department'} size="md">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Department' : 'Add Department'} size="xl">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <Input
@@ -352,8 +352,8 @@ export default function DepartmentManagement() {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" ariaLabel="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" ariaLabel="Save Department" variant="primary" icon={HiCheck} />
+            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
+            <Button type="submit" label="Save Department" variant="primary" />
           </div>
         </form>
       </Modal>

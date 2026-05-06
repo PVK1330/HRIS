@@ -99,8 +99,8 @@ export default function Payroll() {
                   { key: 'net', label: 'Net Salary', render: (v) => <span className="font-bold text-primary">AED {v.toLocaleString()}</span> },
                   { key: 'actions', label: 'Actions', render: () => (
                     <div className="flex gap-1">
-                      <Button label="Edit" variant="ghost" size="sm" />
-                      <Button label="Slip" variant="ghost" size="sm" />
+                      <Button label="Edit" variant="Approve" size="sm" />
+                      <Button label="Slip" variant="secondary" size="sm" />
                     </div>
                   )}
                 ]} 
@@ -276,7 +276,7 @@ export default function Payroll() {
 
       <div>{renderTabContent()}</div>
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Add Salary Details" size="lg">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Add Salary Details" size="xl">
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
             Employee selection
