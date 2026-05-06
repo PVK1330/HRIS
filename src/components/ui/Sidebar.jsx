@@ -73,7 +73,7 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
                       onClick={onMobileClose}
                       end
                       className={({ isActive }) =>
-                        `mx-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                        `mx-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                           isActive
                             ? 'bg-[#0F766E] text-white shadow-sm'
                             : 'text-slate-700 hover:bg-gray-50 hover:text-[#0F766E]'
@@ -102,7 +102,7 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
         </nav>
 
         <div className="shrink-0 space-y-3 border-t border-gray-100 bg-white px-4 py-4">
-          <div className="flex items-center gap-3 rounded-xl bg-gray-100 px-3 py-3">
+          <div className="flex items-center gap-3 rounded-lg bg-gray-100 px-3 py-3">
             <Avatar name={user?.name ?? 'User'} size="md" bgColor={avatarPalette} />
             <Link 
               to={role === 'superadmin' || role === 'superadmin' ? '/superadmin/profile' : '/admin/employee-profile'} 

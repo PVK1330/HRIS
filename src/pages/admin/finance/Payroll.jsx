@@ -8,7 +8,7 @@ import { Table } from '../../../components/ui/Table.jsx';
 import { payrollData, employees } from '../../../data/mockData.js';
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 export default function Payroll() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -61,17 +61,17 @@ export default function Payroll() {
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-xl border border-border-tertiary bg-background-primary p-5 shadow-sm">
+              <div className="rounded-lg border border-border-tertiary bg-background-primary p-5 shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary">Total Payout (May)</p>
                 <p className="mt-2 text-2xl font-bold text-text-primary">AED 58,800</p>
                 <p className="text-[10px] text-success-DEFAULT mt-1">+2.4% from last month</p>
               </div>
-              <div className="rounded-xl border border-border-tertiary bg-background-primary p-5 shadow-sm">
+              <div className="rounded-lg border border-border-tertiary bg-background-primary p-5 shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary">Total Headcount</p>
                 <p className="mt-2 text-2xl font-bold text-text-primary">{employees.length}</p>
                 <p className="text-[10px] text-text-tertiary mt-1">Active employees</p>
               </div>
-              <div className="rounded-xl border border-border-tertiary bg-background-primary p-5 shadow-sm">
+              <div className="rounded-lg border border-border-tertiary bg-background-primary p-5 shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary">Processing Status</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge label="In Progress" color="orange" />
@@ -80,7 +80,7 @@ export default function Payroll() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border-tertiary bg-background-primary shadow-sm overflow-hidden">
+            <div className="rounded-lg border border-border-tertiary bg-background-primary shadow-sm overflow-hidden">
               <div className="p-4 border-b border-border-tertiary bg-background-secondary/30 flex items-center justify-between">
                 <h3 className="font-bold text-text-primary">Salary Overview</h3>
                 <div className="flex gap-2">
@@ -114,7 +114,7 @@ export default function Payroll() {
         const emp = employees.find(e => e.id === selectedEmployee) || employees[0];
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="rounded-xl border border-border-tertiary bg-background-primary p-6 shadow-sm">
+            <div className="rounded-lg border border-border-tertiary bg-background-primary p-6 shadow-sm">
               <div className="grid gap-4 md:grid-cols-2 max-w-2xl">
                 <Input 
                   label="Select Employee" 
@@ -133,7 +133,7 @@ export default function Payroll() {
               </div>
             </div>
 
-            <div className="max-w-4xl mx-auto rounded-xl border border-border-tertiary bg-background-primary shadow-2xl overflow-hidden p-8">
+            <div className="max-w-4xl mx-auto rounded-lg border border-border-tertiary bg-background-primary shadow-2xl overflow-hidden p-8">
               <div className="flex justify-between border-b-2 border-border-tertiary pb-8 mb-8">
                 <div>
                   <h1 className="text-3xl font-black text-primary tracking-tighter">HRIS HOLDINGS</h1>
@@ -165,7 +165,7 @@ export default function Payroll() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-0 border border-border-tertiary rounded-xl overflow-hidden mb-8">
+              <div className="grid grid-cols-2 gap-0 border border-border-tertiary rounded-lg overflow-hidden mb-8">
                 <div className="p-6 border-r border-border-tertiary bg-success-DEFAULT/5">
                   <h3 className="text-sm font-bold text-success-DEFAULT uppercase mb-4">Earnings</h3>
                   <div className="space-y-3 text-sm">
@@ -186,7 +186,7 @@ export default function Payroll() {
                 </div>
               </div>
 
-              <div className="bg-primary p-6 rounded-xl text-white flex justify-between items-center shadow-lg">
+              <div className="bg-primary p-6 rounded-lg text-white flex justify-between items-center shadow-lg">
                 <div>
                   <p className="text-xs font-bold uppercase opacity-80">Net Payable</p>
                   <p className="text-3xl font-black">AED 19,000.00</p>
@@ -212,21 +212,21 @@ export default function Payroll() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-               <div className="rounded-xl border border-border-tertiary bg-background-primary p-6 shadow-sm text-center">
+               <div className="rounded-lg border border-border-tertiary bg-background-primary p-6 shadow-sm text-center">
                   <p className="text-xs font-bold uppercase text-text-tertiary">Total Payout</p>
                   <p className="text-3xl font-black text-text-primary mt-2">AED 58,800</p>
                </div>
-               <div className="rounded-xl border border-border-tertiary bg-background-primary p-6 shadow-sm text-center">
+               <div className="rounded-lg border border-border-tertiary bg-background-primary p-6 shadow-sm text-center">
                   <p className="text-xs font-bold uppercase text-text-tertiary">Processed Count</p>
                   <p className="text-3xl font-black text-text-primary mt-2">0 / {employees.length}</p>
                </div>
-               <div className="rounded-xl border border-border-tertiary bg-background-primary p-6 shadow-sm text-center">
+               <div className="rounded-lg border border-border-tertiary bg-background-primary p-6 shadow-sm text-center">
                   <p className="text-xs font-bold uppercase text-text-tertiary">Processed On</p>
                   <p className="text-xl font-bold text-text-tertiary mt-4">Not started</p>
                </div>
             </div>
 
-            <div className="rounded-xl border border-border-tertiary bg-background-primary shadow-sm overflow-hidden">
+            <div className="rounded-lg border border-border-tertiary bg-background-primary shadow-sm overflow-hidden">
                <Table 
                 columns={[
                   { key: 'name', label: 'Employee' },

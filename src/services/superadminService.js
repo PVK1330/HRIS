@@ -10,6 +10,9 @@ export const SUPERADMIN_ENDPOINTS = {
   MODULE_BY_KEY: (moduleKey) => `/superadmin/modules/${moduleKey}`,
   ANNOUNCEMENTS: '/superadmin/announcements',
   ANNOUNCEMENT_BY_ID: (id) => `/superadmin/announcements/${id}`,
+  TENANTS: '/superadmin/tenants',
+  TENANT_MODULES: (tenantId) => `/superadmin/tenants/${tenantId}/modules`,
+  TENANT_MODULE_BY_KEY: (tenantId, moduleKey) => `/superadmin/tenants/${tenantId}/modules/${moduleKey}`,
 }
 
 export const superadminService = {
@@ -42,6 +45,15 @@ export const superadminService = {
   updateModule(moduleKey, payload) {
     return api.patch(SUPERADMIN_ENDPOINTS.MODULE_BY_KEY(moduleKey), payload)
   },
+  getTenants() {
+    return api.get(SUPERADMIN_ENDPOINTS.TENANTS)
+  },
+  getTenantModules(tenantId) {
+    return api.get(SUPERADMIN_ENDPOINTS.TENANT_MODULES(tenantId))
+  },
+  updateTenantModule(tenantId, moduleKey, payload) {
+    return api.patch(SUPERADMIN_ENDPOINTS.TENANT_MODULE_BY_KEY(tenantId, moduleKey), payload)
+  },
 
   // Announcements
   getAnnouncements() {
@@ -55,5 +67,8 @@ export const superadminService = {
   },
   deleteAnnouncement(id) {
     return api.delete(SUPERADMIN_ENDPOINTS.ANNOUNCEMENT_BY_ID(id))
+  },
+  getAnnouncementReport(id) {
+    return api.get(`${SUPERADMIN_ENDPOINTS.ANNOUNCEMENT_BY_ID(id)}/report`)
   },
 }

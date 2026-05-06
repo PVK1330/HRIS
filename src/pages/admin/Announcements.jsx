@@ -54,14 +54,14 @@ export default function Announcements() {
         )}
       </div>
 
-      <div className="rounded-xl border border-border-tertiary bg-background-primary shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-border-tertiary bg-background-primary shadow-sm overflow-hidden">
         <div className="p-4 border-b border-border-tertiary bg-background-secondary/30">
           <div className="flex items-center gap-4">
             <div className="flex-1 max-w-md">
               <input 
                 type="text" 
                 placeholder="Search announcements..."
-                className="w-full rounded-lg border border-border-tertiary bg-background-primary px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                className="w-full rounded-md border border-border-tertiary bg-background-primary px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -72,11 +72,11 @@ export default function Announcements() {
         <table className="w-full text-left text-sm">
           <thead className="bg-background-secondary border-b border-border-tertiary">
             <tr>
-              <th className="px-6 py-4 font-semibold text-text-primary">Title</th>
-              <th className="px-6 py-4 font-semibold text-text-primary">Category</th>
-              <th className="px-6 py-4 font-semibold text-text-primary">Posted By</th>
-              <th className="px-6 py-4 font-semibold text-text-primary">Date</th>
-              <th className="px-6 py-4 font-semibold text-text-primary">Visibility</th>
+              <th className="px-6 py-4 font-semibold text-text-primary">Announcement</th>
+              <th className="px-6 py-4 font-semibold text-text-primary">Subject Area</th>
+              <th className="px-6 py-4 font-semibold text-text-primary">Author</th>
+              <th className="px-6 py-4 font-semibold text-text-primary">Posted On</th>
+              <th className="px-6 py-4 font-semibold text-text-primary">Target Audience</th>
               <th className="px-6 py-4 font-semibold text-text-primary">Status</th>
               {isHrAdmin && <th className="px-6 py-4 font-semibold text-text-primary text-right">Actions</th>}
             </tr>
@@ -104,8 +104,8 @@ export default function Announcements() {
                 {isHrAdmin && (
                   <td className="px-6 py-4 ">
                     <div className="flex justify-end gap-2">
-                      <button className="rounded-lg p-1  text-text-secondary"><HiPencilSquare className="h-5 w-5 text-green-600" /></button>
-                      <button className="rounded-lg p-1 text-text-secondary"><HiTrash className="h-5 w-5 text-red-700" /></button>
+                      <button className="rounded-md p-1  text-text-secondary"><HiPencilSquare className="h-5 w-5 text-green-600" /></button>
+                      <button className="rounded-md p-1 text-text-secondary"><HiTrash className="h-5 w-5 text-red-700" /></button>
                     </div>
                   </td>
                 )}
@@ -136,7 +136,7 @@ export default function Announcements() {
             <label className="block text-sm font-semibold text-text-secondary mb-1">Content</label>
             <textarea 
               name="content"
-              className="w-full rounded-lg border border-border-tertiary bg-background-primary px-4 py-2 text-sm outline-none focus:border-primary"
+              className="w-full rounded-md border border-border-tertiary bg-background-primary px-4 py-2 text-sm outline-none focus:border-primary"
               rows={5}
               placeholder="Write your announcement message here..."
               value={formData.content}

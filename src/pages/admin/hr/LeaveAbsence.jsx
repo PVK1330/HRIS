@@ -1,330 +1,463 @@
 import { useMemo, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
-import FileUpload from '../../../components/ui/FileUpload.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { employees, leaveRequests } from '../../../data/mockData.js'
+import { HiCalendar, HiPlus, HiEye, HiCheck, HiXMark, HiTrash, HiPencil, HiDocumentArrowDown } from 'react-icons/hi2'
 
-const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+const selectClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500'
+const textareaClass = 'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500'
 
-const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+// --- Mock Data Extensions for Demo ---
+const mockHolidays = [
+  { id: 1, name: 'New Year', date: '2026-01-01', day: 'Thursday', country: 'Global', type: 'Public', status: 'Active' },
+  { id: 2, name: 'Eid al-Fitr', date: '2026-03-31', day: 'Tuesday', country: 'UAE', type: 'Religious', status: 'Active' },
+  { id: 3, name: 'Company Anniversary', date: '2026-06-15', day: 'Monday', country: 'Internal', type: 'Company', status: 'Active' },
+]
 
-const readonlyClass =
-  'w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-800'
-
-const initialFormData = {
-  employeeId: '',
-  leaveType: '',
-  fromDate: '',
-  toDate: '',
-  reason: '',
-  handoverNote: '',
-  alternateContact: '',
-}
-
-function inclusiveDays(fromDateStr, toDateStr) {
-  if (!fromDateStr || !toDateStr) return ''
-  const start = new Date(`${fromDateStr}T00:00:00`)
-  const end = new Date(`${toDateStr}T00:00:00`)
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return ''
-  if (end < start) return '—'
-  const diff = Math.round((end - start) / 86400000) + 1
-  return String(diff)
-}
-
-function statusColor(s) {
-  if (s === 'Approved') return 'green'
-  if (s === 'Pending') return 'orange'
-  if (s === 'Rejected') return 'red'
-  return 'gray'
-}
+const mockBalances = employees.map(emp => ({
+  id: emp.id,
+  name: emp.name,
+  empId: emp.empId,
+  dept: emp.department,
+  jobTitle: emp.jobTitle,
+  annual: 30,
+  sick: 10,
+  casual: 5,
+  unpaid: 0,
+  comp: 2,
+  used: 12,
+  remaining: 35
+}))
 
 export default function LeaveAbsence() {
-  const [status, setStatus] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [formData, setFormData] = useState(initialFormData)
-  const [files, setFiles] = useState({})
+  // --- States ---
+  const [activeTab, setActiveTab] = useState('requests') // 'requests', 'balances', 'holidays'
+  const [q, setQ] = useState('')
+  
+  // Modals
+  const [holidayModalOpen, setHolidayModalOpen] = useState(false)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const [selectedEmployee, setSelectedEmployee] = useState(null)
+  const [actionModalOpen, setActionModalOpen] = useState(false)
+  const [actionType, setActionType] = useState('')
+  const [selectedRequest, setSelectedRequest] = useState(null)
+  const [actionReason, setActionReason] = useState('')
 
-  const statusOptions = [
-    { value: '', label: 'All statuses' },
-    { value: 'Pending', label: 'Pending' },
-    { value: 'Approved', label: 'Approved' },
-    { value: 'Rejected', label: 'Rejected' },
-  ]
+  // --- Calculations ---
+  const pendingRequests = useMemo(() => leaveRequests.filter(r => r.status === 'Pending'), [])
+  const approvedRequests = useMemo(() => leaveRequests.filter(r => r.status === 'Approved'), [])
+  const rejectedRequests = useMemo(() => leaveRequests.filter(r => r.status === 'Rejected'), [])
 
-  const filtered = useMemo(() => {
-    if (!status) return leaveRequests
-    return leaveRequests.filter((l) => l.status === status)
-  }, [status])
-
-  const totalDays = useMemo(
-    () => inclusiveDays(formData.fromDate, formData.toDate),
-    [formData.fromDate, formData.toDate]
-  )
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+  // --- Handlers ---
+  const handleAction = (req, type) => {
+    setSelectedRequest(req)
+    setActionType(type)
+    setActionModalOpen(true)
   }
 
-  const handleFileChange = (key) => (fileList) => {
-    setFiles((prev) => ({ ...prev, [key]: fileList }))
+  const openEmployeeDetails = (emp) => {
+    setSelectedEmployee(emp)
+    setDetailModalOpen(true)
   }
 
-  const resetModal = () => {
-    setFormData(initialFormData)
-    setFiles({})
-  }
+  // --- Column Definitions ---
 
-  const handleCloseModal = () => {
-    setModalOpen(false)
-    resetModal()
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log({ formData, totalDays, files })
-    handleCloseModal()
-  }
-
-  const columns = [
-    { key: 'employee', label: 'Employee' },
-    { key: 'type', label: 'Type' },
-    { key: 'from', label: 'From' },
-    { key: 'to', label: 'To' },
-    { key: 'days', label: 'Days' },
-    { key: 'reason', label: 'Reason' },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (v) => <Badge label={v} color={statusColor(v)} />,
-    },
+  // 1. Pending Requests
+  const pendingColumns = [
+    { key: 'employee', label: 'Name' },
+    { key: 'empId', label: 'ID', render: (_, r) => <span className="text-xs font-bold text-slate-400">{r.empId || 'E001'}</span> },
+    { key: 'dept', label: 'Dept', render: () => <span className="text-xs">Operations</span> },
+    { key: 'type', label: 'Leave Type' },
+    { key: 'range', label: 'Date Range', render: (_, r) => <span className="text-xs font-bold">{r.from} - {r.to}</span> },
+    { key: 'days', label: 'Total Days', render: (v) => <Badge label={`${v} Days`} color="blue" /> },
+    { key: 'doc', label: 'Doc', render: (_, r) => r.type === 'Sick Leave' ? <HiDocumentArrowDown className="h-5 w-5 text-emerald-600 cursor-pointer" /> : '—' },
+    { key: 'reason', label: 'Reason', render: (v) => <span className="text-[10px] italic text-slate-500 truncate block max-w-[100px]">{v}</span> },
     {
       key: 'actions',
-      label: 'Actions',
+      label: 'Approve/Reject',
+      render: (_, r) => (
+        <div className="flex gap-1">
+          <button onClick={() => handleAction(r, 'Approve')} className="p-1.5 bg-emerald-50 text-emerald-600 rounded-md hover:bg-emerald-100"><HiCheck className="h-4 w-4" /></button>
+          <button onClick={() => handleAction(r, 'Reject')} className="p-1.5 bg-rose-50 text-rose-600 rounded-md hover:bg-rose-100"><HiXMark className="h-4 w-4" /></button>
+        </div>
+      )
+    }
+  ]
+
+  // 2. Approved Requests
+  const approvedColumns = [
+    { key: 'employee', label: 'Name' },
+    { key: 'type', label: 'Leave Type' },
+    { key: 'approvedDate', label: 'Approved Date', render: () => <span className="text-xs">2026-05-01</span> },
+    { key: 'range', label: 'Date Range', render: (_, r) => <span className="text-xs font-bold">{r.from} - {r.to}</span> },
+    { key: 'days', label: 'Total Days', render: (v) => <span className="text-xs font-black">{v}</span> },
+    { key: 'approvedBy', label: 'Approved By', render: () => <span className="text-xs font-bold text-emerald-700 underline">HR Admin</span> },
+    { key: 'download', label: 'Dwnld Doc', render: () => <HiDocumentArrowDown className="h-5 w-5 text-slate-400 hover:text-emerald-600 cursor-pointer" /> }
+  ]
+
+  // 3. Rejected Requests
+  const rejectedColumns = [
+    { key: 'employee', label: 'Name' },
+    { key: 'range', label: 'Date Range', render: (_, r) => <span className="text-xs font-bold">{r.from} - {r.to}</span> },
+    { key: 'type', label: 'Leave Type' },
+    { key: 'reason', label: 'Reason', render: (v) => <span className="text-[10px] text-rose-600 italic font-bold">{v || 'Policy Violation'}</span> },
+    { key: 'rejectedBy', label: 'Rejected By', render: () => <span className="text-xs font-bold text-rose-700 underline">Dept Manager</span> }
+  ]
+
+  // 4. Balance Summary
+  const balanceColumns = [
+    { key: 'name', label: 'Name', render: (v, r) => <div className="font-bold text-slate-900">{v}</div> },
+    { key: 'dept', label: 'Dept' },
+    { key: 'jobTitle', label: 'Job Title' },
+    { key: 'annual', label: 'Annual', render: (v) => <span className="font-black text-blue-600">{v}</span> },
+    { key: 'sick', label: 'Sick', render: (v) => <span className="font-black text-emerald-600">{v}</span> },
+    { key: 'casual', label: 'Casual', render: (v) => <span className="font-black text-amber-600">{v}</span> },
+    { key: 'unpaid', label: 'Unpaid', render: (v) => <span className="font-black text-rose-600">{v}</span> },
+    { key: 'comp', label: 'Comp', render: (v) => <span className="font-black text-indigo-600">{v}</span> },
+    { key: 'used', label: 'Total Used', render: (v) => <Badge label={v} color="slate" /> },
+    { key: 'remaining', label: 'Remaining', render: (v) => <Badge label={v} color="emerald" /> },
+    {
+      key: 'actions',
+      label: 'View Details',
+      render: (_, r) => (
+        <button onClick={() => openEmployeeDetails(r)} className="text-emerald-600 hover:underline font-black text-[10px] uppercase tracking-widest flex items-center gap-1">
+          <HiEye className="h-3.5 w-3.5" /> Details
+        </button>
+      )
+    }
+  ]
+
+  // 5. Holiday Setup
+  const holidayColumns = [
+    { key: 'name', label: 'Holiday Name', render: (v) => <span className="font-bold text-slate-900">{v}</span> },
+    { key: 'date', label: 'Date', render: (v) => <span className="text-xs font-black">{v}</span> },
+    { key: 'day', label: 'Day' },
+    { key: 'country', label: 'Country' },
+    { key: 'type', label: 'Holiday Type', render: (v) => <Badge label={v} color={v === 'Public' ? 'blue' : v === 'Religious' ? 'purple' : 'emerald'} /> },
+    { key: 'status', label: 'Status', render: (v) => <Badge label={v} color="green" /> },
+    {
+      key: 'actions',
+      label: 'Edit/Delete',
       render: () => (
         <div className="flex gap-2">
-          <Button label="Approve" variant="secondary" size="sm" />
-          <Button label="Reject" variant="ghost" size="sm" />
+          <HiPencil className="h-4 w-4 text-slate-400 hover:text-emerald-600 cursor-pointer" />
+          <HiTrash className="h-4 w-4 text-slate-400 hover:text-rose-600 cursor-pointer" />
         </div>
-      ),
-    },
+      )
+    }
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="space-y-6 pb-10">
+      {/* Header Area */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white p-6 rounded-lg border border-slate-200 shadow-sm ring-1 ring-slate-900/5">
         <div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">Leave &amp; Absence</h1>
-          <p className="mt-1 text-sm text-gray-500">Review requests and approvals.</p>
+          <div className="flex items-center gap-2 text-emerald-600 mb-1">
+            <HiCalendar className="h-5 w-5" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Absence Management</span>
+          </div>
+          <h1 className="font-display text-3xl font-black text-slate-900 tracking-tight">Leave & Absence – Admin View</h1>
+          <p className="text-sm text-slate-500 mt-1 font-medium">Holistic workforce presence tracking and policy compliance.</p>
         </div>
-        <Button label="Apply leave" variant="primary" onClick={() => setModalOpen(true)} />
+        <div className="flex gap-2">
+          <Button label="Public Holiday Setup" variant="outline" onClick={() => setActiveTab('holidays')} className="rounded-md border-slate-200" />
+          <Button label="Add Leave Request" variant="primary" icon={HiPlus} className="rounded-md shadow-lg shadow-emerald-100" />
+        </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <Input
-          label="Status"
-          name="status"
-          type="select"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          options={statusOptions}
-        />
+      {/* Navigation Tabs */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit border border-slate-200">
+        <button 
+          onClick={() => setActiveTab('requests')}
+          className={`px-6 py-2 text-xs font-black uppercase tracking-widest rounded-md transition-all ${activeTab === 'requests' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          Approval Workflow
+        </button>
+        <button 
+          onClick={() => setActiveTab('balances')}
+          className={`px-6 py-2 text-xs font-black uppercase tracking-widest rounded-md transition-all ${activeTab === 'balances' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          Balance Summary
+        </button>
+        <button 
+          onClick={() => setActiveTab('holidays')}
+          className={`px-6 py-2 text-xs font-black uppercase tracking-widest rounded-md transition-all ${activeTab === 'holidays' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          Holiday Calendar
+        </button>
       </div>
 
-      <Table columns={columns} data={filtered} pageSize={5} />
+      {/* Main Content Area */}
+      {activeTab === 'requests' && (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Pending Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-1.5 bg-amber-500 rounded-full" />
+              <h2 className="font-display text-xl font-black text-slate-900 uppercase tracking-tight">Pending Requests</h2>
+              <Badge label={pendingRequests.length} color="orange" />
+            </div>
+            <div className="bg-white rounded-lg border border-slate-200 p-2 shadow-sm ring-1 ring-slate-900/5">
+              <Table columns={pendingColumns} data={pendingRequests} pageSize={5} />
+            </div>
+          </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Holiday Calendar</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">New Year</div>
-                <div className="text-xs text-gray-500">Public Holiday</div>
-              </div>
-              <span className="text-sm text-gray-600">Jan 1</span>
+          {/* Approved Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-1.5 bg-emerald-500 rounded-full" />
+              <h2 className="font-display text-xl font-black text-slate-900 uppercase tracking-tight">Approved History</h2>
+              <Badge label={approvedRequests.length} color="emerald" />
             </div>
-            <div className="flex items-center justify-between rounded-lg bg-purple-50 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Eid al-Fitr</div>
-                <div className="text-xs text-gray-500">Religious Holiday</div>
-              </div>
-              <span className="text-sm text-gray-600">Apr 10</span>
+            <div className="bg-white rounded-lg border border-slate-200 p-2 shadow-sm ring-1 ring-slate-900/5">
+              <Table columns={approvedColumns} data={approvedRequests} pageSize={5} />
             </div>
-            <div className="flex items-center justify-between rounded-lg bg-green-50 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Company Day</div>
-                <div className="text-xs text-gray-500">Company Holiday</div>
-              </div>
-              <span className="text-sm text-gray-600">Jun 15</span>
+          </div>
+
+          {/* Rejected Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-1.5 bg-rose-500 rounded-full" />
+              <h2 className="font-display text-xl font-black text-slate-900 uppercase tracking-tight">Rejected Records</h2>
+              <Badge label={rejectedRequests.length} color="rose" />
+            </div>
+            <div className="bg-white rounded-lg border border-slate-200 p-2 shadow-sm ring-1 ring-slate-900/5">
+              <Table columns={rejectedColumns} data={rejectedRequests} pageSize={5} />
             </div>
           </div>
         </div>
+      )}
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Leave Balance Summary</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Total Annual Leave</span>
-              <span className="font-semibold text-gray-900">30 days</span>
+      {activeTab === 'balances' && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-display text-xl font-black text-slate-900 uppercase tracking-tight">Employee Leave Balance Summary</h2>
+            <div className="relative w-64">
+              <input type="text" placeholder="Search employee..." className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-md text-xs font-bold focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500" />
+              <div className="absolute left-3 top-2.5 text-slate-400">🔍</div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Used This Year</span>
-              <span className="font-semibold text-gray-900">12 days</span>
+          </div>
+          <div className="bg-white rounded-lg border border-slate-200 p-2 shadow-sm ring-1 ring-slate-900/5">
+            <Table columns={balanceColumns} data={mockBalances} pageSize={10} />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'holidays' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-xl font-black text-slate-900 uppercase tracking-tight">Public Holiday Setup</h2>
+            <Button label="Add New Holiday" variant="primary" icon={HiPlus} onClick={() => setHolidayModalOpen(true)} className="rounded-md" />
+          </div>
+          
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 p-2 shadow-sm ring-1 ring-slate-900/5">
+              <Table columns={holidayColumns} data={mockHolidays} pageSize={10} />
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Remaining Balance</span>
-              <span className="font-semibold text-green-600">18 days</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Carry Forward</span>
-              <span className="font-semibold text-gray-900">5 days</span>
+            <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm ring-1 ring-slate-900/5 h-fit">
+              <h3 className="font-bold text-slate-900 mb-4">Calendar View Preview</h3>
+              <div className="aspect-square bg-slate-50 rounded-lg border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-6">
+                <HiCalendar className="h-12 w-12 text-slate-300 mb-2" />
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Interactive Calendar Engine</p>
+                <p className="text-[10px] text-slate-400 mt-1 italic">Highlighting holidays for 2026</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Apply Leave" size="xl">
-        <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
-            Leave request
-          </p>
+      {/* --- Modals --- */}
+
+      {/* Holiday Modal */}
+      <Modal isOpen={holidayModalOpen} onClose={() => setHolidayModalOpen(false)} title="Register New Holiday" size="md">
+        <form className="space-y-4 pt-2">
+          <Input label="Holiday Name" placeholder="e.g. Eid al-Adha" required />
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 w-full sm:col-span-1">
-              <label htmlFor="leave-employee" className="mb-1 block text-sm font-medium text-gray-700">
-                Employee
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="leave-employee"
-                name="employeeId"
-                value={formData.employeeId}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select employee
-                </option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name} ({e.empId})
-                  </option>
-                ))}
+            <Input label="Date" type="date" required />
+            <div className="w-full">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
+              <select className={selectClass}>
+                <option>Public Holiday</option>
+                <option>Company Holiday</option>
+                <option>Religious Holiday</option>
               </select>
             </div>
-            <div className="col-span-2 w-full sm:col-span-1">
-              <label htmlFor="leave-type" className="mb-1 block text-sm font-medium text-gray-700">
-                Leave Type
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="leave-type"
-                name="leaveType"
-                value={formData.leaveType}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select leave type
-                </option>
-                <option value="Annual Leave">Annual Leave</option>
-                <option value="Sick Leave">Sick Leave</option>
-                <option value="Casual Leave">Casual Leave</option>
-                <option value="Maternity Leave">Maternity Leave</option>
-                <option value="Paternity Leave">Paternity Leave</option>
-                <option value="Emergency Leave">Emergency Leave</option>
-                <option value="Unpaid Leave">Unpaid Leave</option>
-                <option value="Compensatory Off">Compensatory Off</option>
-                <option value="Study Leave">Study Leave</option>
-              </select>
-            </div>
-            <Input
-              label="From Date"
-              name="fromDate"
-              type="date"
-              value={formData.fromDate}
-              onChange={handleFormChange}
-              required
-            />
-            <Input
-              label="To Date"
-              name="toDate"
-              type="date"
-              value={formData.toDate}
-              onChange={handleFormChange}
-              required
-            />
-            <div className="col-span-2 w-full sm:col-span-1">
-              <label htmlFor="leave-total-days" className="mb-1 block text-sm font-medium text-gray-700">
-                Total Days
-              </label>
-              <input
-                id="leave-total-days"
-                readOnly
-                value={totalDays}
-                tabIndex={-1}
-                className={readonlyClass}
-                aria-live="polite"
-              />
-            </div>
           </div>
-          <div className="mt-3 w-full">
-            <label htmlFor="leave-reason" className="mb-1 block text-sm font-medium text-gray-700">
-              Reason
-              <span className="text-red-500"> *</span>
+          <div className="w-full">
+            <label className="mb-1 block text-sm font-medium text-gray-700">Applicable To</label>
+            <select className={selectClass}>
+              <option>All Employees</option>
+              <option>Specific Location</option>
+              <option>Specific Department</option>
+            </select>
+          </div>
+          <div className="flex gap-4 p-3 bg-slate-50 rounded-md border border-slate-200">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" className="rounded text-emerald-600 focus:ring-emerald-500" />
+              <span className="text-xs font-bold text-slate-700">Is Paid Holiday?</span>
             </label>
-            <textarea
-              id="leave-reason"
-              name="reason"
-              value={formData.reason}
-              onChange={handleFormChange}
-              className={textareaClass}
-              rows={3}
-              required
-            />
-          </div>
-          <div className="mt-3 w-full">
-            <label htmlFor="leave-handover" className="mb-1 block text-sm font-medium text-gray-700">
-              Handover Note
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" className="rounded text-emerald-600 focus:ring-emerald-500" />
+              <span className="text-xs font-bold text-slate-700">Recurring Yearly?</span>
             </label>
-            <textarea
-              id="leave-handover"
-              name="handoverNote"
-              value={formData.handoverNote}
-              onChange={handleFormChange}
-              placeholder="Who covers duties"
-              className={textareaClass}
-              rows={3}
-            />
           </div>
-          <Input
-            label="Alternate Contact During Leave"
-            name="alternateContact"
-            value={formData.alternateContact}
-            onChange={handleFormChange}
-          />
+          <div className="flex gap-3 pt-2">
+            <Button label="Cancel" variant="secondary" className="flex-1" onClick={() => setHolidayModalOpen(false)} />
+            <Button label="Add Holiday" variant="primary" className="flex-1" />
+          </div>
+        </form>
+      </Modal>
 
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
-            Supporting document
-          </p>
-          <FileUpload
-            label="Medical Certificate / Proof"
-            name="medicalProof"
-            accept=".jpg,.png,.pdf"
-            onChange={handleFileChange('medicalProof')}
-            helpText="Required for sick leave > 2 days"
-          />
+      {/* Employee Detail Modal */}
+      <Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title="Employee Leave Summary" size="xl">
+        {selectedEmployee && (
+          <div className="space-y-6 pt-2 overflow-y-auto max-h-[75vh] pr-2">
+            {/* Summary Top */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 space-y-3">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Identity Profile</h3>
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 font-black text-2xl border border-emerald-200">
+                    {selectedEmployee.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="text-lg font-black text-slate-900">{selectedEmployee.name}</div>
+                    <div className="text-xs font-bold text-slate-500">{selectedEmployee.empId} • {selectedEmployee.jobTitle}</div>
+                    <div className="mt-1 flex gap-2">
+                      <Badge label={selectedEmployee.dept} color="blue" />
+                      <Badge label="Active" color="green" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Accrual Rules</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span className="text-slate-500">Accrual Rate</span>
+                    <span className="text-slate-900">2.5 Days / Month</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold">
+                    <span className="text-slate-500">Carry Forward Limit</span>
+                    <span className="text-slate-900">10 Days</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold">
+                    <span className="text-slate-500">Probation Period</span>
+                    <span className="text-slate-900">3 Months (Cleared)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" label="Save" variant="primary" />
+            {/* Leave Balance Table */}
+            <div className="space-y-3">
+              <h3 className="font-display text-sm font-black text-slate-900 uppercase tracking-tight">Current Leave Balance</h3>
+              <div className="overflow-hidden rounded-md border border-slate-200 shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Leave Type</th>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Entitlement</th>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Carry Forward</th>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Used</th>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Pending</th>
+                      <th className="px-4 py-3 font-black text-emerald-700 uppercase tracking-tight bg-emerald-50/50">Current Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {[
+                      { type: 'Annual Leave', entitlement: 30, carry: 5, used: 10, pending: 2, balance: 23 },
+                      { type: 'Sick Leave', entitlement: 10, carry: 0, used: 2, pending: 0, balance: 8 },
+                      { type: 'Casual Leave', entitlement: 5, carry: 0, used: 0, pending: 1, balance: 4 },
+                    ].map((row) => (
+                      <tr key={row.type} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 font-bold text-slate-900">{row.type}</td>
+                        <td className="px-4 py-3 text-slate-600">{row.entitlement}</td>
+                        <td className="px-4 py-3 text-slate-600">{row.carry}</td>
+                        <td className="px-4 py-3 text-rose-600 font-bold">{row.used}</td>
+                        <td className="px-4 py-3 text-amber-600 font-bold">{row.pending}</td>
+                        <td className="px-4 py-3 bg-emerald-50/30 text-emerald-700 font-black text-sm">{row.balance}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* History Table */}
+            <div className="space-y-3">
+              <h3 className="font-display text-sm font-black text-slate-900 uppercase tracking-tight">Absence History</h3>
+              <div className="overflow-hidden rounded-md border border-slate-200 shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Type</th>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Date Range</th>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight text-center">Total Days</th>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Status</th>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Reason</th>
+                      <th className="px-4 py-3 font-black text-slate-600 uppercase tracking-tight">Attach</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {[
+                      { type: 'Annual', range: '2026-04-10 - 2026-04-15', days: 5, status: 'Approved', reason: 'Family Visit' },
+                      { type: 'Sick', range: '2026-03-02 - 2026-03-03', days: 2, status: 'Approved', reason: 'Medical emergency' },
+                    ].map((row, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 font-bold text-slate-900">{row.type}</td>
+                        <td className="px-4 py-3 text-slate-600 font-medium">{row.range}</td>
+                        <td className="px-4 py-3 text-slate-900 font-black text-center">{row.days}</td>
+                        <td className="px-4 py-3">
+                          <Badge label={row.status} color="green" />
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 italic">{row.reason}</td>
+                        <td className="px-4 py-3"><HiDocumentArrowDown className="h-5 w-5 text-slate-400 cursor-pointer" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Adjustment Controls */}
+            <div className="flex gap-3 pt-4 border-t border-slate-100">
+              <Button label="Add Leave Adjustment" variant="primary" icon={HiPlus} className="rounded-md flex-1" />
+              <Button label="Deduct Leave balance" variant="outline" className="rounded-md border-rose-200 text-rose-600 hover:bg-rose-50 flex-1" />
+              <Button label="Write Compliance Note" variant="secondary" className="rounded-md flex-1" />
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Action Modal (Approve/Reject) */}
+      <Modal 
+        isOpen={actionModalOpen} 
+        onClose={() => setActionModalOpen(false)} 
+        title={`Audit Decision: ${actionType}`} 
+        size="md"
+      >
+        <form onSubmit={(e) => { e.preventDefault(); setActionModalOpen(false) }} className="space-y-4 pt-2">
+          <div className={`p-4 rounded-md border ${actionType === 'Approve' ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
+            <p className={`text-xs font-bold ${actionType === 'Approve' ? 'text-emerald-800' : 'text-rose-800'}`}>
+              Confirming decision for {selectedRequest?.employee}'s {selectedRequest?.type}.
+            </p>
+          </div>
+          <div>
+            <label className="mb-1 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Process Remarks</label>
+            <textarea className={textareaClass} placeholder="Reason for this decision..." required />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button label="Cancel" variant="secondary" className="flex-1" onClick={() => setActionModalOpen(false)} />
+            <Button 
+              type="submit" 
+              label={`Confirm ${actionType}`} 
+              variant="primary" 
+              className={`flex-1 shadow-lg ${actionType === 'Approve' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-100'}`} 
+            />
           </div>
         </form>
       </Modal>

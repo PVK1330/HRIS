@@ -10,10 +10,10 @@ import { Toggle } from '../../../components/ui/Toggle.jsx'
 import { employees, exitKpis, exitRecords } from '../../../data/mockData.js'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const initialFormData = {
   employeeId: '',
@@ -105,24 +105,24 @@ export default function ExitManagement() {
 
       <Table columns={columns} data={exitRecords} pageSize={5} />
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         <h2 className="font-display text-lg font-bold text-gray-900">Clearance Task Tracking</h2>
         <div className="mt-4 space-y-3">
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">John Smith - IT Assets</div>
               <div className="text-xs text-gray-500">Laptop, Monitor, Keyboard pending return</div>
             </div>
             <Badge label="Pending" color="orange" />
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">Sarah Johnson - System Access</div>
               <div className="text-xs text-gray-500">Email, ERP, and access revocation pending</div>
             </div>
             <Badge label="In Progress" color="blue" />
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">Michael Brown - Library Books</div>
               <div className="text-xs text-gray-500">2 books returned, clearance pending</div>
@@ -133,24 +133,24 @@ export default function ExitManagement() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Asset Return Management</h2>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Laptop - Dell XPS 15</div>
                 <div className="text-xs text-gray-500">John Smith • AST-001</div>
               </div>
               <Badge label="Pending" color="orange" size="sm" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Monitor - Dell 27"</div>
                 <div className="text-xs text-gray-500">Sarah Johnson • AST-002</div>
               </div>
               <Badge label="Returned" color="green" size="sm" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Security Badge</div>
                 <div className="text-xs text-gray-500">Michael Brown • BADGE-003</div>
@@ -160,24 +160,24 @@ export default function ExitManagement() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Exit Interview Recording</h2>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">John Smith</div>
                 <div className="text-xs text-gray-500">Scheduled: Apr 20, 2026</div>
               </div>
               <Badge label="Scheduled" color="blue" size="sm" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Sarah Johnson</div>
                 <div className="text-xs text-gray-500">Completed: Apr 15, 2026</div>
               </div>
               <Badge label="Completed" color="green" size="sm" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Michael Brown</div>
                 <div className="text-xs text-gray-500">Waived by employee</div>
@@ -189,24 +189,24 @@ export default function ExitManagement() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Final Settlement Processing</h2>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">John Smith</div>
                 <div className="text-xs text-gray-500">Salary: AED 15,000 • Benefits: AED 2,500</div>
               </div>
               <Badge label="Processing" color="orange" size="sm" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Sarah Johnson</div>
                 <div className="text-xs text-gray-500">Salary: AED 12,000 • Benefits: AED 1,800</div>
               </div>
               <Badge label="Paid" color="green" size="sm" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Michael Brown</div>
                 <div className="text-xs text-gray-500">Salary: AED 18,000 • Benefits: AED 3,000</div>
@@ -216,10 +216,10 @@ export default function ExitManagement() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Exit Document Generation</h2>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">NOC - John Smith</div>
                 <div className="text-xs text-gray-500">No Objection Certificate</div>
@@ -229,7 +229,7 @@ export default function ExitManagement() {
                 <Button label="Download" size="sm" variant='danger' />
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Experience Letter - Sarah Johnson</div>
                 <div className="text-xs text-gray-500">Employment verification</div>
@@ -239,7 +239,7 @@ export default function ExitManagement() {
                 <Button label="Download" variant='danger'  size="sm" />
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Settlement Statement - Michael Brown</div>
                 <div className="text-xs text-gray-500">Final payment details</div>
@@ -254,7 +254,7 @@ export default function ExitManagement() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Exit Workflow Stages</h2>
           <div className="mt-4 space-y-4">
             <div className="flex items-start gap-3">
@@ -314,24 +314,24 @@ export default function ExitManagement() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Active Exit Cases</h2>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">John Smith</div>
                 <div className="text-xs text-gray-500">15 days remaining in notice</div>
               </div>
               <Badge label="Notice" color="orange" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Sarah Johnson</div>
                 <div className="text-xs text-gray-500">Offboarding in progress</div>
               </div>
               <Badge label="Offboarding" color="blue" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Michael Brown</div>
                 <div className="text-xs text-gray-500">Pending clearance</div>

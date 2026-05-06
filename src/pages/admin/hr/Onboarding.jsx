@@ -8,10 +8,10 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { employees, onboardingKpis, onboardingTasks } from '../../../data/mockData.js'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const initialFormData = {
   employeeId: '',
@@ -98,7 +98,7 @@ export default function Onboarding() {
         <StatCard title="Completed" value={onboardingKpis.completed} subtitle="Last 12 months" color="purple" />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <Input
           label="Owner"
           name="owner"
@@ -112,40 +112,40 @@ export default function Onboarding() {
       <Table columns={columns} data={filtered} pageSize={5} />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Onboarding Checklist</h2>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-md border border-gray-200 px-4 py-3">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-600">
                 ✓
               </div>
               <span className="text-sm font-medium text-gray-700">Account creation & system access</span>
             </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-md border border-gray-200 px-4 py-3">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-600">
                 ✓
               </div>
               <span className="text-sm font-medium text-gray-700">IT equipment setup</span>
             </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-md border border-gray-200 px-4 py-3">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                 ○
               </div>
               <span className="text-sm font-medium text-gray-700">HR documents collection</span>
             </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-md border border-gray-200 px-4 py-3">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-gray-600">
                 ○
               </div>
               <span className="text-sm font-medium text-gray-700">Policy acknowledgement</span>
             </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-md border border-gray-200 px-4 py-3">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-gray-600">
                 ○
               </div>
               <span className="text-sm font-medium text-gray-700">Manager introduction & team meet</span>
             </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-md border border-gray-200 px-4 py-3">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-gray-600">
                 ○
               </div>
@@ -154,31 +154,31 @@ export default function Onboarding() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Document & Policy Integration</h2>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Employment Contract</div>
                 <div className="text-xs text-gray-500">Required for all new hires</div>
               </div>
               <Badge label="Signed" color="green" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Code of Conduct</div>
                 <div className="text-xs text-gray-500">Mandatory policy</div>
               </div>
               <Badge label="Pending" color="orange" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">IT Security Policy</div>
                 <div className="text-xs text-gray-500">System access requirements</div>
               </div>
               <Badge label="Pending" color="orange" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div>
                 <div className="font-medium text-gray-900">Data Privacy Agreement</div>
                 <div className="text-xs text-gray-500">GDPR compliance</div>

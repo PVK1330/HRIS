@@ -9,10 +9,10 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { policyDocuments, policyKpis } from '../../../data/mockData.js'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const initialFormData = {
   policyTitle: '',
@@ -111,7 +111,7 @@ export default function Policies() {
         <StatCard title="Overdue" value={policyKpis.overdue} subtitle="Needs follow-up" color="red" />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <Input
           label="Search"
           name="q"
@@ -124,7 +124,7 @@ export default function Policies() {
       <Table columns={columns} data={filtered} pageSize={5} />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Policy Acknowledgement</h2>
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
@@ -151,7 +151,7 @@ export default function Policies() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Reminder Notifications</h2>
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between rounded-lg bg-yellow-50 px-4 py-2">
@@ -178,7 +178,7 @@ export default function Policies() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Audit Log</h2>
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex items-start gap-2 text-gray-600">

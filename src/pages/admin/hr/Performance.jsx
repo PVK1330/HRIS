@@ -9,10 +9,10 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { employees, performanceKpis } from '../../../data/mockData.js'
 
 const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+  'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const RATING_VALUES = ['1', '2', '3', '4', '5']
 
@@ -175,7 +175,7 @@ export default function Performance() {
         />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <Input
           label="Search"
           name="q"
@@ -187,24 +187,24 @@ export default function Performance() {
 
       <Table columns={columns} data={filtered} pageSize={5} />
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         <h2 className="font-display text-lg font-bold text-gray-900">Performance Cycle Configuration</h2>
         <div className="mt-4 space-y-3">
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">Q1 2026 Review Cycle</div>
               <div className="text-xs text-gray-500">Jan 1 - Mar 31, 2026 • Active</div>
             </div>
             <Badge label="Active" color="green" />
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">Q2 2026 Review Cycle</div>
               <div className="text-xs text-gray-500">Apr 1 - Jun 30, 2026 • Upcoming</div>
             </div>
             <Badge label="Upcoming" color="blue" />
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
             <div>
               <div className="font-medium text-gray-900">Annual 2025 Review Cycle</div>
               <div className="text-xs text-gray-500">Jan 1 - Dec 31, 2025 • Completed</div>
@@ -218,7 +218,7 @@ export default function Performance() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Performance Analytics</h2>
           <div className="mt-4 space-y-4">
             <div>
@@ -260,10 +260,10 @@ export default function Performance() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-bold text-gray-900">Department Performance</h2>
           <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                   IT
@@ -275,7 +275,7 @@ export default function Performance() {
                 <div className="text-xs text-gray-500">Avg Rating</div>
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
                   HR
@@ -287,7 +287,7 @@ export default function Performance() {
                 <div className="text-xs text-gray-500">Avg Rating</div>
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-600">
                   FN

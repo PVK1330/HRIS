@@ -137,9 +137,9 @@ export default function AdminLayout() {
   }, [location.pathname])
 
   return (
-    <div className="flex h-screen min-h-0 w-full overflow-hidden bg-background-tertiary">
+    <div className="flex h-screen min-h-0 w-full overflow-hidden bg-[#F1F5F9]">
       {/* Dev Role Indicator Banner */}
-      <div className="fixed top-0 left-0 right-0 z-[100] flex h-1 items-center bg-primary" title={`Viewing as: ${ROLE_DISPLAY[user?.role]}`} />
+      <div className="fixed top-0 left-0 right-0 z-[100] h-1 bg-emerald-600 shadow-[0_1px_10px_rgba(5,150,105,0.5)]" />
       
       <Sidebar
         navGroups={filteredNavGroups}
@@ -150,26 +150,26 @@ export default function AdminLayout() {
         onMobileClose={() => setMobileOpen(false)}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
-        <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-border-tertiary bg-background-primary px-3 sm:h-16 sm:px-4">
-          <div className="flex min-w-0 items-center gap-3">
+        <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-slate-200/60 bg-white/70 backdrop-blur-md px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-4">
             <button
               type="button"
-              className="rounded-lg p-2 text-text-secondary hover:bg-background-secondary md:hidden"
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 md:hidden transition-colors"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
               <HiBars3 className="h-6 w-6" />
             </button>
-            <nav className="hidden min-w-0 max-w-[50vw] truncate text-sm text-text-secondary sm:flex sm:items-center sm:gap-2 md:max-w-none">
+            <nav className="hidden min-w-0 max-w-[50vw] truncate text-sm sm:flex sm:items-center sm:gap-2">
               {breadcrumb.map((c, i) => (
                 <span key={`${c}-${i}`} className="flex items-center gap-2">
-                  {i > 0 && <span className="text-text-tertiary">/</span>}
+                  {i > 0 && <span className="text-slate-300">/</span>}
                   {i === 0 ? (
-                    <Link to="/admin/dashboard" className="hover:text-primary">
+                    <Link to="/admin/dashboard" className="text-slate-500 hover:text-emerald-600 transition-colors font-medium">
                       {c}
                     </Link>
                   ) : (
-                    <span className={i === breadcrumb.length - 1 ? 'font-semibold text-text-primary' : ''}>
+                    <span className={i === breadcrumb.length - 1 ? 'font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md' : 'text-slate-500'}>
                       {c}
                     </span>
                   )}
@@ -183,18 +183,20 @@ export default function AdminLayout() {
               <button
                 type="button"
                 onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
-                className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary transition-all hover:bg-primary/20"
+                className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700 transition-all hover:bg-emerald-100 ring-1 ring-emerald-200/50"
               >
-                <span>Viewing as: {ROLE_DISPLAY[user?.role]}</span>
-                <span className="text-[10px] opacity-60">▼</span>
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{ROLE_DISPLAY[user?.role]}</span>
+                <span className="text-[10px] opacity-40">▼</span>
               </button>
               
               {showRoleSwitcher && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border-tertiary bg-background-primary p-2 shadow-2xl">
+                <div className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Access Level</div>
                   {Object.entries(ROLE_DISPLAY).map(([roleKey, label]) => (
                     <button
                       key={roleKey}
-                      className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition-all hover:bg-background-tertiary ${user?.role === roleKey ? 'bg-primary/10 text-primary' : 'text-text-secondary'}`}
+                      className={`w-full rounded-lg px-3 py-2.5 text-left text-xs font-semibold transition-all ${user?.role === roleKey ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100' : 'text-slate-600 hover:bg-slate-50'}`}
                       onClick={() => {
                         switchRole(roleKey);
                         setShowRoleSwitcher(false);
@@ -208,19 +210,25 @@ export default function AdminLayout() {
             </div>
 
             <NotificationDropdown />
-            <Link to="/admin/employee-profile" className="hidden items-center gap-2 sm:flex group">
-              <Avatar name={user?.name} size="sm" className="group-hover:ring-2 group-hover:ring-primary transition-all" />
+            <Link to="/admin/employee-profile" className="hidden items-center gap-3 sm:flex group bg-slate-50 pl-3 pr-1 py-1 rounded-lg border border-slate-200/50 hover:bg-white hover:shadow-sm transition-all duration-300">
               <div className="min-w-0 text-right">
-                <div className="truncate text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">{user?.name}</div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                  {ROLE_DISPLAY[user?.role]}
+                <div className="truncate text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-none">{user?.name}</div>
+                <div className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400 mt-1">
+                  SECURE ACCESS
                 </div>
               </div>
+              <Avatar name={user?.name} size="sm" className="ring-2 ring-white shadow-sm group-hover:ring-emerald-100 transition-all" />
             </Link>
-            <Button label="Log out" variant="ghost" size="sm" onClick={logout} />
+            <button 
+              onClick={logout}
+              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+              title="Logout"
+            >
+              <HiArrowRightOnRectangle className="h-5 w-5" />
+            </button>
           </div>
         </header>
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-background-tertiary p-4 sm:p-6">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-[#F8FAFC] p-4 sm:p-6">
           <div className="mx-auto min-w-0 max-w-[1600px]">
             <Outlet />
           </div>
