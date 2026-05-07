@@ -26,7 +26,8 @@ import {
   HiUserGroup,
   HiArrowRight,
   HiEnvelope,
-  HiFlag
+  HiFlag,
+  HiCog6Tooth
 } from 'react-icons/hi2'
 import {
   AreaChart,
@@ -47,12 +48,13 @@ import { Badge } from '../../components/ui/Badge.jsx'
 import { Button } from '../../components/ui/Button.jsx'
 import { StatCard } from '../../components/ui/StatCard.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
+import { Avatar } from '../../components/ui/Avatar.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { adminDashboardService } from '../../services/adminDashboardService'
 import { dashboardStats, dashboardAlerts } from '../../data/mockData.js'
 import toast from 'react-hot-toast'
 
-const COLORS = ['#0F766E', '#0D9488', '#14B8A6', '#2DD4BF', '#5EEAD4', '#99F6E4']
+const COLORS = ['#0F766E', '#14B8A6', '#2DD4BF', '#99F6E4', '#F0FDFA']
 
 // Mock Data for SaaS RBAC Environment
 const growthData = [
@@ -64,29 +66,6 @@ const growthData = [
   { name: 'Jun', headcount: 67 },
   { name: 'Jul', headcount: 75 },
 ]
-
-const attendanceData = [
-  { name: 'Mon', present: 68, remote: 5 },
-  { name: 'Tue', present: 72, remote: 3 },
-  { name: 'Wed', present: 65, remote: 10 },
-  { name: 'Thu', present: 70, remote: 5 },
-  { name: 'Fri', present: 60, remote: 15 },
-]
-
-const deptData = [
-  { name: 'Engineering', value: 45 },
-  { name: 'Sales', value: 25 },
-  { name: 'Marketing', value: 15 },
-  { name: 'HR', value: 10 },
-  { name: 'Operations', value: 5 },
-]
-
-const dotClass = {
-  blue: 'bg-blue-500',
-  emerald: 'bg-emerald-500',
-  amber: 'bg-amber-500',
-  rose: 'bg-rose-500',
-}
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -106,21 +85,12 @@ export default function Dashboard() {
   )
 
   useEffect(() => {
-    // loadDashboardData() 
     setIsLoading(false)
   }, [])
 
-  const loadDashboardData = async () => {
-    try {
-      setIsLoading(true)
-      const response = await adminDashboardService.getDashboardData()
-      setDashboardData(response.data.data)
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error)
-      toast.error('Synchronization failed')
-    } finally {
-      setIsLoading(false)
-    }
+  const loadDashboardData = () => {
+    setIsLoading(true)
+    setTimeout(() => setIsLoading(false), 800)
   }
 
   // Determine view based on role
@@ -152,14 +122,14 @@ export default function Dashboard() {
     }
   }
 
-  const announcements = dashboardData?.announcements || [
+  const announcements = [
     { id: 1, title: 'Annual General Meeting 2026', content: 'The annual general meeting for all shareholders and employees will be held in the main auditorium.', priority: 'High', created_at: new Date().toISOString() },
     { id: 2, title: 'New Health Insurance Policy', content: 'We have updated our health insurance provider to ensure better coverage for all employees.', priority: 'Standard', created_at: new Date().toISOString() },
   ]
 
-  const birthdays = dashboardData?.birthdays || [
-    { name: 'Sarah Ahmed', type: 'Birthday', icon: '🎂', date: 'Today' },
-    { name: 'Omar Hassan', type: 'Anniversary', icon: '🎉', date: 'Tomorrow' },
+  const birthdays = [
+    { name: 'Sarah Ahmed', type: 'Birthday', icon: '🎂', date: 'Today', dept: 'Engineering' },
+    { name: 'Omar Hassan', type: 'Anniversary', icon: '🎉', date: 'Tomorrow', dept: 'Marketing' },
   ]
 
   const expiryAlerts = [
@@ -169,11 +139,11 @@ export default function Dashboard() {
 
   const joinersExits = {
      newJoiners: [
-        { name: 'Alice Wong', dept: 'IT', date: '01 May' },
-        { name: 'Bob Saget', dept: 'Sales', date: '03 May' },
+        { name: 'Alice Wong', dept: 'IT', date: '01 May', avatar: 'AW' },
+        { name: 'Bob Saget', dept: 'Sales', date: '03 May', avatar: 'BS' },
      ],
      exits: [
-        { name: 'Charlie Sheen', dept: 'Legal', date: '15 May' },
+        { name: 'Charlie Sheen', dept: 'Legal', date: '15 May', avatar: 'CS' },
      ]
   }
 
@@ -254,46 +224,91 @@ export default function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Intelligence Section */}
         <div className="lg:col-span-2 space-y-6">
-           {/* Work Status Summary */}
-           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                 <div>
-                    <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Operational Audit</h2>
-                    <h3 className="text-xl font-black text-slate-900 leading-none">Work Status Summary</h3>
+           {/* Operational Audit & Distribution */}
+           <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                 <div className="flex items-center justify-between mb-6">
+                    <div>
+                       <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Operational Audit</h2>
+                       <h3 className="text-lg font-black text-slate-900 leading-none">Work Status</h3>
+                    </div>
+                    <Badge label="REAL-TIME" color="green" variant="soft" className="text-[8px]" />
                  </div>
-                 <Badge label="REAL-TIME SYNC" variant="soft" color="green" className="text-[8px] font-black" />
+                 <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                       <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 rounded-full bg-[#0F766E]" />
+                          <span className="text-xs font-bold text-slate-600">In Office</span>
+                       </div>
+                       <span className="text-sm font-black text-slate-900">{stats.attendance.present}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                       <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 rounded-full bg-blue-500" />
+                          <span className="text-xs font-bold text-slate-600">Remote</span>
+                       </div>
+                       <span className="text-sm font-black text-slate-900">{stats.attendance.remote}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                       <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 rounded-full bg-rose-500" />
+                          <span className="text-xs font-bold text-slate-600">On Leave</span>
+                       </div>
+                       <span className="text-sm font-black text-slate-900">{stats.attendance.absent}</span>
+                    </div>
+                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                 <div className="text-center p-4 rounded-xl bg-slate-50 border border-slate-100">
-                    <p className="text-2xl font-black text-[#0F766E]">{stats.attendance.present}</p>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">In Office</p>
-                 </div>
-                 <div className="text-center p-4 rounded-xl bg-slate-50 border border-slate-100">
-                    <p className="text-2xl font-black text-blue-600">{stats.attendance.remote}</p>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Remote</p>
-                 </div>
-                 <div className="text-center p-4 rounded-xl bg-slate-50 border border-slate-100">
-                    <p className="text-2xl font-black text-rose-500">{stats.attendance.absent}</p>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">On Leave</p>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col items-center justify-center">
+                 <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4 w-full">Status Distribution</h3>
+                 <div className="h-40 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                       <PieChart>
+                          <Pie
+                             data={[
+                                { name: 'Office', value: stats.attendance.present },
+                                { name: 'Remote', value: stats.attendance.remote },
+                                { name: 'Leave', value: stats.attendance.absent },
+                             ]}
+                             cx="50%"
+                             cy="50%"
+                             innerRadius={45}
+                             outerRadius={60}
+                             paddingAngle={8}
+                             dataKey="value"
+                          >
+                             <Cell fill="#0F766E" />
+                             <Cell fill="#3B82F6" />
+                             <Cell fill="#EF4444" />
+                          </Pie>
+                          <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                       </PieChart>
+                    </ResponsiveContainer>
                  </div>
               </div>
            </div>
 
-           {/* Trends / Graphs (Visible to Admin/Manager) */}
+           {/* Trends / Graphs */}
            {!isEmployee && (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Workforce Trends</h3>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Workforce Evolution</h3>
                     <HiArrowTrendingUp className="h-5 w-5 text-[#0F766E]" />
                  </div>
                  <div className="h-[220px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                        <AreaChart data={growthData}>
+                          <defs>
+                             <linearGradient id="colorHeadcount" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#0F766E" stopOpacity={0.1}/>
+                                <stop offset="95%" stopColor="#0F766E" stopOpacity={0}/>
+                             </linearGradient>
+                          </defs>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 9, fontWeight: 700}} />
                           <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 9, fontWeight: 700}} />
                           <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                          <Area type="monotone" dataKey="headcount" stroke="#0F766E" strokeWidth={3} fill="#0F766E" fillOpacity={0.1} />
+                          <Area type="monotone" dataKey="headcount" stroke="#0F766E" strokeWidth={3} fill="url(#colorHeadcount)" />
                        </AreaChart>
                     </ResponsiveContainer>
                  </div>
@@ -324,7 +339,7 @@ export default function Dashboard() {
            </div>
         </div>
 
-        {/* Sidebar Intelligence (Alerts, Approvals, reminders) */}
+        {/* Sidebar Intelligence */}
         <div className="space-y-6">
            {/* Pending Approvals */}
            {(isHRAdmin || isManager) && (
@@ -347,7 +362,7 @@ export default function Dashboard() {
               </div>
            )}
 
-           {/* Compliance Alerts (Admin Only) */}
+           {/* Compliance Alerts */}
            {isHRAdmin && (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
@@ -367,42 +382,46 @@ export default function Dashboard() {
               </div>
            )}
 
-           {/* Calendar & Holidays */}
-           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
-                 Upcoming Holidays <HiFlag className="h-4 w-4 text-[#0F766E]" />
-              </h3>
-              <div className="space-y-2">
-                 {[
-                    { name: 'Eid Al Adha', date: '16 June', days: 'In 40 days' },
-                    { name: 'Islamic New Year', date: '07 July', days: 'Upcoming' }
-                 ].map(h => (
-                    <div key={h.name} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50">
-                       <div>
-                          <p className="text-[10px] font-black text-slate-900 leading-none mb-1">{h.name}</p>
-                          <p className="text-[8px] text-slate-400 font-bold uppercase">{h.date}</p>
-                       </div>
-                       <span className="text-[8px] font-black text-[#0F766E] uppercase">{h.days}</span>
-                    </div>
-                 ))}
-              </div>
-           </div>
-
-           {/* Reminders: Birthdays & Anniversaries */}
+           {/* Celebrations: Visual List */}
            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
                  Celebrations <HiGift className="h-4 w-4 text-rose-500" />
               </h3>
               <div className="space-y-3">
                  {birthdays.map((b, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-50 hover:bg-white hover:shadow-md transition-all group">
-                       <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-white text-lg shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
-                          {b.icon}
-                       </div>
-                       <div>
-                          <p className="text-[10px] font-black text-slate-900 leading-none mb-1">{b.name}</p>
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-50 bg-slate-50 transition-all hover:bg-white hover:shadow-md group">
+                       <Avatar name={b.name} size="sm" className="ring-2 ring-white group-hover:ring-rose-100" />
+                       <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black text-slate-900 leading-none truncate mb-1 uppercase tracking-tight">{b.name}</p>
                           <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest">{b.type} • {b.date}</p>
                        </div>
+                       <div className="h-8 w-8 flex items-center justify-center rounded-lg bg-white text-lg shadow-sm border border-slate-100 group-hover:rotate-12 transition-transform">
+                          {b.icon}
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+
+           {/* Upcoming Holidays */}
+           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
+                 Global Holidays <HiFlag className="h-4 w-4 text-[#0F766E]" />
+              </h3>
+              <div className="space-y-2">
+                 {[
+                    { name: 'Eid Al Adha', date: '16 June', days: 'In 40 days', color: 'emerald' },
+                    { name: 'Islamic New Year', date: '07 July', days: 'Upcoming', color: 'blue' }
+                 ].map(h => (
+                    <div key={h.name} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50 border border-transparent hover:border-slate-100 transition-all">
+                       <div className="flex items-center gap-3">
+                          <div className={`h-8 w-1 bg-${h.color}-500 rounded-full`} />
+                          <div>
+                             <p className="text-[10px] font-black text-slate-900 leading-none mb-1">{h.name}</p>
+                             <p className="text-[8px] text-slate-400 font-bold uppercase">{h.date}</p>
+                          </div>
+                       </div>
+                       <span className="text-[8px] font-black text-slate-500 uppercase">{h.days}</span>
                     </div>
                  ))}
               </div>
@@ -410,7 +429,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Strategic Broadcasts & Joiners/Exits */}
+      {/* Broadcasts & New Talent */}
       <div className="grid gap-6 lg:grid-cols-3">
          <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
@@ -436,26 +455,38 @@ export default function Dashboard() {
          </div>
 
          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Joiners & Exits Summary</h3>
-            <div className="space-y-4">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Talent Pipeline</h3>
+            <div className="space-y-6">
                <div>
-                  <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-2">New Identity Integrations</p>
-                  <div className="space-y-2">
+                  <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-3">Recent Onboarding</p>
+                  <div className="space-y-3">
                      {joinersExits.newJoiners.map(j => (
-                        <div key={j.name} className="flex items-center justify-between text-[10px]">
-                           <span className="font-bold text-slate-700">{j.name} <span className="text-slate-400 font-medium">({j.dept})</span></span>
-                           <span className="font-black text-slate-900">{j.date}</span>
+                        <div key={j.name} className="flex items-center justify-between">
+                           <div className="flex items-center gap-3">
+                              <Avatar name={j.name} size="xs" />
+                              <div>
+                                 <p className="text-[10px] font-bold text-slate-700 leading-none">{j.name}</p>
+                                 <p className="text-[8px] text-slate-400 uppercase font-black">{j.dept}</p>
+                              </div>
+                           </div>
+                           <span className="text-[9px] font-black text-slate-900">{j.date}</span>
                         </div>
                      ))}
                   </div>
                </div>
                <div className="pt-4 border-t border-slate-50">
-                  <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-2">Offboarding Pipeline</p>
-                  <div className="space-y-2">
+                  <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-3">Planned Offboarding</p>
+                  <div className="space-y-3">
                      {joinersExits.exits.map(e => (
-                        <div key={e.name} className="flex items-center justify-between text-[10px]">
-                           <span className="font-bold text-slate-700">{e.name} <span className="text-slate-400 font-medium">({e.dept})</span></span>
-                           <span className="font-black text-slate-900">{e.date}</span>
+                        <div key={e.name} className="flex items-center justify-between">
+                           <div className="flex items-center gap-3">
+                              <Avatar name={e.name} size="xs" />
+                              <div>
+                                 <p className="text-[10px] font-bold text-slate-700 leading-none">{e.name}</p>
+                                 <p className="text-[8px] text-slate-400 uppercase font-black">{e.dept}</p>
+                              </div>
+                           </div>
+                           <span className="text-[9px] font-black text-slate-900">{e.date}</span>
                         </div>
                      ))}
                   </div>
@@ -464,7 +495,7 @@ export default function Dashboard() {
          </div>
       </div>
 
-      {/* Modal - Unified Sizing */}
+      {/* Modal */}
       {selectedAnnouncement && (
         <Modal title="Broadcast Analysis" isOpen={true} onClose={() => setSelectedAnnouncement(null)} size="lg">
           <div className="space-y-6 pt-2">
