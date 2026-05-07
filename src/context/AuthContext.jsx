@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- context module exports provider + hook */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 
@@ -75,6 +75,11 @@ export function AuthProvider({ children }) {
     }
   })
 
+  const userRef = useRef(user)
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
+
   // Global Auto-Login Interceptor (for Impersonation)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -142,14 +147,15 @@ export function AuthProvider({ children }) {
   }, [])
 
   const refreshAccessProfile = useCallback(async () => {
-    if (!user || user.role !== 'admin') return
+    const current = userRef.current
+    if (!current || current.role !== 'admin') return
     try {
       const response = await api.get('/auth/access-profile')
       const data = response?.data?.data
       if (!data) return
 
       setUser((prev) => {
-        if (!prev) return prev
+        if (!prev || prev.role !== 'admin') return prev
         const next = {
           ...prev,
           plan_details: data.plan_details || [],
@@ -161,16 +167,17 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Failed to refresh access profile:', error)
     }
-  }, [user])
+  }, [])
+
+  const adminSessionKey =
+    user?.role === 'admin' ? `${user.email ?? ''}:${user.id ?? ''}` : null
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') return
+    if (!adminSessionKey) return
     refreshAccessProfile()
-    const id = window.setInterval(() => {
-      refreshAccessProfile()
-    }, 180000)
+    const id = window.setInterval(refreshAccessProfile, 180000)
     return () => window.clearInterval(id)
-  }, [user, refreshAccessProfile])
+  }, [adminSessionKey, refreshAccessProfile])
 
   const logout = useCallback(() => {
     setUser(null)
