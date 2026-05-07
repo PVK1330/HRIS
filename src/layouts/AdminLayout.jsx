@@ -25,6 +25,7 @@ import {
   HiMegaphone,
   HiChartPie,
   HiChatBubbleLeftRight,
+  HiIdentification,
 } from 'react-icons/hi2'
 import { Sidebar } from '../components/ui/Sidebar.jsx'
 import { Avatar } from '../components/ui/Avatar.jsx'
@@ -38,6 +39,7 @@ const adminNavGroups = [
     items: [
       { label: 'Dashboard', icon: HiSquares2X2, path: '/admin/dashboard', permission: 'view_dashboard' },
       { label: 'Employee Directory', icon: HiUsers, path: '/admin/employee-directory', permission: 'view_employees', featureCode: 'employee_directory' },
+      { label: 'Employee Profiles', icon: HiIdentification, path: '/admin/employee-profile', permission: 'view_employees', featureCode: 'employee_directory' },
       { label: 'Attendance', icon: HiClock, path: '/admin/attendance', permission: 'view_attendance', featureCode: 'attendance' },
       { label: 'Leave & Absence', icon: HiCalendar, path: '/admin/leave', permission: 'view_leave', featureCode: 'leave' },
       { label: 'Documents & Approval', icon: HiDocument, path: '/admin/documents', permission: 'view_documents' },
@@ -54,7 +56,7 @@ const adminNavGroups = [
       { label: 'Onboarding', icon: HiUserPlus, path: '/admin/onboarding', permission: 'view_onboarding', featureCode: 'onboarding_exit' },
       { label: 'Exit Management', icon: HiArrowRightOnRectangle, path: '/admin/exit-management', permission: 'view_exit', featureCode: 'onboarding_exit' },
       { label: 'Letter Templates', icon: HiEnvelope, path: '/admin/letters', permission: 'view_letters' },
-      // { label: 'Reports & Analytics', icon: HiChartPie, path: '/admin/reports', permission: 'view_reports' },
+      { label: 'Reports & Analytics', icon: HiChartPie, path: '/admin/reports', permission: 'view_reports' },
       { label: 'Announcements', icon: HiMegaphone, path: '/admin/announcements', permission: 'view_announcements' },
       { label: 'Payroll Management', icon: HiCurrencyDollar, path: '/admin/payroll', permission: 'view_payroll', featureCode: 'payroll' },
     ],
@@ -104,7 +106,7 @@ export default function AdminLayout() {
         if (!item.permission) return true
         // Special case for dashboard - everyone sees it
         if (item.path === '/admin/dashboard') return true
-        
+
         // Detailed permission check
         if (item.permission === 'view_employees' && (user.role === 'hr_admin' || user.role === 'hr_executive' || user.role === 'manager')) return true
         if (item.permission === 'view_attendance' && true) return true // everyone sees attendance
@@ -123,7 +125,7 @@ export default function AdminLayout() {
         if (item.permission === 'view_messages' && true) return true
         if (item.permission === 'view_payroll' && (user.role === 'hr_admin')) return true
         if (item.permission === 'edit_settings' && (user.role === 'hr_admin')) return true
-        
+
         return hasPermission(item.permission)
       })
     })).filter(group => group.items.length > 0)
@@ -141,7 +143,7 @@ export default function AdminLayout() {
     <div className="flex h-screen min-h-0 w-full overflow-hidden bg-[#F1F5F9]">
       {/* Dev Role Indicator Banner */}
       <div className="fixed top-0 left-0 right-0 z-[100] h-1 bg-emerald-600 shadow-[0_1px_10px_rgba(5,150,105,0.5)]" />
-      
+
       <Sidebar
         navGroups={filteredNavGroups}
         role={user?.role}
@@ -190,7 +192,7 @@ export default function AdminLayout() {
                 <span>{ROLE_DISPLAY[user?.role]}</span>
                 <span className="text-[10px] opacity-40">▼</span>
               </button>
-              
+
               {showRoleSwitcher && (
                 <div className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 animate-in fade-in zoom-in-95 duration-200">
                   <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Access Level</div>
@@ -220,7 +222,7 @@ export default function AdminLayout() {
               </div>
               <Avatar name={user?.name} size="sm" className="ring-2 ring-white shadow-sm group-hover:ring-emerald-100 transition-all" />
             </Link>
-            <button 
+            <button
               onClick={logout}
               className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
               title="Logout"
