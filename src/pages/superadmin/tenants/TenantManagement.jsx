@@ -6,6 +6,7 @@ import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
+import { Toggle } from '../../../components/ui/Toggle.jsx'
 import {
   HiCheck,
   HiClock,
@@ -24,7 +25,8 @@ import {
   HiShieldCheck,
   HiQuestionMarkCircle,
   HiGlobeAlt,
-  HiInformationCircle
+  HiInformationCircle,
+  HiSquares2X2
 } from 'react-icons/hi2'
 
 const slugify = (text) => text.toString().toLowerCase().trim()
@@ -117,10 +119,13 @@ export default function TenantManagement() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showFeaturesModal, setShowFeaturesModal] = useState(false)
 
   const [selectedOrg, setSelectedOrg] = useState(null)
   const [confirmAction, setConfirmAction] = useState('')
   const [confirmInput, setConfirmInput] = useState('')
+  const [tenantFeatures, setTenantFeatures] = useState([])
+  const [isFeaturesLoading, setIsFeaturesLoading] = useState(false)
 
   // Form States
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' })
@@ -172,6 +177,50 @@ export default function TenantManagement() {
     setShowDetailModal(true)
   }
 
+  const fetchTenantFeatures = async (tenantId) => {
+    try {
+      setIsFeaturesLoading(true)
+      const response = await api.get(`/tenants/${tenantId}/features`)
+      setTenantFeatures(response?.data?.data?.features || [])
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Features Load Failed',
+        text: error.response?.data?.message || 'Failed to load tenant features',
+        confirmButtonColor: '#4f46e5'
+      })
+    } finally {
+      setIsFeaturesLoading(false)
+    }
+  }
+
+  const handleOpenFeatures = async (org) => {
+    setSelectedOrg(org)
+    setShowFeaturesModal(true)
+    await fetchTenantFeatures(org.id)
+  }
+
+  const handleToggleFeature = async (feature) => {
+    if (!selectedOrg) return
+    try {
+      await api.patch(`/tenants/${selectedOrg.id}/features/${feature.id}`, {
+        isEnabled: !feature.isEnabled
+      })
+      setTenantFeatures(prev => prev.map(item => (
+        item.id === feature.id
+          ? { ...item, isEnabled: !item.isEnabled, isAssigned: true }
+          : item
+      )))
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: error.response?.data?.message || 'Failed to update feature access',
+        confirmButtonColor: '#ef4444'
+      })
+    }
+  }
+
   const handleEdit = (org) => {
     setSelectedOrg(org)
     setEditForm({
@@ -220,18 +269,17 @@ export default function TenantManagement() {
     }
 
     try {
-      setIsLoading(true)
+      setIsLoading(true);
       await api.post('/tenants/create', {
         name: newForm.name,
         adminEmail: newForm.adminEmail,
         adminName: newForm.adminName,
         adminPassword: newForm.adminPassword,
-        plan_id: newForm.plan
-      })
-
-      setShowNewModal(false)
-      setNewForm({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' })
-      fetchTenants() // Refresh list
+        plan_id: String(newForm.plan),
+      });
+      setShowNewModal(false);
+      setNewForm({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' });
+      fetchTenants(); // Refresh list
     } catch (error) {
       Swal.fire({
         icon: 'error',
@@ -426,6 +474,7 @@ export default function TenantManagement() {
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" icon={HiDocumentText} className="text-slate-400 hover:text-indigo-600" onClick={() => handleView(org)} />
                 <Button variant="ghost" size="sm" icon={HiPencil} className="text-slate-400 hover:text-blue-600" onClick={() => handleEdit(org)} />
+                <Button variant="ghost" size="sm" icon={HiSquares2X2} className="text-slate-400 hover:text-violet-600" onClick={() => handleOpenFeatures(org)} />
                 <Button variant="ghost" size="sm" icon={HiArrowTopRightOnSquare} className="text-slate-400 hover:text-emerald-600" onClick={() => handleLoginAs(org)} />
               </div>
             ),
@@ -452,7 +501,7 @@ export default function TenantManagement() {
               <label className="mb-2 block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Subscription Tier</label>
               <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer" value={newForm.plan} onChange={(e) => setNewForm({ ...newForm, plan: e.target.value })}>
                 {plans.map(plan => (
-                  <option key={plan.id} value={plan.id}>{plan.plan_name}</option>
+                  <option key={plan.id} value={plan.id.toString()}>{plan.plan_name}</option>
                 ))}
               </select>
             </div>
@@ -512,6 +561,10 @@ export default function TenantManagement() {
                   <Button variant="ghost" size="sm" icon={HiPencil} className="bg-white shadow-sm text-blue-600 hover:bg-blue-600 hover:text-white" onClick={() => handleEdit(selectedOrg)} />
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[9px] font-bold rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">Edit Details</div>
                 </div>
+                <div className="group relative">
+                  <Button variant="ghost" size="sm" icon={HiSquares2X2} className="bg-white shadow-sm text-violet-600 hover:bg-violet-600 hover:text-white" onClick={() => handleOpenFeatures(selectedOrg)} />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[9px] font-bold rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">Manage Features</div>
+                </div>
               </div>
             </div>
 
@@ -524,6 +577,50 @@ export default function TenantManagement() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Features Modal */}
+      <Modal
+        isOpen={showFeaturesModal}
+        onClose={() => setShowFeaturesModal(false)}
+        title={`Feature Access · ${selectedOrg?.name || ''}`}
+        description={`Tenant ID: ${selectedOrg?.id || '-'} · Configure feature overrides`}
+        icon={HiSquares2X2}
+        size="lg"
+      >
+        <div className="space-y-5 p-2">
+          {isFeaturesLoading ? (
+            <div className="py-10 text-center text-sm font-semibold text-slate-500">Loading features...</div>
+          ) : tenantFeatures.length === 0 ? (
+            <div className="py-10 text-center text-sm font-semibold text-slate-500">No features found.</div>
+          ) : (
+            <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+              {tenantFeatures.map((feature) => (
+                <div key={feature.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="pr-4">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-slate-900">{feature.name}</p>
+                      {!feature.isActive && <Badge label="Inactive" color="gray" />}
+                      {feature.isAssigned && <Badge label="Override" color="indigo" variant="glass" />}
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{feature.code}</p>
+                    {feature.description && (
+                      <p className="mt-1 text-xs text-slate-600">{feature.description}</p>
+                    )}
+                  </div>
+                  <Toggle
+                    checked={Boolean(feature.isEnabled)}
+                    disabled={!feature.isActive}
+                    onChange={() => handleToggleFeature(feature)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end border-t border-slate-100 pt-4">
+            <Button label="Close" variant="ghost" className="font-bold text-slate-500" onClick={() => setShowFeaturesModal(false)} />
+          </div>
+        </div>
       </Modal>
 
       {/* Edit Modal */}

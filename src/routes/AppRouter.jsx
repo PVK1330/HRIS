@@ -38,7 +38,6 @@ import TenantManagement from "../pages/superadmin/tenants/TenantManagement.jsx";
 import SubscriptionsPlans from "../pages/superadmin/subscriptions/SubscriptionsPlans.jsx";
 import SubscriptionFeatures from "../pages/superadmin/subscriptions/SubscriptionFeatures.jsx";
 import Billing from "../pages/superadmin/billing/Billing.jsx";
-import ModuleManagement from "../pages/superadmin/platform/ModuleManagement.jsx";
 import Announcements from "../pages/superadmin/platform/Announcements.jsx";
 import AuditLogs from "../pages/superadmin/system/AuditLogs.jsx";
 import SupportTickets from "../pages/superadmin/support/SupportTickets.jsx";
@@ -146,7 +145,6 @@ export const router = createBrowserRouter([
           { path: "subscriptions", element: <SubscriptionsPlans /> },
           { path: "subscription-features", element: <SubscriptionFeatures /> },
           { path: "billing", element: <Billing /> },
-          { path: "modules", element: <ModuleManagement /> },
           { path: "announcements", element: <Announcements /> },
           { path: "audit", element: <AuditLogs /> },
           { path: "support", element: <SupportTickets /> },
