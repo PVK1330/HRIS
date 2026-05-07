@@ -1,31 +1,44 @@
-import { useMemo, useState } from 'react'
-import { HiEye, HiDocumentCheck, HiClipboardDocumentList, HiExclamationCircle, HiShieldCheck } from 'react-icons/hi2'
+import React, { useMemo, useState } from 'react'
+import { 
+  HiEye, 
+  HiDocumentCheck, 
+  HiClipboardDocumentList, 
+  HiExclamationCircle, 
+  HiShieldCheck,
+  HiMagnifyingGlass,
+  HiAdjustmentsHorizontal,
+  HiArrowPath,
+  HiCheckCircle,
+  HiXCircle,
+  HiIdentification,
+  HiArrowDownTray,
+  HiCloudArrowUp,
+  HiClock,
+  HiUsers,
+  HiGlobeAlt
+} from 'react-icons/hi2'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
+import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { employees } from '../../../data/mockData.js'
-
-const selectClass =
-  'w-full bg-white/50 border border-slate-200 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700'
-
-const textareaClass =
-  'w-full min-h-[120px] rounded-md border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-inner'
 
 const MANDATORY_DOCS = [
   'Passport',
   'National ID',
   'Education Certificates',
-  'Contract',
+  'Employment Contract',
   'Offer Letter',
-  'Experience Letters'
+  'Experience Certificate'
 ]
 
 const initialSubmissions = [
-  { id: 1, employee: 'John Doe', empId: 'EMP001', department: 'Engineering', docType: 'Passport', submittedDate: '2024-05-01', status: 'Pending', hrComments: '', version: 1 },
-  { id: 2, employee: 'Jane Smith', empId: 'EMP002', department: 'HR', docType: 'Offer Letter', submittedDate: '2024-05-02', status: 'Rejected', hrComments: 'ID number blurry, please re-scan.', version: 1 },
-  { id: 3, employee: 'Robert Fox', empId: 'EMP003', department: 'Design', docType: 'Contract', submittedDate: '2024-04-28', status: 'Approved', hrComments: 'Verified and archived.', version: 1 },
-  { id: 4, employee: 'Sarah Wilson', empId: 'EMP004', department: 'Marketing', docType: 'National ID', submittedDate: '2024-05-03', status: 'Pending', hrComments: '', version: 1 },
+  { id: 1, employee: 'John Doe', empId: 'EP-1999', department: 'Engineering', docType: 'Passport', submittedDate: '2026-05-01', status: 'Pending', hrComments: '', version: 1 },
+  { id: 2, employee: 'Jane Smith', empId: 'EP-2044', department: 'Human Resources', docType: 'Offer Letter', submittedDate: '2026-05-02', status: 'Rejected', hrComments: 'Signature missing on page 4.', version: 1 },
+  { id: 3, employee: 'Robert Fox', empId: 'EP-1120', department: 'Design', docType: 'Employment Contract', submittedDate: '2026-04-28', status: 'Approved', hrComments: 'Verified and archived.', version: 2 },
+  { id: 4, employee: 'Sarah Wilson', empId: 'EP-1001', department: 'Marketing', docType: 'National ID', submittedDate: '2026-05-03', status: 'Pending', hrComments: '', version: 1 },
+  { id: 5, employee: 'Michael Chen', empId: 'EP-1088', department: 'Finance', docType: 'Education Certificates', submittedDate: '2026-05-04', status: 'Pending', hrComments: '', version: 1 },
 ]
 
 export default function Documents() {
@@ -49,21 +62,17 @@ export default function Documents() {
     })
   }, [submissions, q, deptFilter, statusFilter])
 
-  const pendingDocs = useMemo(() => filtered.filter(s => s.status === 'Pending'), [filtered])
-  const rejectedDocs = useMemo(() => filtered.filter(s => s.status === 'Rejected'), [filtered])
-  const approvedDocs = useMemo(() => filtered.filter(s => s.status === 'Approved'), [filtered])
-
   const stats = useMemo(() => ({
     pending: submissions.filter(s => s.status === 'Pending').length,
     approved: submissions.filter(s => s.status === 'Approved').length,
     rejected: submissions.filter(s => s.status === 'Rejected').length,
-    compliance: Math.round((submissions.filter(s => s.status === 'Approved').length / MANDATORY_DOCS.length) * 100)
+    total: submissions.length
   }), [submissions])
 
   const handleAction = (row, type) => {
     setSelectedRow(row)
     setActionType(type)
-    setActionReason(type === 'Approve' ? 'Approved' : '')
+    setActionReason(type === 'Approve' ? 'Compliance Verified' : '')
     setActionModalOpen(true)
   }
 
@@ -77,7 +86,7 @@ export default function Documents() {
       if (s.id === selectedRow.id) {
         return {
           ...s,
-          status: actionType === 'Correction' ? 'Rejected' : actionType,
+          status: actionType === 'Approve' ? 'Approved' : 'Rejected',
           hrComments: actionReason
         }
       }
@@ -87,356 +96,378 @@ export default function Documents() {
     setSelectedRow(null)
   }
 
-  const sectionHeader = (title, Icon) => (
-    <div className="flex items-center gap-3 mb-6">
-      <div className="relative">
-        <div className="absolute -inset-1 bg-emerald-500/20 rounded-full blur-sm" />
-        <div className="relative bg-[#005c8d] text-white p-2 rounded-lg shadow-lg">
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-      <div>
-        <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight leading-none">{title}</h2>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Registry Workflow • Section 0{title.includes('Pending') ? '1' : title.includes('Rejected') ? '2' : '3'}</p>
-      </div>
-    </div>
-  )
-
-  const commonColumns = [
+  const columns = [
     {
       key: 'employee',
-      label: 'Employee Name',
+      label: 'Contributor',
       render: (_, row) => (
         <div className="flex items-center gap-3 py-1">
-          <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-600 border border-slate-200 shadow-sm">
-            {row.employee.split(' ').map(n => n[0]).join('')}
+          <div className="h-9 w-9 shrink-0 rounded-full bg-[#0F766E]/10 flex items-center justify-center text-[10px] font-black text-[#0F766E] border border-[#0F766E]/20 shadow-sm">
+            {row.employee.charAt(0)}
           </div>
           <div>
-            <div className="text-sm font-bold text-slate-900 leading-none">{row.employee}</div>
-            <div className="mt-1 text-[10px] text-slate-400 font-bold uppercase tracking-tight">{row.empId}</div>
+            <div className="text-sm font-bold text-slate-900 leading-none mb-1">{row.employee}</div>
+            <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{row.empId}</div>
           </div>
         </div>
       )
     },
-    { key: 'docType', label: 'Document Type' },
-    { key: 'submittedDate', label: 'Submission Date' },
+    { 
+       key: 'docType', 
+       label: 'Classification',
+       render: (v) => (
+          <div className="flex items-center gap-2 text-slate-700 font-medium">
+             <HiIdentification className="h-4 w-4 text-slate-400" />
+             <span className="text-sm">{v}</span>
+          </div>
+       )
+    },
+    { 
+       key: 'submittedDate', 
+       label: 'Submitted',
+       render: (v) => <span className="text-xs font-bold text-slate-500">{v}</span>
+    },
     {
       key: 'status',
       label: 'Status',
       render: (v) => (
         <Badge 
           label={v} 
+          variant="outline"
           color={v === 'Pending' ? 'orange' : v === 'Rejected' ? 'red' : 'green'} 
-          className="rounded-md px-2 py-0.5 font-bold uppercase text-[9px] tracking-widest" 
+          className="font-black uppercase text-[9px] tracking-widest px-2.5" 
         />
       )
-    }
-  ]
-
-  const pendingColumns = [
-    ...commonColumns,
-    {
-      key: 'actions',
-      label: 'Verification Actions',
-      render: (_, row) => (
-        <div className="flex gap-1.5">
-          <button onClick={() => handlePreview(row)} className="px-3 py-1 text-[10px] font-black text-white bg-[#005c8d] hover:bg-[#004a72] rounded-md transition-all uppercase shadow-sm">Preview</button>
-          <button onClick={() => handleAction(row, 'Approve')} className="px-3 py-1 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-all uppercase">Approve</button>
-          <button onClick={() => handleAction(row, 'Reject')} className="px-3 py-1 text-[10px] font-black text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-md transition-all uppercase">Reject</button>
-        </div>
-      )
-    }
-  ]
-
-  const rejectedColumns = [
-    ...commonColumns,
-    {
-      key: 'hrComments',
-      label: 'Reason for Rejection',
-      render: (v) => <span className="text-[11px] text-rose-600 font-bold italic truncate block max-w-[150px]" title={v}>{v || 'Policy Mismatch'}</span>
     },
     {
-      key: 'actions_rejected',
-      label: 'Actions',
-      render: (_, row) => (
-        <button onClick={() => handlePreview(row)} className="px-3 py-1 text-[10px] font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-all uppercase">Preview</button>
-      )
-    }
-  ]
-
-  const approvedColumns = [
-    ...commonColumns,
-    {
-      key: 'actions_approved',
-      label: 'Actions',
-      render: (_, row) => (
-        <button onClick={() => handlePreview(row)} className="px-3 py-1 text-[10px] font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-all uppercase">Preview</button>
-      )
+       key: 'actions',
+       label: 'Verification Control',
+       render: (_, row) => (
+          <div className="flex items-center gap-1.5">
+             <Button variant="ghost" size="sm" icon={HiEye} onClick={() => handlePreview(row)} className="text-slate-400 hover:text-[#0F766E]" />
+             {row.status === 'Pending' && (
+                <>
+                   <Button variant="ghost" size="sm" icon={HiCheckCircle} onClick={() => handleAction(row, 'Approve')} className="text-emerald-400 hover:text-emerald-600" />
+                   <Button variant="ghost" size="sm" icon={HiXCircle} onClick={() => handleAction(row, 'Reject')} className="text-rose-400 hover:text-rose-600" />
+                </>
+             )}
+          </div>
+       )
     }
   ]
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Premium Hero Section */}
-      <div className="relative bg-slate-900 rounded-2xl p-8 mb-8 overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-emerald-500/10 to-transparent pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Premium Hero Section (Emerald Gradient like Visa Page) */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div>
-            <div className="flex items-center gap-2 text-emerald-400 mb-2">
+            <div className="flex items-center gap-2 text-emerald-100 mb-2">
               <HiShieldCheck className="w-5 h-5" />
-              <span className="text-xs font-black uppercase tracking-[0.3em]">Compliance Registry</span>
+              <span className="text-xs font-black uppercase tracking-[0.3em]">Compliance Master Registry</span>
             </div>
-            <h1 className="text-4xl font-black text-white tracking-tight">Documents & Approval</h1>
-            <p className="text-slate-400 mt-2 font-medium max-w-md">Enterprise-grade document verification and workforce compliance tracking system.</p>
+            <h1 className="text-3xl font-black text-white tracking-tight uppercase">Documents & Approval</h1>
+            <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed font-medium">
+               Enterprise document verification suite. Audit regulatory submissions, manage workforce compliance, and track credential integrity with automated workflows.
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-xl">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Awaiting</p>
-              <p className="text-2xl font-black text-white leading-none">{stats.pending}</p>
-              <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500" style={{ width: '40%' }} />
-              </div>
-            </div>
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-xl">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Approved</p>
-              <p className="text-2xl font-black text-white leading-none">{stats.approved}</p>
-              <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500" style={{ width: '85%' }} />
-              </div>
-            </div>
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-xl">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Rejected</p>
-              <p className="text-2xl font-black text-white leading-none">{stats.rejected}</p>
-              <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-rose-500" style={{ width: '15%' }} />
-              </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md border border-emerald-500/30 p-4 rounded-xl shadow-lg shadow-emerald-500/10">
-              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Compliance</p>
-              <p className="text-2xl font-black text-white leading-none">{stats.compliance}%</p>
-              <p className="text-[9px] font-bold text-emerald-400 mt-1 uppercase">Health Check</p>
-            </div>
+          <div className="flex flex-wrap gap-3">
+             <button className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 border border-white/10">
+                <HiArrowPath className="h-4 w-4" /> Export Report
+             </button>
+             <button className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95">
+                <HiCloudArrowUp className="h-4 w-4" /> Bulk Verification
+             </button>
           </div>
         </div>
+        {/* Background Decorative Elements */}
+        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
+        <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-black/5" />
+      </div>
+
+      {/* Stats Cards (Referring Visa Page Design) */}
+      <div className="grid gap-6 sm:grid-cols-4">
+        <StatCard 
+           title="Audit Queue" 
+           value={stats.pending} 
+           subtitle="Pending HR Verification" 
+           color="orange" 
+           icon={HiClipboardDocumentList}
+        />
+        <StatCard 
+           title="Verified Assets" 
+           value={stats.approved} 
+           subtitle="Regulatory Compliance Met" 
+           color="emerald" 
+           icon={HiDocumentCheck}
+        />
+        <StatCard 
+           title="Policy Flags" 
+           value={stats.rejected} 
+           subtitle="Intervention Required" 
+           color="red" 
+           icon={HiExclamationCircle}
+        />
+        <StatCard 
+           title="Global Registry" 
+           value={stats.total} 
+           subtitle="Total Submission Volume" 
+           color="blue" 
+           icon={HiGlobeAlt}
+        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        {/* Sidebar: Checklist & Filters */}
+        {/* Sidebar: Compliance Workspace */}
         <div className="xl:col-span-1 space-y-6">
-          {/* Glassmorphism Filter Card */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-[#005c8d] rounded-full" />
-              Registry Filters
-            </h3>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Talent</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
-                  <input 
-                    type="text" 
-                    placeholder="Name or ID..." 
-                    value={q} 
-                    onChange={e => setQ(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-md py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-[#005c8d] font-medium" 
-                  />
-                </div>
+           <div className="rounded-2xl border border-slate-200 bg-white/50 p-6 backdrop-blur-xl shadow-sm space-y-6 transition-all hover:shadow-md">
+              <div className="flex items-center gap-2 text-slate-800 mb-2">
+                 <HiAdjustmentsHorizontal className="h-5 w-5 text-[#0F766E]" />
+                 <span className="text-xs font-bold uppercase tracking-widest">Workspace Filters</span>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
-                <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)} className={selectClass}>
-                  <option value="">All Divisions</option>
-                  <option value="Engineering">Engineering</option>
-                  <option value="HR">HR</option>
-                  <option value="Design">Design</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Doc Status</label>
-                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectClass}>
-                  <option value="">Global Status</option>
-                  <option value="Pending">Pending Audit</option>
-                  <option value="Approved">Verified</option>
-                  <option value="Rejected">Flagged</option>
-                </select>
-              </div>
-              <button 
-                onClick={() => { setQ(''); setDeptFilter(''); setStatusFilter('') }}
-                className="w-full py-2.5 text-[10px] font-black text-slate-400 hover:text-rose-500 uppercase tracking-widest border border-dashed border-slate-200 rounded-md hover:border-rose-200 transition-all"
-              >
-                Reset Parameters
-              </button>
-            </div>
-          </div>
 
-          {/* Mandatory Checklist Sidebar */}
-          <div className="bg-[#005c8d] rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12 blur-2xl" />
-            <h3 className="text-xs font-black text-white/60 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-              <HiClipboardDocumentList className="w-4 h-4 text-white" />
-              Baseline Audit
-            </h3>
-            <div className="space-y-3">
-              {MANDATORY_DOCS.map(doc => (
-                <div key={doc} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl border border-white/10 group hover:bg-white/20 transition-all cursor-default">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
-                  <span className="text-xs font-bold text-white group-hover:translate-x-1 transition-transform">{doc}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <p className="text-[10px] text-white/50 leading-relaxed italic">System automatically flags employees missing these core credentials.</p>
-            </div>
-          </div>
+              <div>
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Registry</label>
+                 <div className="relative mt-1.5">
+                    <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input 
+                       type="text" 
+                       placeholder="Talent name or ID..." 
+                       value={q}
+                       onChange={e => setQ(e.target.value)}
+                       className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-bold focus:border-[#0F766E] outline-none transition-all"
+                    />
+                 </div>
+              </div>
+
+              <div>
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Division</label>
+                 <select 
+                    value={deptFilter} 
+                    onChange={e => setDeptFilter(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 mt-1.5 text-sm text-slate-900 font-bold focus:border-[#0F766E] outline-none transition-all"
+                 >
+                    <option value="">Global Divisions</option>
+                    <option>Engineering</option>
+                    <option>Human Resources</option>
+                    <option>Finance</option>
+                    <option>Marketing</option>
+                 </select>
+              </div>
+
+              <div>
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Audit Status</label>
+                 <select 
+                    value={statusFilter} 
+                    onChange={e => setStatusFilter(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 mt-1.5 text-sm text-slate-900 font-bold focus:border-[#0F766E] outline-none transition-all"
+                 >
+                    <option value="">Audit Filter</option>
+                    <option value="Pending">Awaiting Review</option>
+                    <option value="Approved">Verified / Valid</option>
+                    <option value="Rejected">Flagged / Rejected</option>
+                 </select>
+              </div>
+
+              <button 
+                 onClick={() => { setQ(''); setDeptFilter(''); setStatusFilter('') }}
+                 className="w-full py-3 text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-[0.2em] border border-dashed border-slate-200 rounded-xl hover:border-red-200 transition-all"
+              >
+                 Reset All Filters
+              </button>
+           </div>
+
+           {/* Mandatory Compliance Checklist */}
+           <div className="bg-[#0F766E] rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-110 transition-transform" />
+              <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                 <HiClipboardDocumentList className="w-5 h-5 opacity-50" />
+                 Baseline Compliance
+              </h3>
+              <div className="space-y-3">
+                 {MANDATORY_DOCS.map(doc => (
+                    <div key={doc} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl border border-white/10 group/item hover:bg-white/20 transition-all cursor-default">
+                       <HiCheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+                       <span className="text-[11px] font-bold text-emerald-50 group-hover/item:translate-x-1 transition-transform">{doc}</span>
+                    </div>
+                 ))}
+              </div>
+              <div className="mt-8 pt-6 border-t border-white/10">
+                 <p className="text-[10px] text-emerald-100/50 font-medium leading-relaxed italic">System automatically flags personnel missing these core regulatory credentials.</p>
+              </div>
+           </div>
         </div>
 
-        {/* Main Content: Document Lists */}
+        {/* Main Workspace: Audit Queue */}
         <div className="xl:col-span-3 space-y-8">
-          {/* Pending Section */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            {sectionHeader('Pending Verification', HiClipboardDocumentList)}
-            <div className="overflow-hidden rounded-xl border border-slate-100">
-              <Table columns={pendingColumns} data={pendingDocs} pageSize={5} />
-            </div>
-          </div>
+           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+              <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                 <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                       <HiArrowPath className="h-5 w-5" />
+                    </div>
+                    <div>
+                       <h2 className="text-sm font-bold text-slate-900 uppercase tracking-tight leading-none">Active Audit Queue</h2>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Real-time Regulatory Intake</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-4">
+                    <Badge label={`${filtered.length} RECORDS`} variant="outline" color="blue" className="font-black text-[9px] px-3" />
+                 </div>
+              </div>
+              <Table columns={columns} data={filtered} pageSize={8} />
+           </div>
 
-          {/* Rejected Section */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            {sectionHeader('Flagged & Rejected', HiExclamationCircle)}
-            <div className="overflow-hidden rounded-xl border border-slate-100">
-              <Table columns={rejectedColumns} data={rejectedDocs} pageSize={5} />
-            </div>
-          </div>
-
-          {/* Approved Section */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            {sectionHeader('Verified Repository', HiDocumentCheck)}
-            <div className="overflow-hidden rounded-xl border border-slate-100">
-              <Table columns={approvedColumns} data={approvedDocs} pageSize={5} />
-            </div>
-          </div>
+           {/* Workflow Legend */}
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                 { title: 'Pending Audit', desc: 'New submissions awaiting HR administrative verification.', icon: HiClock, color: 'orange' },
+                 { title: 'Verified Asset', desc: 'Securely archived credentials cleared for compliance.', icon: HiShieldCheck, color: 'emerald' },
+                 { title: 'Policy Flags', desc: 'Rejected documents requiring employee intervention.', icon: HiExclamationCircle, color: 'red' }
+              ].map(item => (
+                 <div key={item.title} className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex gap-4 items-start transition-all hover:shadow-md">
+                    <div className={`h-10 w-10 shrink-0 rounded-xl bg-${item.color}-50 text-${item.color}-600 flex items-center justify-center shadow-sm`}>
+                       <item.icon className="h-6 w-6" />
+                    </div>
+                    <div>
+                       <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-1">{item.title}</h4>
+                       <p className="text-[10px] text-slate-500 font-medium leading-relaxed">{item.desc}</p>
+                    </div>
+                 </div>
+              ))}
+           </div>
         </div>
       </div>
 
-      {/* Action Modal */}
+      {/* Action Modal: Verification Control */}
       <Modal 
         isOpen={actionModalOpen} 
         onClose={() => setActionModalOpen(false)} 
-        title={`${actionType} Regulatory Submission`} 
+        title={`Compliance Verification: ${actionType}`} 
         size="md"
       >
-        <div className="space-y-6 pt-2">
-          <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl" />
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Target Compliance Record</p>
-            <p className="text-sm font-black text-white">{selectedRow?.docType}</p>
-            <p className="text-xs font-bold text-emerald-400 mt-1">{selectedRow?.employee} ({selectedRow?.empId})</p>
-          </div>
-          
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Administrative Remarks</label>
-            <textarea 
-              className={textareaClass}
-              value={actionReason}
-              onChange={e => setActionReason(e.target.value)}
-              placeholder={actionType === 'Approve' ? 'Optional remarks for the employee profile...' : 'Detailed justification required for audit rejection...'}
-            />
-          </div>
+        <div className="space-y-6 pt-2 animate-in fade-in duration-300">
+           <div className="bg-[#0F766E] p-6 rounded-2xl relative overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+              <div className="relative z-10 space-y-4">
+                 <div className="flex justify-between items-start">
+                    <div>
+                       <p className="text-[9px] font-black text-emerald-100 uppercase tracking-widest mb-1">Subject Profile</p>
+                       <p className="text-lg font-black text-white leading-tight">{selectedRow?.employee}</p>
+                       <p className="text-[11px] font-bold text-emerald-200 uppercase tracking-widest">{selectedRow?.empId}</p>
+                    </div>
+                    <Badge label={selectedRow?.docType} color="blue" className="font-black text-[9px] bg-white/20 text-white border-none" />
+                 </div>
+              </div>
+           </div>
+           
+           <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Administrative Audit Remarks</label>
+              <textarea 
+                className="w-full min-h-[140px] rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-sm text-slate-900 font-bold focus:border-[#0F766E] outline-none transition-all shadow-inner"
+                value={actionReason}
+                onChange={e => setActionReason(e.target.value)}
+                placeholder={actionType === 'Approve' ? 'Optional verification notes...' : 'Required justification for policy rejection...'}
+              />
+           </div>
 
-          <div className="flex gap-3 pt-2">
-            <Button label="Abort Action" variant="ghost" onClick={() => setActionModalOpen(false)} className="flex-1 font-bold" />
-            <Button 
-              label={`Execute ${actionType}`} 
-              variant="primary" 
-              onClick={confirmAction}
-              className={`flex-1 rounded-md shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] ${actionType === 'Approve' ? 'bg-emerald-600' : actionType === 'Reject' ? 'bg-rose-600' : 'bg-amber-600'}`}
-              disabled={actionType !== 'Approve' && !actionReason.trim()}
-            />
-          </div>
+           <div className="flex gap-4">
+              <Button label="CANCEL" variant="ghost" onClick={() => setActionModalOpen(false)} className="flex-1 font-black text-xs" />
+              <Button 
+                label={`EXECUTE ${actionType.toUpperCase()}`} 
+                variant="primary" 
+                onClick={confirmAction}
+                className={`flex-1 shadow-lg shadow-${actionType === 'Approve' ? 'emerald' : 'rose'}-900/20`}
+                disabled={actionType !== 'Approve' && !actionReason.trim()}
+              />
+           </div>
         </div>
       </Modal>
 
-      {/* Preview Modal */}
+      {/* Preview Modal: Secure Document Analyzer */}
       <Modal
         isOpen={previewModalOpen}
         onClose={() => setPreviewModalOpen(false)}
-        title="Secure Document Analysis"
+        title="Secure Credential Analysis"
         size="xl"
       >
-        <div className="flex flex-col lg:flex-row gap-8 py-4">
-          {/* Document Viewer Simulation */}
-          <div className="flex-1 bg-slate-900 rounded-2xl border border-slate-800 min-h-[500px] flex flex-col items-center justify-center p-12 text-center relative group overflow-hidden shadow-2xl">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent animate-pulse" />
-            <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-6 z-10">
-              <button className="p-4 bg-white rounded-full shadow-2xl text-slate-900 hover:text-emerald-600 transition-all hover:scale-110 active:scale-95"><HiEye className="w-6 h-6" /></button>
-              <button className="p-4 bg-white rounded-full shadow-2xl text-slate-900 hover:text-emerald-600 transition-all hover:scale-110 active:scale-95">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              </button>
-            </div>
+        <div className="flex flex-col lg:flex-row gap-8 py-4 animate-in zoom-in-95 duration-500">
+          {/* Document Intelligence Viewer */}
+          <div className="flex-1 bg-slate-100 rounded-3xl border border-slate-200 min-h-[550px] flex flex-col items-center justify-center p-12 relative group overflow-hidden shadow-inner">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#0F766E]/30 to-transparent animate-pulse" />
             
-            <div className="w-full max-w-[320px] bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-sm p-8 space-y-6 border border-slate-200 transform group-hover:rotate-1 group-hover:scale-[1.03] transition-all duration-700">
-              <div className="h-6 bg-slate-100 rounded-sm w-3/4 mb-8" />
-              <div className="space-y-4">
-                <div className="h-3 bg-slate-50 rounded-sm w-full" />
-                <div className="h-3 bg-slate-50 rounded-sm w-full" />
-                <div className="h-3 bg-slate-50 rounded-sm w-5/6" />
-              </div>
-              <div className="aspect-[4/3] bg-slate-50 rounded-sm border border-slate-100 flex items-center justify-center my-8">
-                <div className="relative">
-                   <div className="absolute -inset-4 bg-emerald-500/10 rounded-full blur-xl" />
-                   <HiShieldCheck className="w-16 h-16 text-slate-200 relative" />
-                </div>
-              </div>
-              <div className="h-3 bg-slate-100 rounded-sm w-1/2 ml-auto" />
+            {/* Simulation of a document scan */}
+            <div className="relative w-full max-w-[340px] bg-white rounded-lg shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] p-10 space-y-8 transform group-hover:scale-[1.02] transition-transform duration-700 border border-slate-200">
+               <div className="flex justify-between border-b-2 border-slate-50 pb-6">
+                  <div className="h-4 bg-slate-100 rounded-full w-24" />
+                  <div className="h-4 bg-slate-50 rounded-full w-12" />
+               </div>
+               <div className="space-y-4">
+                  <div className="h-2 bg-slate-50 rounded-full w-full" />
+                  <div className="h-2 bg-slate-50 rounded-full w-5/6" />
+                  <div className="h-2 bg-slate-50 rounded-full w-4/5" />
+               </div>
+               <div className="aspect-[3/4] bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center relative overflow-hidden">
+                  <HiShieldCheck className="h-20 w-20 text-slate-200" />
+                  <div className="absolute inset-0 bg-emerald-500/5 opacity-40" />
+               </div>
+               <div className="flex justify-end pt-4">
+                  <div className="h-3 bg-slate-100 rounded-full w-20" />
+               </div>
             </div>
-            <p className="mt-10 text-[10px] font-black text-emerald-500/50 uppercase tracking-[0.4em] animate-pulse">Encryption Protocol Active</p>
+
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20 opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0">
+               <button className="h-12 w-12 bg-white rounded-full shadow-2xl flex items-center justify-center text-slate-900 hover:text-[#0F766E] transition-all hover:scale-110 border border-slate-100"><HiMagnifyingGlass className="h-6 w-6" /></button>
+               <button className="h-12 w-12 bg-white rounded-full shadow-2xl flex items-center justify-center text-slate-900 hover:text-[#0F766E] transition-all hover:scale-110 border border-slate-100"><HiArrowDownTray className="h-6 w-6" /></button>
+            </div>
+
+            <div className="absolute top-8 left-8 flex items-center gap-2">
+               <div className="h-2 w-2 rounded-full bg-[#0F766E] animate-pulse" />
+               <span className="text-[10px] font-black text-[#0F766E] uppercase tracking-[0.4em]">Audit Scan Pipeline Active</span>
+            </div>
           </div>
 
-          {/* Metadata Sidebar */}
+          {/* Verification Sidebar */}
           <div className="w-full lg:w-80 space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-1 h-full bg-emerald-500" />
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Credential Intelligence</h4>
-              <div className="space-y-5">
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Talent Profile</p>
-                  <p className="text-base font-black text-slate-900 mt-0.5">{selectedRow?.employee}</p>
-                  <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">{selectedRow?.empId} • {selectedRow?.department}</p>
-                </div>
-                <div className="pt-4 border-t border-slate-50">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Classification</p>
-                  <p className="text-sm font-black text-slate-800 mt-0.5">{selectedRow?.docType}</p>
-                </div>
-                <div className="pt-4 border-t border-slate-50">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Registry Status</p>
-                  <div className="mt-2">
-                    <Badge label={selectedRow?.status} color={selectedRow?.status === 'Approved' ? 'green' : 'orange'} className="rounded-lg font-black text-[10px] uppercase px-3 py-1 tracking-widest shadow-sm" />
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-1.5 h-full bg-[#0F766E]" />
+               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-3">Registry Metadata</h4>
+               
+               <div className="space-y-4">
+                  <div>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Contributing Talent</p>
+                     <p className="text-lg font-black text-slate-900 leading-tight mt-0.5">{selectedRow?.employee}</p>
+                     <p className="text-[11px] font-bold text-[#0F766E] uppercase tracking-widest">{selectedRow?.empId}</p>
                   </div>
-                </div>
-                <div className="pt-4 border-t border-slate-50">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Timestamp</p>
-                  <p className="text-xs font-bold text-slate-600 mt-0.5">{selectedRow?.submittedDate} • 09:42 AM</p>
-                </div>
-              </div>
+                  <div>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Document Class</p>
+                     <p className="text-sm font-black text-slate-800">{selectedRow?.docType}</p>
+                  </div>
+                  <div>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Submission Trace</p>
+                     <p className="text-xs font-bold text-slate-600">{selectedRow?.submittedDate} • Registry v{selectedRow?.version}.0</p>
+                  </div>
+                  <div>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-tight">Current Audit State</p>
+                     <div className="mt-2">
+                        <Badge label={selectedRow?.status} color={selectedRow?.status === 'Approved' ? 'green' : 'orange'} className="px-4 py-1 font-black text-[10px] uppercase tracking-widest shadow-sm" />
+                     </div>
+                  </div>
+               </div>
             </div>
 
-            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 border-dashed">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Audit Remarks</h4>
-              <p className="text-xs text-slate-500 font-medium italic leading-relaxed">
-                {selectedRow?.hrComments || "No administrative compliance remarks recorded for this version. System default validation passed."}
-              </p>
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 border-dashed">
+               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Audit Trail Remarks</h4>
+               <p className="text-[11px] text-slate-500 font-bold italic leading-relaxed">
+                  {selectedRow?.hrComments || "No previous administrative remarks found. Record is currently in initial verification phase."}
+               </p>
             </div>
 
-            <Button 
-              label="Terminate Preview" 
-              variant="secondary" 
-              onClick={() => setPreviewModalOpen(false)} 
-              className="w-full rounded-xl font-bold py-4 shadow-lg hover:shadow-xl transition-all" 
-            />
+            <div className="flex flex-col gap-3">
+               <Button label="DOWNLOAD ASSET" variant="secondary" icon={HiArrowDownTray} className="w-full rounded-xl py-4 font-black" />
+               <Button label="CLOSE PREVIEW" variant="ghost" onClick={() => setPreviewModalOpen(false)} className="w-full rounded-xl py-4 font-black text-slate-400 hover:text-[#0F766E]" />
+            </div>
           </div>
         </div>
       </Modal>

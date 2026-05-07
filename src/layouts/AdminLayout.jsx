@@ -54,7 +54,7 @@ const adminNavGroups = [
       { label: 'Onboarding', icon: HiUserPlus, path: '/admin/onboarding', permission: 'view_onboarding' },
       { label: 'Exit Management', icon: HiArrowRightOnRectangle, path: '/admin/exit-management', permission: 'view_exit' },
       { label: 'Letter Templates', icon: HiEnvelope, path: '/admin/letters', permission: 'view_letters' },
-      { label: 'Reports & Analytics', icon: HiChartPie, path: '/admin/reports', permission: 'view_reports' },
+      // { label: 'Reports & Analytics', icon: HiChartPie, path: '/admin/reports', permission: 'view_reports' },
       { label: 'Announcements', icon: HiMegaphone, path: '/admin/announcements', permission: 'view_announcements' },
       { label: 'Payroll Management', icon: HiCurrencyDollar, path: '/admin/payroll', permission: 'view_payroll' },
     ],
@@ -117,7 +117,7 @@ export default function AdminLayout() {
         if (item.permission === 'view_onboarding' && (user.role === 'hr_admin' || user.role === 'hr_executive')) return true
         if (item.permission === 'view_exit' && (user.role === 'hr_admin' || user.role === 'hr_executive')) return true
         if (item.permission === 'view_letters' && (user.role === 'hr_admin')) return true
-        if (item.permission === 'view_reports' && (user.role === 'hr_admin' || user.role === 'hr_executive')) return true
+        // if (item.permission === 'view_reports' && (user.role === 'hr_admin' || user.role === 'hr_executive')) return true
         if (item.permission === 'view_announcements' && true) return true
         if (item.permission === 'view_messages' && true) return true
         if (item.permission === 'view_payroll' && (user.role === 'hr_admin')) return true
@@ -150,7 +150,7 @@ export default function AdminLayout() {
         onMobileClose={() => setMobileOpen(false)}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
-        <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-slate-200/60 bg-white/70 backdrop-blur-md px-4 sm:px-6">
+        <header className="z-30 flex h-12 shrink-0 items-center justify-between border-b border-slate-200/60 bg-white/70 backdrop-blur-md px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-4">
             <button
               type="button"
@@ -160,7 +160,7 @@ export default function AdminLayout() {
             >
               <HiBars3 className="h-6 w-6" />
             </button>
-            <nav className="hidden min-w-0 max-w-[50vw] truncate text-sm sm:flex sm:items-center sm:gap-2">
+            <nav className="hidden min-w-0 max-w-[50vw] truncate text-xs sm:flex sm:items-center sm:gap-2">
               {breadcrumb.map((c, i) => (
                 <span key={`${c}-${i}`} className="flex items-center gap-2">
                   {i > 0 && <span className="text-slate-300">/</span>}
@@ -228,7 +228,7 @@ export default function AdminLayout() {
             </button>
           </div>
         </header>
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-[#F8FAFC] p-4 sm:p-6">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-[#F8FAFC] p-4">
           <div className="mx-auto min-w-0 max-w-[1600px]">
             <Outlet />
           </div>
