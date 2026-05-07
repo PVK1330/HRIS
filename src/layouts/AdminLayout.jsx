@@ -37,26 +37,26 @@ const adminNavGroups = [
     groupLabel: 'MANAGEMENT',
     items: [
       { label: 'Dashboard', icon: HiSquares2X2, path: '/admin/dashboard', permission: 'view_dashboard' },
-      { label: 'Employee Directory', icon: HiUsers, path: '/admin/employee-directory', permission: 'view_employees' },
-      { label: 'Attendance', icon: HiClock, path: '/admin/attendance', permission: 'view_attendance' },
-      { label: 'Leave & Absence', icon: HiCalendar, path: '/admin/leave', permission: 'view_leave' },
+      { label: 'Employee Directory', icon: HiUsers, path: '/admin/employee-directory', permission: 'view_employees', featureCode: 'employee_directory' },
+      { label: 'Attendance', icon: HiClock, path: '/admin/attendance', permission: 'view_attendance', featureCode: 'attendance' },
+      { label: 'Leave & Absence', icon: HiCalendar, path: '/admin/leave', permission: 'view_leave', featureCode: 'leave' },
       { label: 'Documents & Approval', icon: HiDocument, path: '/admin/documents', permission: 'view_documents' },
-      { label: 'Visa & Nationality', icon: HiCreditCard, path: '/admin/visa', permission: 'view_visa' },
-      { label: 'Assets', icon: HiBriefcase, path: '/admin/assets', permission: 'view_assets' },
+      { label: 'Visa & Nationality', icon: HiCreditCard, path: '/admin/visa', permission: 'view_visa', featureCode: 'visa' },
+      { label: 'Assets', icon: HiBriefcase, path: '/admin/assets', permission: 'view_assets', featureCode: 'asset_management' },
     ],
   },
   {
     groupLabel: 'HR OPERATIONS',
     items: [
-      { label: 'Performance', icon: HiChartBar, path: '/admin/performance', permission: 'view_performance' },
+      { label: 'Performance', icon: HiChartBar, path: '/admin/performance', permission: 'view_performance', featureCode: 'performance' },
       { label: 'Policies', icon: HiClipboardDocumentCheck, path: '/admin/policies', permission: 'view_policies' },
-      { label: 'Expenses', icon: HiCurrencyDollar, path: '/admin/expenses', permission: 'view_expenses' },
-      { label: 'Onboarding', icon: HiUserPlus, path: '/admin/onboarding', permission: 'view_onboarding' },
-      { label: 'Exit Management', icon: HiArrowRightOnRectangle, path: '/admin/exit-management', permission: 'view_exit' },
+      { label: 'Expenses', icon: HiCurrencyDollar, path: '/admin/expenses', permission: 'view_expenses', featureCode: 'expenses' },
+      { label: 'Onboarding', icon: HiUserPlus, path: '/admin/onboarding', permission: 'view_onboarding', featureCode: 'onboarding_exit' },
+      { label: 'Exit Management', icon: HiArrowRightOnRectangle, path: '/admin/exit-management', permission: 'view_exit', featureCode: 'onboarding_exit' },
       { label: 'Letter Templates', icon: HiEnvelope, path: '/admin/letters', permission: 'view_letters' },
       // { label: 'Reports & Analytics', icon: HiChartPie, path: '/admin/reports', permission: 'view_reports' },
       { label: 'Announcements', icon: HiMegaphone, path: '/admin/announcements', permission: 'view_announcements' },
-      { label: 'Payroll Management', icon: HiCurrencyDollar, path: '/admin/payroll', permission: 'view_payroll' },
+      { label: 'Payroll Management', icon: HiCurrencyDollar, path: '/admin/payroll', permission: 'view_payroll', featureCode: 'payroll' },
     ],
   },
   {
@@ -91,7 +91,7 @@ const ROLE_DISPLAY = {
 }
 
 export default function AdminLayout() {
-  const { user, logout, hasPermission, switchRole } = useAuth()
+  const { user, logout, hasPermission, hasFeatureAccess, switchRole } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false)
@@ -100,6 +100,7 @@ export default function AdminLayout() {
     return adminNavGroups.map(group => ({
       ...group,
       items: group.items.filter(item => {
+        if (item.featureCode && !hasFeatureAccess(item.featureCode)) return false
         if (!item.permission) return true
         // Special case for dashboard - everyone sees it
         if (item.path === '/admin/dashboard') return true
@@ -126,7 +127,7 @@ export default function AdminLayout() {
         return hasPermission(item.permission)
       })
     })).filter(group => group.items.length > 0)
-  }, [user, hasPermission])
+  }, [user, hasPermission, hasFeatureAccess])
 
   const breadcrumb = useMemo(() => {
     const parts = location.pathname.split('/').filter(Boolean)

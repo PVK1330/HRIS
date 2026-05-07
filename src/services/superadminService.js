@@ -10,6 +10,10 @@ export const SUPERADMIN_ENDPOINTS = {
   MODULE_BY_KEY: (moduleKey) => `/superadmin/modules/${moduleKey}`,
   ANNOUNCEMENTS: '/superadmin/announcements',
   ANNOUNCEMENT_BY_ID: (id) => `/superadmin/announcements/${id}`,
+  SUPPORT_TICKETS: '/superadmin/support-tickets',
+  SUPPORT_TICKET_BY_ID: (id) => `/superadmin/support-tickets/${id}`,
+  SUPPORT_TICKET_MESSAGES: (id) => `/superadmin/support-tickets/${id}/messages`,
+  AUDIT_LOGS: '/superadmin/audit-logs',
   TENANTS: '/superadmin/tenants',
   TENANT_MODULES: (tenantId) => `/superadmin/tenants/${tenantId}/modules`,
   TENANT_MODULE_BY_KEY: (tenantId, moduleKey) => `/superadmin/tenants/${tenantId}/modules/${moduleKey}`,
@@ -22,6 +26,7 @@ export const SUPERADMIN_ENDPOINTS = {
   PLAN_FEATURES: (id) => `/superadmin/plans/${id}/features`,
   PAYMENTS: '/superadmin/payments',
   PAYMENT_STATS: '/superadmin/payments/stats',
+  PAYMENT_MANUAL: '/superadmin/payments/manual',
   PAYMENT_STATUS: (id) => `/superadmin/payments/${id}/status`,
 }
 
@@ -84,6 +89,18 @@ export const superadminService = {
   getAnnouncementReport(id) {
     return api.get(`${SUPERADMIN_ENDPOINTS.ANNOUNCEMENT_BY_ID(id)}/report`)
   },
+  getSupportTickets() {
+    return api.get(SUPERADMIN_ENDPOINTS.SUPPORT_TICKETS)
+  },
+  updateSupportTicket(id, payload) {
+    return api.patch(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_BY_ID(id), payload)
+  },
+  addSupportTicketMessage(id, payload) {
+    return api.post(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_MESSAGES(id), payload)
+  },
+  getAuditLogs() {
+    return api.get(SUPERADMIN_ENDPOINTS.AUDIT_LOGS)
+  },
 
   // Features
   getFeatures(params) {
@@ -137,6 +154,9 @@ export const superadminService = {
   },
   getPaymentStats() {
     return api.get(SUPERADMIN_ENDPOINTS.PAYMENT_STATS)
+  },
+  createManualInvoice(payload) {
+    return api.post(SUPERADMIN_ENDPOINTS.PAYMENT_MANUAL, payload)
   },
   updatePaymentStatus(id, status) {
     return api.patch(SUPERADMIN_ENDPOINTS.PAYMENT_STATUS(id), { status })

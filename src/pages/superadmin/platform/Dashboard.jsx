@@ -34,7 +34,7 @@ const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep
 export default function SuperAdminDashboard() {
   const navigate = useNavigate()
   const [platformStatus, setPlatformStatus] = useState({ api: 'Checking...', database: 'Checking...', storage: 'Checking...', uptime: 'N/A' })
-  const [stats, setStats] = useState({ monthlyRevenue: 0, activeOrganizations: 0 })
+  const [stats, setStats] = useState({ monthlyRevenue: 0, activeOrganizations: 0, totalUsers: 0 })
   const [recentOrganizations, setRecentOrganizations] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
   const [revenueData, setRevenueData] = useState([{ month: 'N/A', amount: 0 }])
@@ -59,6 +59,7 @@ export default function SuperAdminDashboard() {
         setStats({
           monthlyRevenue: Number(paymentStats.monthly_revenue || 0),
           activeOrganizations: tenants.filter((t) => t.status === 'active').length,
+          totalUsers: tenants.length,
         })
 
         setRecentOrganizations(
@@ -126,7 +127,7 @@ export default function SuperAdminDashboard() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="TOTAL REVENUE" value={`AED ${stats.monthlyRevenue.toLocaleString()}`} trendColor="green" icon={HiCurrencyDollar} />
         <StatCard title="ACTIVE ORGANIZATIONS" value={String(stats.activeOrganizations)} trendColor="green" icon={HiGlobeAlt} />
-        <StatCard title="TOTAL USERS" value="0" trendColor="blue" icon={HiUsers} />
+        <StatCard title="TOTAL USERS" value={String(stats.totalUsers)} trendColor="blue" icon={HiUsers} />
         <StatCard title="SYSTEM UPTIME" value={platformStatus.uptime} trendColor="green" icon={HiSignal} />
       </div>
 

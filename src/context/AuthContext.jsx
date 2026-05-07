@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- context module exports provider + hook */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import api from '../services/api'
 
 const STORAGE_KEY = 'hris_auth_user'
 
@@ -104,14 +105,23 @@ export function AuthProvider({ children }) {
     return userPermissions.includes(permission)
   }, [user])
 
-  const login = useCallback((arg1, arg2, planDetails = [], planFeatures = []) => {
+  const hasFeatureAccess = useCallback((featureCode) => {
+    if (!user) return false
+    if (!featureCode) return true
+    if (user.role !== 'admin') return true
+    const features = user.tenant_features || []
+    return features.some((f) => f.feature_code === featureCode && f.is_enabled !== false)
+  }, [user])
+
+  const login = useCallback((arg1, arg2, planDetails = [], planFeatures = [], tenantFeatures = []) => {
     // Case 1: Real API Auth (user object, token)
     if (typeof arg1 === 'object' && arg2) {
       const userData = { 
         ...arg1, 
         panel: arg1.role === 'superadmin' ? 'superadmin' : 'admin',
         plan_details: planDetails,
-        plan_features: planFeatures
+        plan_features: planFeatures,
+        tenant_features: tenantFeatures
       }
       setUser(userData)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
@@ -130,6 +140,37 @@ export function AuthProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(account.user))
     return null
   }, [])
+
+  const refreshAccessProfile = useCallback(async () => {
+    if (!user || user.role !== 'admin') return
+    try {
+      const response = await api.get('/auth/access-profile')
+      const data = response?.data?.data
+      if (!data) return
+
+      setUser((prev) => {
+        if (!prev) return prev
+        const next = {
+          ...prev,
+          plan_details: data.plan_details || [],
+          tenant_features: data.tenant_features || [],
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+        return next
+      })
+    } catch (error) {
+      console.error('Failed to refresh access profile:', error)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return
+    refreshAccessProfile()
+    const id = window.setInterval(() => {
+      refreshAccessProfile()
+    }, 180000)
+    return () => window.clearInterval(id)
+  }, [user, refreshAccessProfile])
 
   const logout = useCallback(() => {
     setUser(null)
@@ -150,8 +191,10 @@ export function AuthProvider({ children }) {
     login,
     logout,
     hasPermission,
-    switchRole
-  }), [user, login, logout, hasPermission, switchRole])
+    hasFeatureAccess,
+    switchRole,
+    refreshAccessProfile
+  }), [user, login, logout, hasPermission, hasFeatureAccess, switchRole, refreshAccessProfile])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

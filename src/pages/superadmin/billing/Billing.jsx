@@ -39,6 +39,16 @@ export default function Billing() {
   
   const [selectedInvoice, setSelectedInvoice] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
+  const [showManualInvoiceModal, setShowManualInvoiceModal] = useState(false)
+  const [manualInvoiceForm, setManualInvoiceForm] = useState({
+    tenant_id: '',
+    amount: '',
+    currency: 'AED',
+    billing_start_date: '',
+    billing_end_date: '',
+    notes: '',
+    payment_method: 'Manual'
+  })
 
   const fetchPayments = async () => {
     try {
@@ -108,6 +118,69 @@ export default function Billing() {
     setShowDetailModal(true)
   }
 
+  const handleSyncPayments = async () => {
+    await Promise.all([fetchPayments(), fetchStats()])
+    Swal.fire({
+      icon: 'success',
+      title: 'Synced',
+      text: 'Payments and stats refreshed successfully.',
+      timer: 1200,
+      showConfirmButton: false
+    })
+  }
+
+  const handleDownloadInvoice = (invoice) => {
+    const lines = [
+      `Invoice: INV-${invoice.id}`,
+      `Tenant: ${invoice.tenant_name}`,
+      `Plan: ${invoice.plan_name || 'N/A'}`,
+      `Amount: ${invoice.currency} ${Number(invoice.amount).toLocaleString()}`,
+      `Status: ${invoice.status}`,
+      `Billing: ${new Date(invoice.billing_start_date).toLocaleDateString()} - ${new Date(invoice.billing_end_date).toLocaleDateString()}`,
+      `Issued: ${new Date(invoice.created_at).toLocaleString()}`,
+      '',
+      `Notes: ${invoice.notes || '-'}`
+    ]
+    const content = lines.join('\n')
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `invoice_INV-${invoice.id}.txt`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleCreateManualInvoice = async () => {
+    if (!manualInvoiceForm.tenant_id || !manualInvoiceForm.amount || !manualInvoiceForm.billing_start_date || !manualInvoiceForm.billing_end_date) {
+      Swal.fire('Validation', 'Please fill required fields.', 'warning')
+      return
+    }
+    try {
+      await superadminService.createManualInvoice({
+        ...manualInvoiceForm,
+        tenant_id: Number(manualInvoiceForm.tenant_id),
+        amount: Number(manualInvoiceForm.amount),
+      })
+      setShowManualInvoiceModal(false)
+      setManualInvoiceForm({
+        tenant_id: '',
+        amount: '',
+        currency: 'AED',
+        billing_start_date: '',
+        billing_end_date: '',
+        notes: '',
+        payment_method: 'Manual'
+      })
+      await handleSyncPayments()
+      Swal.fire('Created', 'Manual invoice created successfully.', 'success')
+    } catch (error) {
+      Swal.fire('Error', error.response?.data?.message || 'Failed to create manual invoice', 'error')
+    }
+  }
+
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       const result = await Swal.fire({
@@ -140,8 +213,8 @@ export default function Billing() {
         </div>
         <div className="flex gap-2">
            <Button label="Export History" variant="ghost" icon={HiCloudArrowDown} onClick={handleExport} className="font-bold text-slate-600" />
-           <Button label="Sync Payments" variant="ghost" icon={HiArrowPath} className="font-bold text-slate-600" />
-           <Button label="Manual Invoice" variant="primary" icon={HiDocumentPlus} />
+           <Button label="Sync Payments" variant="ghost" icon={HiArrowPath} className="font-bold text-slate-600" onClick={handleSyncPayments} />
+           <Button label="Manual Invoice" variant="primary" icon={HiDocumentPlus} onClick={() => setShowManualInvoiceModal(true)} />
         </div>
       </div>
 
@@ -194,6 +267,10 @@ export default function Billing() {
           </div>
         ) : (
           <Table
+            pageSize={pageSize}
+            totalCount={totalCount}
+            currentPage={currentPage - 1}
+            onPageChange={(page) => setCurrentPage(page + 1)}
             columns={[
               { key: 'invoice', label: 'Reference' },
               { key: 'tenant', label: 'Organization' },
@@ -239,37 +316,11 @@ export default function Billing() {
               actions: (
                 <div className="flex gap-1">
                   <Button variant="ghost" size="sm" icon={HiInformationCircle} className="text-slate-400 hover:text-indigo-600" onClick={() => handleViewDetails(invoice)} />
-                  <Button variant="ghost" size="sm" icon={HiCloudArrowDown} className="text-slate-400 hover:text-emerald-600" />
+                  <Button variant="ghost" size="sm" icon={HiCloudArrowDown} className="text-slate-400 hover:text-emerald-600" onClick={() => handleDownloadInvoice(invoice)} />
                 </div>
               ),
             }))}
-            disablePagination={true}
           />
-        )}
-
-        {/* Pagination */}
-        {!loading && totalCount > pageSize && (
-          <div className="flex items-center justify-between p-4 border-t border-slate-50 bg-slate-50/10">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              Page {currentPage} of {Math.ceil(totalCount / pageSize)}
-            </p>
-            <div className="flex gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                icon={HiChevronLeft} 
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => prev - 1)}
-              />
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                icon={HiChevronRight} 
-                disabled={currentPage >= Math.ceil(totalCount / pageSize)}
-                onClick={() => setCurrentPage(prev => prev + 1)}
-              />
-            </div>
-          </div>
         )}
       </div>
 
@@ -344,10 +395,62 @@ export default function Billing() {
 
             <div className="flex gap-3 pt-4 border-t border-slate-100">
               <Button label="Close" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowDetailModal(false)} />
-              <Button label="Download PDF" variant="ghost" className="flex-1 font-bold text-indigo-600" />
+              <Button label="Download Invoice" variant="ghost" className="flex-1 font-bold text-indigo-600" onClick={() => handleDownloadInvoice(selectedInvoice)} />
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={showManualInvoiceModal}
+        onClose={() => setShowManualInvoiceModal(false)}
+        title="Create Manual Invoice"
+        description="Generate a pending invoice for a tenant."
+        icon={HiDocumentPlus}
+        size="lg"
+      >
+        <div className="space-y-4 p-2">
+          <Input
+            label="Tenant ID *"
+            type="number"
+            value={manualInvoiceForm.tenant_id}
+            onChange={(e) => setManualInvoiceForm(prev => ({ ...prev, tenant_id: e.target.value }))}
+          />
+          <Input
+            label="Amount *"
+            type="number"
+            value={manualInvoiceForm.amount}
+            onChange={(e) => setManualInvoiceForm(prev => ({ ...prev, amount: e.target.value }))}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Billing Start Date *"
+              type="date"
+              value={manualInvoiceForm.billing_start_date}
+              onChange={(e) => setManualInvoiceForm(prev => ({ ...prev, billing_start_date: e.target.value }))}
+            />
+            <Input
+              label="Billing End Date *"
+              type="date"
+              value={manualInvoiceForm.billing_end_date}
+              onChange={(e) => setManualInvoiceForm(prev => ({ ...prev, billing_end_date: e.target.value }))}
+            />
+          </div>
+          <Input
+            label="Currency"
+            value={manualInvoiceForm.currency}
+            onChange={(e) => setManualInvoiceForm(prev => ({ ...prev, currency: e.target.value }))}
+          />
+          <Input
+            label="Notes"
+            value={manualInvoiceForm.notes}
+            onChange={(e) => setManualInvoiceForm(prev => ({ ...prev, notes: e.target.value }))}
+          />
+          <div className="flex gap-3 pt-2 border-t border-slate-100">
+            <Button label="Cancel" variant="ghost" className="flex-1" onClick={() => setShowManualInvoiceModal(false)} />
+            <Button label="Create Invoice" variant="primary" className="flex-1" onClick={handleCreateManualInvoice} />
+          </div>
+        </div>
       </Modal>
     </div>
   )

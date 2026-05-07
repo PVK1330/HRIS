@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
+import { superadminService } from '../../../services/superadminService.js'
 import {
   HiMagnifyingGlass,
   HiFunnel,
@@ -21,21 +21,32 @@ export default function AuditLogs() {
   const [searchQuery, setSearchQuery] = useState('')
   const [orgFilter, setOrgFilter] = useState('all')
   const [actionFilter, setActionFilter] = useState('all')
+  const [auditLogs, setAuditLogs] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const auditLogs = useMemo(() => [
-    { id: 1, timestamp: '2026-04-09 14:31:22', admin: 'Super Admin', action: 'OrganizationCreated', target: 'AlphaCorp HR', ip: '192.168.1.1', result: 'Success' },
-    { id: 2, timestamp: '2026-04-09 12:15:44', admin: 'Raj Mehta', action: 'Domain Verified', target: 'nexushr.ae', ip: '10.0.0.42', result: 'Success' },
-    { id: 3, timestamp: '2026-04-09 09:02:11', admin: 'Super Admin', action: 'OrganizationSuspended', target: 'Zenith People', ip: '192.168.1.1', result: 'Success' },
-    { id: 4, timestamp: '2026-04-08 18:55:30', admin: 'Sara Patel', action: 'Plan Changed', target: 'HR Nexus: Starter→Growth', ip: '10.0.0.55', result: 'Success' },
-    { id: 5, timestamp: '2026-04-08 14:22:01', admin: 'Raj Mehta', action: 'Login', target: 'SuperAdmin Panel', ip: '10.0.0.42', result: 'Success' },
-  ], [])
+  const fetchAuditLogs = async () => {
+    try {
+      setLoading(true)
+      const response = await superadminService.getAuditLogs()
+      setAuditLogs(response?.data?.data?.logs || [])
+    } catch (error) {
+      console.error('Failed to fetch audit logs:', error)
+      setAuditLogs([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAuditLogs()
+  }, [])
 
   const filteredLogs = useMemo(() => {
     return auditLogs.filter((log) => {
       const matchesSearch = log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
         log.admin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.target.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesOrg = orgFilter === 'all' || log.target.includes(orgFilter)
+        String(log.target || '').toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesOrg = orgFilter === 'all' || String(log.target || '').includes(orgFilter)
       const matchesAction = actionFilter === 'all' || log.action.includes(actionFilter)
       return matchesSearch && matchesOrg && matchesAction
     })
@@ -64,7 +75,7 @@ export default function AuditLogs() {
         </div>
         <div className="flex gap-3">
           <Button label="Export Forensic CSV" variant="ghost" icon={HiArrowDownTray} className="font-bold text-slate-500" />
-          <Button label="Sync Trail" variant="ghost" icon={HiArrowPath} className="font-bold text-slate-500" />
+          <Button label="Sync Trail" variant="ghost" icon={HiArrowPath} className="font-bold text-slate-500" onClick={fetchAuditLogs} />
         </div>
       </div>
 
@@ -116,6 +127,7 @@ export default function AuditLogs() {
       {/* Forensic Audit Table */}
       <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
         <Table
+          loading={loading}
           columns={[
             { key: 'timestamp', label: 'Precise Event Timestamp' },
             { key: 'admin', label: 'Primary Actor' },
@@ -130,7 +142,9 @@ export default function AuditLogs() {
                 <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
                    <HiCalendarDays className="h-4 w-4" />
                 </div>
-                <span className="font-mono text-[11px] font-bold text-slate-500">{log.timestamp}</span>
+                <span className="font-mono text-[11px] font-bold text-slate-500">
+                  {new Date(log.timestamp).toLocaleString()}
+                </span>
               </div>
             ),
             admin: (

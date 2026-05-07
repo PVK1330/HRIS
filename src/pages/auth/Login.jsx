@@ -82,7 +82,8 @@ export default function Login() {
         userData, 
         result.data.token, 
         result.data.plan_details || [], 
-        result.data.plan_features || []
+        result.data.plan_features || [],
+        result.data.tenant_features || []
       )
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Login failed'
@@ -111,7 +112,8 @@ export default function Login() {
         result.data.superadmin, 
         result.data.token, 
         result.data.plan_details || [], 
-        result.data.plan_features || []
+        result.data.plan_features || [],
+        result.data.tenant_features || []
       )
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Verification failed'

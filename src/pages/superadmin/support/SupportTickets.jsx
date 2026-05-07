@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
+import { superadminService } from '../../../services/superadminService.js'
 import {
   HiPaperAirplane,
   HiUserPlus,
@@ -22,12 +22,8 @@ import {
 } from 'react-icons/hi2'
 
 export default function SupportTickets() {
-  const [tickets, setTickets] = useState([
-    { id: 'TKT-0091', org: 'TalentCo FZCO', subject: 'SSL certificate not renewing automatically', priority: 'Critical', assignedTo: 'Raj Mehta', created: '09 Apr 2026', status: 'Open', description: 'Our custom domain SSL is expiring in 2 days and the auto-renew feature seems to be failing with a DNS verification error.', messages: [{ sender: 'Client', text: 'Our custom domain SSL is expiring in 2 days and the auto-renew feature seems to be failing with a DNS verification error.', time: '09 Apr, 10:00 AM' }] },
-    { id: 'TKT-0089', org: 'HR Nexus', subject: 'Custom domain DNS not propagating', priority: 'High', assignedTo: 'Sara Patel', created: '08 Apr 2026', status: 'In Progress', description: 'We updated the CNAME records 48 hours ago but the site is still not reachable via our custom domain.', messages: [] },
-    { id: 'TKT-0087', org: 'AlphaCorp HR', subject: 'Bulk import failing for 500+ employees', priority: 'Medium', assignedTo: 'Raj Mehta', created: '07 Apr 2026', status: 'In Progress', description: 'The CSV upload keeps timing out after processing about 200 rows.', messages: [] },
-    { id: 'TKT-0085', org: 'Meridian HR', subject: 'Email notifications not sending', priority: 'High', assignedTo: 'Unassigned', created: '06 Apr 2026', status: 'Open', description: 'New employees are not receiving their welcome emails and password reset links.', messages: [] },
-  ])
+  const [tickets, setTickets] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const [showReplyModal, setShowReplyModal] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
@@ -35,26 +31,61 @@ export default function SupportTickets() {
   const [replyText, setReplyText] = useState('')
   const [assignee, setAssignee] = useState('')
 
-  const handleReply = () => {
-    if (!replyText.trim()) return
-    const newMessage = {
-      sender: 'Support',
-      text: replyText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const fetchTickets = async () => {
+    try {
+      setLoading(true)
+      const response = await superadminService.getSupportTickets()
+      setTickets(response?.data?.data?.tickets || [])
+    } catch (error) {
+      console.error('Failed to fetch support tickets:', error)
+      setTickets([])
+    } finally {
+      setLoading(false)
     }
-    setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, messages: [...(t.messages || []), newMessage], status: 'In Progress' } : t))
-    setReplyText('')
   }
 
-  const handleAssign = () => {
+  useEffect(() => {
+    fetchTickets()
+  }, [])
+
+  const handleReply = async () => {
+    if (!selectedTicket) return
+    if (!replyText.trim()) return
+    try {
+      await superadminService.addSupportTicketMessage(selectedTicket.id, {
+        sender: 'Support',
+        text: replyText,
+        time: new Date().toLocaleString()
+      })
+      await fetchTickets()
+      const refreshed = tickets.find((t) => t.id === selectedTicket.id)
+      if (refreshed) setSelectedTicket(refreshed)
+      setReplyText('')
+    } catch (error) {
+      console.error('Failed to reply ticket:', error)
+    }
+  }
+
+  const handleAssign = async () => {
+    if (!selectedTicket) return
     if (!assignee) return
-    setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, assignedTo: assignee, status: 'In Progress' } : t))
-    setShowAssignModal(false)
+    try {
+      await superadminService.updateSupportTicket(selectedTicket.id, { assignedTo: assignee, status: 'In Progress' })
+      await fetchTickets()
+      setShowAssignModal(false)
+    } catch (error) {
+      console.error('Failed to assign ticket:', error)
+    }
   }
 
-  const handleResolve = (ticketId) => {
-    setTickets(tickets.map(t => t.id === ticketId ? { ...t, status: 'Resolved' } : t))
-    setShowReplyModal(false)
+  const handleResolve = async (ticketId) => {
+    try {
+      await superadminService.updateSupportTicket(ticketId, { status: 'Resolved' })
+      await fetchTickets()
+      setShowReplyModal(false)
+    } catch (error) {
+      console.error('Failed to resolve ticket:', error)
+    }
   }
 
   return (
@@ -78,20 +109,21 @@ export default function SupportTickets() {
           </div>
           <p className="text-[11px] font-medium text-slate-500">Manage and resolve help requests.</p>
         </div>
-        <Button label="Refresh" variant="ghost" icon={HiArrowPath} size="sm" className="text-slate-500 font-bold" onClick={() => {}} />
+        <Button label="Refresh" variant="ghost" icon={HiArrowPath} size="sm" className="text-slate-500 font-bold" onClick={fetchTickets} />
       </div>
 
       {/* Premium Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="PENDING" value={tickets.filter(t => t.status === 'Open').length.toString()} icon={HiShieldExclamation} trendColor="red" />
         <StatCard title="ACTIVE" value={tickets.filter(t => t.status === 'In Progress').length.toString()} icon={HiClock} trendColor="amber" />
-        <StatCard title="RESOLVED" value="1,242" icon={HiCheckCircle} trendColor="green" />
-        <StatCard title="SATISFACTION" value="98%" icon={HiHeart} trendColor="rose" />
+        <StatCard title="RESOLVED" value={tickets.filter(t => t.status === 'Resolved').length.toString()} icon={HiCheckCircle} trendColor="green" />
+        <StatCard title="SATISFACTION" value="N/A" icon={HiHeart} trendColor="rose" />
       </div>
 
       {/* Ticket Table */}
       <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
         <Table
+          loading={loading}
           columns={[
             { key: 'ticket', label: 'Ticket ID & Subject' },
             { key: 'org', label: 'Organization' },
@@ -103,9 +135,11 @@ export default function SupportTickets() {
           data={tickets.map((ticket) => ({
             ticket: (
               <div className="flex flex-col py-1">
-                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{ticket.id}</span>
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{ticket.ticketCode || `TKT-${ticket.id}`}</span>
                 <span className="text-sm font-bold text-slate-900 tracking-tight truncate max-w-[280px]">{ticket.subject}</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{ticket.created}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                  {ticket.created ? new Date(ticket.created).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                </span>
               </div>
             ),
             org: <span className="text-xs font-black text-slate-700 uppercase tracking-wider">{ticket.org}</span>,
@@ -136,7 +170,7 @@ export default function SupportTickets() {
         isOpen={showReplyModal}
         onClose={() => setShowReplyModal(false)}
         title={selectedTicket?.subject || ''}
-        description={selectedTicket ? `ID: ${selectedTicket.id} · Origin: ${selectedTicket.org} · Reported ${selectedTicket.created}` : ''}
+        description={selectedTicket ? `ID: ${selectedTicket.ticketCode || selectedTicket.id} · Origin: ${selectedTicket.org}` : ''}
         icon={HiTicket}
         size="lg"
       >
@@ -148,7 +182,7 @@ export default function SupportTickets() {
                  <div className="h-4 w-px bg-slate-100" />
                  <div className="flex items-center gap-2">
                     <HiClock className="h-4 w-4 text-slate-300" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SLA: 2.5h Remaining</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SLA: In Tracking</span>
                  </div>
               </div>
             </div>
