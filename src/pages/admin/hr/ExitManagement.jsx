@@ -1,512 +1,355 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { 
+  HiUserMinus, 
+  HiClipboardDocumentCheck, 
+  HiShieldCheck, 
+  HiClock, 
+  HiMagnifyingGlass,
+  HiAdjustmentsHorizontal,
+  HiCheckBadge,
+  HiXCircle,
+  HiUserGroup,
+  HiCpuChip,
+  HiBriefcase,
+  HiUserCircle,
+  HiPlus,
+  HiEye,
+  HiArrowPathRoundedSquare,
+  HiCurrencyDollar,
+  HiDocumentText,
+  HiChatBubbleLeftRight,
+  HiDevicePhoneMobile
+} from 'react-icons/hi2'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
-import FileUpload from '../../../components/ui/FileUpload.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
-import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { Toggle } from '../../../components/ui/Toggle.jsx'
-import { employees, exitKpis, exitRecords } from '../../../data/mockData.js'
-
-const selectClass =
-  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
-
-const textareaClass =
-  'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
-
-const initialFormData = {
-  employeeId: '',
-  exitType: '',
-  lastWorkingDay: '',
-  noticePeriod: '',
-  exitReason: '',
-  exitInterviewDate: '',
-  exitInterviewBy: '',
-  itAssetsReturned: false,
-  accessRevoked: false,
-  finalSettlementProcessed: false,
-  nocIssued: false,
-  experienceLetterIssued: false,
-}
-
-function statusColor(s) {
-  if (s === 'Closed') return 'gray'
-  if (s === 'Notice') return 'orange'
-  if (s === 'Offboarding') return 'blue'
-  return 'purple'
-}
+import { employees } from '../../../data/mockData.js'
 
 export default function ExitManagement() {
+  const [q, setQ] = useState('')
+  const [activeStatus, setActiveStatus] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
-  const [formData, setFormData] = useState(initialFormData)
-  const [files, setFiles] = useState({})
+  const [reviewModalOpen, setReviewModalOpen] = useState(false)
+  const [selectedExit, setSelectedExit] = useState(null)
+  const [activeTab, setActiveTab] = useState('Summary')
 
-  const handleFormChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+  const exitData = [
+    { id: '28389174', name: 'Ananya Sharma', dept: 'HR', title: 'Admin Executive', type: 'Contract End', date: '23/12/2025', lwd: '23/12/2025', status: 'Pending Approval', manager: 'Sarah Johnson', joinDate: '01/01/2022', notice: '30 Days' },
+    { id: '28389175', name: 'Rahul Verma', dept: 'IT', title: 'Senior Developer', type: 'Resignation', date: '15/01/2026', lwd: '15/02/2026', status: 'In Progress', manager: 'Amit Patel', joinDate: '15/06/2020', notice: '60 Days' },
+    { id: '28389176', name: 'Sneha Kapoor', dept: 'Design', title: 'UI Lead', type: 'Resignation', date: '05/01/2026', lwd: '05/02/2026', status: 'Completed', manager: 'Michael Brown', joinDate: '10/03/2021', notice: '30 Days' },
+    { id: '28389177', name: 'Vikram Singh', dept: 'Sales', title: 'Manager', type: 'Termination', date: '12/01/2026', lwd: '12/01/2026', status: 'Settlement Pending', manager: 'Priya Singh', joinDate: '20/11/2019', notice: '0 Days' }
+  ]
+
+  const stats = {
+    exitsThisMonth: 8,
+    pendingApprovals: 3,
+    assetsPending: 5,
+    pendingSettlements: 2
   }
 
-  const handleToggle = (name) => (checked) => {
-    setFormData((prev) => ({ ...prev, [name]: checked }))
-  }
-
-  const handleFileChange = (key) => (fileList) => {
-    setFiles((prev) => ({ ...prev, [key]: fileList }))
-  }
-
-  const resetModal = () => {
-    setFormData(initialFormData)
-    setFiles({})
-  }
-
-  const handleCloseModal = () => {
-    setModalOpen(false)
-    resetModal()
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log({ formData, files })
-    handleCloseModal()
-  }
+  const filtered = useMemo(() => {
+    let data = exitData
+    if (activeStatus !== 'All') {
+      data = data.filter(e => e.status === activeStatus)
+    }
+    if (q) {
+      data = data.filter(e => e.name.toLowerCase().includes(q.toLowerCase()) || e.id.includes(q))
+    }
+    return data
+  }, [q, activeStatus])
 
   const columns = [
-    { key: 'employee', label: 'Employee' },
-    { key: 'lastDay', label: 'Last day' },
-    { key: 'reason', label: 'Reason' },
+    {
+      key: 'name',
+      label: 'Employee Name',
+      render: (_, row) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0F766E]/10 text-[#0F766E] font-bold text-xs">
+            {row.name.charAt(0)}
+          </div>
+          <span className="font-semibold text-slate-900">{row.name}</span>
+        </div>
+      ),
+    },
+    { key: 'id', label: 'Employee ID' },
+    { key: 'dept', label: 'Department' },
+    { key: 'type', label: 'Exit Type' },
+    { key: 'lwd', label: 'Last Working Day' },
     {
       key: 'status',
       label: 'Status',
-      render: (v) => <Badge label={v} color={statusColor(v)} />,
+      render: (v) => <Badge label={v} color={v === 'Completed' ? 'green' : v === 'Pending Approval' ? 'orange' : 'blue'} variant="outline" />,
     },
     {
       key: 'actions',
-      label: 'Actions',
-      render: () => <Button label="Open checklist" variant="danger" size="sm" />,
+      label: 'Action',
+      render: (_, row) => (
+        <Button 
+          label="View Details" 
+          variant="ghost" 
+          size="sm" 
+          icon={HiEye} 
+          onClick={() => {
+            setSelectedExit(row)
+            setReviewModalOpen(true)
+            setActiveTab('Summary')
+          }}
+        />
+      ),
     },
   ]
 
+  const tabs = [
+    { id: 'Summary', icon: HiClipboardDocumentCheck },
+    { id: 'Asset Return', icon: HiArrowPathRoundedSquare },
+    { id: 'Checklist', icon: HiShieldCheck },
+    { id: 'Settlement', icon: HiCurrencyDollar },
+    { id: 'Documents', icon: HiDocumentText },
+    { id: 'Interview', icon: HiChatBubbleLeftRight }
+  ]
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">Exit Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Track notice periods and offboarding tasks.</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
+        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-bold tracking-tight uppercase">EXIT MANAGEMENT – ADMIN VIEW</h1>
+            <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
+              Manage employee departures, asset recovery, and final settlements with a streamlined professional workflow.
+            </p>
+          </div>
+          <Button 
+            label="Initiate Exit" 
+            variant="secondary" 
+            icon={HiUserMinus}
+            className="bg-white text-[#0F766E] hover:bg-emerald-50 shadow-lg border-none"
+            onClick={() => setModalOpen(true)}
+          />
         </div>
-        <Button label="Initiate exit" variant="primary" onClick={() => setModalOpen(true)} />
+        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="In notice" value={exitKpis.inNotice} subtitle="Employees" color="orange" />
-        <StatCard title="Exits this quarter" value={exitKpis.exitsThisQuarter} subtitle="Completed" color="blue" />
-        <StatCard title="Exit interviews" value={exitKpis.exitInterviews} subtitle="Scheduled" color="purple" />
-      </div>
-
-      <Table columns={columns} data={exitRecords} pageSize={5} />
-
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Clearance Task Tracking</h2>
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-            <div>
-              <div className="font-medium text-gray-900">John Smith - IT Assets</div>
-              <div className="text-xs text-gray-500">Laptop, Monitor, Keyboard pending return</div>
-            </div>
-            <Badge label="Pending" color="orange" />
-          </div>
-          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-            <div>
-              <div className="font-medium text-gray-900">Sarah Johnson - System Access</div>
-              <div className="text-xs text-gray-500">Email, ERP, and access revocation pending</div>
-            </div>
-            <Badge label="In Progress" color="blue" />
-          </div>
-          <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-            <div>
-              <div className="font-medium text-gray-900">Michael Brown - Library Books</div>
-              <div className="text-xs text-gray-500">2 books returned, clearance pending</div>
-            </div>
-            <Badge label="Completed" color="green" />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Asset Return Management</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Laptop - Dell XPS 15</div>
-                <div className="text-xs text-gray-500">John Smith • AST-001</div>
+      <div className="grid gap-6 lg:grid-cols-4">
+        {/* Status Filters / Quick Stats */}
+        <div className="space-y-4">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quick Stats</p>
+          {[
+            { label: 'Exits this month', count: stats.exitsThisMonth, icon: HiUserGroup, color: 'slate' },
+            { label: 'Pending approvals', count: stats.pendingApprovals, icon: HiClock, color: 'orange' },
+            { label: 'Pending assets', count: stats.assetsPending, icon: HiArrowPathRoundedSquare, color: 'blue' },
+            { label: 'Pending settlements', count: stats.pendingSettlements, icon: HiCurrencyDollar, color: 'emerald' }
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 transition-all shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600`}>
+                  <item.icon className="h-5 w-5" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-slate-700 uppercase tracking-tight">{item.label}</div>
+                  <div className="text-[10px] text-slate-400 font-medium tracking-tight">System Audit</div>
+                </div>
               </div>
-              <Badge label="Pending" color="orange" size="sm" />
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Monitor - Dell 27"</div>
-                <div className="text-xs text-gray-500">Sarah Johnson • AST-002</div>
+              <div className={`text-lg font-black text-slate-700`}>
+                {item.count}
               </div>
-              <Badge label="Returned" color="green" size="sm" />
             </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Security Badge</div>
-                <div className="text-xs text-gray-500">Michael Brown • BADGE-003</div>
-              </div>
-              <Badge label="Returned" color="green" size="sm" />
-            </div>
-          </div>
+          ))}
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Exit Interview Recording</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">John Smith</div>
-                <div className="text-xs text-gray-500">Scheduled: Apr 20, 2026</div>
+        {/* Main Content */}
+        <div className="lg:col-span-3 space-y-6">
+          <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+              <div className="flex-1">
+                <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Registry</label>
+                <div className="relative">
+                  <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Name, ID, or Exit Type..."
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                  />
+                </div>
               </div>
-              <Badge label="Scheduled" color="blue" size="sm" />
+              <Button label="FILTER" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200" />
             </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Sarah Johnson</div>
-                <div className="text-xs text-gray-500">Completed: Apr 15, 2026</div>
-              </div>
-              <Badge label="Completed" color="green" size="sm" />
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Michael Brown</div>
-                <div className="text-xs text-gray-500">Waived by employee</div>
-              </div>
-              <Badge label="Waived" color="gray" size="sm" />
-            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+             <div className="bg-[#0F766E] px-6 py-3 text-white">
+                <div className="flex items-center justify-between">
+                   <h2 className="text-sm font-bold uppercase tracking-wider">Exit Registry</h2>
+                   <HiArrowPathRoundedSquare className="h-4 w-4 opacity-50" />
+                </div>
+             </div>
+             <Table columns={columns} data={filtered} pageSize={8} />
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Final Settlement Processing</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">John Smith</div>
-                <div className="text-xs text-gray-500">Salary: AED 15,000 • Benefits: AED 2,500</div>
-              </div>
-              <Badge label="Processing" color="orange" size="sm" />
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Sarah Johnson</div>
-                <div className="text-xs text-gray-500">Salary: AED 12,000 • Benefits: AED 1,800</div>
-              </div>
-              <Badge label="Paid" color="green" size="sm" />
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Michael Brown</div>
-                <div className="text-xs text-gray-500">Salary: AED 18,000 • Benefits: AED 3,000</div>
-              </div>
-              <Badge label="Pending" color="orange" size="sm" />
-            </div>
+      {/* Review Exit Modal */}
+      <Modal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} title="EXIT MANAGEMENT – ADMIN VIEW" size="xl">
+        <div className="animate-in fade-in duration-500 space-y-6">
+          {/* Tabs Navigation */}
+          <div className="flex flex-wrap items-center gap-1 border-b border-slate-100 bg-slate-50/50 -mx-6 px-6">
+             {tabs.map((tab) => (
+                <button
+                   key={tab.id}
+                   onClick={() => setActiveTab(tab.id)}
+                   className={`flex items-center gap-2 px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all border-b-2 ${
+                      activeTab === tab.id 
+                      ? 'border-[#0F766E] text-[#0F766E] bg-white' 
+                      : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                   }`}
+                >
+                   <tab.icon className="h-4 w-4" /> {tab.id}
+                </button>
+             ))}
           </div>
-        </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Exit Document Generation</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">NOC - John Smith</div>
-                <div className="text-xs text-gray-500">No Objection Certificate</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge label="Generated" color="green" size="sm" />
-                <Button label="Download" size="sm" variant='danger' />
-              </div>
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Experience Letter - Sarah Johnson</div>
-                <div className="text-xs text-gray-500">Employment verification</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge label="Generated" color="green" size="sm" />
-                <Button label="Download" variant='danger'  size="sm" />
-              </div>
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Settlement Statement - Michael Brown</div>
-                <div className="text-xs text-gray-500">Final payment details</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge label="Pending" color="orange" size="sm" />
-                <Button label="Generate" variant='Approve' size="sm" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          {activeTab === 'Summary' && (
+             <div className="grid gap-8 lg:grid-cols-2">
+                <div className="space-y-1">
+                   <div className="grid grid-cols-2 gap-x-12 gap-y-4 rounded-2xl border border-slate-100 p-6 bg-slate-50/30">
+                      {[
+                        { label: 'Employee Name', value: selectedExit?.name },
+                        { label: 'Employee ID', value: selectedExit?.id },
+                        { label: 'Department', value: selectedExit?.dept },
+                        { label: 'Manager', value: selectedExit?.manager },
+                        { label: 'Exit Type', value: selectedExit?.type },
+                        { label: 'Notice Period', value: selectedExit?.notice },
+                        { label: 'Job Title', value: selectedExit?.title },
+                        { label: 'Join Date', value: selectedExit?.joinDate },
+                        { label: 'Last working day', value: selectedExit?.lwd },
+                        { label: 'Exit Status', value: selectedExit?.status }
+                      ].map(item => (
+                         <div key={item.label}>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
+                            <p className="text-sm font-bold text-slate-700">{item.value}</p>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+                <div className="space-y-4">
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Remarks</p>
+                   <textarea 
+                      className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm focus:border-[#0F766E] focus:outline-none min-h-[200px]"
+                      placeholder="Enter exit notes or administrative comments..."
+                   />
+                </div>
+             </div>
+          )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Exit Workflow Stages</h2>
-          <div className="mt-4 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 text-xs">
-                ✓
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">Resignation Submitted</div>
-                <div className="text-xs text-gray-500">Employee submitted formal resignation</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 text-xs">
-                ✓
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">Notice Period Confirmed</div>
-                <div className="text-xs text-gray-500">HR confirmed last working day</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">
-                3
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">Exit Interview Scheduled</div>
-                <div className="text-xs text-gray-500">Interview with HR Manager</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 text-xs">
-                4
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">Asset Clearance</div>
-                <div className="text-xs text-gray-500">IT equipment and access return</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 text-xs">
-                5
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">Final Settlement</div>
-                <div className="text-xs text-gray-500">Salary, benefits, and dues calculation</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 text-xs">
-                6
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">Documents Issued</div>
-                <div className="text-xs text-gray-500">NOC and experience letter</div>
-              </div>
-            </div>
-          </div>
-        </div>
+          {activeTab === 'Asset Return' && (
+             <div className="space-y-6">
+                <div className="overflow-hidden rounded-2xl border border-slate-200">
+                   <table className="w-full text-left text-sm">
+                      <thead className="bg-[#0F766E] text-white">
+                         <tr>
+                            {['Asset Type', 'Asset ID', 'Serial No.', 'Issued Date', 'Return Date', 'Condition', 'Status'].map(h => (
+                               <th key={h} className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider">{h}</th>
+                            ))}
+                         </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                         {[
+                           { type: 'Laptop', id: 'LP-902', serial: 'SN-00129', issued: '01/01/2022', return: '-', condition: 'Good', status: 'Pending' },
+                           { type: 'Mobile', id: 'MB-102', serial: 'IMEI-8821', issued: '01/01/2022', return: '20/12/2025', condition: 'Good', status: 'Returned' },
+                           { type: 'Access keys/card', id: 'AC-50', serial: 'RFID-11', issued: '01/01/2022', return: '-', condition: '-', status: 'Pending' }
+                         ].map((asset, i) => (
+                            <tr key={i} className="hover:bg-slate-50 transition-colors">
+                               <td className="px-4 py-4 font-bold text-slate-700">{asset.type}</td>
+                               <td className="px-4 py-4">{asset.id}</td>
+                               <td className="px-4 py-4 text-xs font-mono">{asset.serial}</td>
+                               <td className="px-4 py-4">{asset.issued}</td>
+                               <td className="px-4 py-4">{asset.return}</td>
+                               <td className="px-4 py-4">
+                                  <select className="bg-transparent border-none focus:ring-0 text-xs font-medium">
+                                     <option>Good</option>
+                                     <option>Damaged</option>
+                                     <option>Lost</option>
+                                  </select>
+                               </td>
+                               <td className="px-4 py-4">
+                                  <Badge label={asset.status} color={asset.status === 'Returned' ? 'green' : 'orange'} />
+                               </td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                </div>
+                <div className="rounded-2xl border border-slate-100 p-4 bg-slate-50/50">
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Asset Recovery Notes</p>
+                   <textarea className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm focus:border-[#0F766E] focus:outline-none" rows={2} />
+                </div>
+             </div>
+          )}
 
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Active Exit Cases</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">John Smith</div>
-                <div className="text-xs text-gray-500">15 days remaining in notice</div>
-              </div>
-              <Badge label="Notice" color="orange" />
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Sarah Johnson</div>
-                <div className="text-xs text-gray-500">Offboarding in progress</div>
-              </div>
-              <Badge label="Offboarding" color="blue" />
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Michael Brown</div>
-                <div className="text-xs text-gray-500">Pending clearance</div>
-              </div>
-              <Badge label="Clearance" color="purple" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Initiate Exit" size="xl">
-        <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
-            Exit process
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 w-full sm:col-span-1">
-              <label htmlFor="exit-employee" className="mb-1 block text-sm font-medium text-gray-700">
-                Employee
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="exit-employee"
-                name="employeeId"
-                value={formData.employeeId}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select employee
-                </option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name} ({e.empId})
-                  </option>
+          {activeTab === 'Checklist' && (
+             <div className="grid gap-6 md:grid-cols-2">
+                {['IT Clearance', 'Finance Clearance', 'HR Clearance', 'Manager Clearance'].map(title => (
+                   <div key={title} className="rounded-2xl border border-slate-200 p-6 space-y-4 shadow-sm bg-white">
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">{title}</h4>
+                      <div className="space-y-3">
+                         {['System access revoked', 'Email archived', 'Hardware verified'].map((item, i) => (
+                            <label key={i} className="flex items-center gap-3 cursor-pointer group">
+                               <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]" />
+                               <span className="text-xs text-slate-600 group-hover:text-slate-900">{item}</span>
+                            </label>
+                         ))}
+                      </div>
+                   </div>
                 ))}
-              </select>
-            </div>
-            <div className="w-full">
-              <label htmlFor="exit-type" className="mb-1 block text-sm font-medium text-gray-700">
-                Exit Type
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="exit-type"
-                name="exitType"
-                value={formData.exitType}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select exit type
-                </option>
-                <option value="Resignation">Resignation</option>
-                <option value="Termination">Termination</option>
-                <option value="Retirement">Retirement</option>
-                <option value="End of Contract">End of Contract</option>
-                <option value="Abandonment">Abandonment</option>
-              </select>
-            </div>
-            <Input
-              label="Last Working Day"
-              name="lastWorkingDay"
-              type="date"
-              value={formData.lastWorkingDay}
-              onChange={handleFormChange}
-              required
-            />
-            <div className="col-span-2 w-full sm:col-span-1">
-              <label htmlFor="exit-notice" className="mb-1 block text-sm font-medium text-gray-700">
-                Notice Period
-              </label>
-              <select
-                id="exit-notice"
-                name="noticePeriod"
-                value={formData.noticePeriod}
-                onChange={handleFormChange}
-                className={selectClass}
-              >
-                <option value="">Select notice period</option>
-                <option value="0 days">0 days</option>
-                <option value="30 days">30 days</option>
-                <option value="60 days">60 days</option>
-                <option value="90 days">90 days</option>
-                <option value="As per contract">As per contract</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-3 w-full">
-            <label htmlFor="exit-reason" className="mb-1 block text-sm font-medium text-gray-700">
-              Exit Reason
-              <span className="text-red-500"> *</span>
-            </label>
-            <textarea
-              id="exit-reason"
-              name="exitReason"
-              value={formData.exitReason}
-              onChange={handleFormChange}
-              className={textareaClass}
-              rows={3}
-              required
-            />
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <Input
-              label="Exit Interview Date"
-              name="exitInterviewDate"
-              type="date"
-              value={formData.exitInterviewDate}
-              onChange={handleFormChange}
-            />
-            <Input
-              label="Exit Interview Conducted By"
-              name="exitInterviewBy"
-              value={formData.exitInterviewBy}
-              onChange={handleFormChange}
-            />
-          </div>
+             </div>
+          )}
 
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
-            Clearance checklist
-          </p>
-          <div className="flex flex-col gap-4">
-            <Toggle
-              label="IT Assets Returned"
-              checked={formData.itAssetsReturned}
-              onChange={handleToggle('itAssetsReturned')}
-            />
-            <Toggle
-              label="Access Revoked"
-              checked={formData.accessRevoked}
-              onChange={handleToggle('accessRevoked')}
-            />
-            <Toggle
-              label="Final Settlement Processed"
-              checked={formData.finalSettlementProcessed}
-              onChange={handleToggle('finalSettlementProcessed')}
-            />
-            <Toggle
-              label="NOC Issued"
-              checked={formData.nocIssued}
-              onChange={handleToggle('nocIssued')}
-            />
-            <Toggle
-              label="Experience Letter Issued"
-              checked={formData.experienceLetterIssued}
-              onChange={handleToggle('experienceLetterIssued')}
-            />
+          <div className="pt-6 border-t border-slate-100 flex justify-center gap-4">
+             <Button label="SAVE UPDATES" variant="primary" className="px-12 shadow-lg shadow-emerald-900/20" />
+             <Button label="APPROVE EXIT" variant="secondary" className="bg-emerald-600 hover:bg-emerald-700" icon={HiCheckBadge} />
+             <Button label="CANCEL" variant="ghost" onClick={() => setReviewModalOpen(false)} />
           </div>
+        </div>
+      </Modal>
 
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
-            Documents
-          </p>
-          <div className="space-y-4">
-            <FileUpload
-              label="Resignation Letter"
-              name="resignationLetter"
-              accept=".pdf,.doc,.docx,.jpg,.png"
-              onChange={handleFileChange('resignationLetter')}
-            />
-            <FileUpload
-              label="Settlement Agreement"
-              name="settlementAgreement"
-              accept=".pdf,.doc,.docx"
-              onChange={handleFileChange('settlementAgreement')}
-            />
-          </div>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" label="Save" variant="primary" />
-          </div>
-        </form>
+      {/* Initiation Modal */}
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Initiate Exit Workflow" size="lg">
+         <form className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+               <div className="col-span-2">
+                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Select Employee</label>
+                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm focus:border-[#0F766E] focus:outline-none">
+                     <option value="" disabled hidden>Search employee to initiate exit...</option>
+                     {employees.map(e => <option key={e.id}>{e.name} ({e.empId})</option>)}
+                  </select>
+               </div>
+               <div>
+                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Exit Type</label>
+                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm focus:border-[#0F766E] focus:outline-none">
+                     <option>Resignation</option>
+                     <option>Contract End</option>
+                     <option>Termination</option>
+                     <option>Retirement</option>
+                  </select>
+               </div>
+               <div>
+                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Last Working Day</label>
+                  <input type="date" className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm focus:border-[#0F766E] focus:outline-none" />
+               </div>
+            </div>
+            
+            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+               <Button type="button" label="Cancel" variant="ghost" onClick={() => setModalOpen(false)} />
+               <Button label="Start Exit Process" variant="primary" className="px-8 shadow-lg shadow-emerald-900/20" icon={HiUserMinus} />
+            </div>
+         </form>
       </Modal>
     </div>
   )
