@@ -14,7 +14,6 @@ import {
   HiLockClosed,
   HiServer,
   HiShieldCheck,
-  HiSquares2X2,
   HiUserCircle,
   HiUsers,
 } from "react-icons/hi2";
@@ -72,12 +71,6 @@ const superNavGroups = [
         label: 'Permissions',
         icon: HiLockClosed,
         path: '/superadmin/permissions',
-        roles: ['superadmin'],
-      },
-      {
-        label: 'Modules',
-        icon: HiSquares2X2,
-        path: '/superadmin/modules',
         roles: ['superadmin'],
       },
       {

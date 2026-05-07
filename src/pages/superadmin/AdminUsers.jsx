@@ -106,7 +106,7 @@ export default function AdminUsers() {
       Swal.fire({
         icon: 'success',
         title: 'User Invited',
-        text: `Admin user created successfully. Temporary password: ${tempPassword}`,
+        text: 'Admin user created successfully. Credentials have been dispatched to their email address.',
         confirmButtonColor: '#2563eb',
       })
     } catch (error) {

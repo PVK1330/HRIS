@@ -47,6 +47,9 @@ export const superadminService = {
   updateRole(roleKey, payload) {
     return api.patch(SUPERADMIN_ENDPOINTS.PERMISSION_BY_ROLE_KEY(roleKey), payload)
   },
+  deleteRole(roleKey) {
+    return api.delete(SUPERADMIN_ENDPOINTS.PERMISSION_BY_ROLE_KEY(roleKey))
+  },
 
   // Modules
   getModules() {
