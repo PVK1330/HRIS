@@ -180,7 +180,7 @@ export default function Attendance() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => handleView(row)}
             className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
             title="View Details"
@@ -213,13 +213,13 @@ export default function Attendance() {
       label: 'List with Approve/Reject',
       render: (_, row) => (
         <div className="flex gap-1">
-          <button 
+          <button
             onClick={() => handleApprove(row)}
             className="px-2.5 py-1.5 text-[10px] font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-all uppercase tracking-tight"
           >
             Approve
           </button>
-          <button 
+          <button
             onClick={() => handleReject(row)}
             className="px-2.5 py-1.5 text-[10px] font-black text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-md transition-all uppercase tracking-tight"
           >
@@ -255,29 +255,29 @@ export default function Attendance() {
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <span className="text-xs font-medium text-slate-600">Set Buffer Time (Minutes)</span>
-              <input 
-                type="text" 
-                value={bufferTime} 
-                onChange={(e) => setBufferTime(e.target.value)} 
-                className="w-16 text-xs font-bold text-right bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none focus:border-emerald-500" 
+              <input
+                type="text"
+                value={bufferTime}
+                onChange={(e) => setBufferTime(e.target.value)}
+                className="w-16 text-xs font-bold text-right bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none focus:border-emerald-500"
               />
             </div>
             <div className="flex items-center justify-between pb-2 border-b border-slate-50">
               <span className="text-xs font-medium text-slate-600">Define Work Hours</span>
-              <input 
-                type="text" 
-                value={workHours} 
-                onChange={(e) => setWorkHours(e.target.value)} 
-                className="w-32 text-xs font-bold text-right bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none focus:border-emerald-500" 
+              <input
+                type="text"
+                value={workHours}
+                onChange={(e) => setWorkHours(e.target.value)}
+                className="w-32 text-xs font-bold text-right bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none focus:border-emerald-500"
               />
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-600">Set Late Penalty Rules</span>
-              <input 
-                type="text" 
-                value={penaltyRules} 
-                onChange={(e) => setPenaltyRules(e.target.value)} 
-                className="w-48 text-xs font-bold text-right bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none focus:border-emerald-500" 
+              <input
+                type="text"
+                value={penaltyRules}
+                onChange={(e) => setPenaltyRules(e.target.value)}
+                className="w-48 text-xs font-bold text-right bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none focus:border-emerald-500"
               />
             </div>
           </div>
@@ -306,7 +306,7 @@ export default function Attendance() {
       <div className="flex flex-col lg:flex-row gap-3 items-end bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
         <div className="flex-1 w-full">
           <label className="mb-1 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search</label>
-          <input 
+          <input
             type="text"
             placeholder="Name or ID..."
             value={q}
@@ -317,7 +317,7 @@ export default function Attendance() {
 
         <div className="w-full lg:w-48">
           <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
-          <select 
+          <select
             value={dept}
             onChange={(e) => setDept(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-md py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer shadow-sm"
@@ -328,7 +328,7 @@ export default function Attendance() {
 
         <div className="w-full lg:w-48">
           <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
-          <select 
+          <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-md py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer shadow-sm"
@@ -340,7 +340,7 @@ export default function Attendance() {
           </select>
         </div>
 
-        <button 
+        <button
           onClick={() => { setQ(''); setDept(''); setStatusFilter('') }}
           className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-all"
           title="Reset Filters"
@@ -377,13 +377,12 @@ export default function Attendance() {
             {[...Array(30)].map((_, i) => (
               <div
                 key={i}
-                className={`flex h-10 items-center justify-center rounded-md border ${
-                  i % 7 === 0 || i % 7 === 6
+                className={`flex h-10 items-center justify-center rounded-md border ${i % 7 === 0 || i % 7 === 6
                     ? 'bg-gray-100 text-gray-400 border-gray-200'
                     : i % 5 === 0
-                    ? 'bg-red-50 text-red-600 border-red-100'
-                    : 'bg-green-50 text-green-600 border-green-100'
-                }`}
+                      ? 'bg-red-50 text-red-600 border-red-100'
+                      : 'bg-green-50 text-green-600 border-green-100'
+                  }`}
               >
                 {i + 1}
               </div>
@@ -421,13 +420,13 @@ export default function Attendance() {
               <Badge label="5 Pending" color="orange" />
             </div>
             <div className="mt-6 p-4 rounded-lg bg-emerald-50 border border-emerald-100">
-               <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Est. Overtime Payout</p>
-                    <p className="text-xl font-black text-emerald-900">$4,250.00</p>
-                  </div>
-                  <Button label="Audit Payout" variant="primary" size="sm" className="rounded-md" />
-               </div>
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Est. Overtime Payout</p>
+                  <p className="text-xl font-black text-emerald-900">$4,250.00</p>
+                </div>
+                <Button label="Audit Payout" variant="primary" size="sm" className="rounded-md" />
+              </div>
             </div>
           </div>
         </div>
@@ -650,7 +649,7 @@ export default function Attendance() {
               </div>
               <div className="col-span-2">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Supporting Proof (Optional)</p>
-                <FileUpload label="Attach Evidence" onChange={() => {}} />
+                <FileUpload label="Attach Evidence" onChange={() => { }} />
               </div>
             </div>
 
@@ -664,10 +663,10 @@ export default function Attendance() {
 
       {/* Action Modal (Approve/Reject) */}
       {selectedRecord && (
-        <Modal 
-          isOpen={actionModalOpen} 
-          onClose={() => setActionModalOpen(false)} 
-          title={`${actionType} Regularization`} 
+        <Modal
+          isOpen={actionModalOpen}
+          onClose={() => setActionModalOpen(false)}
+          title={`${actionType} Regularization`}
           size="md"
         >
           <form onSubmit={handleActionSubmit} className="space-y-4 pt-2">
@@ -676,14 +675,14 @@ export default function Attendance() {
                 You are about to {actionType.toLowerCase()} the regularization for {selectedRecord.employee}.
               </p>
             </div>
-            
+
             <div>
               <label className="mb-1 block text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 Reason / Remarks
               </label>
-              <textarea 
-                className={textareaClass} 
-                required 
+              <textarea
+                className={textareaClass}
+                required
                 value={actionReason}
                 onChange={(e) => setActionReason(e.target.value)}
                 placeholder={`Provide a reason for ${actionType.toLowerCase()}al...`}
@@ -692,11 +691,11 @@ export default function Attendance() {
 
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" label="Cancel" variant="ghost" onClick={() => setActionModalOpen(false)} />
-              <Button 
-                type="submit" 
-                label={`Confirm ${actionType}`} 
-                variant="primary" 
-                className={`rounded-lg shadow-lg ${actionType === 'Approve' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-100'}`} 
+              <Button
+                type="submit"
+                label={`Confirm ${actionType}`}
+                variant="primary"
+                className={`rounded-lg shadow-lg ${actionType === 'Approve' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-100'}`}
               />
             </div>
           </form>

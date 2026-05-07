@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { 
-  HiUsers, 
-  HiClock, 
-  HiCalendar, 
-  HiDocument, 
-  HiCreditCard, 
-  HiClipboardDocumentCheck, 
-  HiChartBar, 
-  HiBuildingOffice, 
+import {
+  HiUsers,
+  HiClock,
+  HiCalendar,
+  HiDocument,
+  HiCreditCard,
+  HiClipboardDocumentCheck,
+  HiChartBar,
+  HiBuildingOffice,
   HiBriefcase,
   HiMegaphone,
   HiSparkles,
@@ -75,21 +75,21 @@ export default function Dashboard() {
   }
 
   const stats = dashboardData?.stats || {
-    employees: { 
-      total: dashboardStats.totalEmployees, 
-      active: dashboardStats.activeEmployees, 
-      probation: dashboardStats.onProbation, 
-      notice: dashboardStats.inNotice 
+    employees: {
+      total: dashboardStats.totalEmployees,
+      active: dashboardStats.activeEmployees,
+      probation: dashboardStats.onProbation,
+      notice: dashboardStats.inNotice
     },
-    attendance: { 
-      present: dashboardStats.todayInOffice, 
-      remote: dashboardStats.todayRemote, 
-      absent: dashboardStats.todayAbsent 
+    attendance: {
+      present: dashboardStats.todayInOffice,
+      remote: dashboardStats.todayRemote,
+      absent: dashboardStats.todayAbsent
     },
-    pending: { 
-      leaves: dashboardStats.pendingLeaves, 
-      documents: dashboardStats.pendingDocuments, 
-      expenses: dashboardStats.pendingExpenses 
+    pending: {
+      leaves: dashboardStats.pendingLeaves,
+      documents: dashboardStats.pendingDocuments,
+      expenses: dashboardStats.pendingExpenses
     }
   }
 
@@ -136,11 +136,11 @@ export default function Dashboard() {
           <div className="px-4 py-1.5 text-sm font-bold text-slate-700">
             {todayLabel}
           </div>
-          <Button 
-            ariaLabel="Refresh Data" 
-            variant="primary" 
-            size="sm" 
-            className="rounded-lg bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200" 
+          <Button
+            ariaLabel="Refresh Data"
+            variant="primary"
+            size="sm"
+            className="rounded-lg bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200"
             onClick={loadDashboardData}
           >
             Refresh
@@ -262,8 +262,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full bg-${dept.color}-500 transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.1)]`} 
+                  <div
+                    className={`h-full rounded-full bg-${dept.color}-500 transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.1)]`}
                     style={{ width: `${dept.percent}%` }}
                   />
                 </div>

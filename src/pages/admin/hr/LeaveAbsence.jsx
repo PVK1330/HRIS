@@ -36,7 +36,7 @@ export default function LeaveAbsence() {
   // --- States ---
   const [activeTab, setActiveTab] = useState('requests') // 'requests', 'balances', 'holidays'
   const [q, setQ] = useState('')
-  
+
   // Modals
   const [holidayModalOpen, setHolidayModalOpen] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
@@ -170,19 +170,19 @@ export default function LeaveAbsence() {
 
       {/* Navigation Tabs */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit border border-slate-200">
-        <button 
+        <button
           onClick={() => setActiveTab('requests')}
           className={`px-6 py-2 text-xs font-black uppercase tracking-widest rounded-md transition-all ${activeTab === 'requests' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
           Approval Workflow
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('balances')}
           className={`px-6 py-2 text-xs font-black uppercase tracking-widest rounded-md transition-all ${activeTab === 'balances' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
           Balance Summary
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('holidays')}
           className={`px-6 py-2 text-xs font-black uppercase tracking-widest rounded-md transition-all ${activeTab === 'holidays' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
@@ -252,7 +252,7 @@ export default function LeaveAbsence() {
             <h2 className="font-display text-xl font-black text-slate-900 uppercase tracking-tight">Public Holiday Setup</h2>
             <Button label="Add New Holiday" variant="primary" icon={HiPlus} onClick={() => setHolidayModalOpen(true)} className="rounded-md" />
           </div>
-          
+
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 p-2 shadow-sm ring-1 ring-slate-900/5">
               <Table columns={holidayColumns} data={mockHolidays} pageSize={10} />
@@ -434,10 +434,10 @@ export default function LeaveAbsence() {
       </Modal>
 
       {/* Action Modal (Approve/Reject) */}
-      <Modal 
-        isOpen={actionModalOpen} 
-        onClose={() => setActionModalOpen(false)} 
-        title={`Audit Decision: ${actionType}`} 
+      <Modal
+        isOpen={actionModalOpen}
+        onClose={() => setActionModalOpen(false)}
+        title={`Audit Decision: ${actionType}`}
         size="md"
       >
         <form onSubmit={(e) => { e.preventDefault(); setActionModalOpen(false) }} className="space-y-4 pt-2">
@@ -452,11 +452,11 @@ export default function LeaveAbsence() {
           </div>
           <div className="flex gap-3 pt-2">
             <Button label="Cancel" variant="secondary" className="flex-1" onClick={() => setActionModalOpen(false)} />
-            <Button 
-              type="submit" 
-              label={`Confirm ${actionType}`} 
-              variant="primary" 
-              className={`flex-1 shadow-lg ${actionType === 'Approve' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-100'}`} 
+            <Button
+              type="submit"
+              label={`Confirm ${actionType}`}
+              variant="primary"
+              className={`flex-1 shadow-lg ${actionType === 'Approve' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-100'}`}
             />
           </div>
         </form>

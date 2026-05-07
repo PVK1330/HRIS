@@ -1,647 +1,513 @@
-import { useMemo, useState } from 'react'
-import { Badge } from '../../../components/ui/Badge.jsx'
-import { Button } from '../../../components/ui/Button.jsx'
-import FileUpload from '../../../components/ui/FileUpload.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
-import { Modal } from '../../../components/ui/Modal.jsx'
-import { Table } from '../../../components/ui/Table.jsx'
-import { Toggle } from '../../../components/ui/Toggle.jsx'
-import { dashboardStats } from '../../../data/mockData.js'
-import { HiBuildingOffice, HiUsers, HiKey, HiCog6Tooth, HiShieldCheck, HiPencil, HiTrash, HiCalendarDays, HiPlus, HiPhoto, HiDevicePhoneMobile, HiQrCode } from 'react-icons/hi2'
+import { useState } from "react";
 
-const selectClass =
-  'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+const Toggle = ({ defaultChecked = true }) => {
+  const [on, setOn] = useState(defaultChecked);
+  return (
+    <button
+      onClick={() => setOn(!on)}
+      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${on ? "bg-indigo-600" : "bg-gray-200"}`}
+    >
+      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${on ? "translate-x-5" : "translate-x-1"}`} />
+    </button>
+  );
+};
 
-const MOCK_LEAVE_TYPES = [
-  { id: 1, name: 'Annual Leave', days: 30, carryForward: true, carryLimit: 10, color: 'blue' },
-  { id: 2, name: 'Sick Leave', days: 15, carryForward: false, carryLimit: 0, color: 'red' },
-  { id: 3, name: 'Maternity Leave', days: 90, carryForward: false, carryLimit: 0, color: 'purple' },
-  { id: 4, name: 'Paternity Leave', days: 5, carryForward: false, carryLimit: 0, color: 'orange' },
-];
-
-export default function Settings() {
-  const [companyName, setCompanyName] = useState('HRIS Holdings')
-  const [timezone, setTimezone] = useState('Asia/Dubai')
-  const [notify, setNotify] = useState(true)
-  const [files, setFiles] = useState({})
-  const [activeTab, setActiveTab] = useState('company')
-  const [teamModalOpen, setTeamModalOpen] = useState(false)
-  const [editTeamMode, setEditTeamMode] = useState(false)
-  const [editingTeamId, setEditingTeamId] = useState(null)
-  const [teamFormData, setTeamFormData] = useState({ name: '', email: '', role: '', department: '', status: 'Active' })
-  const [searchTeam, setSearchTeam] = useState('')
-  const [roleModalOpen, setRoleModalOpen] = useState(false)
-  const [editRoleMode, setEditRoleMode] = useState(false)
-  const [editingRoleId, setEditingRoleId] = useState(null)
-  const [roleFormData, setRoleFormData] = useState({ name: '', description: '', permissions: [] })
-  
-  // Security settings state
-  const [twoFactorAuth, setTwoFactorAuth] = useState(true)
-  const [sessionTimeout, setSessionTimeout] = useState(true)
-  const [ipWhitelist, setIpWhitelist] = useState(false)
-  const [passwordComplexity, setPasswordComplexity] = useState(true)
-  const [loginMonitoring, setLoginMonitoring] = useState(true)
-  const [show2FAModal, setShow2FAModal] = useState(false)
-  const [faStep, setFaStep] = useState(1)
-  
-  // Module visibility state
-  const [moduleVisibility, setModuleVisibility] = useState({
-    employeeDirectory: true,
-    attendance: true,
-    leave: true,
-    performance: true,
-    documents: true,
-    visa: true,
-    departments: true,
-    projects: true,
-    tasks: true,
-    payroll: true
-  })
-  
-  // Attendance & Leave configuration state
-  const [workingHours, setWorkingHours] = useState('9:00 AM - 6:00 PM')
-  const [workingDays, setWorkingDays] = useState('Monday - Friday')
-  const [annualLeaveDays, setAnnualLeaveDays] = useState('30')
-  const [sickLeaveDays, setSickLeaveDays] = useState('15')
-  
-  // Leave Type state
-  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
-  const [editLeaveMode, setEditLeaveMode] = useState(false);
-  const [leaveFormData, setLeaveFormData] = useState({ name: '', days: '', carryForward: false, carryLimit: 0 });
-
-  // Sensitive data access state
-  const [salaryAccess, setSalaryAccess] = useState('Admin Only')
-  const [performanceAccess, setPerformanceAccess] = useState('Admin Only')
-  const [visaAccess, setVisaAccess] = useState('Admin Only')
-  const [contactAccess, setContactAccess] = useState('Admin Only')
-
-  const teamMembers = useMemo(
-    () => [
-      { id: 1, name: 'Sarah Johnson', email: 'sarah.johnson@hris.com', role: 'HR Admin', department: 'HR', status: 'Active', lastLogin: '2026-04-13' },
-      { id: 2, name: 'Michael Brown', email: 'michael.brown@hris.com', role: 'Manager', department: 'IT', status: 'Active', lastLogin: '2026-04-12' },
-      { id: 3, name: 'Emily Davis', email: 'emily.davis@hris.com', role: 'HR Admin', department: 'HR', status: 'Active', lastLogin: '2026-04-13' },
-      { id: 4, name: 'David Wilson', email: 'david.wilson@hris.com', role: 'Manager', department: 'Operations', status: 'Active', lastLogin: '2026-04-10' },
-      { id: 5, name: 'John Smith', email: 'john.smith@hris.com', role: 'Employee', department: 'IT', status: 'Active', lastLogin: '2026-04-13' },
-    ],
-    []
-  )
-
-  const [customRoles, setCustomRoles] = useState([
-    { id: 1, name: 'HR Admin', description: 'Full HR module access', userCount: 8, isSystem: true, permissions: ['employee_directory', 'attendance', 'leave', 'performance', 'documents', 'visa', 'departments', 'projects', 'tasks', 'templates', 'reports'] },
-    { id: 2, name: 'Manager', description: 'Team management access', userCount: 12, isSystem: true, permissions: ['employee_directory', 'attendance', 'leave', 'performance', 'documents'] },
-    { id: 3, name: 'Employee', description: 'Self-service access', userCount: 45, isSystem: true, permissions: ['attendance', 'leave', 'documents'] },
-  ])
-
-  const availablePermissions = useMemo(
-    () => [
-      { key: 'employee_directory', label: 'Employee Directory' },
-      { key: 'attendance', label: 'Attendance & Timesheet' },
-      { key: 'leave', label: 'Leave Management' },
-      { key: 'performance', label: 'Performance Management' },
-      { key: 'documents', label: 'Documents' },
-      { key: 'visa', label: 'Visa & Nationality' },
-      { key: 'departments', label: 'Departments' },
-      { key: 'projects', label: 'Projects' },
-      { key: 'tasks', label: 'Tasks' },
-      { key: 'templates', label: 'Template Generator' },
-      { key: 'reports', label: 'Reports' },
-      { key: 'settings', label: 'Settings' },
-    ],
-    []
-  )
-
-  const filteredTeam = useMemo(() => {
-    const query = searchTeam.trim().toLowerCase()
-    return teamMembers.filter((m) => {
-      if (!query) return true
-      return `${m.name} ${m.email} ${m.role}`.toLowerCase().includes(query)
-    })
-  }, [searchTeam])
-
-  const handleTeamFormChange = (e) => {
-    const { name, value } = e.target
-    setTeamFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const resetTeamModal = () => {
-    setTeamFormData({ name: '', email: '', role: '', department: '', status: 'Active' })
-    setEditTeamMode(false)
-    setEditingTeamId(null)
-  }
-
-  const handleTeamSubmit = (e) => {
-    e.preventDefault()
-    console.log({ teamFormData, editTeamMode, editingTeamId })
-    resetTeamModal()
-    setTeamModalOpen(false)
-  }
-
-  const handleEditTeam = (id) => {
-    const member = teamMembers.find((m) => m.id === id)
-    if (member) {
-      setTeamFormData({
-        name: member.name,
-        email: member.email,
-        role: member.role,
-        department: member.department,
-        status: member.status,
-      })
-      setEditTeamMode(true)
-      setEditingTeamId(id)
-      setTeamModalOpen(true)
-    }
-  }
-
-  const handleDeleteTeam = (id) => {
-    if (confirm('Are you sure you want to remove this team member?')) {
-      console.log('Delete team member:', id)
-    }
-  }
-
-  const handleRoleFormChange = (e) => {
-    const { name, value } = e.target
-    setRoleFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handlePermissionToggle = (permission) => {
-    setRoleFormData((prev) => ({
-      ...prev,
-      permissions: prev.permissions.includes(permission)
-        ? prev.permissions.filter((p) => p !== permission)
-        : [...prev.permissions, permission]
-    }))
-  }
-
-  const resetRoleModal = () => {
-    setRoleFormData({ name: '', description: '', permissions: [] })
-    setEditRoleMode(false)
-    setEditingRoleId(null)
-  }
-
-  const handleRoleSubmit = (e) => {
-    e.preventDefault()
-    console.log({ roleFormData, editRoleMode, editingRoleId })
-    resetRoleModal()
-    setRoleModalOpen(false)
-  }
-
-  const handleEditRole = (id) => {
-    const role = customRoles.find((r) => r.id === id)
-    if (role && !role.isSystem) {
-      setRoleFormData({
-        name: role.name,
-        description: role.description,
-        permissions: role.permissions || []
-      })
-      setEditRoleMode(true)
-      setEditingRoleId(id)
-      setRoleModalOpen(true)
-    }
-  }
-
-  const handleDeleteRole = (id) => {
-    const role = customRoles.find((r) => r.id === id)
-    if (role && !role.isSystem && confirm(`Are you sure you want to delete the role "${role.name}"?`)) {
-      setCustomRoles((prev) => prev.filter((r) => r.id !== id))
-    }
-  }
-
-  const handleModuleVisibilityToggle = (module) => {
-    setModuleVisibility((prev) => ({ ...prev, [module]: !prev[module] }))
-  }
-
-  const handleSaveCompanySettings = () => {
-    alert('Company settings saved successfully!')
-  }
-
-  const handleSaveSecuritySettings = () => {
-    alert('Security settings saved successfully!')
-  }
-
-  const handleSaveAttendanceSettings = () => {
-    alert('Attendance & Leave settings saved successfully!')
-  }
-
-  const handleSaveDataAccessSettings = () => {
-    alert('Data access settings saved successfully!')
-  }
-
-  const handleLeaveSubmit = (e) => {
-    e.preventDefault();
-    console.log('Leave Type Data:', leaveFormData);
-    setLeaveModalOpen(false);
+const Badge = ({ label, color = "indigo" }) => {
+  const colors = {
+    indigo: "bg-indigo-50 text-indigo-700",
+    green: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
+    red: "bg-red-50 text-red-700",
+    gray: "bg-gray-100 text-gray-600",
   };
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colors[color]}`}>
+      {label}
+    </span>
+  );
+};
 
-  const teamColumns = [
-    { key: 'name', label: 'Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'role', label: 'Role' },
-    { key: 'department', label: 'Department' },
-    { key: 'lastLogin', label: 'Last Login' },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (v) => <Badge label={v} color={v === 'Active' ? 'green' : 'red'} />,
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (_, row) => (
-        <div className="flex gap-2">
-          <Button label="Edit" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEditTeam(row.id)} />
-          <Button label="Delete" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDeleteTeam(row.id)} />
+const SectionCard = ({ title, children }) => (
+  <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+    <div className="border-b border-gray-100 px-5 py-3.5">
+      <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+    </div>
+    <div className="p-5">{children}</div>
+  </div>
+);
+
+const FieldRow = ({ label, hint, children }) => (
+  <div className="flex items-center justify-between gap-4 py-3 border-b border-gray-50 last:border-0">
+    <div className="flex-1 min-w-0">
+      <p className="text-sm font-medium text-gray-700">{label}</p>
+      {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
+    </div>
+    <div className="flex-shrink-0">{children}</div>
+  </div>
+);
+
+const TextInput = ({ placeholder, defaultValue, type = "text" }) => (
+  <input
+    type={type}
+    defaultValue={defaultValue}
+    placeholder={placeholder}
+    className="h-8 w-48 rounded-lg border border-gray-200 px-3 text-sm text-gray-700 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200 bg-gray-50"
+  />
+);
+
+const SelectInput = ({ options }) => (
+  <select className="h-8 w-48 rounded-lg border border-gray-200 px-2 text-sm text-gray-700 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200 bg-gray-50">
+    {options.map((o) => <option key={o}>{o}</option>)}
+  </select>
+);
+
+// ─── SECTIONS ────────────────────────────────────────────────────────────────
+
+const GeneralSection = () => (
+  <div className="space-y-5">
+    <SectionCard title="A. Company Information">
+      <FieldRow label="Company Name"><TextInput defaultValue="Acme Corp" /></FieldRow>
+      <FieldRow label="Logo" hint="PNG or SVG, max 2MB">
+        <button className="h-8 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-600 hover:bg-gray-100">Upload Logo</button>
+      </FieldRow>
+      <FieldRow label="Address(es)"><TextInput placeholder="Enter address" /></FieldRow>
+      <FieldRow label="Contact Details"><TextInput placeholder="+1 555 000 0000" /></FieldRow>
+      <FieldRow label="Country / Time Zone"><SelectInput options={["UTC+05:30 – India (IST)", "UTC+00:00 – London (GMT)", "UTC-05:00 – New York (EST)"]} /></FieldRow>
+      <FieldRow label="Financial Year Start"><SelectInput options={["April 1", "January 1", "July 1"]} /></FieldRow>
+      <FieldRow label="Working Days of the Week">
+        <div className="flex gap-1">
+          {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+            <button key={i} className={`w-7 h-7 rounded-full text-xs font-semibold transition-colors ${i < 5 ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-400"}`}>{d}</button>
+          ))}
         </div>
-      ),
-    },
-  ]
+      </FieldRow>
+    </SectionCard>
+
+    <SectionCard title="B. Work Calendars">
+      <FieldRow label="Default Work Calendar"><SelectInput options={["Standard 9–6", "Flexi Calendar", "Shift Calendar"]} /></FieldRow>
+      <FieldRow label="Regional Holidays" hint="Links to holiday setup module"><Toggle /></FieldRow>
+      <FieldRow label="Multiple Calendars (Branches)" hint="Allow different calendars per branch"><Toggle defaultChecked={false} /></FieldRow>
+    </SectionCard>
+
+    <SectionCard title="C. Others">
+      <FieldRow label="Default Probation Period"><SelectInput options={["3 months", "6 months", "1 year"]} /></FieldRow>
+      <FieldRow label="Default Notice Period"><SelectInput options={["30 days", "60 days", "90 days"]} /></FieldRow>
+      <FieldRow label="Auto-assign Policies to New Employees"><Toggle /></FieldRow>
+    </SectionCard>
+  </div>
+);
+
+const PermissionsSection = () => {
+  const [activeRole, setActiveRole] = useState("HR Admin");
+  const roles = ["HR Admin", "HR Executive", "Manager", "Employee"];
+
+  const permGroups = [
+    { name: "Employee Management", items: ["View all employees", "Add employee", "Edit employee profile", "Terminate employee"] },
+    { name: "Attendance", items: ["View attendance of all employees", "Approve regularization", "Edit attendance manually"] },
+    { name: "Leave", items: ["Approve leave", "Edit leave balance", "View leave history"] },
+    { name: "Documents", items: ["View uploaded documents", "Approve documents", "Download sensitive documents"] },
+    { name: "Policies", items: ["Create policies", "Edit policies", "Publish/Unpublish policies"] },
+    { name: "Performance", items: ["View all employees' performance", "Edit rating", "Create goals", "View manager feedback"] },
+    { name: "Assets", items: ["Issue assets", "Edit assets", "Mark asset as returned"] },
+    { name: "Letters & Templates", items: ["Create templates", "Edit templates", "Generate official letters"] },
+  ];
+
+  const defaults = { "HR Admin": [0, 1, 2, 3], "HR Executive": [0, 1, 2], "Manager": [0, 2], "Employee": [0], "Custom Role": [0, 1] };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-gray-900">Settings & Permissions</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Organization defaults and system configuration.
-        </p>
-      </div>
-
-      <div className="flex gap-2 border-b border-gray-200 overflow-x-auto no-scrollbar">
-        {[
-          { id: 'company', label: 'Company Profile', icon: HiBuildingOffice },
-          { id: 'team', label: 'Team & Roles', icon: HiUsers },
-          { id: 'leave', label: 'Leave Settings', icon: HiCalendarDays },
-          { id: 'permissions', label: 'Module Permissions', icon: HiKey },
-          { id: 'security', label: 'Security', icon: HiShieldCheck },
-        ].map(tab => (
+    <div className="flex gap-5">
+      <div className="w-44 flex-shrink-0 space-y-1">
+        {roles.map((r) => (
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all ${
-              activeTab === tab.id
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+            key={r}
+            onClick={() => setActiveRole(r)}
+            className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${activeRole === r ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}
           >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
+            {r}
           </button>
         ))}
+        <button className="w-full rounded-lg border-2 border-dashed border-gray-200 px-3 py-2 text-left text-sm text-gray-400 hover:border-indigo-300 mt-2">
+          + Add Role
+        </button>
       </div>
-
-      {activeTab === 'company' && (
-        <div className="space-y-6">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Company Profile</h2>
-              <div className="mt-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <label className="text-[11px] font-bold text-slate-500 px-1 uppercase tracking-widest">Company Logo</label>
-                    <div className="relative group overflow-hidden rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center transition-all hover:border-blue-500 hover:bg-white">
-                        <img src="/HRIS_Logo.png" alt="Current Logo" className="h-12 w-auto object-contain mb-4 group-hover:scale-105 transition-transform" />
-                        <div className="text-center">
-                          <p className="text-[10px] font-bold text-slate-900 mb-0.5">Change Logo</p>
-                          <p className="text-[9px] text-slate-400">PNG, SVG (Max 1MB)</p>
-                        </div>
-                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-[11px] font-bold text-slate-500 px-1 uppercase tracking-widest">Favicon Icon</label>
-                    <div className="relative group overflow-hidden rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center transition-all hover:border-blue-500 hover:bg-white h-full">
-                        <div className="h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                          <img src="/HRIS_Logo.png" alt="Current Favicon" className="h-5 w-5 object-contain" />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] font-bold text-slate-900 mb-0.5">Change Favicon</p>
-                          <p className="text-[9px] text-slate-400">ICO, PNG (32x32)</p>
-                        </div>
-                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                  </div>
-                </div>
-                <Input
-                  label="Company name"
-                  name="companyName"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                />
-                <Input
-                  label="Timezone"
-                  name="timezone"
-                  type="select"
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  options={[
-                    { value: 'Asia/Dubai', label: 'Asia/Dubai' },
-                    { value: 'Asia/Riyadh', label: 'Asia/Riyadh' },
-                    { value: 'Europe/London', label: 'Europe/London' },
-                    { value: 'America/New_York', label: 'America/New_York' },
-                  ]}
-                />
-              </div>
-              <div className="mt-6 flex justify-end">
-                <Button label="Save Changes" variant="primary" onClick={handleSaveCompanySettings} />
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Localization</h2>
-              <div className="mt-4 space-y-4">
-                 <Input label="Fiscal Year Start" type="select" options={[{value: 'Jan', label: 'January'}]} value="Jan" />
-                 <Input label="Currency" type="select" options={[{value: 'AED', label: 'AED (Dirham)'}]} value="AED" />
-                 <Input label="Date Format" type="select" options={[{value: 'YYYY-MM-DD', label: 'YYYY-MM-DD'}]} value="YYYY-MM-DD" />
-              </div>
-            </div>
-          </div>
+      <div className="flex-1 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-800">Permissions for <span className="text-indigo-600">{activeRole}</span></h3>
+          <Badge label="Role-based" />
         </div>
-      )}
+        {permGroups.map((group) => (
+          <SectionCard key={group.name} title={group.name}>
+            {group.items.map((item, idx) => (
+              <FieldRow key={item} label={item}>
+                <Toggle defaultChecked={defaults[activeRole]?.includes(idx % 4) ?? false} />
+              </FieldRow>
+            ))}
+          </SectionCard>
+        ))}
+      </div>
+    </div>
+  );
+};
 
-      {activeTab === 'team' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-lg font-bold text-gray-900">Team Members</h2>
-              <p className="mt-1 text-sm text-gray-500">Manage team members, roles, and permissions</p>
-            </div>
-            <Button label="Add Team Member" variant="primary" icon={HiPlus} onClick={() => setTeamModalOpen(true)} />
-          </div>
-
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <Input label="Search" name="search" placeholder="Search team members..." value={searchTeam} onChange={(e) => setSearchTeam(e.target.value)} />
-          </div>
-
-          <Table columns={teamColumns} data={filteredTeam} pageSize={10} />
-
-          <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-lg font-bold text-gray-900">Roles</h2>
-              <Button label="Add Role" variant="outline" size="sm" onClick={() => { resetRoleModal(); setRoleModalOpen(true) }} />
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {customRoles.map((role) => (
-                <div key={role.id} className="rounded-lg border border-gray-200 p-4 relative group">
-                  <h3 className="font-bold text-gray-900">{role.name}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{role.description}</p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <Badge label={`${role.userCount} Users`} color="blue" />
-                    {!role.isSystem && (
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleEditRole(role.id)} className="p-1 text-gray-400 hover:text-blue-500"><HiPencil className="h-4 w-4" /></button>
-                        <button onClick={() => handleDeleteRole(role.id)} className="p-1 text-gray-400 hover:text-red-500"><HiTrash className="h-4 w-4" /></button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+const ModulesSection = () => {
+  const modules = [
+    "Employee Profile", "Documents & Approvals", "Visa & Nationality",
+    "Leave", "Attendance", "Performance", "Payroll / Salary",
+    "Assets", "Policies", "Templates", "Reports",
+  ];
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-gray-100 px-5 py-3.5 grid grid-cols-5 items-center gap-4">
+          <p className="col-span-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Module</p>
+          {["HR", "Managers", "Employees"].map((r) => (
+            <p key={r} className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">{r}</p>
+          ))}
         </div>
-      )}
-
-      {activeTab === 'leave' && (
-        <div className="space-y-6">
-           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-lg font-bold text-gray-900">Leave Policies</h2>
-              <p className="mt-1 text-sm text-gray-500">Configure leave types, accruals and carry-forward rules</p>
-            </div>
-            <Button label="Add Leave Type" variant="primary" icon={HiPlus} onClick={() => { setEditLeaveMode(false); setLeaveModalOpen(true); }} />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {MOCK_LEAVE_TYPES.map((type) => (
-              <div key={type.id} className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all">
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-4">
-                    <div className={`h-12 w-12 rounded-lg bg-${type.color}-100 flex items-center justify-center text-${type.color}-600`}>
-                      <HiCalendarDays className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">{type.name}</h3>
-                      <p className="text-sm text-gray-500">{type.days} Days / Year</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                     <Button variant="ghost" size="sm" icon={HiPencil} onClick={() => { setEditLeaveMode(true); setLeaveModalOpen(true); }} />
-                     <Button variant="ghost" size="sm" icon={HiTrash} />
-                  </div>
-                </div>
-                <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
-                   <div>
-                     <p className="text-xs font-bold text-gray-400 uppercase">Carry Forward</p>
-                     <p className="text-sm font-medium mt-1">{type.carryForward ? `Enabled (${type.carryLimit} days)` : 'Disabled'}</p>
-                   </div>
-                   <div>
-                     <p className="text-xs font-bold text-gray-400 uppercase">Accrual Method</p>
-                     <p className="text-sm font-medium mt-1">Monthly</p>
-                   </div>
-                </div>
+        {modules.map((mod, i) => (
+          <div key={mod} className={`grid grid-cols-5 items-center gap-4 px-5 py-3.5 border-b border-gray-50 last:border-0 ${i % 2 === 0 ? "" : "bg-gray-50/50"}`}>
+            <p className="col-span-2 text-sm text-gray-700 font-medium">{mod}</p>
+            {[true, mod !== "Visa & Nationality" && mod !== "Payroll / Salary", false].map((def, j) => (
+              <div key={j} className="flex justify-center">
+                <Toggle defaultChecked={!!def} />
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {activeTab === 'permissions' && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-lg font-bold text-gray-900">Module Visibility Control</h2>
-            <div className="mt-4 space-y-3">
-              {Object.keys(moduleVisibility).map((key) => (
-                <Toggle 
-                  key={key}
-                  checked={moduleVisibility[key]} 
-                  onChange={() => handleModuleVisibilityToggle(key)} 
-                  label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} 
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-lg font-bold text-gray-900">Sensitive Data Access</h2>
-            <div className="mt-4 space-y-4">
-              {['Salary Information', 'Performance Reviews', 'Visa Data'].map((label) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">{label}</span>
-                  <select className={selectClass} style={{ width: '150px' }}>
-                    <option>Admin Only</option>
-                    <option>HR Admin</option>
-                    <option>Manager</option>
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'security' && (
-        <div className="max-w-2xl">
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm space-y-6">
-            <h2 className="font-display text-lg font-bold text-gray-900">Security Configuration</h2>
-            <div className="space-y-4">
-              <Toggle checked={twoFactorAuth} onChange={setTwoFactorAuth} label="Require 2FA for all Admin users" />
-              
-              <div className="flex items-center justify-between p-4 rounded-lg bg-indigo-50/50 border border-indigo-100 mt-6">
-                <div className="flex gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center text-indigo-600 shadow-sm">
-                    <HiDevicePhoneMobile className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">Personal 2FA</p>
-                    <p className="text-[11px] text-slate-500">Configure your authenticator app.</p>
-                  </div>
-                </div>
-                <Button label="Configure" variant="outline" size="sm" onClick={() => { setFaStep(1); setShow2FAModal(true); }} />
-              </div>
-
-              <Toggle checked={sessionTimeout} onChange={setSessionTimeout} label="Automatic logout after 30m inactivity" />
-              <Toggle checked={passwordComplexity} onChange={setPasswordComplexity} label="Enforce complex password rules" />
-              <Toggle checked={loginMonitoring} onChange={setLoginMonitoring} label="Email on new device login" />
-            </div>
-            <div className="pt-4 border-t border-gray-100 flex justify-end">
-               <Button label="Update Security Policy" variant="primary" onClick={handleSaveSecuritySettings} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modals */}
-      <Modal isOpen={teamModalOpen} onClose={() => { resetTeamModal(); setTeamModalOpen(false) }} title={editTeamMode ? 'Edit Team Member' : 'Add Team Member'} size="md">
-        <form onSubmit={handleTeamSubmit} className="space-y-4">
-          <Input label="Full Name" name="name" value={teamFormData.name} onChange={handleTeamFormChange} required />
-          <Input label="Email" name="email" type="email" value={teamFormData.email} onChange={handleTeamFormChange} required />
-          <Input label="Role" name="role" type="select" options={[{value: 'HR Admin', label: 'HR Admin'}, {value: 'Manager', label: 'Manager'}]} value={teamFormData.role} onChange={handleTeamFormChange} required />
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setTeamModalOpen(false)} />
-            <Button type="submit" label="Save Member" variant="primary" />
-          </div>
-        </form>
-      </Modal>
-
-      <Modal isOpen={leaveModalOpen} onClose={() => setLeaveModalOpen(false)} title={editLeaveMode ? 'Edit Leave Type' : 'Add Leave Type'} size="md">
-        <form onSubmit={handleLeaveSubmit} className="space-y-4">
-          <Input label="Leave Name" name="name" value={leaveFormData.name} onChange={(e) => setLeaveFormData({...leaveFormData, name: e.target.value})} required placeholder="e.g. Vacation" />
-          <Input label="Days Per Year" name="days" type="number" value={leaveFormData.days} onChange={(e) => setLeaveFormData({...leaveFormData, days: e.target.value})} required />
-          <div className="flex items-center gap-4 py-2">
-            <Toggle checked={leaveFormData.carryForward} onChange={(val) => setLeaveFormData({...leaveFormData, carryForward: val})} label="Enable Carry Forward" />
-          </div>
-          {leaveFormData.carryForward && (
-            <Input label="Carry Forward Limit (Days)" type="number" value={leaveFormData.carryLimit} onChange={(e) => setLeaveFormData({...leaveFormData, carryLimit: e.target.value})} />
-          )}
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setLeaveModalOpen(false)} />
-            <Button type="submit" label="Save Policy" variant="primary" />
-          </div>
-        </form>
-      </Modal>
-
-      <Modal isOpen={roleModalOpen} onClose={() => setRoleModalOpen(false)} title={editRoleMode ? 'Edit Role' : 'Add Role'} size="lg">
-        <form onSubmit={handleRoleSubmit} className="space-y-4">
-          <Input label="Role Name" name="name" value={roleFormData.name} onChange={handleRoleFormChange} required />
-          <Input label="Description" name="description" value={roleFormData.description} onChange={handleRoleFormChange} />
-          <div className="mt-4">
-            <h3 className="font-semibold text-gray-900 mb-3 text-sm">Module Permissions</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {availablePermissions.map((perm) => (
-                <div key={perm.key} className="flex items-center gap-2">
-                  <input type="checkbox" id={`perm-${perm.key}`} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                  <label htmlFor={`perm-${perm.key}`} className="text-sm text-gray-700">{perm.label}</label>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setRoleModalOpen(false)} />
-            <Button type="submit" label="Create Role" variant="primary" />
-          </div>
-        </form>
-      </Modal>
-
-      <Modal 
-        isOpen={show2FAModal} 
-        onClose={() => setShow2FAModal(false)} 
-        title="Setup Two-Factor Auth"
-        size="md"
-      >
-        <div className="p-2">
-          {faStep === 1 ? (
-            <div className="space-y-6 text-center">
-              <div className="mx-auto h-16 w-16 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                <HiQrCode className="h-10 w-10" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-slate-900">Scan QR Code</h3>
-                <p className="text-sm text-slate-500 max-w-[240px] mx-auto leading-relaxed">
-                  Open <strong>Google Authenticator</strong> or your preferred 2FA app to scan the code.
-                </p>
-              </div>
-              
-              {/* Live Scannable QR Code */}
-              <div className="mx-auto w-44 h-44 bg-white border-2 border-slate-100 rounded-lg p-4 shadow-xl flex items-center justify-center relative overflow-hidden">
-                <img 
-                   src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=otpauth://totp/HRIS:Admin?secret=B477H7S8L99S&issuer=HRIS" 
-                   alt="Authenticator QR Code" 
-                   className="w-full h-full object-contain"
-                />
-              </div>
-
-              <div className="space-y-2">
-                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Manual Setup Code</p>
-                 <div className="flex items-center justify-center gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-100 border-dashed">
-                    <code className="text-xs font-bold text-slate-700">KJHA 82HS 12LK P092</code>
-                    <button className="text-indigo-600 text-[10px] font-bold">Copy Code</button>
-                 </div>
-              </div>
-
-              <div className="flex items-center justify-center gap-4 grayscale opacity-30">
-                 <span className="text-[9px] font-bold uppercase tracking-widest border border-slate-900 px-2 py-1 rounded">Google</span>
-                 <span className="text-[9px] font-bold uppercase tracking-widest border border-slate-900 px-2 py-1 rounded">Microsoft</span>
-                 <span className="text-[9px] font-bold uppercase tracking-widest border border-slate-900 px-2 py-1 rounded">Authy</span>
-              </div>
-
-              <Button 
-                label="Next: Verify Token" 
-                variant="primary" 
-                className="w-full py-3 bg-slate-900 rounded-lg" 
-                onClick={() => setFaStep(2)}
-              />
-            </div>
-          ) : (
-            <div className="space-y-6 text-center">
-              <div className="mx-auto h-16 w-16 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                <HiShieldCheck className="h-10 w-10" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-slate-900">Verification</h3>
-                <p className="text-sm text-slate-500">Enter the 6-digit code from your app.</p>
-              </div>
-
-              <div className="flex justify-center gap-2">
-                {Array.from({length: 6}).map((_, i) => (
-                  <input 
-                    key={i}
-                    type="text" 
-                    maxLength={1}
-                    className="w-10 h-12 bg-slate-50 border-2 border-transparent rounded-lg text-center text-lg font-bold text-slate-900 focus:bg-white focus:border-indigo-500 outline-none"
-                    placeholder="0"
-                  />
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <Button label="Back" variant="ghost" className="flex-1" onClick={() => setFaStep(1)} />
-                <Button label="Enable 2FA" variant="primary" className="flex-2 bg-indigo-600 rounded-lg" onClick={() => {
-                  alert('2FA enabled!');
-                  setShow2FAModal(false);
-                }} />
-              </div>
-            </div>
-          )}
-        </div>
-      </Modal>
     </div>
-  )
+  );
+};
+
+const SensitiveDataSection = () => (
+  <div className="space-y-5">
+    <SectionCard title="A. Salary Data Visibility">
+      {["Salary Breakup", "CTC", "Payslips", "Revisions", "Payroll Reports"].map((item) => (
+        <FieldRow key={item} label={item}>
+          <SelectInput options={["HR Admin only", "HR Admin + Payroll Team", "HR Admin + Manager", "Employee (own only)"]} />
+        </FieldRow>
+      ))}
+    </SectionCard>
+    <SectionCard title="B. Visa & Nationality Visibility">
+      <FieldRow label="HR Admin"><Badge label="Full Access" color="green" /></FieldRow>
+      <FieldRow label="HR Executive"><Badge label="Full Access" color="green" /></FieldRow>
+      <FieldRow label="Manager"><Badge label="Hidden" color="red" /></FieldRow>
+      <FieldRow label="Employee"><Badge label="Own info only" color="amber" /></FieldRow>
+    </SectionCard>
+    <SectionCard title="C. Document Visibility">
+      {["Passport Copy", "Visa Copy", "National ID", "Medical Documents", "Performance Issues"].map((doc) => (
+        <FieldRow key={doc} label={doc}>
+          <SelectInput options={["HR only", "HR + Manager", "All"]} />
+        </FieldRow>
+      ))}
+    </SectionCard>
+    <SectionCard title="D. Notes / Disciplinary Visibility">
+      <FieldRow label="Notes Visibility"><SelectInput options={["HR only", "HR + Manager", "Employee"]} /></FieldRow>
+    </SectionCard>
+  </div>
+);
+
+const AttendanceSection = () => (
+  <div className="space-y-5">
+    <SectionCard title="A. Work Hours">
+      <FieldRow label="Start Time"><TextInput type="time" defaultValue="09:00" /></FieldRow>
+      <FieldRow label="End Time"><TextInput type="time" defaultValue="18:00" /></FieldRow>
+      <FieldRow label="Break Duration"><SelectInput options={["30 minutes", "45 minutes", "1 hour"]} /></FieldRow>
+      <FieldRow label="Total Required Hours" hint="Auto-calculated or manual"><TextInput defaultValue="8.5 hrs" /></FieldRow>
+    </SectionCard>
+    <SectionCard title="B. Attendance Rules">
+      <FieldRow label="Min. Hours for Present Mark"><TextInput defaultValue="6 hrs" /></FieldRow>
+      <FieldRow label="10-Minute Buffer" hint="Allow 10 min grace before late mark"><Toggle /></FieldRow>
+      <FieldRow label="Late Mark Auto-Calculation"><Toggle /></FieldRow>
+      <FieldRow label="Grace Days Allowed per Month"><TextInput defaultValue="2" /></FieldRow>
+      <FieldRow label="Early Departure Rules"><SelectInput options={["Mark half day", "Mark absent", "Inform manager"]} /></FieldRow>
+    </SectionCard>
+    <SectionCard title="C. Regularization Settings">
+      <FieldRow label="Who Can Submit Request"><SelectInput options={["All employees", "On probation only", "Permanent only"]} /></FieldRow>
+      <FieldRow label="Approver"><SelectInput options={["HR", "Manager", "Both"]} /></FieldRow>
+      <FieldRow label="Auto-Rejection After (days)"><TextInput defaultValue="3" /></FieldRow>
+    </SectionCard>
+    <SectionCard title="D. Overtime Settings (Optional)">
+      <FieldRow label="Overtime Eligibility"><Toggle defaultChecked={false} /></FieldRow>
+      <FieldRow label="Calculation Rule"><SelectInput options={["1.5× hourly", "2× hourly", "Flat rate"]} /></FieldRow>
+      <FieldRow label="Approval Workflow"><SelectInput options={["Manager → HR", "HR only", "Auto-approved"]} /></FieldRow>
+    </SectionCard>
+  </div>
+);
+
+const LeaveSection = () => {
+  const leaveTypes = [
+    { name: "Annual Leave", paid: true, days: 21 },
+    { name: "Sick Leave", paid: true, days: 10 },
+    { name: "Unpaid Leave", paid: false, days: "—" },
+    { name: "Casual Leave", paid: true, days: 6 },
+    { name: "Emergency Leave", paid: true, days: 3 },
+    { name: "Maternity / Paternity", paid: true, days: 90 },
+    { name: "Compensatory Off", paid: true, days: "Earned" },
+  ];
+  const [selected, setSelected] = useState(leaveTypes[0]);
+
+  return (
+    <div className="flex gap-5">
+      <div className="w-56 flex-shrink-0 space-y-1.5">
+        {leaveTypes.map((lt) => (
+          <button
+            key={lt.name}
+            onClick={() => setSelected(lt)}
+            className={`w-full rounded-lg px-3 py-2.5 text-left transition-colors border ${selected.name === lt.name ? "border-indigo-200 bg-indigo-50" : "border-transparent hover:bg-gray-50"}`}
+          >
+            <p className={`text-sm font-medium ${selected.name === lt.name ? "text-indigo-700" : "text-gray-700"}`}>{lt.name}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Badge label={lt.paid ? "Paid" : "Unpaid"} color={lt.paid ? "green" : "gray"} />
+              <span className="text-xs text-gray-400">{lt.days} days</span>
+            </div>
+          </button>
+        ))}
+        <button className="w-full rounded-lg border-2 border-dashed border-gray-200 px-3 py-2 text-sm text-gray-400 hover:border-indigo-300 mt-1">
+          + Custom Type
+        </button>
+      </div>
+      <div className="flex-1 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-800">{selected.name} — Configuration</h3>
+          <Badge label={selected.paid ? "Paid Leave" : "Unpaid"} color={selected.paid ? "green" : "gray"} />
+        </div>
+        <SectionCard title="Leave Type Details">
+          <FieldRow label="Leave Type Name"><TextInput defaultValue={selected.name} /></FieldRow>
+          <FieldRow label="Paid or Unpaid"><SelectInput options={["Paid", "Unpaid"]} /></FieldRow>
+          <FieldRow label="Annual Entitlement (days)"><TextInput defaultValue={String(selected.days)} /></FieldRow>
+          <FieldRow label="Accrual"><SelectInput options={["Monthly", "Yearly", "None"]} /></FieldRow>
+          <FieldRow label="Max Carry Forward (days)"><TextInput defaultValue="5" /></FieldRow>
+          <FieldRow label="Loss of Pay Rule"><SelectInput options={["No LOP", "LOP after 2 days", "LOP after 5 days"]} /></FieldRow>
+          <FieldRow label="Document Required"><Toggle defaultChecked={selected.name === "Sick Leave"} /></FieldRow>
+          <FieldRow label="Auto-Approval"><Toggle defaultChecked={false} /></FieldRow>
+          <FieldRow label="Approver"><SelectInput options={["Manager", "HR", "Both"]} /></FieldRow>
+        </SectionCard>
+      </div>
+    </div>
+  );
+};
+
+const DocumentSection = () => {
+  const docs = ["National ID", "Passport Copy", "Visa Copy", "Educational Certificates", "Medical Documents", "Bank Details"];
+  return (
+    <div className="space-y-5">
+      <SectionCard title="Required Documents List">
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          {docs.map((d) => (
+            <div key={d} className="flex items-center gap-2 rounded-lg border border-gray-100 px-3 py-2 bg-gray-50">
+              <span className="text-sm text-gray-700 flex-1">{d}</span>
+              <Badge label="Required" color="indigo" />
+            </div>
+          ))}
+        </div>
+        <button className="w-full rounded-lg border-2 border-dashed border-gray-200 py-2 text-sm text-gray-400 hover:border-indigo-300">
+          + Add Document Type
+        </button>
+      </SectionCard>
+      <SectionCard title="Per-Document Settings (Passport Copy)">
+        <FieldRow label="Mandatory or Optional"><SelectInput options={["Mandatory", "Optional"]} /></FieldRow>
+        <FieldRow label="Who Must Upload"><SelectInput options={["Employee", "HR", "Either"]} /></FieldRow>
+        <FieldRow label="Expiry Tracking"><Toggle /></FieldRow>
+        <FieldRow label="Reminder Before Expiry (days)"><TextInput defaultValue="30" /></FieldRow>
+        <FieldRow label="HR Approval Required"><Toggle /></FieldRow>
+        <FieldRow label="Visibility"><SelectInput options={["HR only", "Employee also"]} /></FieldRow>
+      </SectionCard>
+    </div>
+  );
+};
+
+const AssetSection = () => {
+  const categories = [
+    { icon: "💻", name: "Laptop" }, { icon: "📱", name: "Mobile" },
+    { icon: "📶", name: "SIM Card" }, { icon: "🪪", name: "Access Card" },
+    { icon: "👕", name: "Uniform" }, { icon: "🔧", name: "Tools" },
+  ];
+  return (
+    <div className="space-y-5">
+      <SectionCard title="A. Asset Categories">
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {categories.map((c) => (
+            <div key={c.name} className="flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50 px-3 py-3">
+              <span className="text-xl">{c.icon}</span>
+              <span className="text-sm font-medium text-gray-700">{c.name}</span>
+            </div>
+          ))}
+        </div>
+
+      </SectionCard>
+      <SectionCard title="B. Asset Rules">
+        <FieldRow label="Assigning Rules"><SelectInput options={["Manager assigns", "HR assigns", "Auto-assign on joining"]} /></FieldRow>
+        <FieldRow label="Return Rules"><SelectInput options={["On last day", "30 days before exit", "Immediate"]} /></FieldRow>
+        <FieldRow label="Lost / Damaged Policy"><SelectInput options={["Employee pays", "Insurance covered", "Case by case"]} /></FieldRow>
+        <FieldRow label="Asset Approval Workflow"><SelectInput options={["Manager → HR", "HR only", "Auto-approved"]} /></FieldRow>
+      </SectionCard>
+    </div>
+  );
+};
+
+const NotificationSection = () => {
+  const events = [
+    "Leave Approval", "Document Approval", "Visa Expiry", "Policy Assignment",
+    "Performance Review Due", "Asset Issue / Return", "Attendance Reminders",
+  ];
+  return (
+    <div className="space-y-5">
+      <SectionCard title="A. Notification Channels">
+        <FieldRow label="Email Notifications"><Toggle /></FieldRow>
+        <FieldRow label="SMS Notifications" hint="Optional – carrier charges may apply"><Toggle defaultChecked={false} /></FieldRow>
+        <FieldRow label="In-app Alerts"><Toggle /></FieldRow>
+      </SectionCard>
+      <SectionCard title="B. Event-Based Notifications">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide w-48">Event</th>
+                {["Email", "SMS", "In-app"].map((h) => (
+                  <th key={h} className="text-center py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((ev, i) => (
+                <tr key={ev} className={`border-b border-gray-50 last:border-0 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+                  <td className="py-3 text-gray-700 font-medium">{ev}</td>
+                  <td className="text-center py-3"><Toggle defaultChecked={true} /></td>
+                  <td className="text-center py-3"><Toggle defaultChecked={false} /></td>
+                  <td className="text-center py-3"><Toggle defaultChecked={true} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </SectionCard>
+    </div>
+  );
+};
+
+const SecuritySection = () => (
+  <div className="space-y-5">
+    <SectionCard title="A. Password Policy">
+      <FieldRow label="Minimum Length"><TextInput defaultValue="8" /></FieldRow>
+      <FieldRow label="Must Include Special Characters"><Toggle /></FieldRow>
+      <FieldRow label="Password Expiry (days)"><TextInput defaultValue="90" /></FieldRow>
+      <FieldRow label="Two-Factor Authentication (2FA)"><Toggle defaultChecked={false} /></FieldRow>
+    </SectionCard>
+    <SectionCard title="B. Account Security">
+      <FieldRow label="Auto-Logout After Inactivity (minutes)"><TextInput defaultValue="30" /></FieldRow>
+      <FieldRow label="Max Login Attempt Limit"><TextInput defaultValue="5" /></FieldRow>
+      <FieldRow label="Blocked Account Recovery" hint="Email recovery or admin reset">
+        <SelectInput options={["Email recovery", "Admin reset only", "Both"]} />
+      </FieldRow>
+    </SectionCard>
+  </div>
+);
+
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+
+const navItems = [
+  { id: "general", label: "General", icon: "🏢", desc: "Company & Policies" },
+  { id: "roles", label: "Roles & Permissions", icon: "🔐", desc: "Access Control" },
+  { id: "modules", label: "Module Visibility", icon: "👁️", desc: "Role-based Views" },
+  { id: "sensitive", label: "Sensitive Data", icon: "🔒", desc: "Data Permissions" },
+  { id: "attendance", label: "Attendance & Time", icon: "🕐", desc: "Work Hours & Rules" },
+  { id: "leave", label: "Leave Settings", icon: "🌴", desc: "Leave Types & Rules" },
+  { id: "documents", label: "Document Settings", icon: "📄", desc: "Upload & Tracking" },
+  { id: "assets", label: "Asset Settings", icon: "💼", desc: "Categories & Rules" },
+  { id: "notifications", label: "Notifications", icon: "🔔", desc: "Alerts & Channels" },
+  { id: "security", label: "Password & Security", icon: "🛡️", desc: "Auth & Policies" },
+];
+
+const sectionComponents = {
+  general: <GeneralSection />,
+  roles: <PermissionsSection />,
+  modules: <ModulesSection />,
+  sensitive: <SensitiveDataSection />,
+  attendance: <AttendanceSection />,
+  leave: <LeaveSection />,
+  documents: <DocumentSection />,
+  assets: <AssetSection />,
+  notifications: <NotificationSection />,
+  security: <SecuritySection />,
+};
+
+export default function HRISSettings() {
+  const [active, setActive] = useState("general");
+  const current = navItems.find((n) => n.id === active);
+
+  return (
+    <div className="flex min-h-screen bg-gray-50 font-sans">
+      {/* Sidebar */}
+      <aside className="w-60 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
+        <div className="px-5 py-5 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <span className="text-white text-sm font-bold">H</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">HRIS Settings</p>
+              <p className="text-xs text-gray-400">System Configuration</p>
+            </div>
+          </div>
+        </div>
+        <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActive(item.id)}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all ${active === item.id
+                  ? "bg-[#0f766e] text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-50"
+                }`}
+            >
+              <span className="text-base leading-none">{item.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs font-semibold truncate ${active === item.id ? "text-white" : "text-gray-700"}`}>
+                  {item.label}
+                </p>
+                <p className="text-[10px] text-gray-400 truncate">{item.desc}</p>
+              </div>
+              {active === item.id && (
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+              )}
+            </button>
+          ))}
+        </nav>
+
+      </aside>
+
+      {/* Main content */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <header className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">{current.label}</h1>
+            <p className="text-xs text-gray-400 mt-0.5">{current.desc}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="h-8 rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+              Discard
+            </button>
+            <button className="h-8 rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white hover:bg-indigo-700 transition-colors">
+              Save Changes
+            </button>
+          </div>
+        </header>
+
+        {/* Breadcrumb */}
+        <div className="px-8 py-2 flex items-center gap-1.5 text-xs text-gray-400 bg-gray-50 border-b border-gray-100">
+          <span>Settings</span>
+          <span>/</span>
+          <span className="text-indigo-600 font-medium">{current.label}</span>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-8 py-6">
+          {sectionComponents[active]}
+        </div>
+      </main>
+    </div>
+  );
 }
