@@ -1,16 +1,25 @@
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { HiBuildingOffice, HiPencil, HiTrash, HiUsers, HiPlus, HiCheck } from 'react-icons/hi2'
-
-const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
-
-const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+import { 
+  HiBuildingOffice, 
+  HiPencilSquare, 
+  HiTrash, 
+  HiUsers, 
+  HiPlus, 
+  HiCheckCircle, 
+  HiMagnifyingGlass, 
+  HiAdjustmentsHorizontal,
+  HiBriefcase,
+  HiMapPin,
+  HiIdentification,
+  HiGlobeAlt,
+  HiUserCircle,
+  HiChevronRight
+} from 'react-icons/hi2'
 
 const initialFormData = {
   departmentName: '',
@@ -19,12 +28,6 @@ const initialFormData = {
   location: '',
   description: '',
   status: 'Active',
-}
-
-function statusColor(status) {
-  if (status === 'Active') return 'green'
-  if (status === 'Inactive') return 'red'
-  return 'gray'
 }
 
 export default function DepartmentManagement() {
@@ -36,56 +39,60 @@ export default function DepartmentManagement() {
   const [departmentList, setDepartmentList] = useState([
     {
       id: 1,
-      name: 'IT',
-      code: 'IT',
+      name: 'IT & Infrastructure',
+      code: 'IT-01',
       head: 'John Smith',
-      location: 'Dubai',
+      location: 'Dubai HQ',
       employeeCount: 25,
       status: 'Active',
-      description: 'Information Technology department',
+      description: 'Enterprise IT systems and digital infrastructure management.',
+      budget: '£450,000'
     },
     {
       id: 2,
       name: 'Human Resources',
-      code: 'HR',
+      code: 'HR-10',
       head: 'Sarah Johnson',
-      location: 'Dubai',
+      location: 'Dubai HQ',
       employeeCount: 8,
       status: 'Active',
-      description: 'Human Resources department',
+      description: 'Talent acquisition, employee relations, and culture.',
+      budget: '£120,000'
     },
     {
       id: 3,
-      name: 'Finance',
-      code: 'FIN',
+      name: 'Finance & Accounts',
+      code: 'FIN-05',
       head: 'Michael Brown',
-      location: 'Dubai',
+      location: 'London',
       employeeCount: 12,
       status: 'Active',
-      description: 'Finance department',
+      description: 'Global financial reporting and treasury management.',
+      budget: '£890,000'
     },
     {
       id: 4,
-      name: 'Marketing',
-      code: 'MKT',
+      name: 'Creative Marketing',
+      code: 'MKT-22',
       head: 'Emily Davis',
       location: 'Remote',
       employeeCount: 10,
       status: 'Active',
-      description: 'Marketing department',
+      description: 'Brand strategy and international digital campaigns.',
+      budget: '£300,000'
     },
     {
       id: 5,
       name: 'Operations',
-      code: 'OPS',
+      code: 'OPS-11',
       head: 'David Wilson',
       location: 'Abu Dhabi',
       employeeCount: 15,
       status: 'Active',
-      description: 'Operations department',
+      description: 'Logistics and supply chain optimization.',
+      budget: '£550,000'
     },
   ])
-
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -100,261 +107,279 @@ export default function DepartmentManagement() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const resetModal = () => {
+  const handleCloseModal = () => {
+    setModalOpen(false)
     setFormData(initialFormData)
     setEditMode(false)
     setEditingId(null)
   }
 
-  const handleCloseModal = () => {
-    setModalOpen(false)
-    resetModal()
-  }
-
   const handleSubmit = (e) => {
     e.preventDefault()
-    
     if (editMode) {
-      // Update existing department
-      setDepartmentList((prev) => 
-        prev.map((dept) => 
-          dept.id === editingId 
-            ? { 
-                ...dept, 
-                name: formData.departmentName,
-                code: formData.departmentCode,
-                head: formData.departmentHead,
-                location: formData.location,
-                description: formData.description,
-                status: formData.status
-              } 
-            : dept
-        )
-      )
-      alert('Department updated successfully!')
+      setDepartmentList(prev => prev.map(d => d.id === editingId ? { ...d, name: formData.departmentName, code: formData.departmentCode, head: formData.departmentHead, location: formData.location, description: formData.description, status: formData.status } : d))
     } else {
-      // Add new department
-      const newDepartment = {
-        id: departmentList.length + 1,
-        name: formData.departmentName,
-        code: formData.departmentCode,
-        head: formData.departmentHead,
-        location: formData.location,
-        employeeCount: 0,
-        status: formData.status,
-        description: formData.description
-      }
-      setDepartmentList((prev) => [...prev, newDepartment])
-      alert('Department added successfully!')
+      setDepartmentList(prev => [...prev, { id: Date.now(), name: formData.departmentName, code: formData.departmentCode, head: formData.departmentHead, location: formData.location, employeeCount: 0, status: formData.status, description: formData.description, budget: '£0' }])
     }
-    
     handleCloseModal()
   }
 
-  const handleEdit = (id) => {
-    const dept = departmentList.find((d) => d.id === id)
-    if (dept) {
-      setFormData({
-        departmentName: dept.name,
-        departmentCode: dept.code,
-        departmentHead: dept.head,
-        location: dept.location,
-        description: dept.description,
-        status: dept.status,
-      })
-      setEditMode(true)
-      setEditingId(id)
-      setModalOpen(true)
-    }
-  }
-
-  const handleDelete = (id) => {
-    const dept = departmentList.find((d) => d.id === id)
-    if (dept && dept.employeeCount > 0) {
-      alert('Cannot delete department with employees. Please reassign employees first.')
-      return
-    }
-    if (confirm('Are you sure you want to delete this department?')) {
-      setDepartmentList((prev) => prev.filter((d) => d.id !== id))
-      alert('Department deleted successfully!')
-    }
+  const handleEdit = (dept) => {
+    setFormData({
+      departmentName: dept.name,
+      departmentCode: dept.code,
+      departmentHead: dept.head,
+      location: dept.location,
+      description: dept.description,
+      status: dept.status,
+    })
+    setEditMode(true)
+    setEditingId(dept.id)
+    setModalOpen(true)
   }
 
   const columns = [
-    { key: 'code', label: 'Code' },
-    { key: 'name', label: 'Department Name' },
-    { key: 'head', label: 'Department Head' },
-    { key: 'location', label: 'Location' },
+    {
+      key: 'name',
+      label: 'Department',
+      render: (v, row) => (
+        <div className="flex items-center gap-4">
+           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-[#0F766E] shadow-sm">
+              <HiBuildingOffice className="h-5 w-5" />
+           </div>
+           <div>
+              <div className="font-bold text-slate-900 leading-none mb-1">{v}</div>
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{row.code}</div>
+           </div>
+        </div>
+      )
+    },
+    {
+      key: 'head',
+      label: 'Leadership',
+      render: (v) => (
+        <div className="flex items-center gap-2">
+           <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+              {v.charAt(0)}
+           </div>
+           <span className="text-sm font-medium text-slate-700">{v}</span>
+        </div>
+      )
+    },
+    {
+      key: 'location',
+      label: 'Base Site',
+      render: (v) => (
+        <div className="flex items-center gap-1.5 text-slate-500 font-medium">
+           <HiMapPin className="h-3.5 w-3.5 opacity-50" />
+           <span className="text-xs">{v}</span>
+        </div>
+      )
+    },
     {
       key: 'employeeCount',
-      label: 'Employees',
-      render: (v) => `${v} employees`,
+      label: 'Headcount',
+      render: (v) => (
+        <div className="flex items-center gap-3">
+           <div className="flex-1 h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-full bg-emerald-500" style={{ width: `${Math.min(v * 4, 100)}%` }} />
+           </div>
+           <span className="text-xs font-bold text-slate-700">{v}</span>
+        </div>
+      )
     },
     {
       key: 'status',
       label: 'Status',
-      render: (v) => <Badge label={v} color={statusColor(v)} />,
+      render: (v) => (
+        <Badge 
+          label={v} 
+          variant="outline" 
+          color={v === 'Active' ? 'green' : 'gray'} 
+          className="font-black text-[9px] uppercase tracking-wider"
+        />
+      )
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: 'Control',
       render: (_, row) => (
-        <div className="flex gap-2">
-          <Button ariaLabel="Edit Department" variant="Approve" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
-          <Button
-            ariaLabel="Delete Department"
-            variant="danger"
-            size="sm"
-            icon={HiTrash}
-            onClick={() => handleDelete(row.id)}
-            disabled={row.employeeCount > 0}
-          />
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" icon={HiPencilSquare} onClick={() => handleEdit(row)} className="text-slate-400 hover:text-[#0F766E]" />
+          <Button variant="ghost" size="sm" icon={HiTrash} className="text-slate-400 hover:text-red-500" />
         </div>
       ),
     },
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">Department Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Create and manage organizational departments.</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
+        <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-bold tracking-tight uppercase">Organizational Structure</h1>
+            <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
+              Design and manage your company hierarchy. Track headcount, leadership assignments, and departmental health across all sites.
+            </p>
+          </div>
+          <button 
+             onClick={() => setModalOpen(true)}
+             className="flex items-center gap-2 rounded-xl bg-white px-8 py-3 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95"
+          >
+             <HiPlus className="h-4 w-4" /> CREATE DEPARTMENT
+          </button>
         </div>
-        <Button ariaLabel="Add Department" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5" />
+        <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-black/5" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-              <HiBuildingOffice className="h-6 w-6" />
+      {/* Analytics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+         {[
+            { label: 'Total Units', value: departmentList.length, icon: HiBuildingOffice, color: 'emerald' },
+            { label: 'Global Headcount', value: departmentList.reduce((acc, d) => acc + d.employeeCount, 0), icon: HiUsers, color: 'blue' },
+            { label: 'Active Sites', value: new Set(departmentList.map(d => d.location)).size, icon: HiGlobeAlt, color: 'orange' },
+            { label: 'Growth Index', value: '+12%', icon: HiCheckCircle, color: 'emerald' }
+         ].map(card => (
+            <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
+               <div className="flex items-center gap-4 mb-4">
+                  <div className={`h-10 w-10 rounded-xl bg-${card.color}-50 text-${card.color}-600 flex items-center justify-center`}>
+                     <card.icon className="h-6 w-6" />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{card.label}</span>
+               </div>
+               <p className="text-3xl font-black text-slate-900">{card.value}</p>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">{departmentList.length}</div>
-              <div className="text-sm text-gray-500">Total Departments</div>
+         ))}
+      </div>
+
+      {/* Registry Workspace */}
+      <div className="space-y-6">
+         <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+           <div className="flex flex-col gap-4 md:flex-row md:items-end">
+             <div className="flex-1">
+               <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Directory</label>
+               <div className="relative">
+                 <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                 <input
+                   type="text"
+                   placeholder="Filter by name, code, or leadership..."
+                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all"
+                   value={search}
+                   onChange={(e) => setSearch(e.target.value)}
+                 />
+               </div>
+             </div>
+             <Button label="FILTERS" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200" />
+           </div>
+         </div>
+
+         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+            <div className="bg-[#0F766E] px-6 py-3 text-white flex items-center justify-between">
+               <h2 className="text-sm font-bold uppercase tracking-wider">Departmental Registry</h2>
+               <HiBriefcase className="h-4 w-4 opacity-50" />
             </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600">
-              <HiUsers className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">
-                {departmentList.reduce((acc, d) => acc + d.employeeCount, 0)}
+            <Table columns={columns} data={filtered} pageSize={10} />
+         </div>
+      </div>
+
+      {/* Creation Modal */}
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Modify Department' : 'Initialize New Department'} size="xl">
+        <form onSubmit={handleSubmit} className="animate-in fade-in duration-500 space-y-8">
+           {/* Section: Core Identity */}
+           <div className="space-y-4">
+              <h3 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">
+                 <HiIdentification className="h-4 w-4 text-[#0F766E]" /> Operational Identity
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                 <Input
+                   label="Department Name"
+                   name="departmentName"
+                   value={formData.departmentName}
+                   onChange={handleFormChange}
+                   required
+                   className="text-slate-900 font-medium"
+                 />
+                 <Input
+                   label="Strategic Code"
+                   name="departmentCode"
+                   value={formData.departmentCode}
+                   onChange={handleFormChange}
+                   placeholder="e.g. IT-01, EXEC-00"
+                   required
+                   className="text-slate-900 font-medium"
+                 />
               </div>
-              <div className="text-sm text-gray-500">Total Employees</div>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-              <HiBuildingOffice className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">
-                {departmentList.filter((d) => d.status === 'Active').length}
+           </div>
+
+           {/* Section: Leadership & Strategy */}
+           <div className="space-y-4">
+              <h3 className="flex items-center gap-2 text-xs font-black text-[#0F766E] uppercase tracking-widest border-b border-slate-100 pb-2">
+                 <HiUserCircle className="h-4 w-4" /> Leadership & Strategy
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                 <Input
+                   label="Department Head"
+                   name="departmentHead"
+                   value={formData.departmentHead}
+                   onChange={handleFormChange}
+                   placeholder="Assign a Director or Lead"
+                   className="text-slate-900 font-medium"
+                 />
+                 <div className="w-full">
+                    <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Base Site Location</label>
+                    <select
+                      name="location"
+                      value={formData.location}
+                      onChange={handleFormChange}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all"
+                      required
+                    >
+                      <option value="" disabled hidden>Select Regional Site</option>
+                      <option value="Dubai HQ">Dubai HQ</option>
+                      <option value="Abu Dhabi">Abu Dhabi</option>
+                      <option value="London">London</option>
+                      <option value="Remote">Global Remote</option>
+                    </select>
+                 </div>
               </div>
-              <div className="text-sm text-gray-500">Active Departments</div>
-            </div>
-          </div>
-        </div>
-      </div>
+              <div className="w-full">
+                 <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mission Statement / Description</label>
+                 <textarea
+                   name="description"
+                   value={formData.description}
+                   onChange={handleFormChange}
+                   className="w-full min-h-[100px] rounded-xl border border-slate-200 bg-slate-50/50 py-3 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all"
+                   placeholder="Define the primary objectives and responsibilities of this unit..."
+                 />
+              </div>
+           </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <Input label="Search" name="search" placeholder="Search departments..." value={search} onChange={(e) => setSearch(e.target.value)} />
-      </div>
+           {/* Section: Controls */}
+           <div className="space-y-4">
+              <h3 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">
+                 <HiAdjustmentsHorizontal className="h-4 w-4 text-[#0F766E]" /> Governance
+              </h3>
+              <div className="w-full">
+                 <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Operational Status</label>
+                 <select
+                   name="status"
+                   value={formData.status}
+                   onChange={handleFormChange}
+                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all"
+                   required
+                 >
+                   <option value="Active">Operational / Active</option>
+                   <option value="Inactive">Deactivated / Maintenance</option>
+                 </select>
+              </div>
+           </div>
 
-      <Table columns={columns} data={filtered} pageSize={10} />
-
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Department' : 'Add Department'} size="xl">
-        <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Department Name"
-              name="departmentName"
-              value={formData.departmentName}
-              onChange={handleFormChange}
-              required
-            />
-            <Input
-              label="Department Code"
-              name="departmentCode"
-              value={formData.departmentCode}
-              onChange={handleFormChange}
-              placeholder="e.g. IT, HR, FIN"
-              required
-            />
-            <Input
-              label="Department Head"
-              name="departmentHead"
-              value={formData.departmentHead}
-              onChange={handleFormChange}
-              placeholder="Department manager name"
-            />
-            <div className="w-full">
-              <label htmlFor="dept-location" className="mb-1 block text-sm font-medium text-gray-700">
-                Location
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="dept-location"
-                name="location"
-                value={formData.location}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select location
-                </option>
-                <option value="Dubai">Dubai</option>
-                <option value="Abu Dhabi">Abu Dhabi</option>
-                <option value="Remote">Remote</option>
-                <option value="UK">UK</option>
-                <option value="India">India</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-3 w-full">
-            <label htmlFor="dept-description" className="mb-1 block text-sm font-medium text-gray-700">
-              Description
-            </label>
-            <textarea
-              id="dept-description"
-              name="description"
-              value={formData.description}
-              onChange={handleFormChange}
-              className={textareaClass}
-              rows={3}
-              placeholder="Brief description of the department"
-            />
-          </div>
-          <div className="mt-3 w-full">
-            <label htmlFor="dept-status" className="mb-1 block text-sm font-medium text-gray-700">
-              Status
-              <span className="text-red-500"> *</span>
-            </label>
-            <select
-              id="dept-status"
-              name="status"
-              value={formData.status}
-              onChange={handleFormChange}
-              className={selectClass}
-              required
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" label="Save Department" variant="primary" />
-          </div>
+           <div className="pt-6 border-t border-slate-100 flex justify-center gap-4">
+              <Button type="submit" label={editMode ? "UPDATE STRUCTURE" : "INITIALIZE DEPARTMENT"} variant="primary" className="px-10 shadow-lg shadow-emerald-900/20" />
+              <Button type="button" label="CANCEL" variant="ghost" onClick={handleCloseModal} />
+           </div>
         </form>
       </Modal>
     </div>

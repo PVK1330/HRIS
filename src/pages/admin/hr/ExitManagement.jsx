@@ -121,13 +121,12 @@ export default function ExitManagement() {
               Manage employee departures, asset recovery, and final settlements with a streamlined professional workflow.
             </p>
           </div>
-          <Button 
-            label="Initiate Exit" 
-            variant="secondary" 
-            icon={HiUserMinus}
-            className="bg-white text-[#0F766E] hover:bg-emerald-50 shadow-lg border-none"
+          <button 
             onClick={() => setModalOpen(true)}
-          />
+            className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95"
+          >
+            <HiPlus className="h-4 w-4" /> Initiate Exit
+          </button>
         </div>
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
       </div>
@@ -173,7 +172,7 @@ export default function ExitManagement() {
                   <input
                     type="text"
                     placeholder="Name, ID, or Exit Type..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                   />
@@ -241,7 +240,7 @@ export default function ExitManagement() {
                 <div className="space-y-4">
                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Remarks</p>
                    <textarea 
-                      className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm focus:border-[#0F766E] focus:outline-none min-h-[200px]"
+                      className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none min-h-[200px]"
                       placeholder="Enter exit notes or administrative comments..."
                    />
                 </div>
@@ -272,7 +271,7 @@ export default function ExitManagement() {
                                <td className="px-4 py-4">{asset.issued}</td>
                                <td className="px-4 py-4">{asset.return}</td>
                                <td className="px-4 py-4">
-                                  <select className="bg-transparent border-none focus:ring-0 text-xs font-medium">
+                                  <select className="bg-transparent border-none focus:ring-0 text-xs text-slate-900 font-bold">
                                      <option>Good</option>
                                      <option>Damaged</option>
                                      <option>Lost</option>
@@ -288,7 +287,7 @@ export default function ExitManagement() {
                 </div>
                 <div className="rounded-2xl border border-slate-100 p-4 bg-slate-50/50">
                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Asset Recovery Notes</p>
-                   <textarea className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm focus:border-[#0F766E] focus:outline-none" rows={2} />
+                   <textarea className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none" rows={2} />
                 </div>
              </div>
           )}
@@ -325,14 +324,14 @@ export default function ExitManagement() {
             <div className="grid gap-4 md:grid-cols-2">
                <div className="col-span-2">
                   <label className="mb-1.5 block text-xs font-bold text-slate-700">Select Employee</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm focus:border-[#0F766E] focus:outline-none">
+                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none">
                      <option value="" disabled hidden>Search employee to initiate exit...</option>
                      {employees.map(e => <option key={e.id}>{e.name} ({e.empId})</option>)}
                   </select>
                </div>
                <div>
                   <label className="mb-1.5 block text-xs font-bold text-slate-700">Exit Type</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm focus:border-[#0F766E] focus:outline-none">
+                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none">
                      <option>Resignation</option>
                      <option>Contract End</option>
                      <option>Termination</option>
@@ -341,7 +340,7 @@ export default function ExitManagement() {
                </div>
                <div>
                   <label className="mb-1.5 block text-xs font-bold text-slate-700">Last Working Day</label>
-                  <input type="date" className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm focus:border-[#0F766E] focus:outline-none" />
+                  <input type="date" className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none" />
                </div>
             </div>
             

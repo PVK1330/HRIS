@@ -458,8 +458,8 @@ export default function HRISSettings() {
               key={item.id}
               onClick={() => setActive(item.id)}
               className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all ${active === item.id
-                  ? "bg-[#0f766e] text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-50"
+                ? "bg-[#0f766e] text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-50"
                 }`}
             >
               <span className="text-base leading-none">{item.icon}</span>
