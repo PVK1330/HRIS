@@ -43,7 +43,10 @@ export default function Login() {
   useEffect(() => {
     if (user) {
       const target = POST_LOGIN[user.role]
-      if (target) navigate(target, { replace: true })
+      // Only navigate if we have a target and we're not already there (or trying to go there)
+      if (target && window.location.pathname !== target) {
+        navigate(target, { replace: true })
+      }
     }
   }, [user, navigate])
 
