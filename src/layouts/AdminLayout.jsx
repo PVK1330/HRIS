@@ -92,6 +92,26 @@ const ROLE_DISPLAY = {
   employee: 'Employee',
 }
 
+const FEATURE_PATH_MAP = {
+  employee_management: ['/admin/employee-directory', '/admin/employee-profile'],
+  employee_directory: ['/admin/employee-directory', '/admin/employee-profile'],
+  attendance_tracking: ['/admin/attendance'],
+  attendance: ['/admin/attendance'],
+  leave_management: ['/admin/leave'],
+  leave: ['/admin/leave'],
+  performance_management: ['/admin/performance'],
+  performance: ['/admin/performance'],
+  payroll_management: ['/admin/payroll'],
+  payroll: ['/admin/payroll'],
+  expense_management: ['/admin/expenses'],
+  expenses: ['/admin/expenses'],
+  visa_management: ['/admin/visa'],
+  visa: ['/admin/visa'],
+  asset_management: ['/admin/assets'],
+  asset_inventory: ['/admin/assets'],
+  onboarding_exit: ['/admin/onboarding', '/admin/exit-management'],
+}
+
 export default function AdminLayout() {
   const { user, logout, hasPermission, hasFeatureAccess, switchRole } = useAuth()
   const location = useLocation()
@@ -99,10 +119,27 @@ export default function AdminLayout() {
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false)
 
   const filteredNavGroups = useMemo(() => {
+    const enabledFeatureCodes = new Set((user?.tenant_features || []).filter((f) => f.is_enabled).map((f) => f.feature_code))
+    const allowedFeaturePaths = new Set()
+    enabledFeatureCodes.forEach((code) => {
+      const paths = FEATURE_PATH_MAP[code] || []
+      paths.forEach((path) => allowedFeaturePaths.add(path))
+    })
+
     return adminNavGroups.map(group => ({
       ...group,
       items: group.items.filter(item => {
-        if (item.featureCode && !hasFeatureAccess(item.featureCode)) return false
+        // Tenant admin sidebar should follow tenant_access_controls strictly.
+        if (user?.role === 'admin') {
+          if (item.path !== '/admin/dashboard' && !allowedFeaturePaths.has(item.path)) {
+            return false
+          }
+        }
+
+        // For tenant admin, visibility is already enforced by FEATURE_PATH_MAP above.
+        // Do not apply direct featureCode match because backend codes can differ
+        // (e.g., employee_management vs employee_directory).
+        if (user?.role !== 'admin' && item.featureCode && !hasFeatureAccess(item.featureCode)) return false
         if (!item.permission) return true
         // Special case for dashboard - everyone sees it
         if (item.path === '/admin/dashboard') return true
