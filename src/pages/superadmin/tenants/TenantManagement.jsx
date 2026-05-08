@@ -34,6 +34,13 @@ const slugify = (text) => text.toString().toLowerCase().trim()
   .replace(/[^\w-]+/g, '')
   .replace(/--+/g, '-')
 
+const resolveBaseDomain = () => {
+  const host = window.location.hostname
+  if (host === 'localhost' || host === '127.0.0.1') return 'localhost'
+  const parts = host.split('.')
+  return parts.length >= 2 ? parts.slice(-2).join('.') : host
+}
+
 export default function TenantManagement() {
   const [searchQuery, setSearchQuery] = useState('')
   const [planFilter, setPlanFilter] = useState('all')
@@ -84,7 +91,7 @@ export default function TenantManagement() {
       // Transform data to match UI expectations
       const transformed = tenants.map(t => {
         const slug = slugify(t.name)
-        const baseDomain = window.location.hostname === 'localhost' ? 'localhost' : 'hris.cloud'
+        const baseDomain = resolveBaseDomain()
         return {
           id: t.id,
           name: t.name,
@@ -167,9 +174,30 @@ export default function TenantManagement() {
     })
   }
 
-  const handleLoginAs = (org) => {
-    const url = `http://${org.domain}:5173/login`
-    window.open(url, '_blank')
+  const handleLoginAs = async (org) => {
+    try {
+      const response = await api.post(`/tenants/${org.id}/login-as`)
+      const loginUrl = response?.data?.data?.loginUrl
+      if (!loginUrl) {
+        throw new Error('Login URL not returned')
+      }
+      const popup = window.open(loginUrl, '_blank')
+      if (!popup) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Popup Blocked',
+          text: 'Please allow popups for this site and try again.',
+          confirmButtonColor: '#0F766E',
+        })
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Login Failed',
+        text: error.response?.data?.message || 'Unable to login as tenant admin.',
+        confirmButtonColor: '#0F766E',
+      })
+    }
   }
 
   const handleView = (org) => {
