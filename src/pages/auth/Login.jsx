@@ -9,7 +9,7 @@ import axios from 'axios'
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const ROLE_TABS = [
-  { id: 'admin', label: 'Organization Admin', defaultEmail: 'admin@acme.com', defaultPassword: 'admin@acme.com', icon: HiBuildingOffice2 },
+  { id: 'admin', label: 'Organization Admin', defaultEmail: '', defaultPassword: '', icon: HiBuildingOffice2 },
   { id: 'superadmin', label: 'Super Admin', defaultEmail: 'superadmin@hris.com', defaultPassword: 'SuperAdmin123', icon: HiLockClosed },
 ]
 
@@ -30,8 +30,8 @@ export default function Login() {
   const { login, user } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('admin')
-  const [email, setEmail] = useState('admin@acme.com')
-  const [password, setPassword] = useState('admin@acme.com')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [stage, setStage] = useState('login') // 'login' | 'twoFactor'
@@ -301,8 +301,7 @@ export default function Login() {
                           <p className="text-xs font-mono font-medium text-gray-700">{password}</p>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </div>                  </div>
 
                   {error && (
                     <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- context module exports provider + hook */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 
@@ -75,6 +75,10 @@ export function AuthProvider({ children }) {
     }
   })
 
+  // Keep a ref to the latest user so callbacks don't need it as a dep
+  const userRef = useRef(user)
+  useEffect(() => { userRef.current = user }, [user])
+
   // Global Auto-Login Interceptor (for Impersonation)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -141,8 +145,10 @@ export function AuthProvider({ children }) {
     return null
   }, [])
 
+  // Stable function — never recreated, reads current user via ref
   const refreshAccessProfile = useCallback(async () => {
-    if (!user || user.role !== 'admin') return
+    const currentUser = userRef.current
+    if (!currentUser || currentUser.role !== 'admin') return
     try {
       const response = await api.get('/auth/access-profile')
       const data = response?.data?.data
@@ -161,16 +167,19 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Failed to refresh access profile:', error)
     }
-  }, [user])
+  }, []) // no deps — reads user via ref, setUser is stable
 
+  // Run once on mount (when user is admin) and then every 3 minutes.
+  // Depends only on user.id + user.role so it re-registers only on actual
+  // user identity change (login / logout), not on every profile refresh.
+  const userId   = user?.id
+  const userRole = user?.role
   useEffect(() => {
-    if (!user || user.role !== 'admin') return
+    if (!userId || userRole !== 'admin') return
     refreshAccessProfile()
-    const id = window.setInterval(() => {
-      refreshAccessProfile()
-    }, 180000)
+    const id = window.setInterval(refreshAccessProfile, 180_000)
     return () => window.clearInterval(id)
-  }, [user, refreshAccessProfile])
+  }, [userId, userRole, refreshAccessProfile])
 
   const logout = useCallback(() => {
     setUser(null)
