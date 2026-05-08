@@ -224,7 +224,7 @@ export default function SuperAdminLayout() {
           </div>
         </header>
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-background-tertiary p-4 sm:p-6">
-          <div className="mx-auto min-w-0 max-w-[1600px]">
+          <div className="superadmin-ui mx-auto min-w-0 max-w-[1500px]">
             <Outlet />
           </div>
         </main>

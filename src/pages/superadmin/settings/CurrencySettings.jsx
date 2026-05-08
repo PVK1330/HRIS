@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import settingsService from '../../../services/settingsService.js'
+import useSettingsMeta from './useSettingsMeta.js'
 
 const DEFAULTS = {
   defaultCurrency: 'USD',
@@ -11,88 +12,12 @@ const DEFAULTS = {
   thousandSeparator: ',',
 }
 
-const CURRENCY_MAP = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  INR: '₹',
-  AED: 'د.إ',
-  SAR: '﷼',
-  QAR: '﷼',
-  KWD: 'د.ك',
-  BHD: '.د.ب',
-  OMR: '﷼',
-  CAD: '$',
-  AUD: '$',
-  SGD: '$',
-  MYR: 'RM',
-  PKR: '₨',
-  BDT: '৳',
-  LKR: '₨',
-  NPR: '₨',
-  JPY: '¥',
-  CNY: '¥',
-  CHF: 'Fr',
-  SEK: 'kr',
-  NOK: 'kr',
-  DKK: 'kr',
-  ZAR: 'R',
-  NGN: '₦',
-  KES: 'KSh',
-  GHS: '₵',
-  EGP: '£',
-  MAD: 'د.م.',
+const FALLBACK_META = {
+  options: [{ value: 'USD', label: 'USD ($)', symbol: '$' }],
+  symbolPositions: [{ value: 'before', label: 'Before Amount ($100)' }],
+  decimalOptions: [{ value: '.', label: 'Period (.)' }],
+  thousandOptions: [{ value: ',', label: 'Comma (,)' }],
 }
-
-const CURRENCY_OPTIONS = [
-  { value: 'USD', label: 'USD ($)', symbol: '$' },
-  { value: 'EUR', label: 'EUR (€)', symbol: '€' },
-  { value: 'GBP', label: 'GBP (£)', symbol: '£' },
-  { value: 'INR', label: 'INR (₹)', symbol: '₹' },
-  { value: 'AED', label: 'AED (د.إ)', symbol: 'د.إ' },
-  { value: 'SAR', label: 'SAR (﷼)', symbol: '﷼' },
-  { value: 'QAR', label: 'QAR (﷼)', symbol: '﷼' },
-  { value: 'KWD', label: 'KWD (د.ك)', symbol: 'د.ك' },
-  { value: 'BHD', label: 'BHD (.د.ب)', symbol: '.د.ب' },
-  { value: 'OMR', label: 'OMR (﷼)', symbol: '﷼' },
-  { value: 'CAD', label: 'CAD ($)', symbol: '$' },
-  { value: 'AUD', label: 'AUD ($)', symbol: '$' },
-  { value: 'SGD', label: 'SGD ($)', symbol: '$' },
-  { value: 'MYR', label: 'MYR (RM)', symbol: 'RM' },
-  { value: 'PKR', label: 'PKR (₨)', symbol: '₨' },
-  { value: 'BDT', label: 'BDT (৳)', symbol: '৳' },
-  { value: 'LKR', label: 'LKR (₨)', symbol: '₨' },
-  { value: 'NPR', label: 'NPR (₨)', symbol: '₨' },
-  { value: 'JPY', label: 'JPY (¥)', symbol: '¥' },
-  { value: 'CNY', label: 'CNY (¥)', symbol: '¥' },
-  { value: 'CHF', label: 'CHF (Fr)', symbol: 'Fr' },
-  { value: 'SEK', label: 'SEK (kr)', symbol: 'kr' },
-  { value: 'NOK', label: 'NOK (kr)', symbol: 'kr' },
-  { value: 'DKK', label: 'DKK (kr)', symbol: 'kr' },
-  { value: 'ZAR', label: 'ZAR (R)', symbol: 'R' },
-  { value: 'NGN', label: 'NGN (₦)', symbol: '₦' },
-  { value: 'KES', label: 'KES (KSh)', symbol: 'KSh' },
-  { value: 'GHS', label: 'GHS (₵)', symbol: '₵' },
-  { value: 'EGP', label: 'EGP (£)', symbol: '£' },
-  { value: 'MAD', label: 'MAD (د.م.)', symbol: 'د.م.' },
-]
-
-const SYMBOL_POSITION_OPTS = [
-  { value: 'before', label: 'Before Amount ($100)' },
-  { value: 'after', label: 'After Amount (100$)' },
-]
-
-const DECIMAL_OPTS = [
-  { value: '.', label: 'Period (.)' },
-  { value: ',', label: 'Comma (,)' },
-]
-
-const THOUSAND_OPTS = [
-  { value: ',', label: 'Comma (,)' },
-  { value: '.', label: 'Period (.)' },
-  { value: ' ', label: 'Space ( )' },
-  { value: '', label: 'None' },
-]
 
 function fromApi(api) {
   if (!api) return { ...DEFAULTS }
@@ -142,6 +67,7 @@ function GridSkeleton() {
 }
 
 export default function CurrencySettings() {
+  const { meta } = useSettingsMeta()
   const [settings, setSettings] = useState(null)
   const [saving, setSaving] = useState(false)
   const originalRef = useRef(null)
@@ -170,6 +96,15 @@ export default function CurrencySettings() {
 
   const separatorsClash =
     !!settings && settings.decimalSeparator === settings.thousandSeparator
+  const optionMeta = meta?.currency || FALLBACK_META
+  const currencyMap = useMemo(
+    () =>
+      optionMeta.options.reduce(
+        (acc, opt) => ({ ...acc, [opt.value]: opt.symbol }),
+        {}
+      ),
+    [optionMeta.options]
+  )
 
   const set = (patch) => setSettings((prev) => ({ ...(prev || DEFAULTS), ...patch }))
 
@@ -238,11 +173,11 @@ export default function CurrencySettings() {
                 value={settings.defaultCurrency}
                 onChange={(e) => {
                   const code = e.target.value
-                  const sym = CURRENCY_MAP[code] ?? '$'
+                  const sym = currencyMap[code] ?? '$'
                   set({ defaultCurrency: code, currencySymbol: sym })
                 }}
               >
-                {CURRENCY_OPTIONS.map((opt) => (
+                {optionMeta.options.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
@@ -259,7 +194,7 @@ export default function CurrencySettings() {
                 value={settings.symbolPosition}
                 onChange={(e) => set({ symbolPosition: e.target.value })}
               >
-                {SYMBOL_POSITION_OPTS.map((opt) => (
+                {optionMeta.symbolPositions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
@@ -276,7 +211,7 @@ export default function CurrencySettings() {
                 value={settings.decimalSeparator}
                 onChange={(e) => set({ decimalSeparator: e.target.value })}
               >
-                {DECIMAL_OPTS.map((opt) => (
+                {optionMeta.decimalOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
@@ -293,7 +228,7 @@ export default function CurrencySettings() {
                 value={settings.thousandSeparator}
                 onChange={(e) => set({ thousandSeparator: e.target.value })}
               >
-                {THOUSAND_OPTS.map((opt) => (
+                {optionMeta.thousandOptions.map((opt) => (
                   <option key={opt.label} value={opt.value}>
                     {opt.label}
                   </option>

@@ -109,7 +109,7 @@ export default function Permissions() {
         icon: 'error',
         title: 'Load Failed',
         text: error.response?.data?.message || 'Failed to load permissions.',
-        confirmButtonColor: '#e11d48',
+        confirmButtonColor: '#0F766E',
       })
     } finally {
       setIsLoading(false)
@@ -147,7 +147,7 @@ export default function Permissions() {
         icon: 'error',
         title: 'Create Failed',
         text: error.response?.data?.message || 'Failed to create role.',
-        confirmButtonColor: '#e11d48',
+        confirmButtonColor: '#0F766E',
       })
     }
   }
@@ -212,7 +212,7 @@ export default function Permissions() {
         icon: 'error',
         title: 'Update Failed',
         text: error.response?.data?.message || 'Failed to update role permissions.',
-        confirmButtonColor: '#e11d48',
+        confirmButtonColor: '#0F766E',
       })
     }
   }
@@ -322,19 +322,19 @@ export default function Permissions() {
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500">
+    <div className="sa-page">
       {/* Header */}
       <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-sm">
+            <div className="h-8 w-8 rounded-lg bg-[#0F766E] flex items-center justify-center text-white shadow-sm">
               <HiLockClosed className="h-4.5 w-4.5" />
             </div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Permissions</h1>
             <div className="group relative">
-              <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-rose-500 transition-colors" />
+              <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-[#0F766E] transition-colors" />
               <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
-                <p className="font-bold text-rose-400 mb-1 uppercase tracking-widest">Access Control</p>
+                <p className="font-bold text-emerald-300 mb-1 uppercase tracking-widest">Access Control</p>
                 Set what each admin role can access on the platform.
                 <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
               </div>
@@ -342,7 +342,7 @@ export default function Permissions() {
           </div>
           <p className="text-[11px] font-medium text-slate-500">Manage user roles and permissions.</p>
         </div>
-        <Button label="Add Role" variant="primary" size="sm" icon={HiPlus} onClick={() => setShowCreateModal(true)} />
+        <Button label="Add Role" variant="primary" size="sm" icon={HiPlus} onClick={() => setShowCreateModal(true)} className="bg-[#0F766E] hover:bg-[#0D5F57] border-none" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -366,7 +366,7 @@ export default function Permissions() {
                 {role.id !== 'superadmin' && (
                   <button
                     onClick={() => handleEditRoleClick(role)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-[#0F766E] hover:bg-emerald-50 transition-all"
                     title="Edit Role Metadata"
                   >
                     <HiPencil className="h-4 w-4" />
@@ -460,7 +460,7 @@ export default function Permissions() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Description</label>
               <textarea
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/5 outline-none transition-all resize-none shadow-sm"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all resize-none shadow-sm"
                 placeholder="Briefly describe the responsibilities of this role..."
                 rows={3}
                 value={newRole.description}
@@ -471,7 +471,7 @@ export default function Permissions() {
 
           <div className="flex gap-4 pt-6 border-t border-slate-100">
             <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowCreateModal(false)} />
-            <Button label="Create Role" variant="primary" className="flex-1 bg-rose-600 hover:bg-rose-700" onClick={handleCreateRole} disabled={!newRole.name} />
+            <Button label="Create Role" variant="primary" className="flex-1 bg-[#0F766E] hover:bg-[#0D5F57] border-none" onClick={handleCreateRole} disabled={!newRole.name} />
           </div>
         </div>
       </Modal>
@@ -507,7 +507,7 @@ export default function Permissions() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Description</label>
               <textarea
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all resize-none shadow-sm"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all resize-none shadow-sm"
                 rows={3}
                 value={editRole.description}
                 onChange={(e) => setEditRole({ ...editRole, description: e.target.value })}
@@ -517,7 +517,7 @@ export default function Permissions() {
 
           <div className="flex gap-4 pt-6 border-t border-slate-100">
             <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowEditModal(false)} />
-            <Button label="Update Role" variant="primary" className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={handleUpdateRole} disabled={!editRole.name} />
+            <Button label="Update Role" variant="primary" className="flex-1 bg-[#0F766E] hover:bg-[#0D5F57] border-none" onClick={handleUpdateRole} disabled={!editRole.name} />
           </div>
         </div>
       </Modal>

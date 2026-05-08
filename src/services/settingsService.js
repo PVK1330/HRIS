@@ -58,6 +58,7 @@ export const settingsService = {
   /* -------------------- Email -------------------- */
   getEmail: () => client.get('/email').then((r) => r.data),
   updateEmail: (payload) => client.put('/email', payload).then((r) => r.data),
+  getEmailLogs: () => client.get('/email/logs').then((r) => r.data),
   sendTestEmail: ({ sendTo }) =>
     client.post('/email/test', { sendTo }).then((r) => r.data),
 
@@ -87,6 +88,7 @@ export const settingsService = {
 
   /* -------------------- System -------------------- */
   getSystem: () => client.get('/system').then((r) => r.data),
+  getSettingsMeta: () => client.get('/meta').then((r) => r.data),
 
   /* -------------------- Payment Gateways -------------------- */
   getPaymentGateways: () =>

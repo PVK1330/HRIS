@@ -1,118 +1,52 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { 
-  HiChevronDown, 
-  HiCog6Tooth, 
-  HiGlobeAlt, 
-  HiBuildingOffice, 
-  HiEnvelope, 
-  HiPhoto, 
-  HiServer, 
+  HiCog6Tooth,
+  HiGlobeAlt,
+  HiBuildingOffice,
+  HiEnvelope,
+  HiPhoto,
+  HiServer,
   HiShieldCheck,
-  HiCommandLine,
   HiTicket,
-  HiLanguage,
   HiCircleStack,
   HiQueueList,
   HiDocumentText,
   HiCreditCard,
-  HiArrowPath
+  HiKey
 } from 'react-icons/hi2'
+import useSettingsMeta from './useSettingsMeta.js'
 
-const TOP_ITEMS = [
-  { label: 'General Settings', to: '/superadmin/settings/general', icon: HiCog6Tooth },
-  { label: 'Domain Settings', to: '/superadmin/settings/domain', icon: HiGlobeAlt },
-  { label: 'Account Settings', to: '/superadmin/settings/account-settings', icon: HiShieldCheck },
-  { label: 'Company Details', to: '/superadmin/settings/company', icon: HiBuildingOffice },
-]
-
-const EMAIL_CHILDREN = [
-  { label: 'Email Templates', to: '/superadmin/settings/email/templates', icon: HiDocumentText },
-  { label: 'Email Settings',  to: '/superadmin/settings/email/settings', icon: HiCog6Tooth },
-  { label: 'Email Log',       to: '/superadmin/settings/email/log', icon: HiQueueList },
-  { label: 'SMTP Settings',   to: '/superadmin/settings/email/settings?tab=smtp', icon: HiServer },
-]
-
-const BOTTOM_ITEMS = [
-  { label: 'Currency', to: '/superadmin/settings/currency', icon: HiCreditCard },
-  { label: 'Logo', to: '/superadmin/settings/logo', icon: HiPhoto },
-  { label: 'Free Trial', to: '/superadmin/settings/free-trial', icon: HiTicket },
-  { label: 'Payment Gateways', to: '/superadmin/settings/payments', icon: HiCreditCard },
-  { label: 'System', to: '/superadmin/settings/system', icon: HiCircleStack },
-  { label: 'reCAPTCHA', to: '/superadmin/settings/recaptcha', icon: HiShieldCheck },
+const FALLBACK_SECTIONS = [
+  { key: 'general', label: 'General', items: [{ label: 'General Settings', to: '/superadmin/settings/general' }] },
 ]
 
 const ACTIVE_CLS = 'bg-slate-900 text-white shadow-lg shadow-slate-200'
 const INACTIVE_CLS = 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
 const DISABLED_CLS = 'cursor-not-allowed text-slate-300 opacity-60'
 
-function NavItem({ item }) {
-  const Icon = item.icon || HiCircleStack
-  
-  if (item.disabled) {
-    return (
-      <div className={`flex items-center gap-3 px-4 py-3 text-sm font-bold ${DISABLED_CLS}`}>
-        <Icon className="h-5 w-5" />
-        <span>{item.label}</span>
-      </div>
-    )
-  }
-
-  return (
-    <NavLink
-      to={item.to}
-      end={false}
-      className={({ isActive }) =>
-        `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-          isActive ? ACTIVE_CLS : INACTIVE_CLS
-        }`
-      }
-    >
-      <Icon className="h-5 w-5" />
-      <span>{item.label}</span>
-    </NavLink>
-  )
+function iconFor(label = '') {
+  const n = label.toLowerCase()
+  if (n.includes('domain')) return HiGlobeAlt
+  if (n.includes('company')) return HiBuildingOffice
+  if (n.includes('email template')) return HiDocumentText
+  if (n.includes('email')) return HiEnvelope
+  if (n.includes('smtp')) return HiServer
+  if (n.includes('logo')) return HiPhoto
+  if (n.includes('currency') || n.includes('payment')) return HiCreditCard
+  if (n.includes('trial')) return HiTicket
+  if (n.includes('captcha') || n.includes('security')) return HiShieldCheck
+  if (n.includes('role') || n.includes('permission')) return HiKey
+  if (n.includes('system')) return HiCircleStack
+  if (n.includes('account')) return HiShieldCheck
+  if (n.includes('log')) return HiQueueList
+  return HiCog6Tooth
 }
 
 function SectionLabel({ children }) {
   return (
     <div className="px-3.5 pb-1.5 pt-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
       {children}
-    </div>
-  )
-}
-
-function EmailParent() {
-  const location = useLocation()
-  const isInsideEmail = location.pathname.startsWith('/superadmin/settings/email')
-  const [open, setOpen] = useState(isInsideEmail)
-
-  return (
-    <div className="space-y-1">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`flex w-full items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-          isInsideEmail ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
-        }`}
-        aria-expanded={open}
-      >
-        <div className="flex items-center gap-3">
-          <HiEnvelope className="h-5 w-5" />
-          <span>Email Architecture</span>
-        </div>
-        <HiChevronDown
-          className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
-          aria-hidden
-        />
-      </button>
-      {open && (
-        <div className="ml-4 mt-1 space-y-1 border-l-2 border-slate-100 pl-2">
-          {EMAIL_CHILDREN.map((child) => (
-            <ChildNavItem key={child.label} item={child} />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
@@ -143,25 +77,38 @@ function ChildNavItem({ item }) {
 }
 
 export default function SettingsLayout() {
+  const { meta, loading, error } = useSettingsMeta()
+  const sections = useMemo(
+    () => meta?.navigation?.sections || FALLBACK_SECTIONS,
+    [meta]
+  )
+
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100vh-8rem)] gap-6 items-start px-4 md:px-0">
       {/* Side Navigation */}
       <aside className="w-full md:w-[240px] shrink-0 md:sticky md:top-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
           <nav className="space-y-1">
-            {TOP_ITEMS.map((item) => (
-              <NavItem key={item.label} item={item} />
+            {loading && (
+              <div className="space-y-2 p-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-9 animate-pulse rounded-lg bg-slate-100" />
+                ))}
+              </div>
+            )}
+            {!loading && sections.map((section) => (
+              <div key={section.key || section.label}>
+                <SectionLabel>{section.label}</SectionLabel>
+                <div className="space-y-1">
+                  {(section.items || []).map((item) => (
+                    <ChildNavItem key={`${section.key}-${item.label}`} item={item} />
+                  ))}
+                </div>
+              </div>
             ))}
-
-            <SectionLabel>Infrastructure</SectionLabel>
-            <EmailParent />
-
-            <SectionLabel>Global Config</SectionLabel>
-            <div className="space-y-1">
-              {BOTTOM_ITEMS.map((item) => (
-                <NavItem key={item.label} item={item} />
-              ))}
-            </div>
+            {!!error && (
+              <p className="px-3.5 py-2 text-xs text-red-500">{error}</p>
+            )}
           </nav>
         </div>
       </aside>

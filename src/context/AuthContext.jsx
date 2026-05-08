@@ -75,9 +75,10 @@ export function AuthProvider({ children }) {
     }
   })
 
-  // Keep a ref to the latest user so callbacks don't need it as a dep
   const userRef = useRef(user)
-  useEffect(() => { userRef.current = user }, [user])
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
 
   // Global Auto-Login Interceptor (for Impersonation)
   useEffect(() => {
@@ -147,15 +148,15 @@ export function AuthProvider({ children }) {
 
   // Stable function — never recreated, reads current user via ref
   const refreshAccessProfile = useCallback(async () => {
-    const currentUser = userRef.current
-    if (!currentUser || currentUser.role !== 'admin') return
+    const current = userRef.current
+    if (!current || current.role !== 'admin') return
     try {
       const response = await api.get('/auth/access-profile')
       const data = response?.data?.data
       if (!data) return
 
       setUser((prev) => {
-        if (!prev) return prev
+        if (!prev || prev.role !== 'admin') return prev
         const next = {
           ...prev,
           plan_details: data.plan_details || [],
@@ -167,7 +168,10 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Failed to refresh access profile:', error)
     }
-  }, []) // no deps — reads user via ref, setUser is stable
+  }, [])
+
+  const adminSessionKey =
+    user?.role === 'admin' ? `${user.email ?? ''}:${user.id ?? ''}` : null
 
   // Run once on mount (when user is admin) and then every 3 minutes.
   // Depends only on user.id + user.role so it re-registers only on actual
@@ -175,11 +179,11 @@ export function AuthProvider({ children }) {
   const userId   = user?.id
   const userRole = user?.role
   useEffect(() => {
-    if (!userId || userRole !== 'admin') return
+    if (!adminSessionKey) return
     refreshAccessProfile()
-    const id = window.setInterval(refreshAccessProfile, 180_000)
+    const id = window.setInterval(refreshAccessProfile, 180000)
     return () => window.clearInterval(id)
-  }, [userId, userRole, refreshAccessProfile])
+  }, [adminSessionKey, refreshAccessProfile])
 
   const logout = useCallback(() => {
     setUser(null)

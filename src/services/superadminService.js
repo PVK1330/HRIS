@@ -28,6 +28,7 @@ export const SUPERADMIN_ENDPOINTS = {
   PAYMENT_STATS: '/superadmin/payments/stats',
   PAYMENT_MANUAL: '/superadmin/payments/manual',
   PAYMENT_STATUS: (id) => `/superadmin/payments/${id}/status`,
+  PAYMENT_INVOICE_HTML: (id) => `/superadmin/payments/${id}/invoice-html`,
 }
 
 export const superadminService = {
@@ -157,6 +158,9 @@ export const superadminService = {
   },
   createManualInvoice(payload) {
     return api.post(SUPERADMIN_ENDPOINTS.PAYMENT_MANUAL, payload)
+  },
+  getInvoiceHtml(id) {
+    return api.get(SUPERADMIN_ENDPOINTS.PAYMENT_INVOICE_HTML(id), { responseType: 'text' })
   },
   updatePaymentStatus(id, status) {
     return api.patch(SUPERADMIN_ENDPOINTS.PAYMENT_STATUS(id), { status })

@@ -21,8 +21,9 @@ import {
   HiUsers,
   HiBriefcase,
   HiMegaphone,
-  HiChartPie,
+  HiChartPie, 
   HiIdentification,
+  HiChatBubbleLeftRight,
 } from 'react-icons/hi2'
 import { Sidebar } from '../components/ui/Sidebar.jsx'
 import { Avatar } from '../components/ui/Avatar.jsx'
@@ -52,7 +53,7 @@ const adminNavGroups = [
       { label: 'Onboarding', icon: HiUserPlus, path: '/admin/onboarding', permission: 'view_onboarding', featureCode: 'onboarding_exit' },
       { label: 'Exit Management', icon: HiArrowRightOnRectangle, path: '/admin/exit-management', permission: 'view_exit', featureCode: 'onboarding_exit' },
       { label: 'Letter Templates', icon: HiEnvelope, path: '/admin/letters', permission: 'view_letters' },
-      { label: 'Reports & Analytics', icon: HiChartPie, path: '/admin/reports', permission: 'view_reports' },
+      // { label: 'Reports & Analytics', icon: HiChartPie, path: '/admin/reports', permission: 'view_reports' },
       { label: 'Announcements', icon: HiMegaphone, path: '/admin/announcements', permission: 'view_announcements' },
       { label: 'Payroll Management', icon: HiCurrencyDollar, path: '/admin/payroll', permission: 'view_payroll', featureCode: 'payroll' },
     ],
@@ -60,9 +61,11 @@ const adminNavGroups = [
   {
     groupLabel: 'ORGANIZATION',
     items: [
-      { label: 'Departments', icon: HiBuildingOffice, path: '/admin/departments', permission: 'edit_settings' },
-      { label: 'Projects', icon: HiFolder, path: '/admin/projects', permission: 'edit_settings' },
-      { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'edit_settings' },
+      { label: 'Departments', icon: HiBuildingOffice, path: '/admin/departments', permission: 'edit_settings', featureCode: 'department' },
+      { label: 'Messages', icon: HiChatBubbleLeftRight, path: '/admin/messages', permission: 'edit_settings' },
+      // { label: 'Projects', icon: HiFolder, path: '/admin/projects', permission: 'edit_settings' },
+      // { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'edit_settings' },
+      // { label: 'Template Generator', icon: HiDocumentText, path: '/admin/templates', permission: 'edit_settings' },
     ],
   },
   {
@@ -106,6 +109,8 @@ const FEATURE_PATH_MAP = {
   asset_management: ['/admin/assets'],
   asset_inventory: ['/admin/assets'],
   onboarding_exit: ['/admin/onboarding', '/admin/exit-management'],
+  department: ['/admin/departments'],
+  departments: ['/admin/departments'],
 }
 
 export default function AdminLayout() {
