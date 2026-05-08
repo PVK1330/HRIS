@@ -7,38 +7,14 @@ import SettingsSelect from '../../../components/settings/SettingsSelect.jsx'
 import SettingsToggle from '../../../components/settings/SettingsToggle.jsx'
 import useSettings from '../../../hooks/useSettings.js'
 import settingsService from '../../../services/settingsService.js'
+import useSettingsMeta from './useSettingsMeta.js'
 
-const LANGUAGES = [
-  { value: 'English', label: 'English' },
-  { value: 'French', label: 'French' },
-  { value: 'Spanish', label: 'Spanish' },
-  { value: 'Arabic', label: 'Arabic' },
-  { value: 'Urdu', label: 'Urdu' },
-  { value: 'Hindi', label: 'Hindi' },
-]
-
-const TIMEZONES = [
-  { value: 'UTC', label: 'UTC' },
-  { value: 'Asia/Kolkata', label: 'Asia/Kolkata' },
-  { value: 'Asia/Dubai', label: 'Asia/Dubai' },
-  { value: 'America/New_York', label: 'America/New_York' },
-  { value: 'America/Los_Angeles', label: 'America/Los_Angeles' },
-  { value: 'Europe/London', label: 'Europe/London' },
-  { value: 'Europe/Paris', label: 'Europe/Paris' },
-  { value: 'Asia/Tokyo', label: 'Asia/Tokyo' },
-]
-
-const DATE_FORMATS = [
-  { value: 'd-m-Y', label: 'd-m-Y' },
-  { value: 'm-d-Y', label: 'm-d-Y' },
-  { value: 'Y-m-d', label: 'Y-m-d' },
-]
-
-const DATE_SELECTORS = [
-  { value: 'dd-mm-yyyy', label: 'dd-mm-yyyy' },
-  { value: 'mm-dd-yyyy', label: 'mm-dd-yyyy' },
-  { value: 'yyyy-mm-dd', label: 'yyyy-mm-dd' },
-]
+const FALLBACK_OPTIONS = {
+  languages: [{ value: 'English', label: 'English' }],
+  timezones: [{ value: 'UTC', label: 'UTC' }],
+  dateFormats: [{ value: 'd-m-Y', label: 'd-m-Y' }],
+  dateSelectorFormats: [{ value: 'dd-mm-yyyy', label: 'dd-mm-yyyy' }],
+}
 
 const DEFAULT_STATE = {
   defaultLanguage: 'English',
@@ -91,6 +67,7 @@ function toApi(state) {
 }
 
 export default function GeneralSettings() {
+  const { meta } = useSettingsMeta()
   const fetchFn = useCallback(
     async () => fromApi((await settingsService.getGeneral()).data),
     []
@@ -102,6 +79,7 @@ export default function GeneralSettings() {
 
   const { data, setData, loading, save, saving } = useSettings(fetchFn, saveFn)
   const state = data || DEFAULT_STATE
+  const optionMeta = meta?.general || FALLBACK_OPTIONS
 
   const set = (patch) => setData((prev) => ({ ...(prev || DEFAULT_STATE), ...patch }))
 
@@ -188,7 +166,7 @@ export default function GeneralSettings() {
                   onChange={(e) => set({ defaultLanguage: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white appearance-none cursor-pointer"
                 >
-                  {LANGUAGES.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  {optionMeta.languages.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
 
@@ -199,7 +177,7 @@ export default function GeneralSettings() {
                   onChange={(e) => set({ timezone: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white appearance-none cursor-pointer"
                 >
-                  {TIMEZONES.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  {optionMeta.timezones.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
 
@@ -210,7 +188,7 @@ export default function GeneralSettings() {
                   onChange={(e) => set({ dateFormat: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white appearance-none cursor-pointer"
                 >
-                  {DATE_FORMATS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  {optionMeta.dateFormats.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
 
@@ -221,7 +199,7 @@ export default function GeneralSettings() {
                   onChange={(e) => set({ dateSelectorFormat: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white appearance-none cursor-pointer"
                 >
-                  {DATE_SELECTORS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  {optionMeta.dateSelectorFormats.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
             </div>

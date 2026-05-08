@@ -39,6 +39,32 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
   }
+
+  /* Superadmin visual system */
+  .sa-page {
+    @apply space-y-6;
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  .sa-hero {
+    @apply relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] text-white shadow-xl shadow-emerald-900/20;
+  }
+
+  .sa-card {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .sa-card-head {
+    @apply flex items-center justify-between border-b border-slate-100 bg-slate-50/40 px-4 py-3;
+  }
+
+  .sa-title {
+    @apply text-xl font-bold tracking-tight text-slate-900;
+  }
+
+  .sa-subtitle {
+    @apply text-[11px] font-medium text-slate-500;
+  }
 }
 
 /* Animations */

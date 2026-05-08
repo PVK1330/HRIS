@@ -4,6 +4,7 @@ import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
+import { Toggle } from '../../../components/ui/Toggle.jsx'
 import {
   HiPencilSquare,
   HiTrash,
@@ -22,9 +23,16 @@ import {
 import { Input } from '../../../components/ui/Input.jsx'
 import { superadminService } from '../../../services/superadminService'
 
+const AUDIENCE_OPTIONS = ['All Organizations', 'Trial Only', 'Enterprise Only']
+const TYPE_OPTIONS = ['Info', 'Warning', 'Critical']
+const PRIORITY_OPTIONS = ['Normal', 'High', 'Immediate']
+
 export default function Announcements() {
   const [announcements, setAnnouncements] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // New Announcement Form State
   const [newAnnouncement, setNewAnnouncement] = useState({ 
@@ -36,14 +44,24 @@ export default function Announcements() {
     scheduledAt: '', 
     isScheduled: false 
   })
+  const [formErrors, setFormErrors] = useState({})
 
   // Modal States
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showRevokeModal, setShowRevokeModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
   const [viewAnnouncement, setViewAnnouncement] = useState(null)
-  const [editForm, setEditForm] = useState({ title: '', message: '', audience: 'All Organizations', type: 'Info', priority: 'Normal', scheduledAt: '' })
+  const [editForm, setEditForm] = useState({
+    title: '',
+    message: '',
+    audience: 'All Organizations',
+    type: 'Info',
+    priority: 'Normal',
+    scheduledAt: '',
+  })
+  const [editErrors, setEditErrors] = useState({})
 
   useEffect(() => {
     fetchAnnouncements()
@@ -81,17 +99,28 @@ export default function Announcements() {
     }
   }
 
-  const handleSend = async () => {
-    if (!newAnnouncement.title || !newAnnouncement.message) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Missing Fields',
-        text: 'Title and message are required.',
-        confirmButtonColor: '#0F766E',
-      })
-      return
+  const validateNewAnnouncement = () => {
+    const next = {}
+    if (!newAnnouncement.title.trim()) next.title = 'Title is required.'
+    if (!newAnnouncement.message.trim()) next.message = 'Message is required.'
+    if (newAnnouncement.isScheduled) {
+      if (!newAnnouncement.scheduledAt) {
+        next.scheduledAt = 'Scheduled date/time is required.'
+      }
     }
+    return next
+  }
+
+  const handleSend = async () => {
+    const nextErrors = validateNewAnnouncement()
+    if (Object.keys(nextErrors).length > 0) {
+      setFormErrors(nextErrors)
+      return false
+    }
+
     try {
+      setIsSubmitting(true)
+      setFormErrors({})
       await superadminService.createAnnouncement({
         title: newAnnouncement.title,
         message: newAnnouncement.message,
@@ -110,6 +139,7 @@ export default function Announcements() {
         scheduledAt: '', 
         isScheduled: false 
       })
+      setFormErrors({})
       Swal.fire({
         icon: 'success',
         title: 'Announcement Sent',
@@ -117,6 +147,7 @@ export default function Announcements() {
         timer: 1400,
         showConfirmButton: false,
       })
+      return true
     } catch (error) {
       console.error('Failed to create announcement:', error)
       Swal.fire({
@@ -125,12 +156,16 @@ export default function Announcements() {
         text: error.response?.data?.message || 'Failed to create announcement.',
         confirmButtonColor: '#0F766E',
       })
+      return false
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleEditClick = (ann) => {
     setSelectedAnnouncement(ann)
     setEditForm({ title: ann.title, message: ann.message, audience: ann.audience, type: ann.type, priority: ann.priority })
+    setEditErrors({})
     setShowEditModal(true)
   }
 
@@ -142,6 +177,16 @@ export default function Announcements() {
   const handleSaveEdit = async () => {
     if (!selectedAnnouncement) return
     try {
+      setIsUpdating(true)
+      setEditErrors({})
+      if (!editForm.title.trim()) {
+        setEditErrors({ title: 'Title is required.' })
+        return
+      }
+      if (!editForm.message.trim()) {
+        setEditErrors({ message: 'Message is required.' })
+        return
+      }
       await superadminService.updateAnnouncement(selectedAnnouncement.id, editForm)
       await fetchAnnouncements()
       setShowEditModal(false)
@@ -160,12 +205,15 @@ export default function Announcements() {
         text: error.response?.data?.message || 'Failed to update announcement.',
         confirmButtonColor: '#0F766E',
       })
+    } finally {
+      setIsUpdating(false)
     }
   }
 
   const handleRevoke = async () => {
     if (!selectedAnnouncement) return
     try {
+      setIsDeleting(true)
       await superadminService.deleteAnnouncement(selectedAnnouncement.id)
       await fetchAnnouncements()
       setShowRevokeModal(false)
@@ -183,159 +231,245 @@ export default function Announcements() {
         text: error.response?.data?.message || 'Failed to delete announcement.',
         confirmButtonColor: '#0F766E',
       })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-             <div className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-sm">
-                <HiMegaphone className="h-4.5 w-4.5" />
-             </div>
-             <h1 className="text-xl font-bold text-slate-900 tracking-tight">System Announcements</h1>
-             <div className="group relative">
-                <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-slate-900 transition-colors" />
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
-                   <p className="font-bold text-emerald-400 mb-1 uppercase tracking-widest">Help Center</p>
-                   Send important updates and news to all registered organizations.
-                   <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
-                </div>
-             </div>
-          </div>
-          <p className="text-[11px] font-medium text-slate-500">Communicate with all your platform tenants.</p>
-        </div>
-        <div className="flex items-center gap-2 bg-white px-2.5 py-1 rounded-lg border border-slate-100">
-           <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-           <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">System Status: Active</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Creation Panel */}
-        <div className="lg:col-span-1">
-          <div className="rounded-[2rem] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_rgba(0,0,0,0.03)] sticky top-6">
-            <h2 className="text-lg font-black text-slate-900 mb-8 flex items-center gap-3 uppercase tracking-tight">
-               <div className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center text-white">
-                  <HiSparkles className="h-4 w-4" />
-               </div>
-               New Announcement
-            </h2>
-            <div className="space-y-6">
-              <Input label="Announcement Title" placeholder="e.g. Scheduled Maintenance" value={newAnnouncement.title} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })} />
+    <div className="sa-page">
+      {/* Hero */}
+      <div className="sa-hero px-6 py-4">
+        <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white shadow-inner">
+                <HiMegaphone className="h-5 w-5" />
+              </div>
               <div>
-                <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Announcement Message</label>
-                <textarea
-                  rows={6}
-                  className="w-full rounded-[1.5rem] border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 outline-none transition-all resize-none shadow-sm"
-                  placeholder="Type your message here..."
-                  value={newAnnouncement.message}
-                  onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Target Audience</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer" value={newAnnouncement.audience} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, audience: e.target.value })}>
-                    <option>All Organizations</option>
-                    <option>Trial Only</option>
-                    <option>Enterprise Only</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Priority</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer" value={newAnnouncement.priority} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })}>
-                    <option>Normal</option>
-                    <option>High</option>
-                    <option>Immediate</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between px-1">
-                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Schedule Announcement</label>
-                   <button 
-                     onClick={() => setNewAnnouncement({ ...newAnnouncement, isScheduled: !newAnnouncement.isScheduled })}
-                     className={`w-10 h-5 rounded-full transition-all duration-300 flex items-center px-1 ${newAnnouncement.isScheduled ? 'bg-emerald-500 justify-end' : 'bg-slate-200 justify-start'}`}
-                   >
-                      <div className="h-3.5 w-3.5 bg-white rounded-full shadow-sm" />
-                   </button>
-                </div>
-                
-                {newAnnouncement.isScheduled && (
-                  <div className="animate-in slide-in-from-top-2 duration-300">
-                    <Input 
-                      type="datetime-local" 
-                      value={newAnnouncement.scheduledAt} 
-                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, scheduledAt: e.target.value })}
-                      className="border-emerald-100 bg-emerald-50/20"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-6">
-                <Button 
-                  label={newAnnouncement.isScheduled ? "Schedule Announcement" : "Post Announcement"} 
-                  variant="primary" 
-                  icon={newAnnouncement.isScheduled ? HiCalendarDays : HiRocketLaunch} 
-                  className="w-full bg-slate-900 hover:bg-slate-800 border-none shadow-lg shadow-slate-100 py-6 text-sm uppercase tracking-widest font-black" 
-                  onClick={handleSend} 
-                />
+                <h1 className="text-xl font-black uppercase tracking-widest">Announcements</h1>
+                <p className="mt-0.5 text-xs text-emerald-100/80 leading-relaxed max-w-xl">
+                  Send important updates to all platform tenants. Schedule ahead for precise delivery.
+                </p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* History Feed */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between px-4">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Previous Announcements</h2>
-            <Badge label={isLoading ? 'Loading...' : `${announcements.length} Sent`} color="gray" variant="glass" />
+          <div className="flex flex-col items-start md:items-end gap-1.5">
+           
+            <Button
+              label="Add Announcement"
+              icon={HiSparkles}
+              onClick={() => setShowCreateModal(true)}
+              className="mt-1 bg-white text-[#0F766E] hover:bg-emerald-50 border-none shadow-lg text-[11px] font-black uppercase tracking-widest py-2"
+            />
+          </div>
+        </div>
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5" />
+      </div>
+
+      <div>
+        {/* History Feed (full width) */}
+        <div className="sa-card overflow-hidden">
+          <div className="bg-[#0F766E] px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                <HiSignal className="h-4 w-4 opacity-90" />
+              </div>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-white">Previous Announcements</h2>
+            </div>
+            <p className="text-xs font-bold text-white/80">
+              {isLoading ? 'Loading...' : `${announcements.length} Sent`}
+            </p>
           </div>
 
-          <Table
-            loading={isLoading}
-            pageSize={6}
-            emptyMessage="No announcements yet"
-            columns={[
-              { key: 'title', label: 'Title' },
-              { key: 'audience', label: 'Audience' },
-              { key: 'type', label: 'Type' },
-              { key: 'priority', label: 'Priority' },
-              { key: 'status', label: 'Status' },
-              { key: 'sentDate', label: 'Sent / Scheduled' },
-              { key: 'recipients', label: 'Recipients' },
-              { key: 'actions', label: 'Actions' },
-            ]}
-            data={announcements.map((ann) => ({
-              id: ann.id,
-              title: (
-                <div className="max-w-[220px]">
-                  <p className="truncate text-sm font-bold text-slate-900">{ann.title}</p>
-                  <p className="truncate text-[11px] text-slate-500">{ann.message}</p>
-                </div>
-              ),
-              audience: <span className="text-xs font-semibold text-slate-700">{ann.audience}</span>,
-              type: <Badge label={ann.type} color={ann.type === 'Critical' ? 'red' : ann.type === 'Warning' ? 'amber' : 'indigo'} variant="glass" />,
-              priority: <Badge label={ann.priority} color={ann.priority === 'Immediate' ? 'rose' : ann.priority === 'High' ? 'orange' : 'slate'} variant="glass" />,
-              status: <Badge label={ann.status} color={ann.status === 'Scheduled' ? 'amber' : ann.status === 'Processing' ? 'indigo' : 'green'} variant="glass" />,
-              sentDate: <span className="text-xs font-semibold text-slate-600">{ann.status === 'Scheduled' ? ann.scheduledAt : ann.sentDate}</span>,
-              recipients: <span className="text-xs font-black text-emerald-600">{ann.recipients}</span>,
-              actions: (
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" icon={HiEye} className="text-slate-400 hover:text-slate-700" onClick={() => handleViewClick(ann)} />
-                  <Button variant="ghost" size="sm" icon={HiPencilSquare} className="text-slate-400 hover:text-emerald-600" onClick={() => handleEditClick(ann)} />
-                  <Button variant="ghost" size="sm" icon={HiTrash} className="text-slate-400 hover:text-rose-600" onClick={() => { setSelectedAnnouncement(ann); setShowRevokeModal(true); }} />
-                </div>
-              ),
-            }))}
-          />
+          <div className="p-4">
+            <Table
+              loading={isLoading}
+              pageSize={6}
+              emptyMessage="No announcements yet"
+              columns={[
+                { key: 'title', label: 'Title' },
+                { key: 'audience', label: 'Audience' },
+                { key: 'type', label: 'Type' },
+                { key: 'priority', label: 'Priority' },
+                { key: 'status', label: 'Status' },
+                { key: 'sentDate', label: 'Sent / Scheduled' },
+                { key: 'recipients', label: 'Recipients' },
+                { key: 'actions', label: 'Actions' },
+              ]}
+              data={announcements.map((ann) => ({
+                id: ann.id,
+                title: (
+                  <div className="max-w-[220px]">
+                    <p className="truncate text-sm font-bold text-slate-900">{ann.title}</p>
+                    <p className="truncate text-[11px] text-slate-500">{ann.message}</p>
+                  </div>
+                ),
+                audience: <span className="text-xs font-semibold text-slate-700">{ann.audience}</span>,
+                type: <Badge label={ann.type} color={ann.type === 'Critical' ? 'red' : ann.type === 'Warning' ? 'amber' : 'indigo'} variant="glass" />,
+                priority: <Badge label={ann.priority} color={ann.priority === 'Immediate' ? 'rose' : ann.priority === 'High' ? 'orange' : 'slate'} variant="glass" />,
+                status: <Badge label={ann.status} color={ann.status === 'Scheduled' ? 'amber' : ann.status === 'Processing' ? 'indigo' : 'green'} variant="glass" />,
+                sentDate: <span className="text-xs font-semibold text-slate-600">{ann.status === 'Scheduled' ? ann.scheduledAt : ann.sentDate}</span>,
+                recipients: <span className="text-xs font-black text-emerald-600">{ann.recipients}</span>,
+                actions: (
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" icon={HiEye} className="text-slate-400 hover:text-slate-700" onClick={() => handleViewClick(ann)} />
+                    <Button variant="ghost" size="sm" icon={HiPencilSquare} className="text-slate-400 hover:text-emerald-600" onClick={() => handleEditClick(ann)} />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={HiTrash}
+                      className="text-slate-400 hover:text-rose-600"
+                      onClick={() => {
+                        setSelectedAnnouncement(ann)
+                        setShowRevokeModal(true)
+                      }}
+                    />
+                  </div>
+                ),
+              }))}
+            />
+          </div>
         </div>
       </div>
+
+      {/* Create Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Create Announcement"
+        description="Broadcast a new message to your tenant organizations."
+        icon={HiMegaphone}
+        size="md"
+      >
+        <div className="space-y-5 p-2">
+          <div className="space-y-1.5">
+            <Input
+              label="Announcement Title"
+              placeholder="e.g. Scheduled Maintenance"
+              value={newAnnouncement.title}
+              onChange={(e) => {
+                setFormErrors((p) => ({ ...p, title: undefined }))
+                setNewAnnouncement({ ...newAnnouncement, title: e.target.value })
+              }}
+            />
+            {!!formErrors.title && <p className="px-1 text-[11px] font-bold text-rose-600">{formErrors.title}</p>}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Announcement Message</label>
+            <textarea
+              rows={6}
+              className="w-full rounded-[1.5rem] border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 outline-none transition-all resize-none shadow-sm"
+              placeholder="Type your message here..."
+              value={newAnnouncement.message}
+              onChange={(e) => {
+                setFormErrors((p) => ({ ...p, message: undefined }))
+                setNewAnnouncement({ ...newAnnouncement, message: e.target.value })
+              }}
+            />
+            {!!formErrors.message && <p className="px-1 mt-1 text-[11px] font-bold text-rose-600">{formErrors.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Target Audience</label>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                value={newAnnouncement.audience}
+                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, audience: e.target.value })}
+              >
+                {AUDIENCE_OPTIONS.map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Priority</label>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                value={newAnnouncement.priority}
+                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })}
+              >
+                {PRIORITY_OPTIONS.map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Announcement Type</label>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                value={newAnnouncement.type}
+                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, type: e.target.value })}
+              >
+                {TYPE_OPTIONS.map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                Schedule Announcement
+              </label>
+              <Toggle
+                checked={newAnnouncement.isScheduled}
+                onChange={(v) =>
+                  setNewAnnouncement((prev) => ({
+                    ...prev,
+                    isScheduled: v,
+                    scheduledAt: v ? prev.scheduledAt : '',
+                  }))
+                }
+              />
+            </div>
+
+            {newAnnouncement.isScheduled && (
+              <div className="animate-in slide-in-from-top-2 duration-300 space-y-1">
+                <Input
+                  type="datetime-local"
+                  value={newAnnouncement.scheduledAt}
+                  onChange={(e) => {
+                    setFormErrors((p) => ({ ...p, scheduledAt: undefined }))
+                    setNewAnnouncement({ ...newAnnouncement, scheduledAt: e.target.value })
+                  }}
+                  className="border-emerald-100 bg-emerald-50/20"
+                />
+                {!!formErrors.scheduledAt && (
+                  <p className="px-1 text-[11px] font-bold text-rose-600">{formErrors.scheduledAt}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-6 border-t border-slate-100">
+            <Button
+              label="Cancel"
+              variant="ghost"
+              className="flex-1 font-bold text-slate-400"
+              onClick={() => setShowCreateModal(false)}
+              disabled={isSubmitting}
+            />
+            <Button
+              label={newAnnouncement.isScheduled ? 'Schedule Announcement' : 'Post Announcement'}
+              variant="primary"
+              icon={newAnnouncement.isScheduled ? HiCalendarDays : HiRocketLaunch}
+              className="flex-1 bg-[#0F766E] hover:bg-[#0D5F57] border-none shadow-lg shadow-emerald-900/10 text-white text-[11px] uppercase tracking-widest font-black"
+              onClick={async () => {
+                const ok = await handleSend()
+                if (ok) setShowCreateModal(false)
+              }}
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+      </Modal>
 
       {/* View Modal */}
       <Modal
@@ -384,16 +518,84 @@ export default function Announcements() {
         size="md"
       >
         <div className="space-y-6 p-2">
-          <Input label="Title" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+          <div className="space-y-1.5">
+            <Input
+              label="Title"
+              value={editForm.title}
+              onChange={(e) => {
+                setEditErrors((p) => ({ ...p, title: undefined }))
+                setEditForm({ ...editForm, title: e.target.value })
+              }}
+            />
+            {!!editErrors.title && <p className="px-1 text-[11px] font-bold text-rose-600">{editErrors.title}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Audience</label>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                value={editForm.audience}
+                onChange={(e) => setEditForm({ ...editForm, audience: e.target.value })}
+              >
+                {AUDIENCE_OPTIONS.map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Type</label>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                value={editForm.type}
+                onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+              >
+                {TYPE_OPTIONS.map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Priority</label>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                value={editForm.priority}
+                onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
+              >
+                {PRIORITY_OPTIONS.map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <textarea
             rows={5}
             className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-emerald-500 outline-none transition-all resize-none shadow-sm"
             value={editForm.message}
-            onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
+            onChange={(e) => {
+              setEditErrors((p) => ({ ...p, message: undefined }))
+              setEditForm({ ...editForm, message: e.target.value })
+            }}
           />
+          {!!editErrors.message && <p className="px-1 -mt-3 text-[11px] font-bold text-rose-600">{editErrors.message}</p>}
           <div className="flex gap-4 pt-6 border-t border-slate-50">
-            <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowEditModal(false)} />
-            <Button label="Save Changes" variant="primary" className="flex-1 bg-slate-900 border-none shadow-lg shadow-slate-100" onClick={handleSaveEdit} />
+            <Button
+              label="Cancel"
+              variant="ghost"
+              className="flex-1 font-bold text-slate-400"
+              onClick={() => setShowEditModal(false)}
+              disabled={isUpdating}
+            />
+            <Button
+              label={isUpdating ? 'Saving…' : 'Save Changes'}
+              variant="primary"
+              className="flex-1 bg-[#0F766E] hover:bg-[#0D5F57] border-none shadow-lg shadow-emerald-900/10 text-white"
+              onClick={handleSaveEdit}
+              disabled={isUpdating}
+            />
           </div>
         </div>
       </Modal>
@@ -408,8 +610,20 @@ export default function Announcements() {
       >
         <div className="space-y-6 p-2">
           <div className="flex gap-4 pt-2">
-            <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400 border-transparent" onClick={() => setShowRevokeModal(false)} />
-            <Button label="Delete" variant="danger" className="flex-1 bg-rose-600 border-none shadow-lg shadow-rose-100 uppercase text-[10px] font-black tracking-widest" onClick={handleRevoke} />
+            <Button
+              label="Cancel"
+              variant="ghost"
+              className="flex-1 font-bold text-slate-400 border-transparent"
+              onClick={() => setShowRevokeModal(false)}
+              disabled={isDeleting}
+            />
+            <Button
+              label={isDeleting ? 'Deleting…' : 'Delete'}
+              variant="danger"
+              className="flex-1 bg-rose-600 border-none shadow-lg shadow-rose-100 uppercase text-[10px] font-black tracking-widest"
+              onClick={handleRevoke}
+              disabled={isDeleting}
+            />
           </div>
         </div>
       </Modal>

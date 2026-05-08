@@ -13,13 +13,12 @@ import { Modal } from '../../../../components/ui/Modal.jsx'
 
 import useSettings from '../../../../hooks/useSettings.js'
 import settingsService from '../../../../services/settingsService.js'
+import useSettingsMeta from '../useSettingsMeta.js'
 
-const DELIVERY_OPTIONS = [{ value: 'smtp', label: 'SMTP' }]
-const ENCRYPTION_OPTIONS = [
-  { value: 'tls', label: 'TLS' },
-  { value: 'ssl', label: 'SSL' },
-  { value: 'none', label: 'None' },
-]
+const FALLBACK_EMAIL_META = {
+  deliveryOptions: [{ value: 'smtp', label: 'SMTP' }],
+  encryptionOptions: [{ value: 'tls', label: 'TLS' }],
+}
 
 const DEFAULT_STATE = {
   systemEmail: '',
@@ -148,6 +147,7 @@ function TestEmailModal({ open, onClose }) {
 }
 
 export default function EmailSettings() {
+  const { meta } = useSettingsMeta()
   const [searchParams, setSearchParams] = useSearchParams()
   const initialTab = searchParams.get('tab') === 'smtp' ? 'smtp' : 'email'
   const [tab, setTab] = useState(initialTab)
@@ -191,6 +191,7 @@ export default function EmailSettings() {
 
   const { data, setData, loading, save, saving } = useSettings(fetchFn, saveFn)
   const state = data || DEFAULT_STATE
+  const emailMeta = meta?.email || FALLBACK_EMAIL_META
 
   // Track whether the loaded password is just the server-side mask
   useEffect(() => {
@@ -305,7 +306,7 @@ export default function EmailSettings() {
                       onChange={(e) => set({ emailDelivery: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-indigo-600 focus:bg-white appearance-none cursor-pointer"
                     >
-                      {DELIVERY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      {emailMeta.deliveryOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                   </div>
                </div>
@@ -364,7 +365,7 @@ export default function EmailSettings() {
                         onChange={(e) => set({ smtpEncryption: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white appearance-none cursor-pointer"
                       >
-                        {ENCRYPTION_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        {emailMeta.encryptionOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                       </select>
                     </div>
                   </div>

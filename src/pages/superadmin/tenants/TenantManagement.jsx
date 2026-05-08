@@ -379,7 +379,7 @@ export default function TenantManagement() {
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500">
+    <div className="sa-page">
       {/* Header */}
       <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="space-y-0.5">
@@ -406,7 +406,7 @@ export default function TenantManagement() {
       </div>
 
       {/* Filter Section */}
-      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+      <div className="sa-card p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Input label="Search Organizations" placeholder="Name, domain, or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           <div>
@@ -435,7 +435,7 @@ export default function TenantManagement() {
       </div>
 
       {/* Organization Table */}
-      <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
+      <div className="sa-card overflow-hidden">
         <Table
           pageSize={pageSize}
           totalCount={totalCount}

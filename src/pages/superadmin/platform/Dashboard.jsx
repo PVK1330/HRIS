@@ -111,7 +111,7 @@ export default function SuperAdminDashboard() {
   }, [])
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500">
+    <div className="sa-page">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export default function SuperAdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-xl border border-slate-100 bg-white p-3.5 shadow-sm">
+        <div className="sa-card lg:col-span-2 p-3.5">
           <h3 className="text-xs font-bold text-slate-900 mb-3">Revenue Performance</h3>
           <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -147,7 +147,7 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5 shadow-sm">
+        <div className="sa-card p-3.5">
           <h3 className="text-xs font-bold text-slate-900 mb-3">Organization Growth</h3>
           <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -167,7 +167,7 @@ export default function SuperAdminDashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+          <div className="sa-card overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-50 p-3 bg-slate-50/30">
               <div className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 shadow-sm">
@@ -201,7 +201,7 @@ export default function SuperAdminDashboard() {
             />
           </div>
 
-          <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div className="sa-card p-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
@@ -222,7 +222,7 @@ export default function SuperAdminDashboard() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-xl border border-red-100 bg-red-50/50 p-4 shadow-sm">
+          <div className="rounded-2xl border border-red-100 bg-red-50/50 p-4 shadow-sm">
             <h2 className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <HiExclamationTriangle className="animate-pulse" /> Important Alerts
             </h2>
@@ -241,7 +241,7 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div className="sa-card p-4">
             <h2 className="text-xs font-bold text-slate-900 mb-4">Platform Activity</h2>
             <div className="space-y-4 relative">
               <div className="absolute left-[7px] top-2 bottom-2 w-px bg-slate-100" />

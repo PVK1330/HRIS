@@ -4,75 +4,18 @@ import toast from 'react-hot-toast'
 
 import { Toggle } from '../../../components/ui/Toggle.jsx'
 import settingsService from '../../../services/settingsService.js'
+import useSettingsMeta from './useSettingsMeta.js'
 
 const MASKED = '••••••••'
-
-const GATEWAY_META = {
-  stripe: {
-    label: 'Stripe',
-    subtitle: 'ENTERPRISE FINANCIAL INFRASTRUCTURE',
-    iconBg: 'bg-indigo-600',
-    Icon: HiCreditCard,
-    fields: [
-      { key: 'publishable_key', label: 'Publishable Key', type: 'text',     required: true,  placeholder: 'pk_test_...' },
-      { key: 'secret_key',      label: 'Secret Key',      type: 'password', required: true,  placeholder: 'sk_test_...' },
-      { key: 'webhook_secret',  label: 'Webhook Secret',  type: 'password', required: false, placeholder: 'whsec_...' },
-    ],
-    showTestMode: true,
-  },
-  paypal: {
-    label: 'PayPal',
-    subtitle: 'GLOBAL COMMERCE PLATFORM',
-    iconBg: 'bg-blue-500',
-    Icon: HiCreditCard,
-    fields: [
-      { key: 'client_id',     label: 'Client ID',     type: 'text',     required: true,  placeholder: '' },
-      { key: 'client_secret', label: 'Client Secret', type: 'password', required: true,  placeholder: '' },
-      { key: 'mode',          label: 'Mode',          type: 'select',   required: true, options: [
-        { value: 'sandbox', label: 'Sandbox' },
-        { value: 'live',    label: 'Live' },
-      ] },
-    ],
-    showTestMode: true,
-  },
-  razorpay: {
-    label: 'Razorpay',
-    subtitle: 'CONVERGED PAYMENTS FOR INDIA',
-    iconBg: 'bg-gray-900',
-    Icon: HiCreditCard,
-    fields: [
-      { key: 'key_id',         label: 'Key ID',         type: 'text',     required: true,  placeholder: 'rzp_test_...' },
-      { key: 'key_secret',     label: 'Key Secret',     type: 'password', required: true,  placeholder: '••••••••' },
-      { key: 'webhook_secret', label: 'Webhook Secret', type: 'password', required: false, placeholder: '' },
-    ],
-    showTestMode: true,
-  },
-  offline: {
-    label: 'Offline Transfer',
-    subtitle: 'DIRECT BANK TRANSFERS',
-    iconBg: 'bg-green-600',
-    Icon: HiBuildingLibrary,
-    fields: [
-      { key: 'bank_name',      label: 'Bank Name',           type: 'text',     required: true,  placeholder: '' },
-      { key: 'account_holder', label: 'Account Holder Name', type: 'text',     required: true,  placeholder: '' },
-      { key: 'account_number', label: 'Account Number',      type: 'text',     required: true,  placeholder: '' },
-      { key: 'ifsc_code',      label: 'IFSC Code',           type: 'text',     required: false, placeholder: 'SBIN0001234' },
-      { key: 'instructions',   label: 'Instructions',        type: 'textarea', required: false, placeholder: 'Payment instructions for customers...' },
-    ],
-    showTestMode: false,
-  },
-}
-
-const ORDERED_SLUGS = ['stripe', 'paypal', 'razorpay', 'offline']
 
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value))
 }
 
 /** Normalize one gateway from the API into the editable shape the UI uses. */
-function fromApi(g) {
+function fromApi(g, metaBySlug) {
   if (!g) return null
-  const meta = GATEWAY_META[g.slug] || {}
+  const meta = metaBySlug[g.slug] || {}
   const blankCreds = (meta.fields || []).reduce(
     (acc, f) => ({ ...acc, [f.key]: '' }),
     {}
@@ -103,20 +46,35 @@ function toApiPayload(current) {
 }
 
 export default function PaymentGatewaySettings() {
+  const { meta } = useSettingsMeta()
   const [gateways, setGateways] = useState(null) // null = loading skeleton
   const [saving, setSaving] = useState(false)
   const [tests, setTests] = useState({}) // { [slug]: { state: 'idle'|'loading'|'success'|'error', message } }
   const [revealed, setRevealed] = useState({}) // { [slug-fieldKey]: true }
   const original = useRef(null)
 
+  const gatewayMeta = meta?.paymentGateways?.meta || {}
+  const orderedSlugs = meta?.paymentGateways?.order || []
+
+  const withIcons = useMemo(() => {
+    const iconMap = {
+      'credit-card': HiCreditCard,
+      'building-library': HiBuildingLibrary,
+    }
+    return Object.entries(gatewayMeta).reduce((acc, [slug, conf]) => {
+      acc[slug] = { ...conf, Icon: iconMap[conf.icon] || HiCreditCard }
+      return acc
+    }, {})
+  }, [gatewayMeta])
+
   const loadAll = useCallback(async () => {
     try {
       const res = await settingsService.getPaymentGateways()
       const list = Array.isArray(res?.data) ? res.data : []
-      const byOrder = ORDERED_SLUGS
+      const byOrder = orderedSlugs
         .map((slug) => list.find((g) => g.slug === slug))
         .filter(Boolean)
-        .map(fromApi)
+        .map((g) => fromApi(g, withIcons))
       setGateways(byOrder)
       original.current = deepClone(byOrder)
     } catch (err) {
@@ -124,7 +82,7 @@ export default function PaymentGatewaySettings() {
       setGateways([])
       original.current = []
     }
-  }, [])
+  }, [orderedSlugs, withIcons])
 
   useEffect(() => { loadAll() }, [loadAll])
 
@@ -165,7 +123,7 @@ export default function PaymentGatewaySettings() {
       for (const slug of dirtySlugs) {
         const current = gateways.find((g) => g.slug === slug)
         const res = await settingsService.updatePaymentGateway(slug, toApiPayload(current))
-        if (res?.data) updated.push(fromApi(res.data))
+        if (res?.data) updated.push(fromApi(res.data, withIcons))
       }
 
       const next = gateways.map((g) => updated.find((u) => u.slug === g.slug) || g)
@@ -238,7 +196,7 @@ export default function PaymentGatewaySettings() {
             <GatewayCard
               key={g.slug}
               gateway={g}
-              meta={GATEWAY_META[g.slug]}
+              meta={withIcons[g.slug]}
               onToggleEnabled={(v) => updateGateway(g.slug, { isEnabled: v })}
               onToggleTestMode={(v) => updateGateway(g.slug, { testMode: v })}
               onCredentialChange={(k, v) => updateCredential(g.slug, k, v)}

@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { HiCommandLine, HiServer, HiEnvelope } from 'react-icons/hi2'
 import SettingsCard from '../../../../components/settings/SettingsCard.jsx'
 import { Table } from '../../../../components/ui/Table.jsx'
+import settingsService from '../../../../services/settingsService.js'
 
 const COLUMNS = [
   { key: 'sentAt', label: 'Sent At' },
@@ -10,6 +12,27 @@ const COLUMNS = [
 ]
 
 export default function EmailLog() {
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await settingsService.getEmailLogs()
+        if (!cancelled) setLogs(Array.isArray(res?.data) ? res.data : [])
+      } catch (err) {
+        if (!cancelled) setError(err?.message || 'Failed to load email logs')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <div className="mx-auto max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700 px-4 md:px-0">
       {/* Page Header */}
@@ -41,9 +64,16 @@ export default function EmailLog() {
          </div>
 
          <div className="overflow-hidden rounded-2xl border border-slate-100">
+            {loading ? (
+              <div className="space-y-2 p-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-9 animate-pulse rounded bg-slate-100" />
+                ))}
+              </div>
+            ) : (
             <Table
               columns={COLUMNS}
-              data={[]}
+              data={logs}
               emptyMessage={
                 <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-slate-50 text-slate-200">
@@ -54,7 +84,9 @@ export default function EmailLog() {
                 </div>
               }
             />
+            )}
          </div>
+         {!!error && <p className="mt-3 text-xs text-red-500">{error}</p>}
       </div>
 
       {/* Info Note */}
