@@ -2,15 +2,15 @@ import { useState } from 'react'
 import GeneralSection from './sections/GeneralSection.jsx'
 import AttendanceSection from './sections/AttendanceSection.jsx'
 import {
-  DocumentSection,
   LeaveSection,
   ModulesSection,
-  NotificationSection,
   PermissionsSection,
-  SecuritySection,
-  SensitiveDataSection,
 } from './sections/PlaceholderSections.jsx'
 import AssetSettingsSection from './sections/AssetSettingsSection.jsx'
+import DocumentSettings from './DocumentSettings.jsx'
+import NotificationSettings from './NotificationSettings.jsx'
+import PasswordSecurity from './PasswordSecurity.jsx'
+import SensitiveData from './SensitiveData.jsx'
 
 const navItems = [
   { id: 'general', label: 'General', icon: '🏢', desc: 'Company & Policies' },
@@ -39,19 +39,19 @@ function ActiveSection({
     case 'modules':
       return <ModulesSection />
     case 'sensitive':
-      return <SensitiveDataSection />
+      return <SensitiveData />
     case 'attendance':
       return <AttendanceSection registerToolbar={registerAttendanceToolbar} />
     case 'leave':
       return <LeaveSection />
     case 'documents':
-      return <DocumentSection />
+      return <DocumentSettings />
     case 'assets':
       return <AssetSettingsSection registerToolbar={registerAssetsToolbar} />
     case 'notifications':
-      return <NotificationSection />
+      return <NotificationSettings />
     case 'security':
-      return <SecuritySection />
+      return <PasswordSecurity />
     default:
       return null
   }
