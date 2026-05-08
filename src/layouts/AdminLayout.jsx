@@ -64,7 +64,7 @@ const adminNavGroups = [
   {
     groupLabel: 'ORGANIZATION',
     items: [
-      { label: 'Departments', icon: HiBuildingOffice, path: '/admin/departments', permission: 'edit_settings' },
+      { label: 'Departments', icon: HiBuildingOffice, path: '/admin/departments', permission: 'edit_settings', featureCode: 'department' },
       { label: 'Messages', icon: HiChatBubbleLeftRight, path: '/admin/messages', permission: 'edit_settings' },
       // { label: 'Projects', icon: HiFolder, path: '/admin/projects', permission: 'edit_settings' },
       // { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'edit_settings' },
@@ -111,6 +111,8 @@ const FEATURE_PATH_MAP = {
   asset_management: ['/admin/assets'],
   asset_inventory: ['/admin/assets'],
   onboarding_exit: ['/admin/onboarding', '/admin/exit-management'],
+  department: ['/admin/departments'],
+  departments: ['/admin/departments'],
 }
 
 export default function AdminLayout() {
