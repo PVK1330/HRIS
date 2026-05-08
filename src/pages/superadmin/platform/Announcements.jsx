@@ -67,24 +67,41 @@ export default function Announcements() {
     fetchAnnouncements()
   }, [])
 
-  const mapAnnouncement = (row) => ({
-    id: row.id,
-    title: row.title,
-    message: row.message,
-    audience: row.audience,
-    type: row.type,
-    priority: row.priority || 'Normal',
-    status: row.status || 'Sent',
-    sentDate: row.sent_date ? new Date(row.sent_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
-    scheduledAt: row.scheduled_at ? new Date(row.scheduled_at).toLocaleString() : null,
-    recipients: row.recipients ?? 0,
-  })
+  const mapAnnouncement = (row) => {
+    const sentAt = row.sent_date || row.sentDate || row.created_at || row.createdAt || null
+    const scheduledAt = row.scheduled_at || row.scheduledAt || null
+
+    return {
+      id: row.id,
+      title: row.title || '',
+      message: row.message || '',
+      audience: row.audience || 'All Organizations',
+      type: row.type || 'Info',
+      priority: row.priority || 'Normal',
+      status: row.status || (scheduledAt ? 'Scheduled' : 'Sent'),
+      sentDate: sentAt
+        ? new Date(sentAt).toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '-',
+      scheduledAt: scheduledAt ? new Date(scheduledAt).toLocaleString() : null,
+      recipients: Number(row.recipients ?? 0),
+    }
+  }
 
   const fetchAnnouncements = async () => {
     try {
       setIsLoading(true)
       const response = await superadminService.getAnnouncements()
-      const list = response?.data?.data?.announcements || []
+      const list =
+        response?.data?.data?.announcements ||
+        response?.data?.announcements ||
+        response?.data?.data ||
+        []
       setAnnouncements(list.map(mapAnnouncement))
     } catch (error) {
       console.error('Failed to fetch announcements:', error)
@@ -121,14 +138,27 @@ export default function Announcements() {
     try {
       setIsSubmitting(true)
       setFormErrors({})
-      await superadminService.createAnnouncement({
+      const payload = {
         title: newAnnouncement.title,
         message: newAnnouncement.message,
         audience: newAnnouncement.audience,
         type: newAnnouncement.type,
         priority: newAnnouncement.priority,
         scheduledAt: newAnnouncement.isScheduled ? newAnnouncement.scheduledAt : null,
-      })
+      }
+      const createRes = await superadminService.createAnnouncement(payload)
+      const created = createRes?.data?.data?.announcement || createRes?.data?.announcement || null
+
+      if (created) {
+        const normalized = mapAnnouncement({
+          ...created,
+          priority: created.priority || payload.priority,
+          status: created.status || (payload.scheduledAt ? 'Scheduled' : 'Sent'),
+          scheduled_at: created.scheduled_at || payload.scheduledAt,
+        })
+        setAnnouncements((prev) => [normalized, ...prev.filter((item) => item.id !== normalized.id)])
+      }
+
       await fetchAnnouncements()
       setNewAnnouncement({ 
         title: '', 
@@ -261,7 +291,8 @@ export default function Announcements() {
               label="Add Announcement"
               icon={HiSparkles}
               onClick={() => setShowCreateModal(true)}
-              className="mt-1 bg-white text-[#0F766E] hover:bg-emerald-50 border-none shadow-lg text-[11px] font-black uppercase tracking-widest py-2"
+              variant="ghost"
+              className="mt-1 !bg-white !text-[#0F766E] hover:!bg-emerald-50 border-none shadow-lg text-[11px] font-black uppercase tracking-widest py-2"
             />
           </div>
         </div>
@@ -361,7 +392,7 @@ export default function Announcements() {
             <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Announcement Message</label>
             <textarea
               rows={6}
-              className="w-full rounded-[1.5rem] border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 outline-none transition-all resize-none shadow-sm"
+              className="w-full rounded-[1.5rem] border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all resize-none shadow-sm"
               placeholder="Type your message here..."
               value={newAnnouncement.message}
               onChange={(e) => {
@@ -377,6 +408,7 @@ export default function Announcements() {
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Target Audience</label>
               <select
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                
                 value={newAnnouncement.audience}
                 onChange={(e) => setNewAnnouncement({ ...newAnnouncement, audience: e.target.value })}
               >
@@ -389,7 +421,7 @@ export default function Announcements() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Priority</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
                 value={newAnnouncement.priority}
                 onChange={(e) => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })}
               >
@@ -402,7 +434,7 @@ export default function Announcements() {
             <div className="space-y-2 sm:col-span-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Announcement Type</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
                 value={newAnnouncement.type}
                 onChange={(e) => setNewAnnouncement({ ...newAnnouncement, type: e.target.value })}
               >
@@ -534,7 +566,7 @@ export default function Announcements() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Audience</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
                 value={editForm.audience}
                 onChange={(e) => setEditForm({ ...editForm, audience: e.target.value })}
               >
@@ -547,7 +579,7 @@ export default function Announcements() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Type</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
                 value={editForm.type}
                 onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
               >
@@ -560,7 +592,7 @@ export default function Announcements() {
             <div className="space-y-2 sm:col-span-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Priority</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
                 value={editForm.priority}
                 onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
               >

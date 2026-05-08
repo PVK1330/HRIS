@@ -7,6 +7,8 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { superadminService } from '../../../services/superadminService.js'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import { 
   HiArrowTrendingDown, 
   HiCurrencyDollar, 
@@ -20,6 +22,7 @@ import {
   HiChevronLeft,
   HiChevronRight,
   HiInformationCircle
+  ,HiPrinter
 } from 'react-icons/hi2'
 
 export default function Billing() {
@@ -129,28 +132,101 @@ export default function Billing() {
     })
   }
 
-  const handleDownloadInvoice = (invoice) => {
-    const lines = [
-      `Invoice: INV-${invoice.id}`,
-      `Tenant: ${invoice.tenant_name}`,
-      `Plan: ${invoice.plan_name || 'N/A'}`,
-      `Amount: ${invoice.currency} ${Number(invoice.amount).toLocaleString()}`,
-      `Status: ${invoice.status}`,
-      `Billing: ${new Date(invoice.billing_start_date).toLocaleDateString()} - ${new Date(invoice.billing_end_date).toLocaleDateString()}`,
-      `Issued: ${new Date(invoice.created_at).toLocaleString()}`,
-      '',
-      `Notes: ${invoice.notes || '-'}`
-    ]
-    const content = lines.join('\n')
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `invoice_INV-${invoice.id}.txt`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+  const fetchInvoiceHtml = async (invoiceId) => {
+    const response = await superadminService.getInvoiceHtml(invoiceId)
+    return response?.data || ''
+  }
+
+  const buildPrintableInvoiceNode = (html) => {
+    const parsed = new DOMParser().parseFromString(html, 'text/html')
+    const host = document.createElement('div')
+    host.style.position = 'fixed'
+    host.style.left = '-100000px'
+    host.style.top = '0'
+    host.style.width = '794px'
+    host.style.background = '#ffffff'
+    host.style.zIndex = '-1'
+
+    parsed.querySelectorAll('style').forEach((styleTag) => {
+      host.appendChild(styleTag.cloneNode(true))
+    })
+
+    const bodyChildren = Array.from(parsed.body.children)
+    if (bodyChildren.length) {
+      bodyChildren.forEach((child) => host.appendChild(child.cloneNode(true)))
+    } else {
+      const fallback = document.createElement('div')
+      fallback.innerHTML = parsed.body.innerHTML
+      host.appendChild(fallback)
+    }
+
+    document.body.appendChild(host)
+    return host
+  }
+
+  const handlePrintInvoice = async (invoice) => {
+    try {
+      const html = await fetchInvoiceHtml(invoice.id)
+      const printWindow = window.open('', '_blank', 'width=1024,height=768')
+      if (!printWindow) {
+        Swal.fire('Popup Blocked', 'Please allow popups to print invoice.', 'warning')
+        return
+      }
+      printWindow.document.open()
+      printWindow.document.write(html)
+      printWindow.document.close()
+      printWindow.focus()
+      setTimeout(() => {
+        printWindow.print()
+      }, 350)
+    } catch (error) {
+      Swal.fire('Error', error.response?.data?.message || 'Failed to print invoice', 'error')
+    }
+  }
+
+  const handleDownloadInvoice = async (invoice) => {
+    let node = null
+    try {
+      const html = await fetchInvoiceHtml(invoice.id)
+      node = buildPrintableInvoiceNode(html)
+
+      // Give browser a short frame to apply styles/layout before capture.
+      await new Promise((resolve) => setTimeout(resolve, 150))
+
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      })
+
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('p', 'pt', 'a4')
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = pageWidth
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+      let heightLeft = imgHeight
+      let position = 0
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+
+      pdf.save(`invoice_INV-${invoice.id}.pdf`)
+    } catch (error) {
+      Swal.fire('Error', error.response?.data?.message || 'Failed to download invoice', 'error')
+    } finally {
+      if (node && node.parentNode) {
+        node.parentNode.removeChild(node)
+      }
+    }
   }
 
   const handleCreateManualInvoice = async () => {
@@ -317,6 +393,7 @@ export default function Billing() {
                 <div className="flex gap-1">
                   <Button variant="ghost" size="sm" icon={HiInformationCircle} className="text-slate-400 hover:text-indigo-600" onClick={() => handleViewDetails(invoice)} />
                   <Button variant="ghost" size="sm" icon={HiCloudArrowDown} className="text-slate-400 hover:text-emerald-600" onClick={() => handleDownloadInvoice(invoice)} />
+                  <Button variant="ghost" size="sm" icon={HiPrinter} className="text-slate-400 hover:text-slate-700" onClick={() => handlePrintInvoice(invoice)} />
                 </div>
               ),
             }))}
@@ -396,6 +473,7 @@ export default function Billing() {
             <div className="flex gap-3 pt-4 border-t border-slate-100">
               <Button label="Close" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowDetailModal(false)} />
               <Button label="Download Invoice" variant="ghost" className="flex-1 font-bold text-indigo-600" onClick={() => handleDownloadInvoice(selectedInvoice)} />
+              <Button label="Print Invoice" variant="ghost" className="flex-1 font-bold text-slate-700" onClick={() => handlePrintInvoice(selectedInvoice)} />
             </div>
           </div>
         )}
