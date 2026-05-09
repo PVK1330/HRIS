@@ -48,30 +48,35 @@ const adminNavGroups = [
     groupLabel: 'HR OPERATIONS',
     items: [
       { label: 'Performance', icon: HiChartBar, path: '/admin/performance', permission: 'view_performance', featureCode: 'performance' },
+      { label: 'Training & Development', icon: HiChartBar, path: '/admin/performance', permission: 'view_performance', featureCode: 'training_development' },
       { label: 'Policies', icon: HiClipboardDocumentCheck, path: '/admin/policies', permission: 'view_policies' },
       { label: 'Expenses', icon: HiCurrencyDollar, path: '/admin/expenses', permission: 'view_expenses', featureCode: 'expenses' },
+      { label: 'Billing & Invoicing', icon: HiCurrencyDollar, path: '/admin/payroll', permission: 'view_payroll', featureCode: 'billing_invoicing' },
       { label: 'Onboarding', icon: HiUserPlus, path: '/admin/onboarding', permission: 'view_onboarding', featureCode: 'onboarding_exit' },
       { label: 'Exit Management', icon: HiArrowRightOnRectangle, path: '/admin/exit-management', permission: 'view_exit', featureCode: 'onboarding_exit' },
-      { label: 'Letter Templates', icon: HiEnvelope, path: '/admin/letters', permission: 'view_letters' },
-      // { label: 'Reports & Analytics', icon: HiChartPie, path: '/admin/reports', permission: 'view_reports' },
+      { label: 'Letter Templates', icon: HiEnvelope, path: '/admin/letters', permission: 'view_letters', featureCode: 'template_generation' },
+      { label: 'Reports & Analytics', icon: HiChartPie, path: '/admin/reports', permission: 'view_reports', featureCode: 'reports_analytics' },
       { label: 'Announcements', icon: HiMegaphone, path: '/admin/announcements', permission: 'view_announcements' },
       { label: 'Payroll Management', icon: HiCurrencyDollar, path: '/admin/payroll', permission: 'view_payroll', featureCode: 'payroll' },
+      { label: 'Time Tracking', icon: HiClock, path: '/admin/attendance', permission: 'view_attendance', featureCode: 'time_tracking' },
+      { label: 'Shift Management', icon: HiCalendar, path: '/admin/attendance', permission: 'view_attendance', featureCode: 'shift_management' },
+      { label: 'Overtime Management', icon: HiClock, path: '/admin/attendance', permission: 'view_attendance', featureCode: 'overtime_management' },
     ],
   },
   {
     groupLabel: 'ORGANIZATION',
     items: [
       { label: 'Departments', icon: HiBuildingOffice, path: '/admin/departments', permission: 'edit_settings', featureCode: 'department' },
-      { label: 'Messages', icon: HiChatBubbleLeftRight, path: '/admin/messages', permission: 'edit_settings' },
-      // { label: 'Projects', icon: HiFolder, path: '/admin/projects', permission: 'edit_settings' },
-      // { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'edit_settings' },
-      // { label: 'Template Generator', icon: HiDocumentText, path: '/admin/templates', permission: 'edit_settings' },
+      { label: 'Messages', icon: HiChatBubbleLeftRight, path: '/admin/messages', permission: 'edit_settings', featureCode: 'messages' },
+      { label: 'Projects', icon: HiFolder, path: '/admin/projects', permission: 'edit_settings', featureCode: 'projects' },
+      { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'edit_settings', featureCode: 'task_management' },
+      { label: 'Template Generator', icon: HiDocumentText, path: '/admin/templates', permission: 'edit_settings', featureCode: 'template_generation' },
     ],
   },
   {
     groupLabel: 'ADMINISTRATION',
     items: [
-      { label: 'System Settings', icon: HiCog6Tooth, path: '/admin/settings', permission: 'edit_settings' },
+      { label: 'System Settings', icon: HiCog6Tooth, path: '/admin/settings', permission: 'edit_settings', featureCode: 'settings' },
     ],
   },
 ]
@@ -98,19 +103,51 @@ const FEATURE_PATH_MAP = {
   attendance: ['/admin/attendance'],
   leave_management: ['/admin/leave'],
   leave: ['/admin/leave'],
+  document_management: ['/admin/documents'],
+  documents: ['/admin/documents'],
   performance_management: ['/admin/performance'],
+  performance_reviews: ['/admin/performance'],
   performance: ['/admin/performance'],
   payroll_management: ['/admin/payroll'],
   payroll: ['/admin/payroll'],
   expense_management: ['/admin/expenses'],
   expenses: ['/admin/expenses'],
+  policies: ['/admin/policies'],
+  announcements: ['/admin/announcements'],
   visa_management: ['/admin/visa'],
   visa: ['/admin/visa'],
+  visa_nationality: ['/admin/visa'],
+  'visa_&_nationality': ['/admin/visa'],
   asset_management: ['/admin/assets'],
   asset_inventory: ['/admin/assets'],
   onboarding_exit: ['/admin/onboarding', '/admin/exit-management'],
+  onboarding: ['/admin/onboarding'],
+  exit_management: ['/admin/exit-management'],
   department: ['/admin/departments'],
   departments: ['/admin/departments'],
+  message_center: ['/admin/messages'],
+  messages: ['/admin/messages'],
+  reports_analytics: ['/admin/reports'],
+  settings: ['/admin/settings'],
+  system_settings: ['/admin/settings'],
+  payroll_invoicing: ['/admin/payroll'],
+  template_generation: ['/admin/templates'],
+  task_management: ['/admin/tasks'],
+  projects: ['/admin/projects'],
+  time_tracking: ['/admin/attendance'],
+  shift_management: ['/admin/attendance'],
+  overtime_management: ['/admin/attendance'],
+  training_development: ['/admin/performance'],
+  billing_invoicing: ['/admin/payroll'],
+}
+
+function normalizeFeatureCode(code) {
+  return String(code || '')
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, '_and_')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
 }
 
 export default function AdminLayout() {
@@ -128,7 +165,12 @@ export default function AdminLayout() {
     )
     const allowedFeaturePaths = new Set()
     enabledFeatureCodes.forEach((code) => {
-      const paths = FEATURE_PATH_MAP[code] || []
+      const rawCode = String(code || '').toLowerCase()
+      const normalizedCode = normalizeFeatureCode(code)
+      const paths = [
+        ...(FEATURE_PATH_MAP[rawCode] || []),
+        ...(FEATURE_PATH_MAP[normalizedCode] || []),
+      ]
       paths.forEach((path) => allowedFeaturePaths.add(path))
     })
 
@@ -139,8 +181,15 @@ export default function AdminLayout() {
         // If the tenant has features assigned, filter by those features.
         // If no features are assigned yet (new tenant / not configured), show everything.
         if (user?.role === 'admin') {
-          if (hasAssignedFeatures && item.path !== '/admin/dashboard' && !allowedFeaturePaths.has(item.path)) {
-            return false
+          if (hasAssignedFeatures && item.path !== '/admin/dashboard') {
+            const normalizedItemFeature = normalizeFeatureCode(item.featureCode)
+            const itemFeatureEnabled =
+              !!item.featureCode &&
+              [...enabledFeatureCodes].some((code) => normalizeFeatureCode(code) === normalizedItemFeature)
+
+            if (!allowedFeaturePaths.has(item.path) && !itemFeatureEnabled) {
+              return false
+            }
           }
           return true
         }
