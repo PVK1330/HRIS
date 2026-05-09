@@ -98,3 +98,28 @@ export async function updateSensitiveData(payload) {
   const { data } = await adminClient.put('/sensitive-data', payload)
   return data
 }
+
+export async function getLeaveTypes() {
+  const { data } = await adminClient.get('/leave-types')
+  return data
+}
+
+export async function getLeaveType(id) {
+  const { data } = await adminClient.get(`/leave-types/${id}`)
+  return data
+}
+
+export async function createLeaveType(payload) {
+  const { data } = await adminClient.post('/leave-types', payload)
+  return data
+}
+
+export async function updateLeaveType(id, payload) {
+  const { data } = await adminClient.put(`/leave-types/${id}`, payload)
+  return data
+}
+
+export async function deleteLeaveType(id) {
+  const { data } = await adminClient.delete(`/leave-types/${id}`)
+  return data
+}

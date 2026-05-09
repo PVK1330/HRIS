@@ -1,11 +1,8 @@
 import { useState } from 'react'
 import GeneralSection from './sections/GeneralSection.jsx'
 import AttendanceSection from './sections/AttendanceSection.jsx'
-import {
-  LeaveSection,
-  ModulesSection,
-  PermissionsSection,
-} from './sections/PlaceholderSections.jsx'
+import LeaveSettings from './LeaveSettings.jsx'
+import { ModulesSection, PermissionsSection } from './sections/PlaceholderSections.jsx'
 import AssetSettingsSection from './sections/AssetSettingsSection.jsx'
 import DocumentSettings from './DocumentSettings.jsx'
 import NotificationSettings from './NotificationSettings.jsx'
@@ -30,6 +27,7 @@ function ActiveSection({
   registerGeneralToolbar,
   registerAttendanceToolbar,
   registerAssetsToolbar,
+  registerLeaveToolbar,
 }) {
   switch (active) {
     case 'general':
@@ -43,7 +41,7 @@ function ActiveSection({
     case 'attendance':
       return <AttendanceSection registerToolbar={registerAttendanceToolbar} />
     case 'leave':
-      return <LeaveSection />
+      return <LeaveSettings registerToolbar={registerLeaveToolbar} />
     case 'documents':
       return <DocumentSettings />
     case 'assets':
@@ -62,6 +60,7 @@ export default function HRISSettings() {
   const [generalToolbar, setGeneralToolbar] = useState(null)
   const [attendanceToolbar, setAttendanceToolbar] = useState(null)
   const [assetsToolbar, setAssetsToolbar] = useState(null)
+  const [leaveToolbar, setLeaveToolbar] = useState(null)
 
   const current = navItems.find((n) => n.id === active)
 
@@ -72,7 +71,9 @@ export default function HRISSettings() {
         ? attendanceToolbar
         : active === 'assets'
           ? assetsToolbar
-          : null
+          : active === 'leave'
+            ? leaveToolbar
+            : null
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
@@ -157,6 +158,7 @@ export default function HRISSettings() {
             registerGeneralToolbar={setGeneralToolbar}
             registerAttendanceToolbar={setAttendanceToolbar}
             registerAssetsToolbar={setAssetsToolbar}
+            registerLeaveToolbar={setLeaveToolbar}
           />
         </div>
       </main>
