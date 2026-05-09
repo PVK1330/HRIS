@@ -23,10 +23,12 @@ import Expenses from "../pages/admin/finance/Expenses.jsx";
 import Onboarding from "../pages/admin/hr/Onboarding.jsx";
 import ExitManagement from "../pages/admin/hr/ExitManagement.jsx";
 import LettersTemplates from "../pages/admin/documents/LettersTemplates.jsx";
+import TemplateGenerator from "../pages/admin/documents/TemplateGenerator.jsx";
 import AdminSettings from "../pages/admin/settings/Settings.jsx";
 import DepartmentManagement from "../pages/admin/settings/Departments.jsx";
 import ProjectManagement from "../pages/admin/settings/Projects.jsx";
 import TaskManagement from "../pages/admin/settings/Tasks.jsx";
+import Messages from "../pages/admin/communication/Messages.jsx";
 import AssetManagement from "../pages/admin/assets/AssetManagement.jsx";
 import Reports from "../pages/admin/reports/Reports.jsx";
 import AnnouncementsPage from "../pages/admin/Announcements.jsx";
@@ -38,7 +40,9 @@ import SubscriptionsPlans from "../pages/superadmin/subscriptions/SubscriptionsP
 import SubscriptionFeatures from "../pages/superadmin/subscriptions/SubscriptionFeatures.jsx";
 import Billing from "../pages/superadmin/billing/Billing.jsx";
 import Announcements from "../pages/superadmin/platform/Announcements.jsx";
+import ModuleManagement from "../pages/superadmin/platform/ModuleManagement.jsx";
 import AuditLogs from "../pages/superadmin/system/AuditLogs.jsx";
+import SystemHealth from "../pages/superadmin/system/SystemHealth.jsx";
 import SupportTickets from "../pages/superadmin/support/SupportTickets.jsx";
 import AdminUsers from "../pages/superadmin/AdminUsers.jsx";
 import Permissions from "../pages/superadmin/Permissions.jsx";
@@ -119,6 +123,8 @@ export const router = createBrowserRouter([
           { path: "onboarding", element: <Onboarding /> },
           { path: "exit-management", element: <ExitManagement /> },
           { path: "letters", element: <LettersTemplates /> },
+          { path: "templates", element: <TemplateGenerator /> },
+          { path: "messages", element: <Messages /> },
           { path: "settings", element: <AdminSettings /> },
           { path: "departments", element: <DepartmentManagement /> },
           { path: "projects", element: <ProjectManagement /> },
@@ -139,6 +145,8 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: "dashboard", element: <PlatformDashboard /> },
+          { path: "system-health", element: <SystemHealth /> },
+          { path: "modules", element: <ModuleManagement /> },
           { path: "tenants", element: <TenantManagement /> },
           { path: "subscriptions", element: <SubscriptionsPlans /> },
           { path: "subscription-features", element: <SubscriptionFeatures /> },
