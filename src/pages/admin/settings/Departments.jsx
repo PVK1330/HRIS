@@ -221,7 +221,7 @@ export default function DepartmentManagement() {
           <h1 className="font-display text-2xl font-bold text-gray-900">Department Management</h1>
           <p className="mt-1 text-sm text-gray-500">Create and manage organizational departments.</p>
         </div>
-        <Button ariaLabel="Add Department" variant="primary" icon={HiPlus} onClick={() => setModalOpen(true)} />
+        <Button label="Add Department" variant="primary" onClick={() => setModalOpen(true)} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

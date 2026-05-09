@@ -390,9 +390,8 @@ export default function TaskManagement() {
 
       <Table columns={columns} data={filtered} pageSize={10} />
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Task' : 'Add Task'} size="xl
-      " showClose>
-        <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Task' : 'Add Task'} size="xl" showClose>
+        <form onSubmit={handleSubmit} className="h-auto overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Task Title"
@@ -532,8 +531,8 @@ export default function TaskManagement() {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" ariaLabel="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" ariaLabel={editMode ? 'Update Task' : 'Create Task'} variant="primary" icon={HiCheck} />
+            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
+            <Button type="submit" label={editMode ? 'Update Task' : 'Create Task'} variant="primary"  />
           </div>
         </form>
       </Modal>

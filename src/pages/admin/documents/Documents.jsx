@@ -592,7 +592,7 @@ export default function Documents() {
       </div>
 
       <Modal isOpen={uploadModalOpen} onClose={handleCloseUpload} title="Upload document" size="xl">
-        <form onSubmit={handleSubmitUpload} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+        <form onSubmit={handleSubmitUpload} className="h-auto overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Document details</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 w-full sm:col-span-1">
@@ -706,7 +706,7 @@ export default function Documents() {
           </div>
         </form>
       </Modal>
-
+      
       <Modal
         isOpen={!!viewSubmission}
         onClose={() => setViewSubmission(null)}

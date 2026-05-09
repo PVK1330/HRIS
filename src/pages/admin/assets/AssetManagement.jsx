@@ -27,7 +27,9 @@ export default function AssetManagement() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('inventory');
   const [search, setSearch] = useState('');
+  const [filterDept, setFilterDept] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [formData, setFormData] = useState({
     type: '',
     serial: '',
@@ -39,10 +41,34 @@ export default function AssetManagement() {
 
   const canAddAsset = user?.role === 'hr_admin';
 
+  // Get unique departments from assets
+  const departments = ['All departments', ...new Set(MOCK_ASSETS.map(a => a.department).filter(d => d !== '-'))];
+
+  // Filter assets based on search and department
+  const filteredAssets = MOCK_ASSETS.filter(asset => {
+    const searchLower = search.toLowerCase();
+    const matchesSearch = asset.id.toLowerCase().includes(searchLower) || 
+                         asset.serial.toLowerCase().includes(searchLower);
+    const matchesDept = filterDept === '' || filterDept === 'All departments' || asset.department === filterDept;
+    return matchesSearch && matchesDept;
+  });
+
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setFormData({ type: '', serial: '', condition: 'Good', assignedTo: '', issueDate: '', notes: '' });
+  };
+
+  const handleToggleFilterDropdown = () => setIsFilterDropdownOpen(!isFilterDropdownOpen);
+
+  const handleSelectDepartment = (dept) => {
+    setFilterDept(dept === 'All departments' ? '' : dept);
+    setIsFilterDropdownOpen(false);
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setFilterDept('');
   };
 
   const handleInputChange = (e) => {
@@ -86,17 +112,41 @@ export default function AssetManagement() {
 
       {/* Filters */}
       {activeTab === 'inventory' && (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
             <Input
-              placeholder="Search serial no, employee or ID..."
+              placeholder="Search by serial no. or asset ID..."
               className="pl-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button label="Filters" icon={HiFunnel} variant="outline" />
+          <div className="relative">
+            <Button label="Filters" icon={HiFunnel} variant="outline" onClick={handleToggleFilterDropdown} />
+            {isFilterDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-border-tertiary bg-background-primary shadow-lg z-10">
+                <div className="p-2">
+                  {departments.map((dept) => (
+                    <button
+                      key={dept}
+                      onClick={() => handleSelectDepartment(dept)}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-colors ${
+                        (dept === 'All departments' && filterDept === '') || filterDept === dept
+                          ? 'bg-primary/10 text-primary font-medium'
+                          : 'text-text-primary hover:bg-background-secondary'
+                      }`}
+                    >
+                      {dept}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          {(search || filterDept) && (
+            <Button label="Clear" variant="ghost" onClick={handleClearFilters} />
+          )}
         </div>
       )}
 
@@ -117,28 +167,36 @@ export default function AssetManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border-tertiary">
-              {MOCK_ASSETS.map((asset) => (
-                <tr key={asset.id} className="hover:bg-background-tertiary/50">
-                  <td className="px-6 py-4 font-medium text-text-primary">{asset.id}</td>
-                  <td className="px-6 py-4 text-text-secondary">{asset.type}</td>
-                  <td className="px-6 py-4 text-text-secondary">{asset.serial}</td>
-                  <td className="px-6 py-4 text-text-primary font-medium">{asset.assignedTo}</td>
-                  <td className="px-6 py-4 text-text-secondary">{asset.department}</td>
-                  <td className="px-6 py-4 text-text-secondary">{asset.issueDate}</td>
-                  <td className="px-6 py-4">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${asset.condition === 'Good' ? 'bg-success-DEFAULT/10 text-success-DEFAULT' : 'bg-warning-DEFAULT/10 text-warning-DEFAULT'
-                      }`}>
-                      {asset.condition}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${asset.status === 'Issued' ? 'bg-primary/10 text-primary' : 'bg-success-DEFAULT/10 text-success-DEFAULT'
-                      }`}>
-                      {asset.status}
-                    </span>
+              {filteredAssets.length > 0 ? (
+                filteredAssets.map((asset) => (
+                  <tr key={asset.id} className="hover:bg-background-tertiary/50">
+                    <td className="px-6 py-4 font-medium text-text-primary">{asset.id}</td>
+                    <td className="px-6 py-4 text-text-secondary">{asset.type}</td>
+                    <td className="px-6 py-4 text-text-secondary">{asset.serial}</td>
+                    <td className="px-6 py-4 text-text-primary font-medium">{asset.assignedTo}</td>
+                    <td className="px-6 py-4 text-text-secondary">{asset.department}</td>
+                    <td className="px-6 py-4 text-text-secondary">{asset.issueDate}</td>
+                    <td className="px-6 py-4">
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${asset.condition === 'Good' ? 'bg-success-DEFAULT/10 text-success-DEFAULT' : 'bg-warning-DEFAULT/10 text-warning-DEFAULT'
+                        }`}>
+                        {asset.condition}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${asset.status === 'Issued' ? 'bg-primary/10 text-primary' : 'bg-success-DEFAULT/10 text-success-DEFAULT'
+                        }`}>
+                        {asset.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="px-6 py-8 text-center text-text-tertiary">
+                    No assets found matching your search criteria.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         )}

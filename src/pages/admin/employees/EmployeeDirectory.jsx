@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { HiDocumentText, HiEnvelope, HiEye, HiPencil, HiTrash, HiPlus } from 'react-icons/hi2'
+import { HiDocumentText, HiEnvelope, HiEye, HiPencil, HiTrash, HiPlus, HiArrowDownTray, HiEyeSlash } from 'react-icons/hi2'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
@@ -81,6 +81,8 @@ export default function EmployeeDirectory() {
   const [editMode, setEditMode] = useState(false)
   const [editingEmployeeId, setEditingEmployeeId] = useState(null)
   const [employeeList, setEmployeeList] = useState(employees)
+  const [documentsModalOpen, setDocumentsModalOpen] = useState(false)
+  const [selectedEmployeeForDocs, setSelectedEmployeeForDocs] = useState(null)
 
   const deptOptions = useMemo(() => {
     const u = [...new Set(employees.map((e) => e.department))].sort()
@@ -219,6 +221,30 @@ export default function EmployeeDirectory() {
     setSelectedEmployee(null)
   }
 
+  const handleOpenDocumentsModal = (employee) => {
+    setSelectedEmployeeForDocs(employee)
+    setDocumentsModalOpen(true)
+  }
+
+  const handleCloseDocumentsModal = () => {
+    setDocumentsModalOpen(false)
+    setSelectedEmployeeForDocs(null)
+  }
+
+  const handleDownloadDocument = (documentName, employeeId) => {
+    // Simulate document download
+    const link = document.createElement('a')
+    link.href = `#`
+    link.download = `${employeeId}_${documentName}.pdf`
+    link.click()
+    alert(`Downloading: ${documentName}`)
+  }
+
+  const handleViewDocument = (documentName) => {
+    // Simulate document view
+    alert(`Opening: ${documentName}`)
+  }
+
   const handleEmail = (employee) => {
     window.location.href = `mailto:${employee.email}`
   }
@@ -297,9 +323,9 @@ export default function EmployeeDirectory() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-1">
-          <Button ariaLabel="Email/Call" title="Email/Call" variant="ghost" size="sm" icon={HiEnvelope} onClick={() => handleEmail(row)} />
           <Button ariaLabel="View Profile" title="View Profile" variant="ghost" size="sm" icon={HiEye} onClick={() => handleView(row)} />
-          <Button ariaLabel="Generate Letter" title="Generate Letter" variant="ghost" size="sm" icon={HiDocumentText} onClick={() => handleLetter(row)} />
+          <Button ariaLabel="View Documents" title="View Documents" variant="ghost" size="sm" icon={HiDocumentText} onClick={() => handleOpenDocumentsModal(row)} />
+          <Button ariaLabel="Generate Letter" title="Generate Letter" variant="ghost" size="sm" icon={HiEnvelope} onClick={() => handleLetter(row)} />
         </div>
       ),
     },
@@ -735,9 +761,9 @@ export default function EmployeeDirectory() {
       <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} title="Employee Details" size="2xl" showClose={true}>
         {selectedEmployee && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-4 w-full h-full">
+            <div className="flex items-center justify-between border-b border-gray-200">
               <div className="flex items-center gap-4">
-                <Avatar initials={selectedEmployee.initials} size="lg" />
+                <Avatar initials={""}  />
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">{selectedEmployee.name}</h3>
                   <p className="text-sm text-gray-500">{selectedEmployee.empId} • {selectedEmployee.email}</p>
@@ -857,7 +883,7 @@ export default function EmployeeDirectory() {
                   <div className="rounded-lg border border-gray-200 p-4">
                     <div className="flex justify-between items-center mb-4">
                       <h4 className="text-sm font-semibold text-gray-900">Mandatory Documents List</h4>
-                      <Button variant="outline" size="sm" icon={HiPlus} ariaLabel="Upload New Document">Upload</Button>
+                      <Button variant="outline" size="sm" label="Upload New Document">Upload</Button>
                     </div>
                     <div className="space-y-3">
                       {[
@@ -877,10 +903,7 @@ export default function EmployeeDirectory() {
                             <div className="text-xs text-gray-500 mt-1">Version: {doc.v} • 2024-01-15 10:30 AM</div>
                             {doc.comments && <div className="text-xs text-red-600 mt-1">HR Comments: {doc.comments}</div>}
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" ariaLabel="Replace">Replace</Button>
-                            <Button variant="ghost" size="sm" ariaLabel="History">History</Button>
-                          </div>
+                          
                         </div>
                       ))}
                     </div>
@@ -1133,6 +1156,194 @@ export default function EmployeeDirectory() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal isOpen={documentsModalOpen} onClose={handleCloseDocumentsModal} title="Employee Documents" size="2xl" showClose={true}>
+        {selectedEmployeeForDocs && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+              <Avatar initials={selectedEmployeeForDocs.initials} size="lg" />
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">{selectedEmployeeForDocs.name}</h3>
+                <p className="text-sm text-gray-500">{selectedEmployeeForDocs.empId}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-gray-900">Available Documents</h4>
+              
+              {/* Offer Letter */}
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <HiDocumentText className="text-red-600 text-xl" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Offer Letter</p>
+                    <p className="text-xs text-gray-500">PDF • 245 KB • Uploaded: 2024-01-15</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    label="view"
+                    onClick={() => handleViewDocument('Offer Letter')}
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    label="Download"
+                    onClick={() => handleDownloadDocument('Offer Letter', selectedEmployeeForDocs.empId)}
+                  />
+                </div>
+              </div>
+
+              {/* Resume/CV */}
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <HiDocumentText className="text-blue-600 text-xl" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Resume/CV</p>
+                    <p className="text-xs text-gray-500">PDF • 156 KB • Uploaded: 2024-01-10</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    label="view"
+                    onClick={() => handleViewDocument('Offer Letter')}
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    label="Download"
+                    onClick={() => handleDownloadDocument('Offer Letter', selectedEmployeeForDocs.empId)}
+                  />
+                </div>
+              </div>
+
+              {/* ID Proof */}
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <HiDocumentText className="text-green-600 text-xl" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">ID Proof</p>
+                    <p className="text-xs text-gray-500">PDF • 512 KB • Uploaded: 2024-01-12</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    label="view"
+                    onClick={() => handleViewDocument('Offer Letter')}
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    label="Download"
+                    onClick={() => handleDownloadDocument('Offer Letter', selectedEmployeeForDocs.empId)}
+                  />
+                </div>
+              </div>
+
+              {/* Passport/Visa */}
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <HiDocumentText className="text-purple-600 text-xl" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Passport/Visa</p>
+                    <p className="text-xs text-gray-500">PDF • 389 KB • Uploaded: 2024-01-11</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    label="view"
+                    onClick={() => handleViewDocument('Offer Letter')}
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    label="Download"
+                    onClick={() => handleDownloadDocument('Offer Letter', selectedEmployeeForDocs.empId)}
+                  />
+                </div>
+              </div>
+
+              {/* Contracts */}
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <HiDocumentText className="text-yellow-600 text-xl" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Contracts</p>
+                    <p className="text-xs text-gray-500">PDF • 278 KB • Uploaded: 2024-01-15</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    label="view"
+                    onClick={() => handleViewDocument('Offer Letter')}
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    label="Download"
+                    onClick={() => handleDownloadDocument('Offer Letter', selectedEmployeeForDocs.empId)}
+                  />
+                </div>
+              </div>
+
+              {/* Certificates */}
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <HiDocumentText className="text-indigo-600 text-xl" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Certificates</p>
+                    <p className="text-xs text-gray-500">PDF • 421 KB • Uploaded: 2024-01-13</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                 <Button 
+                    variant="primary" 
+                    size="sm" 
+                    label="view"
+                    onClick={() => handleViewDocument('Offer Letter')}
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    label="Download"
+                    onClick={() => handleDownloadDocument('Offer Letter', selectedEmployeeForDocs.empId)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-gray-200">
+              <Button 
+                label="Close" 
+                variant="ghost" 
+                onClick={handleCloseDocumentsModal}
+              />
             </div>
           </div>
         )}

@@ -30,6 +30,18 @@ export default function Attendance() {
   const [modalOpen, setModalOpen] = useState(false)
   const [formData, setFormData] = useState(initialFormData)
   const [files, setFiles] = useState({})
+  const [viewingRow, setViewingRow] = useState(null)
+  const [regularizingRow, setRegularizingRow] = useState(null)
+  const [regularizationData, setRegularizationData] = useState({
+    checkIn: '',
+    checkOut: '',
+    status: '',
+    late: false,
+    early: false,
+    reason: '',
+    adminRemark: '',
+  })
+  const [attendanceData, setAttendanceData] = useState([])
 
   const deptOptions = useMemo(() => {
     const u = [...new Set(employees.map((e) => e.department))].sort()
@@ -49,6 +61,15 @@ export default function Attendance() {
       isLate: idx % 3 === 0,
       earlyDeparture: idx % 4 === 0,
       regularizationStatus: idx % 5 === 0 ? 'Pending' : idx % 5 === 1 ? 'Approved' : 'N/A',
+      shiftTiming: '09:00 - 18:00',
+      lateCalculation: idx % 3 === 0 ? '18 mins' : 'N/A',
+      attendanceHistory: [
+        { date: '2024-01-15', status: 'Present', checkIn: '08:55', checkOut: '18:00' },
+        { date: '2024-01-14', status: 'Present', checkIn: '08:50', checkOut: '17:45' },
+        { date: '2024-01-13', status: 'Remote', checkIn: '09:10', checkOut: '18:15' },
+      ],
+      previousRegularizations: idx % 5 === 0 ? 'Pending' : idx % 5 === 1 ? 'Approved (2)' : 'None',
+      notes: 'Employee was delayed due to traffic',
     }))
   }, [])
 
@@ -60,6 +81,14 @@ export default function Attendance() {
   const handleFormChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleRegularizationChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setRegularizationData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
   }
 
   const handleFileChange = (key) => (fileList) => {
@@ -74,6 +103,58 @@ export default function Attendance() {
   const handleCloseModal = () => {
     setModalOpen(false)
     resetModal()
+  }
+
+  const handleViewAttendance = (row) => {
+    setViewingRow(row)
+  }
+
+  const handleCloseViewModal = () => {
+    setViewingRow(null)
+  }
+
+  const handleRegularizeClick = (row) => {
+    setRegularizingRow(row)
+    setRegularizationData({
+      checkIn: row.checkIn,
+      checkOut: row.checkOut,
+      status: row.status,
+      late: row.isLate,
+      early: row.earlyDeparture,
+      reason: '',
+      adminRemark: '',
+    })
+  }
+
+  const handleCloseRegularizeModal = () => {
+    setRegularizingRow(null)
+    setRegularizationData({
+      checkIn: '',
+      checkOut: '',
+      status: '',
+      late: false,
+      early: false,
+      reason: '',
+      adminRemark: '',
+    })
+  }
+
+  const handleApproveRegularization = (e) => {
+    e.preventDefault()
+    if (regularizingRow) {
+      // Update the regularization status in the filtered rows
+      const updatedRows = rows.map((r) =>
+        r.id === regularizingRow.id
+          ? { ...r, regularizationStatus: 'Approved' }
+          : r
+      )
+      // Update rows (in a real app, this would be a backend call)
+      console.log('Regularization approved:', {
+        employeeId: regularizingRow.id,
+        ...regularizationData,
+      })
+    }
+    handleCloseRegularizeModal()
   }
 
   const handleSubmit = (e) => {
@@ -131,8 +212,8 @@ export default function Attendance() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-1">
-          <Button label="View" variant="primary" size="sm"  />
-          {row.isLate && <Button label="Regularize" variant="secondary" size="sm"  />}
+          <Button label="View" variant="primary" size="sm" onClick={() => handleViewAttendance(row)} />
+          {row.isLate && <Button label="Regularize" variant="secondary" size="sm" onClick={() => handleRegularizeClick(row)} />}
         </div>
       ),
     },
@@ -365,6 +446,226 @@ export default function Attendance() {
           </div>
         </form>
       </Modal>
+
+      {viewingRow && (
+        <Modal isOpen={true} onClose={handleCloseViewModal} title="Attendance Details" size="xl" showClose={true}>
+          <div className="h-full overflow-y-auto pr-1">
+            <div className="space-y-4">
+              {/* Employee Details */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Employee Details</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-600">Employee Name</p>
+                    <p className="font-medium text-gray-900">{viewingRow.employee}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Employee ID</p>
+                    <p className="font-medium text-gray-900">{viewingRow.empId}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Department</p>
+                    <p className="font-medium text-gray-900">{viewingRow.department}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Date</p>
+                    <p className="font-medium text-gray-900">2024-01-15</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Check-in / Check-out */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Check-in / Check-out</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-600">Check-in Time</p>
+                    <p className="font-medium text-gray-900">{viewingRow.checkIn}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Check-out Time</p>
+                    <p className="font-medium text-gray-900">{viewingRow.checkOut}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Total Hours</p>
+                    <p className="font-medium text-gray-900">{viewingRow.totalHours}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Status</p>
+                    <Badge label={viewingRow.status} color={viewingRow.status === 'Present' ? 'green' : viewingRow.status === 'Remote' ? 'blue' : 'orange'} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Shift Timing */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Shift Timing</h3>
+                <p className="font-medium text-gray-900">{viewingRow.shiftTiming}</p>
+              </div>
+
+              {/* Late Calculation & Early Departure */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Attendance Details</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-600">Late Calculation</p>
+                    <p className="font-medium text-gray-900">{viewingRow.lateCalculation}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Early Departure</p>
+                    <p className="font-medium text-gray-900">{viewingRow.earlyDeparture ? 'Yes' : 'No'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Attendance Logs/History */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Attendance History</h3>
+                <div className="space-y-2">
+                  {viewingRow.attendanceHistory && viewingRow.attendanceHistory.map((hist, idx) => (
+                    <div key={idx} className="flex items-center justify-between rounded bg-white p-2 text-sm">
+                      <span className="text-gray-600">{hist.date}</span>
+                      <div className="flex items-center gap-3">
+                        <Badge label={hist.status} color={hist.status === 'Present' ? 'green' : 'blue'} />
+                        <span className="text-gray-600">{hist.checkIn} - {hist.checkOut}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Previous Regularizations */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Previous Regularizations</h3>
+                <p className="font-medium text-gray-900">{viewingRow.previousRegularizations}</p>
+              </div>
+
+              {/* Notes/Comments */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Notes/Comments</h3>
+                <p className="text-sm text-gray-700">{viewingRow.notes}</p>
+              </div>
+
+              {/* Edit and Approve Actions */}
+              <div className="mt-6 flex justify-end gap-2">
+                <Button type="button" label="Close" variant="ghost" onClick={handleCloseViewModal} />
+                {viewingRow.isLate && <Button label="Approve/Reject" variant="primary" onClick={handleCloseViewModal} />}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {regularizingRow && (
+        <Modal isOpen={true} onClose={handleCloseRegularizeModal} title="Regularize Attendance" size="lg" showClose={true}>
+          <form onSubmit={handleApproveRegularization} className="h-full overflow-y-auto pr-1">
+            <div className="space-y-4">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <p className="mb-3 text-sm font-semibold text-gray-900">Employee: {regularizingRow.employee}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Check-in"
+                  name="checkIn"
+                  type="time"
+                  value={regularizationData.checkIn}
+                  onChange={handleRegularizationChange}
+                />
+                <Input
+                  label="Check-out"
+                  name="checkOut"
+                  type="time"
+                  value={regularizationData.checkOut}
+                  onChange={handleRegularizationChange}
+                />
+              </div>
+
+              <div className="w-full">
+                <label htmlFor="reg-status" className="mb-1 block text-sm font-medium text-gray-700">
+                  Status
+                </label>
+                <select
+                  id="reg-status"
+                  name="status"
+                  value={regularizationData.status}
+                  onChange={handleRegularizationChange}
+                  className={selectClass}
+                >
+                  <option value="Present">Present</option>
+                  <option value="Late">Late</option>
+                  <option value="Half Day">Half Day</option>
+                  <option value="On Leave">On Leave</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="reg-late"
+                    name="late"
+                    checked={regularizationData.late}
+                    onChange={handleRegularizationChange}
+                    className="h-4 w-4 rounded border-gray-300 text-[#004CA5]"
+                  />
+                  <label htmlFor="reg-late" className="text-sm font-medium text-gray-700">
+                    Late
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="reg-early"
+                    name="early"
+                    checked={regularizationData.early}
+                    onChange={handleRegularizationChange}
+                    className="h-4 w-4 rounded border-gray-300 text-[#004CA5]"
+                  />
+                  <label htmlFor="reg-early" className="text-sm font-medium text-gray-700">
+                    Early Departure
+                  </label>
+                </div>
+              </div>
+
+              <div className="w-full">
+                <label htmlFor="reg-reason" className="mb-1 block text-sm font-medium text-gray-700">
+                  Reason
+                </label>
+                <textarea
+                  id="reg-reason"
+                  name="reason"
+                  value={regularizationData.reason}
+                  onChange={handleRegularizationChange}
+                  className={textareaClass}
+                  rows={2}
+                  placeholder="Enter reason for regularization"
+                />
+              </div>
+
+              <div className="w-full">
+                <label htmlFor="reg-remark" className="mb-1 block text-sm font-medium text-gray-700">
+                  Admin Remark
+                </label>
+                <textarea
+                  id="reg-remark"
+                  name="adminRemark"
+                  value={regularizationData.adminRemark}
+                  onChange={handleRegularizationChange}
+                  className={textareaClass}
+                  rows={2}
+                  placeholder="Add admin remarks"
+                />
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2">
+                <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseRegularizeModal} />
+                <Button type="submit" label="Approved" variant="primary" />
+              </div>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   )
 }

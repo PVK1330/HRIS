@@ -323,7 +323,7 @@ export default function ProjectManagement() {
       <Table columns={columns} data={filtered} pageSize={10} />
 
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Project' : 'Add Project'} size="xl">
-        <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+        <form onSubmit={handleSubmit} className="h-auto overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Project Name"

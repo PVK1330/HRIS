@@ -275,7 +275,7 @@ export default function VisaNationality() {
         title={isRenewal ? 'Renew visa' : 'Add Visa Record'}
         size="xl"
       >
-        <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+        <form onSubmit={handleSubmit} className="h-auto overflow-y-auto pr-1">
           <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
             Personal identity
           </p>
