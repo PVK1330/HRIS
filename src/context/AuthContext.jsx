@@ -146,6 +146,7 @@ export function AuthProvider({ children }) {
     return null
   }, [])
 
+  // Stable function — never recreated, reads current user via ref
   const refreshAccessProfile = useCallback(async () => {
     const current = userRef.current
     if (!current || current.role !== 'admin') return
@@ -172,6 +173,11 @@ export function AuthProvider({ children }) {
   const adminSessionKey =
     user?.role === 'admin' ? `${user.email ?? ''}:${user.id ?? ''}` : null
 
+  // Run once on mount (when user is admin) and then every 3 minutes.
+  // Depends only on user.id + user.role so it re-registers only on actual
+  // user identity change (login / logout), not on every profile refresh.
+  const userId   = user?.id
+  const userRole = user?.role
   useEffect(() => {
     if (!adminSessionKey) return
     refreshAccessProfile()

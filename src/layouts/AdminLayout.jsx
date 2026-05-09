@@ -3,7 +3,6 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import {
   HiArrowRightOnRectangle,
   HiBars3,
-  HiBell,
   HiBuildingOffice,
   HiCalendar,
   HiChartBar,
@@ -18,7 +17,6 @@ import {
   HiFlag,
   HiFolder,
   HiSquares2X2,
-  HiUser,
   HiUserPlus,
   HiUsers,
   HiBriefcase,
@@ -29,7 +27,6 @@ import {
 } from 'react-icons/hi2'
 import { Sidebar } from '../components/ui/Sidebar.jsx'
 import { Avatar } from '../components/ui/Avatar.jsx'
-import { Button } from '../components/ui/Button.jsx'
 import NotificationDropdown from '../components/layout/NotificationDropdown.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
@@ -87,6 +84,7 @@ function titleCaseSegment(seg) {
 }
 
 const ROLE_DISPLAY = {
+  admin: 'HR Admin',
   hr_admin: 'HR Admin',
   hr_executive: 'HR Executive',
   manager: 'Manager',
@@ -122,7 +120,12 @@ export default function AdminLayout() {
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false)
 
   const filteredNavGroups = useMemo(() => {
-    const enabledFeatureCodes = new Set((user?.tenant_features || []).filter((f) => f.is_enabled).map((f) => f.feature_code))
+    const tenantFeatures = user?.tenant_features || []
+    const hasAssignedFeatures = tenantFeatures.length > 0
+
+    const enabledFeatureCodes = new Set(
+      tenantFeatures.filter((f) => f.is_enabled).map((f) => f.feature_code)
+    )
     const allowedFeaturePaths = new Set()
     enabledFeatureCodes.forEach((code) => {
       const paths = FEATURE_PATH_MAP[code] || []
@@ -132,37 +135,35 @@ export default function AdminLayout() {
     return adminNavGroups.map(group => ({
       ...group,
       items: group.items.filter(item => {
-        // Tenant admin sidebar should follow tenant_access_controls strictly.
+        // Real tenant admin (role === 'admin') from API login:
+        // If the tenant has features assigned, filter by those features.
+        // If no features are assigned yet (new tenant / not configured), show everything.
         if (user?.role === 'admin') {
-          if (item.path !== '/admin/dashboard' && !allowedFeaturePaths.has(item.path)) {
+          if (hasAssignedFeatures && item.path !== '/admin/dashboard' && !allowedFeaturePaths.has(item.path)) {
             return false
           }
+          return true
         }
 
-        // For tenant admin, visibility is already enforced by FEATURE_PATH_MAP above.
-        // Do not apply direct featureCode match because backend codes can differ
-        // (e.g., employee_management vs employee_directory).
-        if (user?.role !== 'admin' && item.featureCode && !hasFeatureAccess(item.featureCode)) return false
+        // Mock / non-tenant roles: apply featureCode + permission checks
+        if (item.featureCode && !hasFeatureAccess(item.featureCode)) return false
         if (!item.permission) return true
-        // Special case for dashboard - everyone sees it
         if (item.path === '/admin/dashboard') return true
 
-        // Detailed permission check
         if (item.permission === 'view_employees' && (user.role === 'hr_admin' || user.role === 'hr_executive' || user.role === 'manager')) return true
-        if (item.permission === 'view_attendance' && true) return true // everyone sees attendance
-        if (item.permission === 'view_leave' && true) return true // everyone sees leave
+        if (item.permission === 'view_attendance') return true
+        if (item.permission === 'view_leave') return true
         if (item.permission === 'view_documents' && (user.role === 'hr_admin' || user.role === 'hr_executive' || user.role === 'employee')) return true
         if (item.permission === 'view_visa' && (user.role === 'hr_admin' || user.role === 'hr_executive')) return true
         if (item.permission === 'view_assets' && (user.role === 'hr_admin' || user.role === 'hr_executive' || user.role === 'employee')) return true
-        if (item.permission === 'view_performance' && true) return true
-        if (item.permission === 'view_policies' && true) return true
-        if (item.permission === 'view_expenses' && true) return true
+        if (item.permission === 'view_performance') return true
+        if (item.permission === 'view_policies') return true
+        if (item.permission === 'view_expenses') return true
         if (item.permission === 'view_onboarding' && (user.role === 'hr_admin' || user.role === 'hr_executive')) return true
         if (item.permission === 'view_exit' && (user.role === 'hr_admin' || user.role === 'hr_executive')) return true
         if (item.permission === 'view_letters' && (user.role === 'hr_admin')) return true
-        // if (item.permission === 'view_reports' && (user.role === 'hr_admin' || user.role === 'hr_executive')) return true
-        if (item.permission === 'view_announcements' && true) return true
-        if (item.permission === 'view_messages' && true) return true
+        if (item.permission === 'view_announcements') return true
+        if (item.permission === 'view_messages') return true
         if (item.permission === 'view_payroll' && (user.role === 'hr_admin')) return true
         if (item.permission === 'edit_settings' && (user.role === 'hr_admin')) return true
 
@@ -221,7 +222,8 @@ export default function AdminLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Dev Switch Role */}
+            {/* Dev Role Switcher — only for mock roles */}
+            {user?.role !== 'admin' && (
             <div className="relative">
               <button
                 type="button"
@@ -236,7 +238,7 @@ export default function AdminLayout() {
               {showRoleSwitcher && (
                 <div className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 animate-in fade-in zoom-in-95 duration-200">
                   <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Access Level</div>
-                  {Object.entries(ROLE_DISPLAY).map(([roleKey, label]) => (
+                  {Object.entries(ROLE_DISPLAY).filter(([k]) => k !== 'admin').map(([roleKey, label]) => (
                     <button
                       key={roleKey}
                       className={`w-full rounded-lg px-3 py-2.5 text-left text-xs font-semibold transition-all ${user?.role === roleKey ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100' : 'text-slate-600 hover:bg-slate-50'}`}
@@ -251,6 +253,14 @@ export default function AdminLayout() {
                 </div>
               )}
             </div>
+            )}
+            {/* Role badge for real tenant admin */}
+            {user?.role === 'admin' && (
+              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200/50">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span>HR Admin</span>
+              </div>
+            )}
 
             <NotificationDropdown />
             <Link to="/admin/employee-profile" className="hidden items-center gap-3 sm:flex group bg-slate-50 pl-3 pr-1 py-1 rounded-lg border border-slate-200/50 hover:bg-white hover:shadow-sm transition-all duration-300">

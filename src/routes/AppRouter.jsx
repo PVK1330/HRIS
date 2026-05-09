@@ -27,7 +27,6 @@ import AdminSettings from "../pages/admin/settings/Settings.jsx";
 import DepartmentManagement from "../pages/admin/settings/Departments.jsx";
 import ProjectManagement from "../pages/admin/settings/Projects.jsx";
 import TaskManagement from "../pages/admin/settings/Tasks.jsx";
-import TemplateGenerator from "../pages/admin/documents/TemplateGenerator.jsx";
 import AssetManagement from "../pages/admin/assets/AssetManagement.jsx";
 import Reports from "../pages/admin/reports/Reports.jsx";
 import AnnouncementsPage from "../pages/admin/Announcements.jsx";
@@ -124,7 +123,6 @@ export const router = createBrowserRouter([
           { path: "departments", element: <DepartmentManagement /> },
           { path: "projects", element: <ProjectManagement /> },
           { path: "tasks", element: <TaskManagement /> },
-          { path: "templates", element: <TemplateGenerator /> },
           { path: "assets", element: <AssetManagement /> },
           { path: "reports", element: <Reports /> },
           { path: "announcements", element: <AnnouncementsPage /> },
