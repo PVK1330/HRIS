@@ -12,10 +12,11 @@ import {
   HiHome,
   HiLightBulb,
   HiLockClosed,
-  HiServer,
+  HiServerStack,
   HiShieldCheck,
   HiUserCircle,
   HiUsers,
+  HiWrenchScrewdriver,
 } from "react-icons/hi2";
 import { Sidebar } from "../components/ui/Sidebar.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
@@ -37,6 +38,18 @@ const superNavGroups = [
         icon: HiDocumentText,
         path: '/superadmin/tenants',
         roles: ['superadmin', 'support_admin', 'billing_admin'],
+      },
+      {
+        label: 'Usage & Platform Health',
+        icon: HiServerStack,
+        path: '/superadmin/system-health',
+        roles: ['superadmin', 'support_admin'],
+      },
+      {
+        label: 'Global Modules',
+        icon: HiWrenchScrewdriver,
+        path: '/superadmin/modules',
+        roles: ['superadmin'],
       },
       {
         label: 'Subscription Plans',
