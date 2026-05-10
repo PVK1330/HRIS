@@ -2,11 +2,12 @@ import { useState } from 'react'
 import GeneralSection from './sections/GeneralSection.jsx'
 import AttendanceSection from './sections/AttendanceSection.jsx'
 import LeaveSettings from './LeaveSettings.jsx'
-import { ModulesSection, PermissionsSection } from './sections/PlaceholderSections.jsx'
+import { ModulesSection } from './sections/PlaceholderSections.jsx'
 import AssetSettingsSection from './sections/AssetSettingsSection.jsx'
 import DocumentSettings from './DocumentSettings.jsx'
 import NotificationSettings from './NotificationSettings.jsx'
 import PasswordSecurity from './PasswordSecurity.jsx'
+import RolesPermissions from './RolesPermissions.jsx'
 import SensitiveData from './SensitiveData.jsx'
 
 const navItems = [
@@ -33,7 +34,7 @@ function ActiveSection({
     case 'general':
       return <GeneralSection registerToolbar={registerGeneralToolbar} />
     case 'roles':
-      return <PermissionsSection />
+      return <RolesPermissions />
     case 'modules':
       return <ModulesSection />
     case 'sensitive':

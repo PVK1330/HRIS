@@ -6,6 +6,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "../context/AuthContext.jsx";
+import PermissionGate from "../components/PermissionGate.jsx";
 import AdminLayout from "../layouts/AdminLayout.jsx";
 import SuperAdminLayout from "../layouts/SuperAdminLayout.jsx";
 import Login from "../pages/auth/Login.jsx";
@@ -25,6 +26,7 @@ import ExitManagement from "../pages/admin/hr/ExitManagement.jsx";
 import LettersTemplates from "../pages/admin/documents/LettersTemplates.jsx";
 import TemplateGenerator from "../pages/admin/documents/TemplateGenerator.jsx";
 import AdminSettings from "../pages/admin/settings/Settings.jsx";
+import RolesPermissions from "../pages/admin/settings/RolesPermissions.jsx";
 import DepartmentManagement from "../pages/admin/settings/Departments.jsx";
 import ProjectManagement from "../pages/admin/settings/Projects.jsx";
 import TaskManagement from "../pages/admin/settings/Tasks.jsx";
@@ -75,6 +77,17 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
+function AdminModuleGate({ moduleKey, children }) {
+  return (
+    <PermissionGate
+      moduleKey={moduleKey}
+      fallback={<Navigate to="/admin/dashboard" replace />}
+    >
+      {children}
+    </PermissionGate>
+  );
+}
+
 function RootLayout() {
   return (
     <AuthProvider>
@@ -111,28 +124,201 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: "dashboard", element: <AdminDashboard /> },
-          { path: "employee-directory", element: <EmployeeDirectory /> },
-          { path: "employee-profile", element: <EmployeeProfile /> },
-          { path: "attendance", element: <Attendance /> },
-          { path: "leave", element: <LeaveAbsence /> },
-          { path: "documents", element: <Documents /> },
-          { path: "visa", element: <VisaNationality /> },
-          { path: "performance", element: <Performance /> },
-          { path: "policies", element: <Policies /> },
-          { path: "expenses", element: <Expenses /> },
-          { path: "onboarding", element: <Onboarding /> },
-          { path: "exit-management", element: <ExitManagement /> },
-          { path: "letters", element: <LettersTemplates /> },
-          { path: "templates", element: <TemplateGenerator /> },
-          { path: "messages", element: <Messages /> },
-          { path: "settings", element: <AdminSettings /> },
-          { path: "departments", element: <DepartmentManagement /> },
-          { path: "projects", element: <ProjectManagement /> },
-          { path: "tasks", element: <TaskManagement /> },
-          { path: "assets", element: <AssetManagement /> },
-          { path: "reports", element: <Reports /> },
-          { path: "announcements", element: <AnnouncementsPage /> },
-          { path: "payroll", element: <Payroll /> },
+          {
+            path: "employee-directory",
+            element: (
+              <AdminModuleGate moduleKey="employee-directory">
+                <EmployeeDirectory />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "employee-profile",
+            element: (
+              <AdminModuleGate moduleKey="employee-profiles">
+                <EmployeeProfile />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "attendance",
+            element: (
+              <AdminModuleGate
+                moduleKey={[
+                  "attendance",
+                  "time-tracking",
+                  "shift-management",
+                  "overtime-management",
+                ]}
+              >
+                <Attendance />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "leave",
+            element: (
+              <AdminModuleGate moduleKey="leave-absence">
+                <LeaveAbsence />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "documents",
+            element: (
+              <AdminModuleGate moduleKey="documents-approval">
+                <Documents />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "visa",
+            element: (
+              <AdminModuleGate moduleKey="visa-nationality">
+                <VisaNationality />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "performance",
+            element: (
+              <AdminModuleGate
+                moduleKey={["performance", "training-development"]}
+              >
+                <Performance />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "policies",
+            element: (
+              <AdminModuleGate moduleKey="policies">
+                <Policies />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "expenses",
+            element: (
+              <AdminModuleGate moduleKey="expenses">
+                <Expenses />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "onboarding",
+            element: (
+              <AdminModuleGate moduleKey="onboarding">
+                <Onboarding />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "exit-management",
+            element: (
+              <AdminModuleGate moduleKey="exit-management">
+                <ExitManagement />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "letters",
+            element: (
+              <AdminModuleGate moduleKey="letter-templates">
+                <LettersTemplates />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "templates",
+            element: (
+              <AdminModuleGate moduleKey="letter-templates">
+                <TemplateGenerator />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "messages",
+            element: (
+              <AdminModuleGate moduleKey="messages">
+                <Messages />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "settings",
+            element: (
+              <AdminModuleGate moduleKey="system-settings">
+                <AdminSettings />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "settings/roles-permissions",
+            element: (
+              <AdminModuleGate moduleKey="system-settings">
+                <RolesPermissions />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "departments",
+            element: (
+              <AdminModuleGate moduleKey="departments">
+                <DepartmentManagement />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "projects",
+            element: (
+              <AdminModuleGate moduleKey="system-settings">
+                <ProjectManagement />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "tasks",
+            element: (
+              <AdminModuleGate moduleKey="system-settings">
+                <TaskManagement />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "assets",
+            element: (
+              <AdminModuleGate moduleKey="assets">
+                <AssetManagement />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "reports",
+            element: (
+              <AdminModuleGate moduleKey="reports-analytics">
+                <Reports />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "announcements",
+            element: (
+              <AdminModuleGate moduleKey="announcements">
+                <AnnouncementsPage />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "payroll",
+            element: (
+              <AdminModuleGate
+                moduleKey={["billing-invoicing", "payroll-management"]}
+              >
+                <Payroll />
+              </AdminModuleGate>
+            ),
+          },
         ],
       },
       {

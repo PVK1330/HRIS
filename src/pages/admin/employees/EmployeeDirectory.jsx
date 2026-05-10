@@ -18,6 +18,7 @@ import {
   getEmployeeStats, getFilterOptions, listEmployees,
   getEmployee, createEmployee, updateEmployee, deleteEmployee,
 } from '../../../services/employeeService.js'
+import { adminSettingsService } from '../../../services/adminSettingsService.js'
 
 const selectClass = 'w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 mt-1.5 text-sm text-slate-900 font-bold focus:border-[#0F766E] outline-none transition-all'
 const textareaClass = 'w-full min-h-[100px] rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-sm text-slate-900 font-bold focus:border-[#0F766E] outline-none transition-all shadow-inner'
@@ -51,6 +52,7 @@ function mapEmployeeList(e) {
     joinDate: e.join_date || '',
     workMode: e.work_mode || '',
     initials: e.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+    portalRole: e.rbac_role_name || '',
   }
 }
 
@@ -93,6 +95,9 @@ function mapEmployeeFull(e) {
     careerHistory: e.career_history || '',
     awardsSummary: e.awards_summary || '',
     promotionHistory: e.promotion_history || '',
+    rbacRoleId: e.rbac_role_id ?? null,
+    rbacRoleName: e.rbac_role_name || '',
+    portalEnabled: Boolean(e.portal_enabled),
   }
 }
 
@@ -109,6 +114,9 @@ const initialFormData = {
   emiratesIdNumber: '', emiratesIdExpiry: '', visaType: '',
   visaExpiryDate: '', sponsoringEntity: '', careerHistory: '',
   awardsSummary: '', promotionHistory: '',
+  rbacRoleId: '',
+  portalEnabled: false,
+  portalPassword: '',
 }
 
 export default function EmployeeDirectory() {
@@ -143,6 +151,7 @@ export default function EmployeeDirectory() {
   const [filterOptions, setFilterOptions] = useState({
     departments: [], jobTitles: [], workLocations: [], workModes: [], statuses: [],
   })
+  const [tenantRoles, setTenantRoles] = useState([])
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -170,6 +179,19 @@ export default function EmployeeDirectory() {
   }
 
   useEffect(() => { fetchStatsAndFilters() }, [])
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await adminSettingsService.getAllRoles()
+        const list = res?.data?.data
+        if (!cancelled && Array.isArray(list)) setTenantRoles(list)
+      } catch (err) {
+        console.error(err)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
   useEffect(() => { fetchData() }, [currentPage, search, dept, job, loc, status, workMode])
 
   // ── Form handlers ──────────────────────────────────────────────────────────
@@ -231,6 +253,15 @@ export default function EmployeeDirectory() {
       awardsSummary:          formData.awardsSummary || null,
       promotionHistory:       formData.promotionHistory || null,
     }
+    const rbacNum =
+      formData.rbacRoleId !== '' && formData.rbacRoleId != null
+        ? parseInt(String(formData.rbacRoleId), 10)
+        : NaN
+    payload.rbacRoleId = Number.isInteger(rbacNum) && rbacNum > 0 ? rbacNum : null
+    payload.portalEnabled = Boolean(formData.portalEnabled)
+    if (formData.portalPassword && String(formData.portalPassword).trim()) {
+      payload.portalPassword = String(formData.portalPassword).trim()
+    }
     try {
       if (editMode && editingEmployeeId) {
         await updateEmployee(editingEmployeeId, payload)
@@ -280,6 +311,9 @@ export default function EmployeeDirectory() {
           visaExpiryDate: f.visaExpiryDate, sponsoringEntity: f.sponsoringEntity,
           careerHistory: f.careerHistory, awardsSummary: f.awardsSummary,
           promotionHistory: f.promotionHistory,
+          rbacRoleId: f.rbacRoleId != null && f.rbacRoleId !== '' ? String(f.rbacRoleId) : '',
+          portalEnabled: f.portalEnabled,
+          portalPassword: '',
         })
         setEditMode(true)
         setEditingEmployeeId(f.id)
@@ -320,6 +354,13 @@ export default function EmployeeDirectory() {
     },
     { key: 'jobTitle', label: 'Designation' },
     { key: 'department', label: 'Division' },
+    {
+      key: 'portalRole',
+      label: 'Portal role',
+      render: (v) => (
+        <span className="text-xs font-semibold text-slate-600">{v || '—'}</span>
+      ),
+    },
     {
       key: 'location', label: 'Region',
       render: (v) => (
@@ -575,6 +616,50 @@ export default function EmployeeDirectory() {
               <Input label="Cost Center"          name="costCenter" value={formData.costCenter} onChange={handleFormChange} />
               <Input label="Reporting Manager Emp ID" name="reportingManager" value={formData.reportingManager} onChange={handleFormChange} placeholder="EMP001" />
             </div>
+
+            <div className="border-t border-slate-200/80 pt-3 space-y-3">
+              <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <HiShieldCheck className="h-3.5 w-3.5 text-[#0F766E]" />
+                Employee portal
+              </h4>
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                Roles are defined under Settings → Roles &amp; Permissions. Enable portal access to let this employee sign in with their work email (organization ID may be required on the login page).
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Portal role</label>
+                  <select name="rbacRoleId" value={formData.rbacRoleId} onChange={handleFormChange} className={selectClass}>
+                    <option value="">None</option>
+                    {tenantRoles.map((r) => (
+                      <option key={r.id} value={String(r.id)}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Portal access</label>
+                  <select
+                    name="portalEnabled"
+                    value={formData.portalEnabled ? '1' : '0'}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, portalEnabled: e.target.value === '1' }))}
+                    className={selectClass}
+                  >
+                    <option value="0">Disabled</option>
+                    <option value="1">Enabled</option>
+                  </select>
+                </div>
+              </div>
+              {formData.portalEnabled ? (
+                <Input
+                  label={editMode ? 'Portal password (leave blank to keep current)' : 'Portal password'}
+                  name="portalPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  value={formData.portalPassword}
+                  onChange={handleFormChange}
+                  placeholder={editMode ? '••••••••' : 'Min. 8 characters'}
+                />
+              ) : null}
+            </div>
           </div>
 
           {/* Compliance & Records */}
@@ -703,6 +788,11 @@ export default function EmployeeDirectory() {
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Designation</p><p className="text-xs font-black text-slate-900">{selectedEmployee.jobTitle}</p></div>
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Division</p><p className="text-xs font-black text-slate-900">{selectedEmployee.department}</p></div>
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Region</p><p className="text-xs font-black text-slate-900">{selectedEmployee.location || '—'}</p></div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Portal role</p><p className="text-xs font-black text-slate-900">{selectedEmployee.rbacRoleName || '—'}</p></div>
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Portal access</p><p className="text-xs font-black text-slate-900">{selectedEmployee.portalEnabled ? 'Enabled' : 'Disabled'}</p></div>
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Work email</p><p className="text-xs font-black text-[#0F766E]">{selectedEmployee.email}</p></div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Manager</p><p className="text-xs font-black text-slate-900">{selectedEmployee.manager || '—'}</p></div>

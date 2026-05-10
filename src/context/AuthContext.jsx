@@ -38,6 +38,127 @@ const accounts = {
   },
 }
 
+/** Same normalization as AdminLayout so API feature_code values match our keys */
+function normalizeTenantFeatureCode(code) {
+  return String(code || '')
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, '_and_')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
+
+/**
+ * Maps subscription / plan feature codes (from access-profile & login) to sidebar PermissionGate keys.
+ * Keep in sync with AdminLayout FEATURE_PATH_MAP + nav item keys.
+ */
+const TENANT_FEATURE_CODE_TO_MODULE_KEYS = {
+  employee_management: ['employee-directory', 'employee-profiles'],
+  employee_directory: ['employee-directory', 'employee-profiles'],
+  attendance_tracking: ['attendance', 'time-tracking', 'shift-management', 'overtime-management'],
+  attendance: ['attendance'],
+  leave_management: ['leave-absence'],
+  leave: ['leave-absence'],
+  document_management: ['documents-approval'],
+  documents: ['documents-approval'],
+  performance_management: ['performance'],
+  performance_reviews: ['performance'],
+  performance: ['performance'],
+  onboarding: ['onboarding'],
+  exit_management: ['exit-management'],
+  onboarding_exit: ['onboarding', 'exit-management'],
+  payroll: ['payroll-management'],
+  payroll_management: ['payroll-management'],
+  expense_management: ['expenses'],
+  expenses: ['expenses'],
+  billing_invoicing: ['billing-invoicing'],
+  template_generation: ['letter-templates'],
+  policies: ['policies'],
+  reports_analytics: ['reports-analytics'],
+  announcements: ['announcements'],
+  asset_management: ['assets'],
+  time_tracking: ['time-tracking'],
+  shift_management: ['shift-management'],
+  overtime_management: ['overtime-management'],
+  training_development: ['training-development'],
+  department: ['departments'],
+  departments: ['departments'],
+  projects: [],
+  task_management: [],
+  messages: ['messages'],
+  message_center: ['messages'],
+  visa_management: ['visa-nationality'],
+  visa: ['visa-nationality'],
+  visa_nationality: ['visa-nationality'],
+  visa_and_nationality: ['visa-nationality'],
+  settings: [],
+  system_settings: [],
+}
+
+function moduleKeysForTenantFeatureCodes(tenantFeatures) {
+  const out = new Set()
+  const list = Array.isArray(tenantFeatures) ? tenantFeatures : []
+  for (const f of list) {
+    if (f?.is_enabled === false) continue
+    const raw = String(f?.feature_code || '')
+    const norm = normalizeTenantFeatureCode(raw)
+    const synonyms = [norm, raw.toLowerCase().trim()].filter(Boolean)
+    for (const syn of synonyms) {
+      let keys =
+        TENANT_FEATURE_CODE_TO_MODULE_KEYS[syn] ||
+        TENANT_FEATURE_CODE_TO_MODULE_KEYS[normalizeTenantFeatureCode(syn)]
+
+      /* legacy / alternate codes */
+      if (!keys && syn === 'documents') keys = TENANT_FEATURE_CODE_TO_MODULE_KEYS.document_management
+      if (!keys && syn === 'onboarding_exit') keys = TENANT_FEATURE_CODE_TO_MODULE_KEYS.onboarding_exit
+
+      for (const mk of keys || []) out.add(mk)
+    }
+  }
+  return out
+}
+
+/** For org admins and portal employees. undefined → not applicable; null → no tenant_features rows (unrestricted sidebar match). */
+function computePlanModuleKeysForTenantUser(userRole, tenantFeatures) {
+  if (userRole !== 'admin' && userRole !== 'employee') return undefined
+
+  const list = tenantFeatures
+  if (!Array.isArray(list) || list.length === 0) return null
+
+  const enabledRows = list.filter((f) => f?.is_enabled !== false)
+  if (enabledRows.length === 0) return new Set()
+
+  return moduleKeysForTenantFeatureCodes(list)
+}
+
+const DEFAULT_MOCK_ALLOWED_MODULES = [
+  'dashboard',
+  'employee-directory',
+  'employee-profiles',
+  'attendance',
+  'leave-absence',
+  'documents-approval',
+  'visa-nationality',
+  'assets',
+  'performance',
+  'training-development',
+  'policies',
+  'expenses',
+  'billing-invoicing',
+  'onboarding',
+  'exit-management',
+  'letter-templates',
+  'reports-analytics',
+  'announcements',
+  'payroll-management',
+  'time-tracking',
+  'shift-management',
+  'overtime-management',
+  'departments',
+  'messages',
+  'system-settings',
+]
+
 const PERMISSIONS = {
   admin: ['*'],
   hr_admin: ['*'], // ALL permissions
@@ -75,6 +196,13 @@ export function AuthProvider({ children }) {
     }
   })
 
+  const [allowedModules, setAllowedModules] = useState([])
+
+  const planModuleKeys = useMemo(
+    () => computePlanModuleKeysForTenantUser(user?.role, user?.tenant_features),
+    [user?.role, user?.tenant_features],
+  )
+
   const userRef = useRef(user)
   useEffect(() => {
     userRef.current = user
@@ -94,11 +222,28 @@ export function AuthProvider({ children }) {
         setUser(finalUserData)
         localStorage.setItem(STORAGE_KEY, JSON.stringify(finalUserData))
         localStorage.setItem('hris_token', token)
-        
+
+        const imModules = Array.isArray(userData?.allowedModules)
+          ? userData.allowedModules
+          : ['dashboard']
+        setAllowedModules(imModules)
+        localStorage.setItem('allowedModules', JSON.stringify(imModules))
+
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname)
       } catch (err) {
         console.error('Global auto-login failed:', err)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const stored = localStorage.getItem('allowedModules')
+    if (stored) {
+      try {
+        setAllowedModules(JSON.parse(stored))
+      } catch {
+        setAllowedModules(['dashboard'])
       }
     }
   }, [])
@@ -118,7 +263,44 @@ export function AuthProvider({ children }) {
     return features.some((f) => f.feature_code === featureCode && f.is_enabled !== false)
   }, [user])
 
-  const login = useCallback((arg1, arg2, planDetails = [], planFeatures = [], tenantFeatures = []) => {
+  /** RBAC + subscription: employees use role modules ∩ plan; admins use role modules ∪ plan. */
+  const hasModule = useCallback(
+    (key) => {
+      if (key === 'dashboard') return true
+
+      const privilegedPanelAccess = ['admin', 'hr_admin', 'hr_executive', 'manager'].includes(
+        user?.role,
+      )
+      if (key === 'system-settings' && privilegedPanelAccess) return true
+
+      if (user?.role === 'employee') {
+        if (!allowedModules.includes(key)) return false
+        if (planModuleKeys === null) return true
+        if (planModuleKeys instanceof Set) return planModuleKeys.has(key)
+        return false
+      }
+
+      if (allowedModules.includes(key)) return true
+
+      if (user?.role === 'admin') {
+        if (planModuleKeys === null) return true
+        if (planModuleKeys instanceof Set && planModuleKeys.has(key)) return true
+      }
+
+      return false
+    },
+    [allowedModules, planModuleKeys, user?.role],
+  )
+
+  const login = useCallback(
+    (
+      arg1,
+      arg2,
+      planDetails = [],
+      planFeatures = [],
+      tenantFeatures = [],
+      allowedModulesFromResponse,
+    ) => {
     // Case 1: Real API Auth (user object, token)
     if (typeof arg1 === 'object' && arg2) {
       const userData = { 
@@ -128,6 +310,12 @@ export function AuthProvider({ children }) {
         plan_features: planFeatures,
         tenant_features: tenantFeatures
       }
+      const nextMods = Array.isArray(allowedModulesFromResponse)
+        ? allowedModulesFromResponse
+        : ['dashboard']
+      setAllowedModules(nextMods)
+      localStorage.setItem('allowedModules', JSON.stringify(nextMods))
+
       setUser(userData)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
       localStorage.setItem('hris_token', arg2)
@@ -141,6 +329,9 @@ export function AuthProvider({ children }) {
     if (!account || account.password !== arg2) {
       return 'Invalid email or password.'
     }
+    const mockMods = [...DEFAULT_MOCK_ALLOWED_MODULES]
+    setAllowedModules(mockMods)
+    localStorage.setItem('allowedModules', JSON.stringify(mockMods))
     setUser(account.user)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(account.user))
     return null
@@ -165,6 +356,12 @@ export function AuthProvider({ children }) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
         return next
       })
+
+      const apiMods = data?.allowedModules ?? data?.allowed_modules
+      if (Array.isArray(apiMods)) {
+        setAllowedModules(apiMods)
+        localStorage.setItem('allowedModules', JSON.stringify(apiMods))
+      }
     } catch (error) {
       console.error('Failed to refresh access profile:', error)
     }
@@ -187,27 +384,47 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     setUser(null)
+    setAllowedModules([])
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem('allowedModules')
     navigate('/login', { replace: true })
   }, [navigate])
 
   const switchRole = useCallback((newRole) => {
     // Dev helper to switch role in-memory
-    const matchingAccount = Object.values(accounts).find(a => a.user.role === newRole)
+    const matchingAccount = Object.values(accounts).find((a) => a.user.role === newRole)
     if (matchingAccount) {
       setUser(matchingAccount.user)
+      const mockMods = [...DEFAULT_MOCK_ALLOWED_MODULES]
+      setAllowedModules(mockMods)
+      localStorage.setItem('allowedModules', JSON.stringify(mockMods))
     }
   }, [])
 
-  const value = useMemo(() => ({
-    user,
-    login,
-    logout,
-    hasPermission,
-    hasFeatureAccess,
-    switchRole,
-    refreshAccessProfile
-  }), [user, login, logout, hasPermission, hasFeatureAccess, switchRole, refreshAccessProfile])
+  const value = useMemo(
+    () => ({
+      user,
+      login,
+      logout,
+      hasPermission,
+      hasFeatureAccess,
+      switchRole,
+      refreshAccessProfile,
+      allowedModules,
+      hasModule,
+    }),
+    [
+      user,
+      login,
+      logout,
+      hasPermission,
+      hasFeatureAccess,
+      switchRole,
+      refreshAccessProfile,
+      allowedModules,
+      hasModule,
+    ],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

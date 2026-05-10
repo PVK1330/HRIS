@@ -8,6 +8,8 @@ import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
+const LAST_TENANT_ID_KEY = 'hris_last_tenant_id'
+
 const ROLE_TABS = [
   { id: 'admin', label: 'Organization Admin', defaultEmail: '', defaultPassword: '', icon: HiBuildingOffice2 },
   { id: 'superadmin', label: 'Super Admin', defaultEmail: 'superadmin@hris.com', defaultPassword: 'SuperAdmin123', icon: HiLockClosed },
@@ -38,6 +40,13 @@ export default function Login() {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState(null)
+  const [organizationId, setOrganizationId] = useState(() => {
+    try {
+      return typeof window !== 'undefined' ? (window.localStorage.getItem(LAST_TENANT_ID_KEY) || '') : ''
+    } catch {
+      return ''
+    }
+  })
 
   // Effect to navigate after user is set
   useEffect(() => {
@@ -60,10 +69,13 @@ export default function Login() {
       const isSuperAdmin = activeTab === 'superadmin'
       const endpoint = isSuperAdmin ? '/superadmin/login' : '/auth/login'
 
-      const response = await axios.post(`${API_URL}/api/v1${endpoint}`, {
-        email,
-        password
-      })
+      const body = { email, password }
+      if (!isSuperAdmin && organizationId.trim()) {
+        const tid = parseInt(organizationId.trim(), 10)
+        if (Number.isInteger(tid) && tid > 0) body.tenantId = tid
+      }
+
+      const response = await axios.post(`${API_URL}/api/v1${endpoint}`, body)
       const result = response.data
 
       if (!result.success) {
@@ -78,12 +90,23 @@ export default function Login() {
 
       // Standard login success
       const userData = isSuperAdmin ? result.data.superadmin : result.data.user
+      if (!isSuperAdmin && userData) {
+        const tid = userData.tenantId ?? userData.tenant_id
+        if (tid != null && tid !== '') {
+          try {
+            localStorage.setItem(LAST_TENANT_ID_KEY, String(tid))
+          } catch {
+            /* ignore */
+          }
+        }
+      }
       login(
         userData, 
         result.data.token, 
         result.data.plan_details || [], 
         result.data.plan_features || [],
-        result.data.tenant_features || []
+        result.data.tenant_features || [],
+        result.data.allowedModules,
       )
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Login failed'
@@ -113,7 +136,8 @@ export default function Login() {
         result.data.token, 
         result.data.plan_details || [], 
         result.data.plan_features || [],
-        result.data.tenant_features || []
+        result.data.tenant_features || [],
+        result.data.allowedModules,
       )
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Verification failed'
@@ -257,6 +281,20 @@ export default function Login() {
                       </Link>
                     </div>
                   </div>
+
+                  {activeTab === 'admin' ? (
+                    <Input
+                      label="Organization ID"
+                      labelClassName={labelUpper}
+                      name="organizationId"
+                      type="text"
+                      placeholder="e.g. 12"
+                      helpText="Use your tenant ID when signing in as an employee. Organization admins signing in with the company email may leave this blank."
+                      value={organizationId}
+                      onChange={(e) => setOrganizationId(e.target.value)}
+                      disabled={loading}
+                    />
+                  ) : null}
 
                   <div>
                     <p className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wider text-[10px]">Quick Login Roles</p>

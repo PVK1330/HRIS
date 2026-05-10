@@ -123,3 +123,15 @@ export async function deleteLeaveType(id) {
   const { data } = await adminClient.delete(`/leave-types/${id}`)
   return data
 }
+
+export const adminSettingsService = {
+  getAllPermissions: () => adminClient.get('/rbac/permissions'),
+  getAvailablePermissions: () => adminClient.get('/rbac/permissions/available'),
+  getAllRoles: () => adminClient.get('/rbac/roles'),
+  getRole: (id) => adminClient.get(`/rbac/roles/${id}`),
+  createRole: (data) => adminClient.post('/rbac/roles', data),
+  updateRole: (id, data) => adminClient.put(`/rbac/roles/${id}`, data),
+  deleteRole: (id) => adminClient.delete(`/rbac/roles/${id}`),
+  updateRolePermissions: (roleId, permissionIds) =>
+    adminClient.put(`/rbac/roles/${roleId}/permissions`, { permissionIds }),
+}
