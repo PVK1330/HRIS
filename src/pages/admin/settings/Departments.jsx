@@ -20,11 +20,18 @@ import {
   HiUserCircle,
   HiChevronRight
 } from 'react-icons/hi2'
+import { 
+  listDepartments, 
+  createDepartment, 
+  updateDepartment, 
+  deleteDepartment 
+} from '../../../services/departmentService'
+import Swal from 'sweetalert2'
+import { useTenantAdminSettings } from '../../../hooks/useTenantAdminSettings'
 
 const initialFormData = {
   departmentName: '',
   departmentCode: '',
-  departmentHead: '',
   location: '',
   description: '',
   status: 'Active',
@@ -36,69 +43,43 @@ export default function DepartmentManagement() {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState(initialFormData)
   const [search, setSearch] = useState('')
-  const [departmentList, setDepartmentList] = useState([
-    {
-      id: 1,
-      name: 'IT & Infrastructure',
-      code: 'IT-01',
-      head: 'John Smith',
-      location: 'Dubai HQ',
-      employeeCount: 25,
-      status: 'Active',
-      description: 'Enterprise IT systems and digital infrastructure management.',
-      budget: '£450,000'
-    },
-    {
-      id: 2,
-      name: 'Human Resources',
-      code: 'HR-10',
-      head: 'Sarah Johnson',
-      location: 'Dubai HQ',
-      employeeCount: 8,
-      status: 'Active',
-      description: 'Talent acquisition, employee relations, and culture.',
-      budget: '£120,000'
-    },
-    {
-      id: 3,
-      name: 'Finance & Accounts',
-      code: 'FIN-05',
-      head: 'Michael Brown',
-      location: 'London',
-      employeeCount: 12,
-      status: 'Active',
-      description: 'Global financial reporting and treasury management.',
-      budget: '£890,000'
-    },
-    {
-      id: 4,
-      name: 'Creative Marketing',
-      code: 'MKT-22',
-      head: 'Emily Davis',
-      location: 'Remote',
-      employeeCount: 10,
-      status: 'Active',
-      description: 'Brand strategy and international digital campaigns.',
-      budget: '£300,000'
-    },
-    {
-      id: 5,
-      name: 'Operations',
-      code: 'OPS-11',
-      head: 'David Wilson',
-      location: 'Abu Dhabi',
-      employeeCount: 15,
-      status: 'Active',
-      description: 'Logistics and supply chain optimization.',
-      budget: '£550,000'
-    },
-  ])
+  const [departmentList, setDepartmentList] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { settings } = useTenantAdminSettings()
+
+  const dynamicLocations = useMemo(() => {
+    if (settings?.locations && Array.isArray(settings.locations) && settings.locations.length > 0) {
+      return settings.locations
+    }
+    return ['Dubai HQ', 'Abu Dhabi', 'London', 'Remote']
+  }, [settings])
+
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true)
+      const data = await listDepartments()
+      setDepartmentList(data || [])
+    } catch (err) {
+      console.error('Failed to fetch departments:', err)
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Failed to load organizational units',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  React.useEffect(() => {
+    fetchDepartments()
+  }, [])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return departmentList.filter((d) => {
       if (!query) return true
-      return `${d.name} ${d.code} ${d.head}`.toLowerCase().includes(query)
+      return `${d.name} ${d.code}`.toLowerCase().includes(query)
     })
   }, [search, departmentList])
 
@@ -114,21 +95,58 @@ export default function DepartmentManagement() {
     setEditingId(null)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (editMode) {
-      setDepartmentList(prev => prev.map(d => d.id === editingId ? { ...d, name: formData.departmentName, code: formData.departmentCode, head: formData.departmentHead, location: formData.location, description: formData.description, status: formData.status } : d))
-    } else {
-      setDepartmentList(prev => [...prev, { id: Date.now(), name: formData.departmentName, code: formData.departmentCode, head: formData.departmentHead, location: formData.location, employeeCount: 0, status: formData.status, description: formData.description, budget: '£0' }])
+    try {
+      const payload = {
+        name: formData.departmentName,
+        code: formData.departmentCode,
+        location: formData.location,
+        description: formData.description,
+        isActive: formData.status === 'Active'
+      }
+
+      if (editMode) {
+        await updateDepartment(editingId, payload)
+        Swal.fire('Updated!', 'Department has been modified.', 'success')
+      } else {
+        await createDepartment(payload)
+        Swal.fire('Created!', 'New department initialized.', 'success')
+      }
+      handleCloseModal()
+      fetchDepartments()
+    } catch (err) {
+      console.error('Submission failed:', err)
+      Swal.fire('Error', 'Transaction failed. Please try again.', 'error')
     }
-    handleCloseModal()
+  }
+
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#0F766E',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    })
+
+    if (result.isConfirmed) {
+      try {
+        await deleteDepartment(id)
+        Swal.fire('Deleted!', 'Unit has been removed.', 'success')
+        fetchDepartments()
+      } catch (err) {
+        Swal.fire('Error', 'Deletion failed.', 'error')
+      }
+    }
   }
 
   const handleEdit = (dept) => {
     setFormData({
       departmentName: dept.name,
       departmentCode: dept.code,
-      departmentHead: dept.head,
       location: dept.location,
       description: dept.description,
       status: dept.status,
@@ -155,24 +173,12 @@ export default function DepartmentManagement() {
       )
     },
     {
-      key: 'head',
-      label: 'Leadership',
-      render: (v) => (
-        <div className="flex items-center gap-2">
-           <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
-              {v.charAt(0)}
-           </div>
-           <span className="text-sm font-medium text-slate-700">{v}</span>
-        </div>
-      )
-    },
-    {
       key: 'location',
       label: 'Base Site',
       render: (v) => (
         <div className="flex items-center gap-1.5 text-slate-500 font-medium">
            <HiMapPin className="h-3.5 w-3.5 opacity-50" />
-           <span className="text-xs">{v}</span>
+           <span className="text-xs">{v || 'N/A'}</span>
         </div>
       )
     },
@@ -193,7 +199,7 @@ export default function DepartmentManagement() {
       label: 'Status',
       render: (v) => (
         <Badge 
-          label={v} 
+          label={v || 'Inactive'} 
           variant="outline" 
           color={v === 'Active' ? 'green' : 'gray'} 
           className="font-black text-[9px] uppercase tracking-wider"
@@ -206,7 +212,7 @@ export default function DepartmentManagement() {
       render: (_, row) => (
         <div className="flex gap-1">
           <Button variant="ghost" size="sm" icon={HiPencilSquare} onClick={() => handleEdit(row)} className="text-slate-400 hover:text-[#0F766E]" />
-          <Button variant="ghost" size="sm" icon={HiTrash} className="text-slate-400 hover:text-red-500" />
+          <Button variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} className="text-slate-400 hover:text-red-500" />
         </div>
       ),
     },
@@ -218,9 +224,9 @@ export default function DepartmentManagement() {
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
         <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight uppercase">Organizational Structure</h1>
+            <h1 className="font-display text-3xl font-bold tracking-tight uppercase">Departments</h1>
             <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
-              Design and manage your company hierarchy. Track headcount, leadership assignments, and departmental health across all sites.
+               Manage company units and leadership assignments.
             </p>
           </div>
           <button 
@@ -280,17 +286,17 @@ export default function DepartmentManagement() {
                <h2 className="text-sm font-bold uppercase tracking-wider">Departmental Registry</h2>
                <HiBriefcase className="h-4 w-4 opacity-50" />
             </div>
-            <Table columns={columns} data={filtered} pageSize={10} />
+            <Table columns={columns} data={filtered} pageSize={10} loading={loading} />
          </div>
       </div>
 
       {/* Creation Modal */}
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Modify Department' : 'Initialize New Department'} size="xl">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Department' : 'Add Department'} size="xl">
         <form onSubmit={handleSubmit} className="animate-in fade-in duration-500 space-y-8">
            {/* Section: Core Identity */}
            <div className="space-y-4">
               <h3 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">
-                 <HiIdentification className="h-4 w-4 text-[#0F766E]" /> Operational Identity
+                 <HiIdentification className="h-4 w-4 text-[#0F766E]" /> General Info
               </h3>
               <div className="grid gap-4 md:grid-cols-2">
                  <Input
@@ -302,7 +308,7 @@ export default function DepartmentManagement() {
                    className="text-slate-900 font-medium"
                  />
                  <Input
-                   label="Strategic Code"
+                   label="Department Code"
                    name="departmentCode"
                    value={formData.departmentCode}
                    onChange={handleFormChange}
@@ -313,22 +319,14 @@ export default function DepartmentManagement() {
               </div>
            </div>
 
-           {/* Section: Leadership & Strategy */}
+           {/* Section: Location & Details */}
            <div className="space-y-4">
               <h3 className="flex items-center gap-2 text-xs font-black text-[#0F766E] uppercase tracking-widest border-b border-slate-100 pb-2">
-                 <HiUserCircle className="h-4 w-4" /> Leadership & Strategy
+                 <HiMapPin className="h-4 w-4" /> Location & Details
               </h3>
               <div className="grid gap-4 md:grid-cols-2">
-                 <Input
-                   label="Department Head"
-                   name="departmentHead"
-                   value={formData.departmentHead}
-                   onChange={handleFormChange}
-                   placeholder="Assign a Director or Lead"
-                   className="text-slate-900 font-medium"
-                 />
                  <div className="w-full">
-                    <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Base Site Location</label>
+                    <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Location</label>
                     <select
                       name="location"
                       value={formData.location}
@@ -336,33 +334,32 @@ export default function DepartmentManagement() {
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all"
                       required
                     >
-                      <option value="" disabled hidden>Select Regional Site</option>
-                      <option value="Dubai HQ">Dubai HQ</option>
-                      <option value="Abu Dhabi">Abu Dhabi</option>
-                      <option value="London">London</option>
-                      <option value="Remote">Global Remote</option>
+                      <option value="" disabled hidden>Select Location</option>
+                      {dynamicLocations.map(loc => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
                     </select>
                  </div>
-              </div>
-              <div className="w-full">
-                 <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mission Statement / Description</label>
-                 <textarea
-                   name="description"
-                   value={formData.description}
-                   onChange={handleFormChange}
-                   className="w-full min-h-[100px] rounded-xl border border-slate-200 bg-slate-50/50 py-3 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all"
-                   placeholder="Define the primary objectives and responsibilities of this unit..."
-                 />
+                 <div className="w-full">
+                    <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleFormChange}
+                      className="w-full min-h-[46px] rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all resize-none"
+                      placeholder="Briefly describe the unit..."
+                    />
+                 </div>
               </div>
            </div>
 
            {/* Section: Controls */}
            <div className="space-y-4">
               <h3 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">
-                 <HiAdjustmentsHorizontal className="h-4 w-4 text-[#0F766E]" /> Governance
+                 <HiAdjustmentsHorizontal className="h-4 w-4 text-[#0F766E]" /> Settings
               </h3>
               <div className="w-full">
-                 <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Operational Status</label>
+                 <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
                  <select
                    name="status"
                    value={formData.status}
@@ -370,14 +367,14 @@ export default function DepartmentManagement() {
                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all"
                    required
                  >
-                   <option value="Active">Operational / Active</option>
-                   <option value="Inactive">Deactivated / Maintenance</option>
+                   <option value="Active">Active</option>
+                   <option value="Inactive">Inactive</option>
                  </select>
               </div>
            </div>
 
            <div className="pt-6 border-t border-slate-100 flex justify-center gap-4">
-              <Button type="submit" label={editMode ? "UPDATE STRUCTURE" : "INITIALIZE DEPARTMENT"} variant="primary" className="px-10 shadow-lg shadow-emerald-900/20" />
+              <Button type="submit" label={editMode ? "SAVE CHANGES" : "ADD DEPARTMENT"} variant="primary" className="px-10 shadow-lg shadow-emerald-900/20" />
               <Button type="button" label="CANCEL" variant="ghost" onClick={handleCloseModal} />
            </div>
         </form>

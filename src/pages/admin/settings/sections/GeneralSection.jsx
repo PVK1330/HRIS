@@ -30,6 +30,7 @@ function buildDraftFromSettings(s) {
     defaultNoticePeriod: s.defaultNoticePeriod ?? '30 days',
     autoAssignPolicies: s.autoAssignPolicies !== false,
     logoUrl: s.logoUrl ?? '',
+    locations: Array.isArray(s.locations) ? s.locations.join(', ') : '',
   }
 }
 
@@ -82,6 +83,7 @@ export default function GeneralSection({ registerToolbar }) {
         defaultProbationPeriod: draft.defaultProbationPeriod,
         defaultNoticePeriod: draft.defaultNoticePeriod,
         autoAssignPolicies: draft.autoAssignPolicies,
+        locations: draft.locations.split(',').map(s => s.trim()).filter(Boolean),
       })
       if (res?.data) {
         const d = buildDraftFromSettings(res.data)
@@ -250,6 +252,13 @@ export default function GeneralSection({ registerToolbar }) {
               </button>
             ))}
           </div>
+        </FieldRow>
+        <FieldRow label="Regional Locations" hint="Comma separated list (e.g. Dubai, Abu Dhabi, London)">
+           <TextInput
+              placeholder="e.g. Dubai, Abu Dhabi, London"
+              value={draft.locations}
+              onChange={(e) => setDraft((p) => ({ ...p, locations: e.target.value }))}
+           />
         </FieldRow>
       </SectionCard>
 
