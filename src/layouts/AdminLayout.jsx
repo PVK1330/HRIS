@@ -42,22 +42,6 @@ const adminNavGroups = [
         permission: "view_dashboard",
       },
       {
-        label: "Employee Directory",
-        icon: HiUsers,
-        path: "/admin/employee-directory",
-        key: "employee-directory",
-        permission: "view_employees",
-        featureCode: "employee_directory",
-      },
-      {
-        label: "Employee Profiles",
-        icon: HiIdentification,
-        path: "/admin/employee-profile",
-        key: "employee-profiles",
-        permission: "view_employees",
-        featureCode: "employee_directory",
-      },
-      {
         label: "Attendance",
         icon: HiClock,
         path: "/admin/attendance",
@@ -222,8 +206,33 @@ const adminNavGroups = [
     ],
   },
   {
-    groupLabel: "ORGANIZATION",
+    groupLabel: "EMPLOYEES",
     items: [
+      
+      {
+        label: "Employee Lists",
+        icon: HiUsers,
+        path: "/admin/employee-directory",
+        key: "employee-directory",
+        permission: "view_employees",
+        featureCode: "employee_directory",
+      },
+      {
+        label: "Employee Grid",
+        icon: HiUsers,
+        path: "/admin/employee-grid",
+        key: "employee-grid",
+        permission: "view_employees",
+        featureCode: "employee_directory",
+      },
+      {
+        label: "Employee Details",
+        icon: HiIdentification,
+        path: "/admin/employee-profile",
+        key: "employee-profiles",
+        permission: "view_employees",
+        featureCode: "employee_directory",
+      },
       {
         label: "Departments",
         icon: HiBuildingOffice,
@@ -231,6 +240,14 @@ const adminNavGroups = [
         key: "departments",
         permission: "edit_settings",
         featureCode: "department",
+      },
+      {
+        label: "Designations",
+        icon: HiIdentification,
+        path: "/admin/designations",
+        key: null,
+        permission: "edit_settings",
+        featureCode: "designations",
       },
 /*
       {
@@ -280,6 +297,7 @@ const ROLE_DISPLAY = {
 const FEATURE_PATH_MAP = {
   employee_management: ["/admin/employee-directory", "/admin/employee-profile"],
   employee_directory: ["/admin/employee-directory", "/admin/employee-profile"],
+  employee_grid: ["/admin/employee-grid"],
   attendance_tracking: ["/admin/attendance"],
   attendance: ["/admin/attendance"],
   leave_management: ["/admin/leave"],
@@ -306,6 +324,8 @@ const FEATURE_PATH_MAP = {
   exit_management: ["/admin/exit-management"],
   department: ["/admin/departments"],
   departments: ["/admin/departments"],
+  designation: ["/admin/designations"],
+  designations: ["/admin/designations"],
   message_center: ["/admin/messages"],
   messages: ["/admin/messages"],
   reports_analytics: ["/admin/reports"],

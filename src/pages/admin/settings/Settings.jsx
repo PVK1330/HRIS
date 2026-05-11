@@ -100,7 +100,7 @@ export default function HRISSettings() {
       <aside className="flex w-64 shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-200 px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0F766E] text-white shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-[#0F766E] text-white shadow-sm">
               <HiCog6Tooth className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0">
@@ -120,7 +120,7 @@ export default function HRISSettings() {
                 key={item.id}
                 type="button"
                 onClick={() => setActive(item.id)}
-                className={`group relative mx-0.5 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
+                className={`group relative mx-0.5 flex w-full items-center gap-3 rounded-none px-3 py-2.5 text-left text-sm font-medium transition-all ${
                   isActive
                     ? 'bg-[#0F766E] text-white shadow-sm'
                     : 'text-slate-700 hover:bg-gray-50 hover:text-[#0F766E]'
@@ -163,7 +163,7 @@ export default function HRISSettings() {
               type="button"
               disabled={!toolbar || !toolbar.dirty || toolbar.saving}
               onClick={() => toolbar?.onDiscard?.()}
-              className="h-9 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-9 rounded-none border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Discard
             </button>
@@ -171,7 +171,7 @@ export default function HRISSettings() {
               type="button"
               disabled={!toolbar || toolbar.disableSave}
               onClick={() => toolbar?.onSave?.()}
-              className="h-9 rounded-lg bg-[#0F766E] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0c6d66] disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-9 rounded-none bg-[#0F766E] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0c6d66] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {toolbar?.saving ? 'Saving…' : 'Save changes'}
             </button>

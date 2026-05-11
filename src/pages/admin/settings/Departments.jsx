@@ -1,58 +1,48 @@
-import React, { useMemo, useState } from 'react'
-import { Badge } from '../../../components/ui/Badge.jsx'
+import React, { useMemo, useRef, useState } from 'react'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
-import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { 
   HiBuildingOffice, 
+  HiChevronDown,
   HiPencilSquare, 
   HiTrash, 
-  HiUsers, 
+  HiXMark,
   HiPlus, 
-  HiCheckCircle, 
   HiMagnifyingGlass, 
   HiAdjustmentsHorizontal,
   HiBriefcase,
-  HiMapPin,
-  HiIdentification,
-  HiGlobeAlt,
-  HiUserCircle,
-  HiChevronRight
+  HiDocumentArrowDown,
 } from 'react-icons/hi2'
+import { jsPDF } from 'jspdf'
 import { 
   listDepartments, 
+  listDepartmentManagers,
   createDepartment, 
   updateDepartment, 
   deleteDepartment 
 } from '../../../services/departmentService'
 import Swal from 'sweetalert2'
-import { useTenantAdminSettings } from '../../../hooks/useTenantAdminSettings'
 
 const initialFormData = {
   departmentName: '',
-  departmentCode: '',
-  location: '',
   description: '',
-  status: 'Active',
+  managerId: '',
+  status: '',
 }
 
 export default function DepartmentManagement() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('all')
   const [formData, setFormData] = useState(initialFormData)
   const [search, setSearch] = useState('')
   const [departmentList, setDepartmentList] = useState([])
+  const [managerOptions, setManagerOptions] = useState([])
   const [loading, setLoading] = useState(true)
-  const { settings } = useTenantAdminSettings()
-
-  const dynamicLocations = useMemo(() => {
-    if (settings?.locations && Array.isArray(settings.locations) && settings.locations.length > 0) {
-      return settings.locations
-    }
-    return ['Dubai HQ', 'Abu Dhabi', 'London', 'Remote']
-  }, [settings])
+  const exportRef = useRef(null)
 
   const fetchDepartments = async () => {
     try {
@@ -71,17 +61,64 @@ export default function DepartmentManagement() {
     }
   }
 
+  const fetchManagers = async () => {
+    try {
+      const data = await listDepartmentManagers()
+      setManagerOptions(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Failed to fetch department managers:', err)
+      setManagerOptions([])
+    }
+  }
+
   React.useEffect(() => {
     fetchDepartments()
   }, [])
 
+  React.useEffect(() => {
+    fetchManagers()
+  }, [])
+
+  React.useEffect(() => {
+    if (!modalOpen) return undefined
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') handleCloseModal()
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [modalOpen])
+
+  React.useEffect(() => {
+    const onOutsideClick = (event) => {
+      if (exportRef.current && !exportRef.current.contains(event.target)) {
+        setExportOpen(false)
+      }
+    }
+
+    if (exportOpen) {
+      document.addEventListener('mousedown', onOutsideClick)
+    }
+
+    return () => document.removeEventListener('mousedown', onOutsideClick)
+  }, [exportOpen])
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return departmentList.filter((d) => {
+      const currentStatus = (d.status ?? (d.is_active ? 'Active' : 'Inactive')).toLowerCase()
+      const statusMatch =
+        statusFilter === 'all' || currentStatus === statusFilter.toLowerCase()
+      if (!statusMatch) return false
       if (!query) return true
-      return `${d.name} ${d.code}`.toLowerCase().includes(query)
+      return `${d.name ?? ''} ${d.code ?? ''} ${d.location ?? ''} ${d.head ?? ''}`
+        .toLowerCase()
+        .includes(query)
     })
-  }, [search, departmentList])
+  }, [search, departmentList, statusFilter])
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
@@ -100,9 +137,8 @@ export default function DepartmentManagement() {
     try {
       const payload = {
         name: formData.departmentName,
-        code: formData.departmentCode,
-        location: formData.location,
-        description: formData.description,
+        ...(formData.description ? { description: formData.description } : {}),
+        ...(formData.managerId ? { manager_id: Number(formData.managerId) } : {}),
         isActive: formData.status === 'Active'
       }
 
@@ -111,7 +147,7 @@ export default function DepartmentManagement() {
         Swal.fire('Updated!', 'Department has been modified.', 'success')
       } else {
         await createDepartment(payload)
-        Swal.fire('Created!', 'New department initialized.', 'success')
+        Swal.fire('Created!', 'Department created successfully.', 'success')
       }
       handleCloseModal()
       fetchDepartments()
@@ -146,10 +182,9 @@ export default function DepartmentManagement() {
   const handleEdit = (dept) => {
     setFormData({
       departmentName: dept.name,
-      departmentCode: dept.code,
-      location: dept.location,
-      description: dept.description,
-      status: dept.status,
+      description: dept.description ?? '',
+      managerId: dept.manager_id ? String(dept.manager_id) : '',
+      status: dept.status ?? (dept.isActive ? 'Active' : 'Inactive'),
     })
     setEditMode(true)
     setEditingId(dept.id)
@@ -161,30 +196,34 @@ export default function DepartmentManagement() {
       key: 'name',
       label: 'Department',
       render: (v, row) => (
-        <div className="flex items-center gap-4">
-           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-[#0F766E] shadow-sm">
+        <div className="flex items-center gap-3">
+           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
               <HiBuildingOffice className="h-5 w-5" />
            </div>
            <div>
-              <div className="font-bold text-slate-900 leading-none mb-1">{v}</div>
-              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{row.code}</div>
+              <div className="text-sm font-semibold text-slate-900">{v}</div>
+              <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{row.code}</div>
            </div>
         </div>
       )
     },
     {
-      key: 'location',
-      label: 'Base Site',
+      key: 'description',
+      label: 'Description',
+      render: (_, row) => (
+        <span className="text-sm font-medium text-slate-600">{row.description || '-'}</span>
+      )
+    },
+    {
+      key: 'head',
+      label: 'Head of Department',
       render: (v) => (
-        <div className="flex items-center gap-1.5 text-slate-500 font-medium">
-           <HiMapPin className="h-3.5 w-3.5 opacity-50" />
-           <span className="text-xs">{v || 'N/A'}</span>
-        </div>
+        <span className="text-sm font-medium text-slate-600">{v || 'Not assigned'}</span>
       )
     },
     {
       key: 'employeeCount',
-      label: 'Headcount',
+      label: 'No of Employees',
       render: (v) => (
         <div className="flex items-center gap-3">
            <div className="flex-1 h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden">
@@ -197,187 +236,346 @@ export default function DepartmentManagement() {
     {
       key: 'status',
       label: 'Status',
-      render: (v) => (
-        <Badge 
-          label={v || 'Inactive'} 
-          variant="outline" 
-          color={v === 'Active' ? 'green' : 'gray'} 
-          className="font-black text-[9px] uppercase tracking-wider"
-        />
-      )
+      render: (v) => {
+        const isActive = v === 'Active'
+        return (
+          <div className="flex items-center justify-center">
+            <span
+              className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${
+                isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}`}
+              />
+              {isActive ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        )
+      }
     },
     {
       key: 'actions',
-      label: 'Control',
+      label: 'Actions',
       render: (_, row) => (
-        <div className="flex gap-1">
-          <Button variant="ghost" size="sm" icon={HiPencilSquare} onClick={() => handleEdit(row)} className="text-slate-400 hover:text-[#0F766E]" />
-          <Button variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} className="text-slate-400 hover:text-red-500" />
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleEdit(row)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600"
+            aria-label="Edit department"
+          >
+            <HiPencilSquare className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDelete(row.id)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600"
+            aria-label="Delete department"
+          >
+            <HiTrash className="h-4 w-4" />
+          </button>
         </div>
       ),
     },
   ]
 
+  const exportRows = useMemo(
+    () =>
+      filtered.map((row) => ({
+        department: row.name ?? '-',
+        description: row.description ?? '-',
+        head: row.head ?? '-',
+        headcount: row.employeeCount ?? 0,
+        status: row.status ?? (row.isActive ? 'Active' : 'Inactive'),
+      })),
+    [filtered]
+  )
+
+  const exportAsExcel = () => {
+    if (!exportRows.length) {
+      Swal.fire('No data', 'There is no department data to export.', 'info')
+      return
+    }
+
+    const headers = ['Department', 'Description', 'Head of Department', 'No of Employees', 'Status']
+    const lines = [
+      headers.join(','),
+      ...exportRows.map((row) =>
+        [
+          row.department,
+          row.description,
+          row.head,
+          row.headcount,
+          row.status,
+        ]
+          .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+          .join(',')
+      ),
+    ]
+
+    const csv = `\uFEFF${lines.join('\n')}`
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const date = new Date().toISOString().slice(0, 10)
+    link.href = url
+    link.setAttribute('download', `departments-${date}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    setExportOpen(false)
+  }
+
+  const exportAsPdf = () => {
+    if (!exportRows.length) {
+      Swal.fire('No data', 'There is no department data to export.', 'info')
+      return
+    }
+
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const rowHeight = 22
+    const startX = 40
+    let y = 70
+
+    pdf.setFontSize(14)
+    pdf.text('Department Listing', startX, 40)
+    pdf.setFontSize(9)
+    pdf.setTextColor(100)
+    pdf.text(`Generated on ${new Date().toLocaleString()}`, startX, 56)
+    pdf.setTextColor(0)
+
+    const columnsMeta = [
+      { key: 'department', title: 'Department', width: 180 },
+      { key: 'description', title: 'Description', width: 170 },
+      { key: 'head', title: 'Head of Department', width: 170 },
+      { key: 'headcount', title: 'No of Employees', width: 90 },
+      { key: 'status', title: 'Status', width: 100 },
+    ]
+
+    const drawHeader = () => {
+      let x = startX
+      pdf.setFillColor(15, 118, 110)
+      pdf.rect(startX, y, pageWidth - 80, rowHeight, 'F')
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(10)
+      columnsMeta.forEach((column) => {
+        pdf.text(column.title, x + 8, y + 15)
+        x += column.width
+      })
+      pdf.setTextColor(0, 0, 0)
+      y += rowHeight
+    }
+
+    drawHeader()
+
+    exportRows.forEach((row, index) => {
+      if (y > pdf.internal.pageSize.getHeight() - 35) {
+        pdf.addPage()
+        y = 40
+        drawHeader()
+      }
+
+      if (index % 2 === 0) {
+        pdf.setFillColor(247, 250, 252)
+        pdf.rect(startX, y, pageWidth - 80, rowHeight, 'F')
+      }
+
+      let x = startX
+      columnsMeta.forEach((column) => {
+        const value = String(row[column.key] ?? '-')
+        pdf.setFontSize(9)
+        pdf.text(value.slice(0, 28), x + 8, y + 15)
+        x += column.width
+      })
+      y += rowHeight
+    })
+
+    const date = new Date().toISOString().slice(0, 10)
+    pdf.save(`departments-${date}.pdf`)
+    setExportOpen(false)
+  }
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
-        <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight uppercase">Departments</h1>
-            <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
-               Manage company units and leadership assignments.
-            </p>
+    <>
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
+              <h2 className="text-sm font-semibold text-slate-800">Department Listing</h2>
+              <div className="flex items-center gap-2">
+                <div className="relative" ref={exportRef}>
+                  <button
+                    type="button"
+                    onClick={() => setExportOpen((prev) => !prev)}
+                    className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                  >
+                    <HiDocumentArrowDown className="h-4 w-4" />
+                    Export
+                    <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {exportOpen ? (
+                    <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
+                      <button
+                        type="button"
+                        onClick={exportAsPdf}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                      >
+                        <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
+                        Export as PDF
+                      </button>
+                      <button
+                        type="button"
+                        onClick={exportAsExcel}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                      >
+                        <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
+                        Export as Excel
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64]"
+                >
+                  <HiPlus className="h-4 w-4" /> Add Department
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
+              <div className="relative min-w-[250px] flex-1">
+                <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search department, code or description..."
+                  className="h-10 w-full rounded-none border border-slate-200 bg-slate-50 px-3 pl-9 text-sm text-slate-700 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-2 focus:ring-[#0F766E]/10"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'active', label: 'Active' },
+                  { id: 'inactive', label: 'Inactive' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setStatusFilter(item.id)}
+                    className={`rounded-none border px-3 py-1.5 text-xs font-medium transition ${
+                      statusFilter === item.id
+                        ? 'border-[#6366F1] bg-indigo-50 text-[#4F46E5]'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs font-medium text-slate-400">{filtered.length} of {departmentList.length} units</p>
+            </div>
+            <Table columns={columns} data={filtered} pageSize={10} loading={loading} square />
+      </div>
+
+      {modalOpen ? (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/35"
+            onClick={handleCloseModal}
+            aria-label="Close modal"
+          />
+
+          <div className="relative w-full max-w-[760px] overflow-hidden rounded-none bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h2 className="text-3xl leading-none text-[#1f2a44]">{editMode ? 'Edit Department' : 'Add Department'}</h2>
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-none text-slate-500 transition-colors hover:bg-slate-100"
+                aria-label="Close"
+              >
+                <HiXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-5 px-6 py-5">
+                <Input
+                  label="Department Name"
+                  name="departmentName"
+                  placeholder="Enter department name"
+                  value={formData.departmentName}
+                  onChange={handleFormChange}
+                  required
+                  inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
+                />
+
+                <Input
+                  label="Description"
+                  name="description"
+                  placeholder="Enter department description"
+                  value={formData.description}
+                  onChange={handleFormChange}
+                  inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
+                />
+
+                <Input
+                  label="Head of Department"
+                  name="managerId"
+                  type="select"
+                  value={formData.managerId}
+                  onChange={handleFormChange}
+                  placeholder="Select employee"
+                  options={managerOptions.map((m) => ({
+                    label: m.name,
+                    value: String(m.id),
+                  }))}
+                  inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
+                />
+
+                <Input
+                  label="Status"
+                  name="status"
+                  type="select"
+                  value={formData.status}
+                  onChange={handleFormChange}
+                  placeholder="Select"
+                  required
+                  options={[
+                    { label: 'Active', value: 'Active' },
+                    { label: 'Inactive', value: 'Inactive' },
+                  ]}
+                  inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="inline-flex h-9 items-center justify-center rounded-none border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex h-9 items-center justify-center rounded-none bg-[#0F766E] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64]"
+                >
+                  {editMode ? 'Save Changes' : 'Add Department'}
+                </button>
+              </div>
+            </form>
           </div>
-          <button 
-             onClick={() => setModalOpen(true)}
-             className="flex items-center gap-2 rounded-xl bg-white px-8 py-3 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95"
-          >
-             <HiPlus className="h-4 w-4" /> CREATE DEPARTMENT
-          </button>
         </div>
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5" />
-        <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-black/5" />
-      </div>
-
-      {/* Analytics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         {[
-            { label: 'Total Units', value: departmentList.length, icon: HiBuildingOffice, color: 'emerald' },
-            { label: 'Global Headcount', value: departmentList.reduce((acc, d) => acc + d.employeeCount, 0), icon: HiUsers, color: 'blue' },
-            { label: 'Active Sites', value: new Set(departmentList.map(d => d.location)).size, icon: HiGlobeAlt, color: 'orange' },
-         ].map(card => (
-            <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-               <div className="flex items-center gap-4 mb-4">
-                  <div className={`h-10 w-10 rounded-xl bg-${card.color}-50 text-${card.color}-600 flex items-center justify-center`}>
-                     <card.icon className="h-6 w-6" />
-                  </div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{card.label}</span>
-               </div>
-               <p className="text-3xl font-black text-slate-900">{card.value}</p>
-            </div>
-         ))}
-      </div>
-
-      {/* Registry Workspace */}
-      <div className="space-y-6">
-         <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-           <div className="flex flex-col gap-4 md:flex-row md:items-end">
-             <div className="flex-1">
-               <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Directory</label>
-               <div className="relative">
-                 <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                 <input
-                   type="text"
-                   placeholder="Filter by name, code, or leadership..."
-                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all"
-                   value={search}
-                   onChange={(e) => setSearch(e.target.value)}
-                 />
-               </div>
-             </div>
-             <Button label="FILTERS" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200" />
-           </div>
-         </div>
-
-         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
-            <div className="bg-[#0F766E] px-6 py-3 text-white flex items-center justify-between">
-               <h2 className="text-sm font-bold uppercase tracking-wider">Departmental Registry</h2>
-               <HiBriefcase className="h-4 w-4 opacity-50" />
-            </div>
-            <Table columns={columns} data={filtered} pageSize={10} loading={loading} />
-         </div>
-      </div>
-
-      {/* Creation Modal */}
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Department' : 'Add Department'} size="xl">
-        <form onSubmit={handleSubmit} className="animate-in fade-in duration-500 space-y-8">
-           {/* Section: Core Identity */}
-           <div className="space-y-4">
-              <h3 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">
-                 <HiIdentification className="h-4 w-4 text-[#0F766E]" /> General Info
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                 <Input
-                   label="Department Name"
-                   name="departmentName"
-                   value={formData.departmentName}
-                   onChange={handleFormChange}
-                   required
-                   className="text-slate-900 font-medium"
-                 />
-                 <Input
-                   label="Department Code"
-                   name="departmentCode"
-                   value={formData.departmentCode}
-                   onChange={handleFormChange}
-                   placeholder="e.g. IT-01, EXEC-00"
-                   required
-                   className="text-slate-900 font-medium"
-                 />
-              </div>
-           </div>
-
-           {/* Section: Location & Details */}
-           <div className="space-y-4">
-              <h3 className="flex items-center gap-2 text-xs font-black text-[#0F766E] uppercase tracking-widest border-b border-slate-100 pb-2">
-                 <HiMapPin className="h-4 w-4" /> Location & Details
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                 <div className="w-full">
-                    <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Location</label>
-                    <select
-                      name="location"
-                      value={formData.location}
-                      onChange={handleFormChange}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all"
-                      required
-                    >
-                      <option value="" disabled hidden>Select Location</option>
-                      {dynamicLocations.map(loc => (
-                        <option key={loc} value={loc}>{loc}</option>
-                      ))}
-                    </select>
-                 </div>
-                 <div className="w-full">
-                    <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleFormChange}
-                      className="w-full min-h-[46px] rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all resize-none"
-                      placeholder="Briefly describe the unit..."
-                    />
-                 </div>
-              </div>
-           </div>
-
-           {/* Section: Controls */}
-           <div className="space-y-4">
-              <h3 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">
-                 <HiAdjustmentsHorizontal className="h-4 w-4 text-[#0F766E]" /> Settings
-              </h3>
-              <div className="w-full">
-                 <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
-                 <select
-                   name="status"
-                   value={formData.status}
-                   onChange={handleFormChange}
-                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all"
-                   required
-                 >
-                   <option value="Active">Active</option>
-                   <option value="Inactive">Inactive</option>
-                 </select>
-              </div>
-           </div>
-
-           <div className="pt-6 border-t border-slate-100 flex justify-center gap-4">
-              <Button type="submit" label={editMode ? "SAVE CHANGES" : "ADD DEPARTMENT"} variant="primary" className="px-10 shadow-lg shadow-emerald-900/20" />
-              <Button type="button" label="CANCEL" variant="ghost" onClick={handleCloseModal} />
-           </div>
-        </form>
-      </Modal>
-    </div>
+      ) : null}
+    </>
   )
 }

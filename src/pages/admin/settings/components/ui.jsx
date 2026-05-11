@@ -19,13 +19,13 @@ export function Toggle({ checked, defaultChecked = false, onChange, disabled = f
       type="button"
       disabled={disabled}
       onClick={flip}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-none transition-colors focus:outline-none disabled:opacity-50 ${
         on ? 'bg-[#0F766E]' : 'bg-gray-200'
       }`}
       aria-pressed={on}
     >
       <span
-        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+        className={`inline-block h-3.5 w-3.5 transform rounded-none bg-white shadow transition-transform ${
           on ? 'translate-x-5' : 'translate-x-1'
         }`}
       />
@@ -42,7 +42,7 @@ export function Badge({ label, color = 'indigo' }) {
     gray: 'bg-gray-100 text-gray-600',
   }
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colors[color]}`}>
+    <span className={`inline-flex items-center rounded-none px-2 py-0.5 text-xs font-medium ${colors[color]}`}>
       {label}
     </span>
   )
@@ -50,7 +50,7 @@ export function Badge({ label, color = 'indigo' }) {
 
 export function SectionCard({ title, description, children }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-none border border-gray-200 bg-white shadow-sm">
       <div className="border-b border-gray-100 bg-slate-50/60 px-5 py-4">
         <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
         {description ? (
@@ -90,7 +90,7 @@ export function TextInput(props) {
   const controlledValue = value !== undefined
 
   const shared =
-    'w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-800 shadow-sm transition-[border-color,box-shadow] placeholder:text-gray-400 focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15 disabled:opacity-50'
+    'w-full min-w-0 rounded-none border border-gray-200 bg-white px-3 text-sm text-gray-800 shadow-sm transition-[border-color,box-shadow] placeholder:text-gray-400 focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15 disabled:opacity-50'
 
   if (type === 'textarea' || rows) {
     return (
@@ -123,7 +123,7 @@ export function SelectInput({ options, value, defaultValue, onChange, disabled }
     <select
       {...(controlled ? { value, onChange } : { defaultValue, onChange })}
       disabled={disabled}
-      className="h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-800 shadow-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15 disabled:opacity-50"
+      className="h-10 w-full min-w-0 rounded-none border border-gray-200 bg-white px-3 text-sm text-gray-800 shadow-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15 disabled:opacity-50"
     >
       {options.map((o) => (
         <option key={o} value={o}>

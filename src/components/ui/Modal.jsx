@@ -16,6 +16,8 @@ export function Modal({
   onClose, 
   title, 
   description,
+  /** When set, replaces the default title + description header block */
+  header,
   children, 
   size = 'md',
   showClose = true,
@@ -71,23 +73,27 @@ export function Modal({
         <div className="flex flex-col">
           {/* Header */}
           <div className="px-5 pt-6 pb-2 sm:px-6">
-            <div className="flex items-center gap-4">
-              {Icon && (
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                  <Icon className="h-6 w-6" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-                  {title}
-                </h2>
-                {description && (
-                  <p className="mt-1 text-sm text-slate-500 leading-relaxed">
-                    {description}
-                  </p>
+            {header ? (
+              <div className="pr-10">{header}</div>
+            ) : (
+              <div className="flex items-center gap-4">
+                {Icon && (
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                    <Icon className="h-6 w-6" />
+                  </div>
                 )}
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                    {title}
+                  </h2>
+                  {description && (
+                    <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                      {description}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Body */}

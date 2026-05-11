@@ -13,6 +13,7 @@ import Login from "../pages/auth/Login.jsx";
 
 import AdminDashboard from "../pages/admin/Dashboard.jsx";
 import EmployeeDirectory from "../pages/admin/employees/EmployeeDirectory.jsx";
+import EmployeeGrid from "../pages/admin/employees/EmployeeGrid.jsx";
 import EmployeeProfile from "../pages/admin/employees/EmployeeProfile.jsx";
 import Attendance from "../pages/admin/hr/Attendance.jsx";
 import LeaveAbsence from "../pages/admin/hr/LeaveAbsence.jsx";
@@ -28,6 +29,7 @@ import TemplateGenerator from "../pages/admin/documents/TemplateGenerator.jsx";
 import AdminSettings from "../pages/admin/settings/Settings.jsx";
 import RolesPermissions from "../pages/admin/settings/RolesPermissions.jsx";
 import DepartmentManagement from "../pages/admin/settings/Departments.jsx";
+import DesignationsManagement from "../pages/admin/settings/Designations.jsx";
 import ProjectManagement from "../pages/admin/settings/Projects.jsx";
 import TaskManagement from "../pages/admin/settings/Tasks.jsx";
 import Messages from "../pages/admin/communication/Messages.jsx";
@@ -129,6 +131,14 @@ export const router = createBrowserRouter([
             element: (
               <AdminModuleGate moduleKey="employee-directory">
                 <EmployeeDirectory />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "employee-grid",
+            element: (
+              <AdminModuleGate moduleKey="employee-directory">
+                <EmployeeGrid />
               </AdminModuleGate>
             ),
           },
@@ -266,6 +276,14 @@ export const router = createBrowserRouter([
             element: (
               <AdminModuleGate moduleKey="departments">
                 <DepartmentManagement />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "designations",
+            element: (
+              <AdminModuleGate moduleKey={["designations", "departments", "system-settings"]}>
+                <DesignationsManagement />
               </AdminModuleGate>
             ),
           },

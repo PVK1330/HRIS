@@ -1,11 +1,11 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  HiDocumentText, HiEnvelope, HiEye, HiPencil, HiTrash, HiPlus,
-  HiUsers, HiMagnifyingGlass, HiAdjustmentsHorizontal, HiArrowPath,
-  HiShieldCheck, HiGlobeAlt, HiArrowTrendingUp, HiIdentification,
+  HiDocumentText, HiEnvelope, HiEye, HiEyeSlash, HiPencil, HiTrash, HiPlus,
+  HiMagnifyingGlass, HiArrowTrendingUp, HiIdentification,
   HiBriefcase, HiMapPin, HiFolder, HiClock, HiCalendarDays,
   HiPresentationChartLine, HiDevicePhoneMobile, HiCheckBadge,
+  HiUserCircle,
 } from 'react-icons/hi2'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -13,15 +13,17 @@ import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { StatCard } from '../../../components/ui/StatCard.jsx'
 import {
   getEmployeeStats, getFilterOptions, listEmployees,
   getEmployee, createEmployee, updateEmployee, deleteEmployee,
 } from '../../../services/employeeService.js'
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 
-const selectClass = 'w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 mt-1.5 text-sm text-slate-900 font-bold focus:border-[#0F766E] outline-none transition-all'
-const textareaClass = 'w-full min-h-[100px] rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-sm text-slate-900 font-bold focus:border-[#0F766E] outline-none transition-all shadow-inner'
+const selectClass = 'mt-1.5 w-full rounded-md border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all focus:border-[#0F766E]'
+const textareaClass = 'w-full min-h-[100px] rounded-md border border-slate-200 bg-slate-50/50 p-4 text-sm font-bold text-slate-900 outline-none transition-all shadow-inner focus:border-[#f97316]'
+/** Basic tab inputs — match reference UI (light radius + orange focus) */
+const basicFieldClass =
+  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#f97316] focus:ring-1 focus:ring-orange-200'
 
 function statusColor(status) {
   if (status === 'Active')        return 'green'
@@ -29,12 +31,6 @@ function statusColor(status) {
   if (status === 'Notice Period') return 'orange'
   if (status === 'On Leave')      return 'yellow'
   return 'gray'
-}
-
-function emailFromName(name) {
-  const parts = name.trim().toLowerCase().split(/\s+/).filter(Boolean)
-  if (!parts.length) return ''
-  return parts.length === 1 ? `${parts[0]}@hris.com` : `${parts[0]}.${parts[parts.length - 1]}@hris.com`
 }
 
 function mapEmployeeList(e) {
@@ -61,13 +57,16 @@ function mapEmployeeFull(e) {
   return {
     id: e.id,
     empId: e.emp_id,
+    firstName: e.first_name || '',
+    lastName: e.last_name || '',
     name: e.full_name,
     email: e.work_email,
     phone: e.phone_number || '',
     jobTitle: e.job_title,
     department: e.department,
+    employmentType: e.employment_type || 'Full-time',
     location: e.work_location || '',
-    manager: e.reporting_manager || '',
+    manager: e.manager_emp_id || e.reporting_manager || '',
     status: e.employment_status || 'Active',
     joinDate: d(e.join_date),
     workMode: e.work_mode || '',
@@ -95,6 +94,8 @@ function mapEmployeeFull(e) {
     careerHistory: e.career_history || '',
     awardsSummary: e.awards_summary || '',
     promotionHistory: e.promotion_history || '',
+    bio: e.bio || '',
+    costCenter: e.cost_center || '',
     rbacRoleId: e.rbac_role_id ?? null,
     rbacRoleName: e.rbac_role_name || '',
     portalEnabled: Boolean(e.portal_enabled),
@@ -102,18 +103,53 @@ function mapEmployeeFull(e) {
 }
 
 const initialFormData = {
-  fullName: '', dateOfBirth: '', gender: '', nationality: '',
-  personalEmail: '', phoneNumber: '', emergencyContactName: '',
-  emergencyContactPhone: '', homeAddress: '', employeeId: '',
-  jobTitle: '', department: '', employmentType: 'Full-time',
-  workLocation: '', reportingManager: '', joinDate: '',
-  probationEndDate: '', workEmail: '', salary: '',
-  employmentStatus: 'Active', grade: '', costCenter: '',
-  maritalStatus: '', dependents: '', workMode: 'In Office',
-  countryOfResidence: '', passportNumber: '', passportExpiry: '',
-  emiratesIdNumber: '', emiratesIdExpiry: '', visaType: '',
-  visaExpiryDate: '', sponsoringEntity: '', careerHistory: '',
-  awardsSummary: '', promotionHistory: '',
+  /** Basic Information (primary modal tab) */
+  firstName: '',
+  lastName: '',
+  username: '',
+  employeeId: '',
+  joinDate: '',
+  workEmail: '',
+  password: '',
+  confirmPassword: '',
+  phoneNumber: '',
+  company: '',
+  department: '',
+  jobTitle: '',
+  about: '',
+  /** Others — personal */
+  dateOfBirth: '',
+  gender: '',
+  nationality: '',
+  personalEmail: '',
+  emergencyContactName: '',
+  emergencyContactPhone: '',
+  homeAddress: '',
+  maritalStatus: '',
+  dependents: '',
+  countryOfResidence: '',
+  /** Others — employment */
+  employmentType: 'Full-time',
+  workLocation: '',
+  reportingManager: '',
+  probationEndDate: '',
+  salary: '',
+  employmentStatus: 'Active',
+  grade: '',
+  workMode: 'In Office',
+  /** Others — compliance */
+  passportNumber: '',
+  passportExpiry: '',
+  emiratesIdNumber: '',
+  emiratesIdExpiry: '',
+  visaType: '',
+  visaExpiryDate: '',
+  sponsoringEntity: '',
+  /** Others — career */
+  careerHistory: '',
+  awardsSummary: '',
+  promotionHistory: '',
+  /** Permissions */
   rbacRoleId: '',
   portalEnabled: false,
   portalPassword: '',
@@ -133,7 +169,6 @@ export default function EmployeeDirectory() {
   // Add/Edit modal
   const [modalOpen, setModalOpen]           = useState(false)
   const [formData, setFormData]             = useState(initialFormData)
-  const [workEmailTouched, setWorkEmailTouched] = useState(false)
   const [editMode, setEditMode]             = useState(false)
   const [editingEmployeeId, setEditingEmployeeId] = useState(null)
 
@@ -141,6 +176,12 @@ export default function EmployeeDirectory() {
   const [viewModalOpen, setViewModalOpen]     = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState(null)
   const [viewActiveTab, setViewActiveTab]     = useState('personal')
+  const [formTab, setFormTab]                 = useState('basic')
+  const [showPassword, setShowPassword]       = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [profileImagePreview, setProfileImagePreview] = useState('')
+  const profileObjectUrlRef = useRef(null)
+  const profileFileInputRef = useRef(null)
 
   // Data
   const [employeeList, setEmployeeList] = useState([])
@@ -198,69 +239,152 @@ export default function EmployeeDirectory() {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => {
-      const next = { ...prev, [name]: value }
-      if (name === 'fullName' && !workEmailTouched) next.workEmail = emailFromName(value)
-      return next
-    })
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const revokeProfilePreview = () => {
+    if (profileObjectUrlRef.current) {
+      URL.revokeObjectURL(profileObjectUrlRef.current)
+      profileObjectUrlRef.current = null
+    }
+    setProfileImagePreview('')
+  }
+
+  const handleProfilePick = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      alert('Please choose an image file.')
+      return
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      alert('Image should be below 4 mb')
+      return
+    }
+    revokeProfilePreview()
+    profileObjectUrlRef.current = URL.createObjectURL(file)
+    setProfileImagePreview(profileObjectUrlRef.current)
+  }
+
+  const openAddModal = () => {
+    setEditMode(false)
+    setEditingEmployeeId(null)
+    setFormData(initialFormData)
+    setFormTab('basic')
+    revokeProfilePreview()
+    setShowPassword(false)
+    setShowConfirmPassword(false)
+    setModalOpen(true)
   }
 
   const handleCloseModal = () => {
     setModalOpen(false)
     setFormData(initialFormData)
-    setWorkEmailTouched(false)
     setEditMode(false)
     setEditingEmployeeId(null)
+    setFormTab('basic')
+    setShowPassword(false)
+    setShowConfirmPassword(false)
+    revokeProfilePreview()
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const payload = {
-      empId:                  formData.employeeId,
-      fullName:               formData.fullName,
-      jobTitle:               formData.jobTitle,
-      department:             formData.department,
-      employmentType:         formData.employmentType,
-      workLocation:           formData.workLocation,
-      reportingManagerEmpId:  formData.reportingManager || null,
-      joinDate:               formData.joinDate,
-      probationEndDate:       formData.probationEndDate || null,
-      workEmail:              formData.workEmail,
-      personalEmail:          formData.personalEmail || null,
-      phoneNumber:            formData.phoneNumber || null,
-      employmentStatus:       formData.employmentStatus,
-      workMode:               formData.workMode || null,
-      dateOfBirth:            formData.dateOfBirth || null,
-      gender:                 formData.gender || null,
-      nationality:            formData.nationality || null,
-      countryOfResidence:     formData.countryOfResidence || null,
-      maritalStatus:          formData.maritalStatus || null,
-      dependents:             formData.dependents !== '' ? parseInt(formData.dependents) : 0,
-      emergencyContactName:   formData.emergencyContactName || null,
-      emergencyContactPhone:  formData.emergencyContactPhone || null,
-      homeAddress:            formData.homeAddress || null,
-      salary:                 formData.salary !== '' ? parseFloat(String(formData.salary).replace(/[^0-9.]/g, '')) || null : null,
-      grade:                  formData.grade || null,
-      costCenter:             formData.costCenter || null,
-      passportNumber:         formData.passportNumber || null,
-      passportExpiry:         formData.passportExpiry || null,
-      emiratesIdNumber:       formData.emiratesIdNumber || null,
-      emiratesIdExpiry:       formData.emiratesIdExpiry || null,
-      visaType:               formData.visaType || null,
-      visaExpiryDate:         formData.visaExpiryDate || null,
-      sponsoringEntity:       formData.sponsoringEntity || null,
-      careerHistory:          formData.careerHistory || null,
-      awardsSummary:          formData.awardsSummary || null,
-      promotionHistory:       formData.promotionHistory || null,
+
+    const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ').trim()
+    if (fullName.length < 2) {
+      alert('Please enter a valid first name and last name.')
+      return
     }
+
+    if (!String(formData.department || '').trim() || !String(formData.jobTitle || '').trim()) {
+      alert('Please select Department and Designation in Basic Information.')
+      setFormTab('basic')
+      return
+    }
+
+    const pwd = String(formData.password || '').trim()
+    const pwdConfirm = String(formData.confirmPassword || '').trim()
+    const portalPwExtra = String(formData.portalPassword || '').trim()
+
+    if (!editMode) {
+      if (!pwd || pwd !== pwdConfirm) {
+        alert('Password and confirm password must match.')
+        return
+      }
+      if (pwd.length < 8) {
+        alert('Password must be at least 8 characters.')
+        return
+      }
+    } else if (pwd || pwdConfirm) {
+      if (pwd !== pwdConfirm) {
+        alert('Password and confirm password must match.')
+        return
+      }
+      if (pwd.length < 8) {
+        alert('Password must be at least 8 characters.')
+        return
+      }
+    }
+
+    const resolvedPortalPassword = pwd || portalPwExtra
+
+    const payload = {
+      empId: formData.employeeId,
+      fullName,
+      firstName: formData.firstName || null,
+      lastName: formData.lastName || null,
+      jobTitle: formData.jobTitle,
+      department: formData.department,
+      employmentType: formData.employmentType,
+      workLocation: formData.workLocation || null,
+      reportingManagerEmpId: formData.reportingManager || null,
+      joinDate: formData.joinDate,
+      probationEndDate: formData.probationEndDate || null,
+      workEmail: formData.workEmail,
+      personalEmail: formData.personalEmail || null,
+      phoneNumber: formData.phoneNumber || null,
+      employmentStatus: formData.employmentStatus,
+      workMode: formData.workMode || null,
+      dateOfBirth: formData.dateOfBirth || null,
+      gender: formData.gender || null,
+      nationality: formData.nationality || null,
+      countryOfResidence: formData.countryOfResidence || null,
+      maritalStatus: formData.maritalStatus || null,
+      dependents: Math.max(0, parseInt(String(formData.dependents || 0), 10) || 0),
+      emergencyContactName: formData.emergencyContactName || null,
+      emergencyContactPhone: formData.emergencyContactPhone || null,
+      homeAddress: formData.homeAddress || null,
+      bio: formData.about || null,
+      salary:
+        formData.salary !== ''
+          ? parseFloat(String(formData.salary).replace(/[^0-9.]/g, '')) || null
+          : null,
+      grade: formData.grade || null,
+      costCenter: formData.company || null,
+      passportNumber: formData.passportNumber || null,
+      passportExpiry: formData.passportExpiry || null,
+      emiratesIdNumber: formData.emiratesIdNumber || null,
+      emiratesIdExpiry: formData.emiratesIdExpiry || null,
+      visaType: formData.visaType || null,
+      visaExpiryDate: formData.visaExpiryDate || null,
+      sponsoringEntity: formData.sponsoringEntity || null,
+      careerHistory: formData.careerHistory || null,
+      awardsSummary: formData.awardsSummary || null,
+      promotionHistory: formData.promotionHistory || null,
+    }
+
     const rbacNum =
       formData.rbacRoleId !== '' && formData.rbacRoleId != null
         ? parseInt(String(formData.rbacRoleId), 10)
         : NaN
     payload.rbacRoleId = Number.isInteger(rbacNum) && rbacNum > 0 ? rbacNum : null
-    payload.portalEnabled = Boolean(formData.portalEnabled)
-    if (formData.portalPassword && String(formData.portalPassword).trim()) {
-      payload.portalPassword = String(formData.portalPassword).trim()
+    payload.portalEnabled =
+      Boolean(formData.portalEnabled) || Boolean(resolvedPortalPassword)
+
+    if (resolvedPortalPassword) {
+      payload.portalPassword = resolvedPortalPassword
     }
     try {
       if (editMode && editingEmployeeId) {
@@ -293,28 +417,59 @@ export default function EmployeeDirectory() {
       const data = await getEmployee(employee.id)
       if (data) {
         const f = mapEmployeeFull(data)
+        const nameParts = (f.name || '').trim().split(/\s+/).filter(Boolean)
+        const firstFromName = nameParts[0] || ''
+        const lastFromName = nameParts.slice(1).join(' ')
         setFormData({
-          fullName: f.name, dateOfBirth: f.dateOfBirth, gender: f.gender,
-          nationality: f.nationality, personalEmail: f.personalEmail,
-          phoneNumber: f.phone, emergencyContactName: f.emergencyContactName,
-          emergencyContactPhone: f.emergencyContactPhone, homeAddress: f.homeAddress,
-          employeeId: f.empId, jobTitle: f.jobTitle, department: f.department,
-          employmentType: 'Full-time', workLocation: f.location,
-          reportingManager: f.manager, joinDate: f.joinDate,
-          probationEndDate: f.probationEndDate, workEmail: f.email,
-          salary: f.salary, employmentStatus: f.status, grade: f.grade,
-          costCenter: f.costCenter, maritalStatus: f.maritalStatus,
-          dependents: f.dependents, workMode: f.workMode,
-          countryOfResidence: f.countryOfResidence, passportNumber: f.passportNumber,
-          passportExpiry: f.passportExpiry, emiratesIdNumber: f.emiratesIdNumber,
-          emiratesIdExpiry: f.emiratesIdExpiry, visaType: f.visaType,
-          visaExpiryDate: f.visaExpiryDate, sponsoringEntity: f.sponsoringEntity,
-          careerHistory: f.careerHistory, awardsSummary: f.awardsSummary,
+          firstName: f.firstName || firstFromName,
+          lastName: f.lastName || lastFromName,
+          username: '',
+          employeeId: f.empId,
+          joinDate: f.joinDate,
+          workEmail: f.email,
+          password: '',
+          confirmPassword: '',
+          phoneNumber: f.phone,
+          company: f.costCenter || '',
+          department: f.department,
+          jobTitle: f.jobTitle,
+          about: f.bio || '',
+          dateOfBirth: f.dateOfBirth,
+          gender: f.gender,
+          nationality: f.nationality,
+          personalEmail: f.personalEmail,
+          emergencyContactName: f.emergencyContactName,
+          emergencyContactPhone: f.emergencyContactPhone,
+          homeAddress: f.homeAddress,
+          employmentType: f.employmentType || 'Full-time',
+          workLocation: f.location,
+          reportingManager: f.manager || '',
+          probationEndDate: f.probationEndDate,
+          salary: f.salary,
+          employmentStatus: f.status,
+          grade: f.grade,
+          workMode: f.workMode || 'In Office',
+          maritalStatus: f.maritalStatus,
+          dependents: f.dependents,
+          countryOfResidence: f.countryOfResidence,
+          passportNumber: f.passportNumber,
+          passportExpiry: f.passportExpiry,
+          emiratesIdNumber: f.emiratesIdNumber,
+          emiratesIdExpiry: f.emiratesIdExpiry,
+          visaType: f.visaType,
+          visaExpiryDate: f.visaExpiryDate,
+          sponsoringEntity: f.sponsoringEntity,
+          careerHistory: f.careerHistory,
+          awardsSummary: f.awardsSummary,
           promotionHistory: f.promotionHistory,
           rbacRoleId: f.rbacRoleId != null && f.rbacRoleId !== '' ? String(f.rbacRoleId) : '',
           portalEnabled: f.portalEnabled,
           portalPassword: '',
         })
+        setFormTab('basic')
+        revokeProfilePreview()
+        setShowPassword(false)
+        setShowConfirmPassword(false)
         setEditMode(true)
         setEditingEmployeeId(f.id)
         setViewModalOpen(false)
@@ -374,18 +529,37 @@ export default function EmployeeDirectory() {
     {
       key: 'status', label: 'Talent Health',
       render: (v) => (
-        <Badge label={v} variant="outline" color={statusColor(v)} className="font-black uppercase text-[9px] tracking-widest px-2.5" />
+        <span
+          className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${
+            v === 'Active'
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-slate-100 text-slate-700'
+          }`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${v === 'Active' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+          {v}
+        </span>
       ),
     },
     {
       key: 'actions', label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="sm" icon={HiEnvelope}      onClick={() => handleEmail(row)}  className="text-slate-400 hover:text-blue-600" />
-          <Button variant="ghost" size="sm" icon={HiEye}           onClick={() => handleView(row)}   className="text-slate-400 hover:text-[#0F766E]" />
-          <Button variant="ghost" size="sm" icon={HiDocumentText}  onClick={handleLetter}            className="text-slate-400 hover:text-emerald-600" />
-          <Button variant="ghost" size="sm" icon={HiPencil}        onClick={() => handleEdit(row)}   className="text-slate-400 hover:text-blue-600" />
-          <Button variant="ghost" size="sm" icon={HiTrash}         onClick={() => handleDelete(row)} className="text-slate-400 hover:text-red-600" />
+          <button type="button" onClick={() => handleEmail(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="Email">
+            <HiEnvelope className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => handleView(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="View">
+            <HiEye className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={handleLetter} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="Letter">
+            <HiDocumentText className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => handleEdit(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600" aria-label="Edit">
+            <HiPencil className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => handleDelete(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" aria-label="Delete">
+            <HiTrash className="h-4 w-4" />
+          </button>
         </div>
       ),
     },
@@ -394,240 +568,486 @@ export default function EmployeeDirectory() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6">
 
-      {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-6 text-white shadow-xl">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-emerald-100 mb-1.5">
-              <HiUsers className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Workforce Identity</span>
-            </div>
-            <h1 className="text-2xl font-black text-white tracking-tight uppercase leading-none">Employee Directory</h1>
-            <p className="mt-1.5 text-emerald-100/80 text-xs max-w-md leading-relaxed font-medium">Holistic workforce intelligence platform.</p>
-          </div>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-white px-5 py-2 text-xs font-bold text-[#0F766E] shadow-lg transition-all hover:scale-105 active:scale-95"
-          >
-            <HiPlus className="h-4 w-4" /> Initialize Talent
-          </button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
-        <StatCard title="Global Talent"   value={stats.total || 0}                       subtitle="Identity Records"    color="blue"    icon={HiUsers} />
-        <StatCard title="Active Talent"   value={stats.active || 0}                      subtitle="Active Workers"      color="emerald" icon={HiShieldCheck} />
-        <StatCard title="On Leave"        value={stats.onLeave || 0}                     subtitle="Currently Away"      color="yellow"  icon={HiGlobeAlt} />
-        <StatCard title="Total Divisions" value={filterOptions.departments.length || 0}  subtitle="Active Units"        color="indigo"  icon={HiArrowTrendingUp} />
-      </div>
-
-      {/* Filters + Table */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-
-        {/* Sidebar */}
-        <div className="xl:col-span-1 space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white/50 p-5 backdrop-blur-xl shadow-sm space-y-4">
-            <div className="flex items-center gap-2 text-slate-800 mb-1">
-              <HiAdjustmentsHorizontal className="h-4 w-4 text-[#0F766E]" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Workspace Intelligence</span>
-            </div>
-
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Identity Search</label>
-              <div className="relative mt-1 group">
-                <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-[#0F766E] transition-colors" />
-                <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 pl-9 pr-3 text-xs text-slate-900 font-bold focus:border-[#0F766E] outline-none shadow-inner" />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Division</label>
-              <select value={dept} onChange={e => setDept(e.target.value)} className={selectClass}>
-                <option value="">All Divisions</option>
-                {filterOptions.departments.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Designation</label>
-              <select value={job} onChange={e => setJob(e.target.value)} className={selectClass}>
-                <option value="">All Designations</option>
-                {filterOptions.jobTitles.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
-              <select value={status} onChange={e => setStatus(e.target.value)} className={selectClass}>
-                <option value="">All Statuses</option>
-                {filterOptions.statuses?.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Operational Mode</label>
-              <select value={workMode} onChange={e => setWorkMode(e.target.value)} className={selectClass}>
-                <option value="">All Modes</option>
-                {filterOptions.workModes.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-
+      {/* Filters + Full width Table */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
+          <h2 className="text-sm font-semibold text-slate-800">Employee Listing</h2>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-none border border-blue-200 bg-blue-50 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-blue-700">
+              {totalRecords} Records
+            </span>
             <button
-              onClick={() => { setSearch(''); setDept(''); setJob(''); setLoc(''); setStatus(''); setWorkMode('') }}
-              className="w-full py-2.5 text-[9px] font-black text-slate-400 hover:text-red-500 uppercase tracking-[0.2em] border border-dashed border-slate-200 rounded-xl hover:border-red-200 transition-all"
+              type="button"
+              onClick={openAddModal}
+              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64]"
             >
-              Reset Workspace
+              <HiPlus className="h-4 w-4" />
+              Add Employee
             </button>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="xl:col-span-3 space-y-6">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="h-7 w-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-lg">
-                  <HiArrowPath className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                </div>
-                <div>
-                  <h2 className="text-xs font-bold text-slate-900 uppercase tracking-tight leading-none">Identity Registry</h2>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Real-time snapshots</p>
-                </div>
-              </div>
-              <Badge label={`${totalRecords} RECORDS`} variant="outline" color="blue" className="font-black text-[8px] px-2 py-0.5" />
+        <div className="space-y-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <div className="relative">
+              <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search employee..."
+                className="h-10 w-full rounded-none border border-slate-200 bg-slate-50 px-3 pl-9 text-sm text-slate-700 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-2 focus:ring-[#0F766E]/10"
+              />
             </div>
-            <Table columns={columns} data={employeeList} pageSize={8} />
+
+            <select value={dept} onChange={(e) => setDept(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+              <option value="">All Divisions</option>
+              {filterOptions.departments.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+
+            <select value={job} onChange={(e) => setJob(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+              <option value="">All Designations</option>
+              {filterOptions.jobTitles.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+              <option value="">All Statuses</option>
+              {filterOptions.statuses?.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+
+            <select value={workMode} onChange={(e) => setWorkMode(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+              <option value="">All Modes</option>
+              {filterOptions.workModes.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-slate-400">{employeeList.length} shown</p>
+            <button
+              type="button"
+              onClick={() => { setSearch(''); setDept(''); setJob(''); setLoc(''); setStatus(''); setWorkMode('') }}
+              className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400 transition hover:border-red-200 hover:text-red-500"
+            >
+              Reset Filters
+            </button>
           </div>
         </div>
+
+        <Table columns={columns} data={employeeList} pageSize={8} square />
       </div>
 
       {/* ── Add / Edit Modal ─────────────────────────────────────────────── */}
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Employee Profile' : 'Initialize Talent Identity'} size="xl" showClose>
-        <form onSubmit={handleSubmit} className="h-full w-full pr-1 space-y-6 pt-2">
+      <Modal
+        isOpen={modalOpen}
+        onClose={handleCloseModal}
+        size="custom"
+        showClose
+        header={
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
+            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+              {editMode ? 'Edit Employee' : 'Add New Employee'}
+            </h2>
+            <p className="text-sm font-medium text-slate-500">
+              Employee ID :{' '}
+              <span className="text-slate-800">{formData.employeeId || '—'}</span>
+            </p>
+          </div>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-5 pt-1">
+          <input ref={profileFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleProfilePick} />
 
-          {/* Personal Intelligence */}
-          <div className="space-y-3">
-            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-2">
-              <HiIdentification className="h-4 w-4 text-[#0F766E]" /> Personal Intelligence
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input label="Full Identity Name"  name="fullName"    value={formData.fullName}    onChange={handleFormChange} required />
-              <Input label="Date of Birth"       name="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleFormChange} required />
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Gender Specification</label>
-                <select name="gender" value={formData.gender} onChange={handleFormChange} className={selectClass} required>
-                  <option value="">Select...</option>
-                  <option>Male</option><option>Female</option><option>Other</option>
-                </select>
-              </div>
-              <Input label="Nationality" name="nationality" value={formData.nationality} onChange={handleFormChange} required />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Input label="Country of Residence" name="countryOfResidence" value={formData.countryOfResidence} onChange={handleFormChange} />
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Marital Status</label>
-                <select name="maritalStatus" value={formData.maritalStatus} onChange={handleFormChange} className={selectClass}>
-                  <option value="">Select status</option>
-                  <option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option>
-                </select>
-              </div>
-              <Input label="Number of Dependents" name="dependents" type="number" value={formData.dependents} onChange={handleFormChange} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input label="Personal Email" name="personalEmail" type="email" value={formData.personalEmail} onChange={handleFormChange} />
-              <Input label="Direct Phone"   name="phoneNumber"   type="tel"   value={formData.phoneNumber}   onChange={handleFormChange} required />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input label="Emergency Contact Name"  name="emergencyContactName"  value={formData.emergencyContactName}  onChange={handleFormChange} />
-              <Input label="Emergency Contact Phone" name="emergencyContactPhone" type="tel" value={formData.emergencyContactPhone} onChange={handleFormChange} />
-            </div>
-            <div className="w-full">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Residential Address</label>
-              <textarea name="homeAddress" value={formData.homeAddress} onChange={handleFormChange} className={textareaClass} rows={2} />
-            </div>
+          <div className="flex flex-wrap gap-6 border-b border-slate-200 text-sm font-medium">
+            <button
+              type="button"
+              onClick={() => setFormTab('basic')}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'basic' ? 'border-[#f97316] text-[#f97316]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              Basic Information
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTab('others')}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'others' ? 'border-[#f97316] text-[#f97316]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              Others
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTab('permissions')}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'permissions' ? 'border-[#f97316] text-[#f97316]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              Permissions
+            </button>
           </div>
 
-          {/* Employment Parameters */}
-          <div className="space-y-3">
-            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-2">
-              <HiBriefcase className="h-4 w-4 text-[#0F766E]" /> Employment Parameters
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input label="Assigned Employee ID"    name="employeeId" value={formData.employeeId} onChange={handleFormChange} placeholder="EMP001" required />
-              <Input label="Job Title / Designation" name="jobTitle"   value={formData.jobTitle}   onChange={handleFormChange} required />
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Assigned Division</label>
-                <select name="department" value={formData.department} onChange={handleFormChange} className={selectClass} required>
-                  <option value="">Select department</option>
-                  <option>IT</option><option>HR</option><option>Finance</option><option>Marketing</option><option>Operations</option><option>Legal</option>
-                </select>
+          {formTab === 'basic' && (
+            <div className="space-y-5">
+              <div className="flex flex-wrap items-center gap-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-400">
+                  {profileImagePreview ? (
+                    <img src={profileImagePreview} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <HiUserCircle className="h-14 w-14" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-900">Upload Profile Image</p>
+                  <p className="text-xs text-slate-500">Image should be below 4 mb</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => profileFileInputRef.current?.click()}
+                      className="rounded-md bg-[#f97316] px-4 py-2 text-xs font-semibold text-white hover:bg-[#ea6a0b]"
+                    >
+                      Upload
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        revokeProfilePreview()
+                      }}
+                      className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Employment Type</label>
-                <select name="employmentType" value={formData.employmentType} onChange={handleFormChange} className={selectClass} required>
-                  <option value="">Select type</option>
-                  <option>Full-time</option><option>Part-time</option><option>Contract</option><option>Intern</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Work Region</label>
-                <select name="workLocation" value={formData.workLocation} onChange={handleFormChange} className={selectClass} required>
-                  <option value="">Select location</option>
-                  <option>Dubai</option><option>Abu Dhabi</option><option>Remote</option><option>UK</option><option>India</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Work Mode</label>
-                <select name="workMode" value={formData.workMode} onChange={handleFormChange} className={selectClass} required>
-                  <option value="">Select work mode</option>
-                  <option>In Office</option><option>Remote</option><option>Hybrid</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Employment Status</label>
-                <select name="employmentStatus" value={formData.employmentStatus} onChange={handleFormChange} className={selectClass}>
-                  <option value="">Select status</option>
-                  <option>Active</option><option>Probation</option><option>Notice Period</option><option>On Leave</option><option>Terminated</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input label="Join Date"          name="joinDate"          type="date" value={formData.joinDate}          onChange={handleFormChange} required />
-              <Input label="Probation End Date" name="probationEndDate"  type="date" value={formData.probationEndDate}  onChange={handleFormChange} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input
-                label="Corporate Email" name="workEmail" type="email"
-                value={formData.workEmail}
-                onChange={e => { setWorkEmailTouched(true); handleFormChange(e) }}
-                required
-              />
-              {/* type=number prevents text like "10k-25k" — backend requires isFloat */}
-              <Input label="Gross Salary (AED)" name="salary" type="number" min="0" step="0.01" value={formData.salary} onChange={handleFormChange} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Input label="Grade Level"          name="grade"      value={formData.grade}      onChange={handleFormChange} />
-              <Input label="Cost Center"          name="costCenter" value={formData.costCenter} onChange={handleFormChange} />
-              <Input label="Reporting Manager Emp ID" name="reportingManager" value={formData.reportingManager} onChange={handleFormChange} placeholder="EMP001" />
-            </div>
 
-            <div className="border-t border-slate-200/80 pt-3 space-y-3">
-              <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <HiShieldCheck className="h-3.5 w-3.5 text-[#0F766E]" />
-                Employee portal
-              </h4>
-              <p className="text-[10px] text-slate-500 leading-relaxed">
-                Roles are defined under Settings → Roles &amp; Permissions. Enable portal access to let this employee sign in with their work email (organization ID may be required on the login page).
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Portal role</label>
+                  <label htmlFor="emp-first-name" className="mb-1 block text-sm font-medium text-slate-800">
+                    First Name<span className="text-red-500"> *</span>
+                  </label>
+                  <input
+                    id="emp-first-name"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="emp-last-name" className="mb-1 block text-sm font-medium text-slate-800">
+                    Last Name
+                  </label>
+                  <input
+                    id="emp-last-name"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="emp-id" className="mb-1 block text-sm font-medium text-slate-800">
+                    Employee ID<span className="text-red-500"> *</span>
+                  </label>
+                  <input
+                    id="emp-id"
+                    name="employeeId"
+                    value={formData.employeeId}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    placeholder="EMP0024"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="emp-join" className="mb-1 block text-sm font-medium text-slate-800">
+                    Joining Date<span className="text-red-500"> *</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="emp-join"
+                      name="joinDate"
+                      type="date"
+                      value={formData.joinDate}
+                      onChange={handleFormChange}
+                      className={`${basicFieldClass} pr-10`}
+                      required
+                    />
+                    <HiCalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="emp-username" className="mb-1 block text-sm font-medium text-slate-800">
+                    Username<span className="text-red-500"> *</span>
+                  </label>
+                  <input
+                    id="emp-username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    autoComplete="username"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="emp-email" className="mb-1 block text-sm font-medium text-slate-800">
+                    Email<span className="text-red-500"> *</span>
+                  </label>
+                  <input
+                    id="emp-email"
+                    name="workEmail"
+                    type="email"
+                    value={formData.workEmail}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="emp-pwd" className="mb-1 block text-sm font-medium text-slate-800">
+                    Password {!editMode && <span className="text-red-500">*</span>}
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="emp-pwd"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={handleFormChange}
+                      className={`${basicFieldClass} pr-10`}
+                      autoComplete="new-password"
+                      placeholder={editMode ? 'Leave blank to keep current' : ''}
+                      required={!editMode}
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-700"
+                      onClick={() => setShowPassword((s) => !s)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <HiEyeSlash className="h-5 w-5" /> : <HiEye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="emp-pwd2" className="mb-1 block text-sm font-medium text-slate-800">
+                    Confirm Password {!editMode && <span className="text-red-500">*</span>}
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="emp-pwd2"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={formData.confirmPassword}
+                      onChange={handleFormChange}
+                      className={`${basicFieldClass} pr-10`}
+                      autoComplete="new-password"
+                      placeholder={editMode ? 'Leave blank to keep current' : ''}
+                      required={!editMode}
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-700"
+                      onClick={() => setShowConfirmPassword((s) => !s)}
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <HiEyeSlash className="h-5 w-5" /> : <HiEye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="emp-phone" className="mb-1 block text-sm font-medium text-slate-800">
+                    Phone Number<span className="text-red-500"> *</span>
+                  </label>
+                  <input
+                    id="emp-phone"
+                    name="phoneNumber"
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="emp-company" className="mb-1 block text-sm font-medium text-slate-800">
+                    Company<span className="text-red-500"> *</span>
+                  </label>
+                  <input
+                    id="emp-company"
+                    name="company"
+                    value={formData.company}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="emp-dept" className="mb-1 block text-sm font-medium text-slate-800">
+                    Department
+                  </label>
+                  <select id="emp-dept" name="department" value={formData.department} onChange={handleFormChange} className={`${basicFieldClass} mt-0`} required>
+                    <option value="">Select department</option>
+                    {filterOptions.departments.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="emp-desig" className="mb-1 block text-sm font-medium text-slate-800">
+                    Designation
+                  </label>
+                  <select id="emp-desig" name="jobTitle" value={formData.jobTitle} onChange={handleFormChange} className={`${basicFieldClass} mt-0`} required>
+                    <option value="">Select designation</option>
+                    {filterOptions.jobTitles.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="emp-about" className="mb-1 block text-sm font-medium text-slate-800">
+                  About<span className="text-red-500"> *</span>
+                </label>
+                <textarea
+                  id="emp-about"
+                  name="about"
+                  value={formData.about}
+                  onChange={handleFormChange}
+                  rows={4}
+                  className={`${basicFieldClass} min-h-[120px]`}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {formTab === 'others' && (
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 border-b border-slate-100 pb-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
+                  <HiIdentification className="h-4 w-4 text-[#f97316]" />
+                  Personal details
+                </h3>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Input label="Date of Birth" name="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Gender</label>
+                    <select name="gender" value={formData.gender} onChange={handleFormChange} className={selectClass}>
+                      <option value="">Select...</option>
+                      <option>Male</option><option>Female</option><option>Other</option>
+                    </select>
+                  </div>
+                  <Input label="Nationality" name="nationality" value={formData.nationality} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Country of Residence" name="countryOfResidence" value={formData.countryOfResidence} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Marital Status</label>
+                    <select name="maritalStatus" value={formData.maritalStatus} onChange={handleFormChange} className={selectClass}>
+                      <option value="">Select status</option>
+                      <option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option>
+                    </select>
+                  </div>
+                  <Input label="Number of Dependents" name="dependents" type="number" value={formData.dependents} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Personal Email" name="personalEmail" type="email" value={formData.personalEmail} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Emergency Contact Name" name="emergencyContactName" value={formData.emergencyContactName} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Emergency Contact Phone" name="emergencyContactPhone" type="tel" value={formData.emergencyContactPhone} onChange={handleFormChange} inputClassName="rounded-md" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Residential Address</label>
+                  <textarea name="homeAddress" value={formData.homeAddress} onChange={handleFormChange} className={textareaClass} rows={2} />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 border-b border-slate-100 pb-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
+                  <HiBriefcase className="h-4 w-4 text-[#f97316]" />
+                  Employment
+                </h3>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Employment Type</label>
+                    <select name="employmentType" value={formData.employmentType} onChange={handleFormChange} className={selectClass} required>
+                      <option value="">Select type</option>
+                      <option>Full-time</option><option>Part-time</option><option>Contract</option><option>Intern</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Work Region</label>
+                    <select name="workLocation" value={formData.workLocation} onChange={handleFormChange} className={selectClass}>
+                      <option value="">Select location</option>
+                      {(filterOptions.workLocations?.length ? filterOptions.workLocations : ['Dubai', 'Abu Dhabi', 'Remote', 'UK', 'India']).map((loc) => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Work Mode</label>
+                    <select name="workMode" value={formData.workMode} onChange={handleFormChange} className={selectClass}>
+                      <option value="">Select work mode</option>
+                      <option>In Office</option><option>Remote</option><option>Hybrid</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Employment Status</label>
+                    <select name="employmentStatus" value={formData.employmentStatus} onChange={handleFormChange} className={selectClass}>
+                      <option value="">Select status</option>
+                      <option>Active</option><option>Probation</option><option>Notice Period</option><option>On Leave</option><option>Terminated</option>
+                    </select>
+                  </div>
+                  <Input label="Probation End Date" name="probationEndDate" type="date" value={formData.probationEndDate} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Reporting Manager Employee ID" name="reportingManager" value={formData.reportingManager} onChange={handleFormChange} placeholder="EMP001" inputClassName="rounded-md" />
+                  <Input label="Gross Salary (AED)" name="salary" type="number" min="0" step="0.01" value={formData.salary} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Grade Level" name="grade" value={formData.grade} onChange={handleFormChange} inputClassName="rounded-md" />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 border-b border-slate-100 pb-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
+                  <HiDocumentText className="h-4 w-4 text-[#f97316]" />
+                  Compliance &amp; records
+                </h3>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Input label="Passport Number" name="passportNumber" value={formData.passportNumber} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Passport Expiry" name="passportExpiry" type="date" value={formData.passportExpiry} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Emirates ID" name="emiratesIdNumber" value={formData.emiratesIdNumber} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Emirates ID Expiry" name="emiratesIdExpiry" type="date" value={formData.emiratesIdExpiry} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Visa Type" name="visaType" value={formData.visaType} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Visa Expiry Date" name="visaExpiryDate" type="date" value={formData.visaExpiryDate} onChange={handleFormChange} inputClassName="rounded-md" />
+                  <Input label="Sponsoring Entity" name="sponsoringEntity" value={formData.sponsoringEntity} onChange={handleFormChange} inputClassName="rounded-md" />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 border-b border-slate-100 pb-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
+                  <HiArrowTrendingUp className="h-4 w-4 text-[#f97316]" />
+                  Career &amp; achievements
+                </h3>
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Career History</label>
+                  <textarea name="careerHistory" value={formData.careerHistory} onChange={handleFormChange} className={textareaClass} rows={2} />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Awards Summary</label>
+                  <textarea name="awardsSummary" value={formData.awardsSummary} onChange={handleFormChange} className={textareaClass} rows={2} />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Promotion History</label>
+                  <textarea name="promotionHistory" value={formData.promotionHistory} onChange={handleFormChange} className={textareaClass} rows={2} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {formTab === 'permissions' && (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Set portal access and role here. Login password for new employees is set under <strong>Basic Information</strong>.
+              </p>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <label className="ml-1 block text-sm font-medium text-slate-800">Portal role</label>
                   <select name="rbacRoleId" value={formData.rbacRoleId} onChange={handleFormChange} className={selectClass}>
                     <option value="">None</option>
                     {tenantRoles.map((r) => (
@@ -636,7 +1056,7 @@ export default function EmployeeDirectory() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Portal access</label>
+                  <label className="ml-1 block text-sm font-medium text-slate-800">Portal access</label>
                   <select
                     name="portalEnabled"
                     value={formData.portalEnabled ? '1' : '0'}
@@ -648,58 +1068,33 @@ export default function EmployeeDirectory() {
                   </select>
                 </div>
               </div>
-              {formData.portalEnabled ? (
-                <Input
-                  label={editMode ? 'Portal password (leave blank to keep current)' : 'Portal password'}
-                  name="portalPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  value={formData.portalPassword}
-                  onChange={handleFormChange}
-                  placeholder={editMode ? '••••••••' : 'Min. 8 characters'}
-                />
-              ) : null}
+              <Input
+                label="Optional alternate portal password"
+                name="portalPassword"
+                type="password"
+                autoComplete="new-password"
+                value={formData.portalPassword}
+                onChange={handleFormChange}
+                helpText="If set, overrides the Basic Information password when both are submitted."
+                inputClassName="rounded-md"
+              />
             </div>
-          </div>
+          )}
 
-          {/* Compliance & Records */}
-          <div className="space-y-3">
-            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-2">
-              <HiDocumentText className="h-4 w-4 text-[#0F766E]" /> Compliance &amp; Records
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input label="Passport Number"   name="passportNumber"  value={formData.passportNumber}  onChange={handleFormChange} />
-              <Input label="Passport Expiry"   name="passportExpiry"  type="date" value={formData.passportExpiry}  onChange={handleFormChange} />
-              <Input label="Emirates ID"       name="emiratesIdNumber" value={formData.emiratesIdNumber} onChange={handleFormChange} />
-              <Input label="Emirates ID Expiry" name="emiratesIdExpiry" type="date" value={formData.emiratesIdExpiry} onChange={handleFormChange} />
-              <Input label="Visa Type"         name="visaType"        value={formData.visaType}        onChange={handleFormChange} />
-              <Input label="Visa Expiry Date"  name="visaExpiryDate"  type="date" value={formData.visaExpiryDate}  onChange={handleFormChange} />
-              <Input label="Sponsoring Entity" name="sponsoringEntity" value={formData.sponsoringEntity} onChange={handleFormChange} />
-            </div>
-          </div>
-
-          {/* Career & Achievements */}
-          <div className="space-y-3">
-            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-1.5 flex items-center gap-2">
-              <HiArrowTrendingUp className="h-4 w-4 text-[#0F766E]" /> Career &amp; Achievements
-            </h3>
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Career History</label>
-              <textarea name="careerHistory" value={formData.careerHistory} onChange={handleFormChange} className={textareaClass} rows={2} />
-            </div>
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Awards Summary</label>
-              <textarea name="awardsSummary" value={formData.awardsSummary} onChange={handleFormChange} className={textareaClass} rows={2} />
-            </div>
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Promotion History</label>
-              <textarea name="promotionHistory" value={formData.promotionHistory} onChange={handleFormChange} className={textareaClass} rows={2} />
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-3 border-t border-slate-100">
-            <Button type="submit" label={editMode ? 'UPDATE IDENTITY' : 'INITIALIZE TALENT'} variant="primary" className="flex-1 py-3.5 shadow-xl shadow-emerald-900/10 uppercase font-black text-xs" />
-            <Button type="button" label="CANCEL" variant="ghost" onClick={handleCloseModal} className="flex-1 py-3.5 font-black text-slate-400 uppercase text-xs" />
+          <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-800 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="h-10 rounded-md bg-[#f97316] px-6 text-sm font-semibold text-white hover:bg-[#ea6a0b]"
+            >
+              Save
+            </button>
           </div>
         </form>
       </Modal>
