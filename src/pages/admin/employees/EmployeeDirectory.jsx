@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import {
   HiDocumentText, HiEnvelope, HiEye, HiEyeSlash, HiPencil, HiTrash, HiPlus,
   HiMagnifyingGlass, HiArrowTrendingUp, HiIdentification,
-  HiBriefcase, HiMapPin, HiFolder, HiClock, HiCalendarDays,
+  HiBriefcase, HiFolder, HiClock, HiCalendarDays,
   HiPresentationChartLine, HiDevicePhoneMobile, HiCheckBadge,
-  HiUserCircle,
+  HiUserCircle, HiChevronDown, HiArrowsUpDown,
 } from 'react-icons/hi2'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -33,6 +33,40 @@ function statusColor(status) {
   if (status === 'Notice Period') return 'orange'
   if (status === 'On Leave')      return 'yellow'
   return 'gray'
+}
+
+function displayEmpId(raw) {
+  if (raw == null || raw === '') return '—'
+  const s = String(raw).trim()
+  if (/^emp[-_\s]?/i.test(s)) return s.replace(/^emp[-_\s]*/i, 'Emp-')
+  const tail = s.replace(/^EMP[-_]?/i, '').replace(/^emp[-_]?/i, '')
+  return tail ? `Emp-${tail}` : `Emp-${s}`
+}
+
+function formatJoinDateDisplay(value) {
+  if (!value) return '—'
+  const iso = typeof value === 'string' && !value.includes('T') ? `${value.split(' ')[0]}T12:00:00` : value
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return String(value)
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function formatPhoneDisplay(phone) {
+  if (phone == null || phone === '') return '—'
+  const digits = String(phone).replace(/\D/g, '')
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 7)} ${digits.slice(7)}`
+  }
+  return String(phone).trim()
+}
+
+function colLabel(text) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {text}
+      <HiArrowsUpDown className="h-3 w-3 shrink-0 opacity-45" aria-hidden />
+    </span>
+  )
 }
 
 function mapEmployeeList(e) {
@@ -540,49 +574,57 @@ export default function EmployeeDirectory() {
 
   const columns = [
     {
-      key: 'employee', label: 'Personnel',
-      render: (_, row) => (
+      key: 'empId',
+      label: colLabel('Emp ID'),
+      render: (_v, row) => (
+        <span className="text-sm font-semibold text-slate-900">{displayEmpId(row.empId)}</span>
+      ),
+    },
+    {
+      key: 'name',
+      label: colLabel('Name'),
+      render: (_v, row) => (
         <div className="flex items-center gap-3 py-1">
-          <Avatar initials={row.initials} size="sm" className="shadow-sm border border-slate-200" />
-          <div>
-            <div className="text-sm font-bold text-slate-900 leading-none mb-1">{row.name}</div>
-            <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{row.empId}</div>
+          <Avatar initials={row.initials} size="sm" className="h-9 w-9 shrink-0 border border-slate-200 shadow-sm" />
+          <div className="min-w-0">
+            <div className="truncate text-sm font-bold text-slate-900">{row.name}</div>
+            <div className="truncate text-xs text-slate-500">{row.department || '—'}</div>
           </div>
         </div>
       ),
     },
-    { key: 'jobTitle', label: 'Designation' },
-    { key: 'department', label: 'Division' },
     {
-      key: 'portalRole',
-      label: 'Portal role',
+      key: 'email',
+      label: colLabel('Email'),
       render: (v) => (
-        <span className="text-xs font-semibold text-slate-600">{v || '—'}</span>
+        <span className="text-sm text-slate-700">{v || '—'}</span>
       ),
     },
     {
-      key: 'location', label: 'Region',
+      key: 'phone',
+      label: colLabel('Phone'),
       render: (v) => (
-        <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-          <HiMapPin className="h-3.5 w-3.5 text-slate-400" />
-          <span className="text-xs">{v || 'N/A'}</span>
+        <span className="text-sm text-slate-700">{formatPhoneDisplay(v)}</span>
+      ),
+    },
+    {
+      key: 'designation',
+      label: colLabel('Designation'),
+      render: (_v, row) => (
+        <div
+          title={row.jobTitle || ''}
+          className="inline-flex max-w-[200px] min-w-[140px] cursor-default items-center justify-between gap-2 rounded border border-slate-200 bg-white px-3 py-1.5 text-left text-sm text-slate-800 shadow-sm"
+        >
+          <span className="truncate">{row.jobTitle || '—'}</span>
+          <HiChevronDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
         </div>
       ),
     },
-    { key: 'manager', label: 'Manager' },
     {
-      key: 'status', label: 'Talent Health',
+      key: 'joinDate',
+      label: colLabel('Joining Date'),
       render: (v) => (
-        <span
-          className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${
-            v === 'Active'
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-slate-100 text-slate-700'
-          }`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${v === 'Active' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-          {v}
-        </span>
+        <span className="text-sm font-medium text-slate-700">{formatJoinDateDisplay(v)}</span>
       ),
     },
     {
@@ -647,7 +689,7 @@ export default function EmployeeDirectory() {
             </div>
 
             <select value={dept} onChange={(e) => setDept(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
-              <option value="">All Divisions</option>
+              <option value="">All Departments</option>
               {filterOptions.departments.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
 
@@ -1236,7 +1278,7 @@ export default function EmployeeDirectory() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Designation</p><p className="text-xs font-black text-slate-900">{selectedEmployee.jobTitle}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Division</p><p className="text-xs font-black text-slate-900">{selectedEmployee.department}</p></div>
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Department</p><p className="text-xs font-black text-slate-900">{selectedEmployee.department}</p></div>
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Region</p><p className="text-xs font-black text-slate-900">{selectedEmployee.location || '—'}</p></div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
