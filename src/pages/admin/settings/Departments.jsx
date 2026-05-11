@@ -241,12 +241,11 @@ export default function DepartmentManagement() {
       </div>
 
       {/* Analytics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          {[
             { label: 'Total Units', value: departmentList.length, icon: HiBuildingOffice, color: 'emerald' },
             { label: 'Global Headcount', value: departmentList.reduce((acc, d) => acc + d.employeeCount, 0), icon: HiUsers, color: 'blue' },
             { label: 'Active Sites', value: new Set(departmentList.map(d => d.location)).size, icon: HiGlobeAlt, color: 'orange' },
-            { label: 'Growth Index', value: '+12%', icon: HiCheckCircle, color: 'emerald' }
          ].map(card => (
             <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
                <div className="flex items-center gap-4 mb-4">

@@ -109,6 +109,7 @@ const adminNavGroups = [
         permission: "view_performance",
         featureCode: "performance",
       },
+/*
       {
         label: "Training & Development",
         icon: HiChartBar,
@@ -117,6 +118,7 @@ const adminNavGroups = [
         permission: "view_performance",
         featureCode: "training_development",
       },
+*/
       {
         label: "Policies",
         icon: HiClipboardDocumentCheck,
@@ -132,6 +134,7 @@ const adminNavGroups = [
         permission: "view_expenses",
         featureCode: "expenses",
       },
+/*
       {
         label: "Billing & Invoicing",
         icon: HiCurrencyDollar,
@@ -140,6 +143,7 @@ const adminNavGroups = [
         permission: "view_payroll",
         featureCode: "billing_invoicing",
       },
+*/
       {
         label: "Onboarding",
         icon: HiUserPlus,
@@ -164,6 +168,7 @@ const adminNavGroups = [
         permission: "view_letters",
         featureCode: "template_generation",
       },
+/*
       {
         label: "Reports & Analytics",
         icon: HiChartPie,
@@ -172,6 +177,7 @@ const adminNavGroups = [
         permission: "view_reports",
         featureCode: "reports_analytics",
       },
+*/
       {
         label: "Announcements",
         icon: HiMegaphone,
@@ -187,6 +193,7 @@ const adminNavGroups = [
         permission: "view_payroll",
         featureCode: "payroll",
       },
+/*
       {
         label: "Time Tracking",
         icon: HiClock,
@@ -211,6 +218,7 @@ const adminNavGroups = [
         permission: "view_attendance",
         featureCode: "overtime_management",
       },
+*/
     ],
   },
   {
@@ -224,6 +232,7 @@ const adminNavGroups = [
         permission: "edit_settings",
         featureCode: "department",
       },
+/*
       {
         label: "Messages",
         icon: HiChatBubbleLeftRight,
@@ -232,6 +241,7 @@ const adminNavGroups = [
         permission: "edit_settings",
         featureCode: "messages",
       },
+*/
       // { label: 'Projects', icon: HiFolder, path: '/admin/projects', permission: 'edit_settings', featureCode: 'projects' },
       // { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'edit_settings', featureCode: 'task_management' },
       // { label: 'Template Generator', icon: HiDocumentText, path: '/admin/templates', permission: 'edit_settings', featureCode: 'template_generation' },
