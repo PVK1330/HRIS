@@ -21,8 +21,8 @@ import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { employees } from '../../../data/mockData.js'
 import api from '../../../services/api.js'
+import { listEmployees } from '../../../services/employeeService.js'
 
 const CATEGORIES  = ['Recruitment', 'Compliance', 'Performance', 'Exit', 'HR', 'Finance', 'Leave', 'Disciplinary']
 const TYPES       = ['Letter', 'Form', 'Certificate', 'Report']
@@ -33,14 +33,16 @@ const EMPTY_TAG   = { tag: '', description: '' }
 function renderBody(body, employee) {
   if (!body || !employee) return body || ''
   return body
-    .replace(/\{\{employee_name\}\}/g,  employee.name        || '')
-    .replace(/\{\{employee_id\}\}/g,    employee.empId       || '')
-    .replace(/\{\{job_title\}\}/g,      employee.jobTitle    || '')
-    .replace(/\{\{department\}\}/g,     employee.department  || '')
-    .replace(/\{\{joining_date\}\}/g,   employee.joinDate    || '')
-    .replace(/\{\{salary\}\}/g,         employee.salary      || '[salary]')
+    .replace(/\{\{employee_name\}\}/g,  employee.full_name    || employee.name        || '')
+    .replace(/\{\{employee_id\}\}/g,    employee.emp_id       || employee.empId       || '')
+    .replace(/\{\{job_title\}\}/g,      employee.job_title    || employee.jobTitle    || '')
+    .replace(/\{\{department\}\}/g,     employee.department   || '')
+    .replace(/\{\{joining_date\}\}/g,   employee.join_date    || employee.joinDate    || '')
+    .replace(/\{\{salary\}\}/g,         employee.salary       || '[salary]')
+    .replace(/\{\{work_email\}\}/g,     employee.work_email   || employee.email       || '')
+    .replace(/\{\{work_location\}\}/g,  employee.work_location|| employee.location    || '')
     .replace(/\{\{today_date\}\}/g,     new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }))
-    .replace(/\{\{company_name\}\}/g,   employee.company     || '[Company Name]')
+    .replace(/\{\{company_name\}\}/g,   employee.company      || '[Company Name]')
     .replace(/\{\{[^}]+\}\}/g,          match => `[${match.slice(2, -2)}]`) // unknown tags shown as [tag]
 }
 
@@ -136,6 +138,12 @@ export default function LettersTemplates() {
   const [dispatchEmployeeId, setDispatchEmployeeId] = useState('')
   const [empSearch, setEmpSearch]       = useState('')
 
+  // ── Employee list for dispatch modal ─────────────────────────────────────
+  const [empList, setEmpList]           = useState([])
+  const [empListLoading, setEmpListLoading] = useState(false)
+  const [empListError, setEmpListError] = useState('')
+  const empListFetched = useRef(false)
+
   // ── Data state ────────────────────────────────────────────────────────────
   const [templates, setTemplates]   = useState([])
   const [history, setHistory]       = useState([])
@@ -190,6 +198,32 @@ export default function LettersTemplates() {
       setLoading(false)
     }
   }, [])
+
+  const fetchEmpList = useCallback(async () => {
+    if (empListFetched.current) return
+    empListFetched.current = true
+    setEmpListLoading(true)
+    setEmpListError('')
+    try {
+      const data = await listEmployees({ limit: 100 })
+      setEmpList(data?.employees || [])
+    } catch (err) {
+      empListFetched.current = false  // allow retry
+      const status = err?.response?.status
+      if (status === 401 || status === 403) {
+        setEmpListError('Session expired. Please log in again.')
+      } else {
+        setEmpListError(err?.response?.data?.message || 'Failed to load employees')
+      }
+    } finally {
+      setEmpListLoading(false)
+    }
+  }, [])
+
+  // Fetch employee list whenever the send modal opens
+  useEffect(() => {
+    if (sendModalOpen) fetchEmpList()
+  }, [sendModalOpen, fetchEmpList])
 
   useEffect(() => {
     if (hasFetched.current) return
@@ -370,7 +404,12 @@ export default function LettersTemplates() {
             size="sm"
             icon={HiEnvelope}
             className="bg-[#0F766E] border-none"
-            onClick={() => { setSelectedTemplate(row); setDispatchEmployeeId(''); setSendModalOpen(true) }}
+            onClick={() => {
+              setSelectedTemplate(row)
+              setDispatchEmployeeId('')
+              setEmpSearch('')
+              setSendModalOpen(true)
+            }}
           />
           <Button
             variant="ghost"
@@ -813,34 +852,55 @@ export default function LettersTemplates() {
                   />
                 </div>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                  {employees
-                    .filter(e => {
-                      const s = empSearch.toLowerCase()
-                      return !s || e.name.toLowerCase().includes(s) || e.empId.toLowerCase().includes(s) || (e.department || '').toLowerCase().includes(s)
-                    })
-                    .map(e => (
+                  {empListLoading ? (
+                    <div className="flex items-center justify-center py-6">
+                      <div className="h-4 w-4 rounded-full border-2 border-[#0F766E] border-t-transparent animate-spin" />
+                    </div>
+                  ) : empListError ? (
+                    <div className="text-center py-4 space-y-2">
+                      <p className="text-xs text-red-500 font-medium">{empListError}</p>
                       <button
-                        key={e.id}
                         type="button"
-                        onClick={() => setDispatchEmployeeId(String(e.id))}
-                        className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all ${
-                          String(dispatchEmployeeId) === String(e.id)
-                            ? 'border-[#0F766E] bg-emerald-50 ring-1 ring-[#0F766E]'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                        }`}
+                        onClick={() => { empListFetched.current = false; fetchEmpList() }}
+                        className="text-[10px] font-black text-[#0F766E] hover:underline"
                       >
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-7 w-7 rounded-full bg-[#0F766E]/10 flex items-center justify-center text-[10px] font-black text-[#0F766E] shrink-0">
-                            {e.name.charAt(0)}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-800 truncate">{e.name}</p>
-                            <p className="text-[10px] text-slate-400 font-medium">{e.empId} · {e.department}</p>
-                          </div>
-                        </div>
+                        Retry
                       </button>
-                    ))
-                  }
+                    </div>
+                  ) : empList.length === 0 ? (
+                    <p className="text-center text-xs text-slate-400 py-4">No employees found</p>
+                  ) : (
+                    empList
+                      .filter(e => {
+                        const s = empSearch.toLowerCase()
+                        return !s
+                          || (e.full_name || '').toLowerCase().includes(s)
+                          || (e.emp_id   || '').toLowerCase().includes(s)
+                          || (e.department || '').toLowerCase().includes(s)
+                      })
+                      .map(e => (
+                        <button
+                          key={e.id}
+                          type="button"
+                          onClick={() => setDispatchEmployeeId(String(e.id))}
+                          className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all ${
+                            String(dispatchEmployeeId) === String(e.id)
+                              ? 'border-[#0F766E] bg-emerald-50 ring-1 ring-[#0F766E]'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-7 w-7 rounded-full bg-[#0F766E]/10 flex items-center justify-center text-[10px] font-black text-[#0F766E] shrink-0">
+                              {(e.full_name || '?').charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-800 truncate">{e.full_name}</p>
+                              <p className="text-[10px] text-slate-400 font-medium">{e.emp_id} · {e.department}</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                  )}
                 </div>
               </div>
 
@@ -850,14 +910,14 @@ export default function LettersTemplates() {
                   <button
                     type="button"
                     onClick={() => {
-                      const emp = employees.find(e => String(e.id) === String(dispatchEmployeeId))
+                      const emp = empList.find(e => String(e.id) === String(dispatchEmployeeId))
                       if (!emp || !selectedTemplate?.body) return
                       const rendered = renderBody(selectedTemplate.body, emp)
                       const blob = new Blob([rendered], { type: 'text/plain' })
                       const url = URL.createObjectURL(blob)
                       const a = document.createElement('a')
                       a.href = url
-                      a.download = `${selectedTemplate.name.replace(/\s+/g, '_')}_${emp.name.replace(/\s+/g, '_')}.txt`
+                      a.download = `${selectedTemplate.name.replace(/\s+/g, '_')}_${emp.full_name.replace(/\s+/g, '_')}.txt`
                       a.click()
                       URL.revokeObjectURL(url)
                     }}
@@ -911,7 +971,7 @@ export default function LettersTemplates() {
                   <div className="px-8 py-6">
                     <pre className="text-sm text-slate-700 font-serif leading-relaxed whitespace-pre-wrap break-words">
                       {dispatchEmployeeId
-                        ? renderBody(selectedTemplate.body, employees.find(e => String(e.id) === String(dispatchEmployeeId)))
+                        ? renderBody(selectedTemplate.body, empList.find(e => String(e.id) === String(dispatchEmployeeId)))
                         : selectedTemplate.body
                       }
                     </pre>
