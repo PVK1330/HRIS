@@ -32,7 +32,6 @@ import { useTenantAdminSettings } from '../../../hooks/useTenantAdminSettings'
 const initialFormData = {
   departmentName: '',
   departmentCode: '',
-  location: '',
   description: '',
   status: 'Active',
 }
@@ -101,7 +100,6 @@ export default function DepartmentManagement() {
       const payload = {
         name: formData.departmentName,
         code: formData.departmentCode,
-        location: formData.location,
         description: formData.description,
         isActive: formData.status === 'Active'
       }
@@ -147,7 +145,6 @@ export default function DepartmentManagement() {
     setFormData({
       departmentName: dept.name,
       departmentCode: dept.code,
-      location: dept.location,
       description: dept.description,
       status: dept.status,
     })
@@ -169,16 +166,6 @@ export default function DepartmentManagement() {
               <div className="font-bold text-slate-900 leading-none mb-1">{v}</div>
               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{row.code}</div>
            </div>
-        </div>
-      )
-    },
-    {
-      key: 'location',
-      label: 'Base Site',
-      render: (v) => (
-        <div className="flex items-center gap-1.5 text-slate-500 font-medium">
-           <HiMapPin className="h-3.5 w-3.5 opacity-50" />
-           <span className="text-xs">{v || 'N/A'}</span>
         </div>
       )
     },
@@ -241,11 +228,10 @@ export default function DepartmentManagement() {
       </div>
 
       {/* Analytics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          {[
             { label: 'Total Units', value: departmentList.length, icon: HiBuildingOffice, color: 'emerald' },
             { label: 'Global Headcount', value: departmentList.reduce((acc, d) => acc + d.employeeCount, 0), icon: HiUsers, color: 'blue' },
-            { label: 'Active Sites', value: new Set(departmentList.map(d => d.location)).size, icon: HiGlobeAlt, color: 'orange' },
          ].map(card => (
             <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
                <div className="flex items-center gap-4 mb-4">
@@ -293,17 +279,15 @@ export default function DepartmentManagement() {
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Department' : 'Add Department'} size="xl">
         <form onSubmit={handleSubmit} className="animate-in fade-in duration-500 space-y-8">
            {/* Section: Core Identity */}
-           <div className="space-y-4">
-              <h3 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">
-                 <HiIdentification className="h-4 w-4 text-[#0F766E]" /> General Info
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2">
+           <div className="space-y-6">
+              <div className="grid gap-6">
                  <Input
                    label="Department Name"
                    name="departmentName"
                    value={formData.departmentName}
                    onChange={handleFormChange}
                    required
+                   placeholder="e.g. Information Technology"
                    className="text-slate-900 font-medium"
                  />
                  <Input
@@ -311,42 +295,18 @@ export default function DepartmentManagement() {
                    name="departmentCode"
                    value={formData.departmentCode}
                    onChange={handleFormChange}
-                   placeholder="e.g. IT-01, EXEC-00"
+                   placeholder="e.g. IT-01"
                    required
                    className="text-slate-900 font-medium"
                  />
-              </div>
-           </div>
-
-           {/* Section: Location & Details */}
-           <div className="space-y-4">
-              <h3 className="flex items-center gap-2 text-xs font-black text-[#0F766E] uppercase tracking-widest border-b border-slate-100 pb-2">
-                 <HiMapPin className="h-4 w-4" /> Location & Details
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                 <div className="w-full">
-                    <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Location</label>
-                    <select
-                      name="location"
-                      value={formData.location}
-                      onChange={handleFormChange}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all"
-                      required
-                    >
-                      <option value="" disabled hidden>Select Location</option>
-                      {dynamicLocations.map(loc => (
-                        <option key={loc} value={loc}>{loc}</option>
-                      ))}
-                    </select>
-                 </div>
                  <div className="w-full">
                     <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
                     <textarea
                       name="description"
                       value={formData.description}
                       onChange={handleFormChange}
-                      className="w-full min-h-[46px] rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all resize-none"
-                      placeholder="Briefly describe the unit..."
+                      className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-slate-50/50 py-3 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] outline-none transition-all resize-none"
+                      placeholder="Enter department description..."
                     />
                  </div>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   HiPlus, 
   HiMagnifyingGlass, 
@@ -10,42 +10,35 @@ import {
   HiUserGroup,
   HiClipboardDocumentList,
   HiClock,
-  HiComputerDesktop,
-  HiDevicePhoneMobile,
   HiIdentification,
-  HiShoppingBag
+  HiTrash,
+  HiPencilSquare
 } from 'react-icons/hi2';
 import { Button } from '../../../components/ui/Button.jsx';
 import { Input } from '../../../components/ui/Input.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { StatCard } from '../../../components/ui/StatCard.jsx';
 import { Badge } from '../../../components/ui/Badge.jsx';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { employees } from '../../../data/mockData.js';
+import { assetService } from '../../../services/assetService.js';
+import { fetchAssetCategories } from '../../../services/assetSettingsService.js';
+import { listEmployees } from '../../../services/employeeService.js';
+import { toast } from 'react-hot-toast';
 
-const MOCK_ASSETS = [
-  { id: 'AST-001', type: 'Laptop', serial: 'SN123456', assignedTo: 'John Doe', department: 'Engineering', issueDate: '2026-01-10', condition: 'Good', status: 'Issued' },
-  { id: 'AST-002', type: 'Mobile', serial: 'SN789012', assignedTo: 'Sarah Ahmed', department: 'HR', issueDate: '2026-02-15', condition: 'Good', status: 'Issued' },
-  { id: 'AST-003', type: 'Access Card', serial: 'AC998877', assignedTo: 'Michael Chen', department: 'Product', issueDate: '2026-03-05', condition: 'Good', status: 'Issued' },
-  { id: 'AST-004', type: 'Laptop', serial: 'SN654321', assignedTo: '-', department: '-', issueDate: '-', condition: 'Good', status: 'Available' },
-  { id: 'AST-005', type: 'Uniform', serial: 'U-XL-01', assignedTo: 'Neha Jain', department: 'Sales', issueDate: '2026-04-01', condition: 'New', status: 'Issued' },
-];
+const IconMap = {
+  'laptop': HiArchiveBox,
+  'smartphone': HiIdentification,
+  'sim-card': HiClipboardDocumentList,
+  'credit-card': HiIdentification,
+  'shirt': HiArchiveBox,
+  'tool': HiAdjustmentsHorizontal,
+  'box': HiArchiveBox
+};
 
-const MOCK_REQUESTS = [
-  { id: 1, employee: 'David Smith', empId: 'EMP-105', type: 'Laptop', requestedOn: '2026-05-01', status: 'Pending' },
-  { id: 2, employee: 'Lisa Wong', empId: 'EMP-108', type: 'Access Card', requestedOn: '2026-04-28', status: 'Approved' },
-];
-
-const MOCK_RETURNS = [
-  { id: 1, employee: 'James Bond', asset: 'Laptop (SN-007)', returnDate: '2026-04-30', condition: 'Damaged', remarks: 'Screen crack' },
-];
-
-const typeIcons = {
-  'Laptop': HiComputerDesktop,
-  'Mobile': HiDevicePhoneMobile,
-  'Access Card': HiIdentification,
-  'Uniform': HiShoppingBag,
-}
+const getCategoryIcon = (iconName) => {
+  return IconMap[iconName] || HiArchiveBox;
+};
 
 export default function AssetManagement() {
   const { user } = useAuth();
@@ -54,39 +47,105 @@ export default function AssetManagement() {
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState(null);
+  
+  const [assets, setAssets] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [employeeList, setEmployeeList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [formData, setFormData] = useState({
-    type: '',
-    serial: '',
+    categoryId: '',
+    serialNumber: '',
     condition: 'Good',
-    assignedTo: '',
+    employeeId: '',
     issueDate: '',
-    notes: ''
+    notes: '',
+    status: 'Available'
   });
 
-  const canAddAsset = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin';
+  const canManage = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin';
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching asset data...');
+      const [assetData, categoryData, empData] = await Promise.all([
+        assetService.getAssets(),
+        fetchAssetCategories(),
+        listEmployees({ limit: 1000 })
+      ]);
+      
+      console.log('Assets:', assetData);
+      console.log('Categories:', categoryData);
+      console.log('Employees:', empData);
+
+      setAssets(assetData || []);
+      setCategories(categoryData?.data || []);
+      setEmployeeList(empData?.employees || []);
+    } catch (error) {
+      console.error('Error loading asset data:', error);
+      toast.error(`Failed to load data: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const stats = useMemo(() => ({
-    total: MOCK_ASSETS.length,
-    issued: MOCK_ASSETS.filter(a => a.status === 'Issued').length,
-    pending: MOCK_REQUESTS.filter(r => r.status === 'Pending').length
-  }), []);
+    total: assets.length,
+    issued: assets.filter(a => a.status === 'Issued').length,
+    available: assets.filter(a => a.status === 'Available').length
+  }), [assets]);
 
   const filteredAssets = useMemo(() => {
-    return MOCK_ASSETS.filter(asset => {
+    return assets.filter(asset => {
       const matchesSearch = search === '' || 
-        asset.serial.toLowerCase().includes(search.toLowerCase()) ||
-        asset.assignedTo.toLowerCase().includes(search.toLowerCase()) ||
-        asset.id.toLowerCase().includes(search.toLowerCase());
-      const matchesType = typeFilter === '' || asset.type === typeFilter;
+        asset.serial?.toLowerCase().includes(search.toLowerCase()) ||
+        asset.assignedTo?.toLowerCase().includes(search.toLowerCase()) ||
+        asset.asset_id?.toLowerCase().includes(search.toLowerCase());
+      const matchesType = typeFilter === '' || asset.category_id === typeFilter;
       const matchesStatus = statusFilter === '' || asset.status === statusFilter;
       return matchesSearch && matchesType && matchesStatus;
     });
-  }, [search, typeFilter, statusFilter]);
+  }, [assets, search, typeFilter, statusFilter]);
 
-  const handleOpenModal = () => setIsModalOpen(true);
+  const handleOpenModal = (asset = null) => {
+    if (asset) {
+      setEditMode(true);
+      setSelectedAssetId(asset.id);
+      setFormData({
+        categoryId: asset.category_id || '',
+        serialNumber: asset.serial_number || '',
+        condition: asset.condition || 'Good',
+        employeeId: asset.employee_id || '',
+        issueDate: asset.issue_date ? asset.issue_date.split('T')[0] : '',
+        notes: asset.notes || '',
+        status: asset.status || 'Available'
+      });
+    } else {
+      setEditMode(false);
+      setFormData({
+        categoryId: '',
+        serialNumber: '',
+        condition: 'Good',
+        employeeId: '',
+        issueDate: '',
+        notes: '',
+        status: 'Available'
+      });
+    }
+    setIsModalOpen(true);
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setFormData({ type: '', serial: '', condition: 'Good', assignedTo: '', issueDate: '', notes: '' });
+    setEditMode(false);
+    setSelectedAssetId(null);
   };
 
   const handleInputChange = (e) => {
@@ -94,11 +153,41 @@ export default function AssetManagement() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('New Asset Data:', formData);
-    handleCloseModal();
+    try {
+      if (editMode) {
+        await assetService.updateAsset(selectedAssetId, formData);
+        toast.success('Asset updated successfully');
+      } else {
+        await assetService.createAsset(formData);
+        toast.success('Asset registered successfully');
+      }
+      handleCloseModal();
+      loadInitialData();
+    } catch (error) {
+      toast.error(error.message || 'Operation failed');
+    }
   };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this asset?')) return;
+    try {
+      await assetService.deleteAsset(id);
+      toast.success('Asset removed');
+      loadInitialData();
+    } catch (error) {
+      toast.error('Failed to delete asset');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0F766E] border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -111,10 +200,10 @@ export default function AssetManagement() {
               Track, assign, and manage company resources with precision. Monitor inventory health and streamline asset lifecycle workflows.
             </p>
           </div>
-          {canAddAsset && (
+          {canManage && (
             <div className="flex flex-wrap gap-3">
               <button 
-                onClick={handleOpenModal}
+                onClick={() => handleOpenModal()}
                 className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95"
               >
                 <HiPlus className="h-5 w-5" /> Add New Asset
@@ -122,8 +211,6 @@ export default function AssetManagement() {
             </div>
           )}
         </div>
-        
-        {/* Background Decorative Elements */}
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
         <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-black/5" />
       </div>
@@ -138,16 +225,16 @@ export default function AssetManagement() {
           icon={HiArchiveBox}
         />
         <StatCard
-          title="Active Assignments"
+          title="Issued Assets"
           value={stats.issued}
-          subtitle={`${((stats.issued/stats.total)*100).toFixed(0)}% utilization rate`}
+          subtitle="Actively in use"
           color="emerald"
           icon={HiUserGroup}
         />
         <StatCard
-          title="Pending Requests"
-          value={stats.pending}
-          subtitle="Awaiting administrative review"
+          title="Available"
+          value={stats.available}
+          subtitle="Ready for assignment"
           color="orange"
           icon={HiClipboardDocumentList}
         />
@@ -157,21 +244,14 @@ export default function AssetManagement() {
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-slate-200">
           <div className="flex gap-8">
-            {['inventory', 'requests', 'returns'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`pb-4 text-sm font-bold uppercase tracking-widest transition-all relative ${activeTab === tab
-                    ? 'text-[#0F766E]'
-                    : 'text-slate-400 hover:text-slate-600'
-                  }`}
-              >
-                {tab === 'inventory' ? 'Inventory' : tab === 'requests' ? 'Requests' : 'Returns'}
-                {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 rounded-full bg-[#0F766E] animate-in slide-in-from-left-full duration-300" />
-                )}
-              </button>
-            ))}
+            <button
+              onClick={() => setActiveTab('inventory')}
+              className={`pb-4 text-sm font-bold uppercase tracking-widest transition-all relative ${activeTab === 'inventory' ? 'text-[#0F766E]' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              Inventory
+              {activeTab === 'inventory' && <div className="absolute bottom-0 left-0 right-0 h-1 rounded-full bg-[#0F766E] animate-in slide-in-from-left-full duration-300" />}
+            </button>
+            {/* Requests/Returns can be added later as full modules */}
           </div>
         </div>
 
@@ -208,17 +288,16 @@ export default function AssetManagement() {
               </div>
 
               <div className="relative group">
-                <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Type</label>
+                <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
                 <select
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 focus:outline-none appearance-none transition-all"
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
                 >
                   <option value="">All Categories</option>
-                  <option value="Laptop">Laptops</option>
-                  <option value="Mobile">Mobile Devices</option>
-                  <option value="Access Card">Security Cards</option>
-                  <option value="Uniform">Work Uniforms</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -232,6 +311,8 @@ export default function AssetManagement() {
                   <option value="">All Statuses</option>
                   <option value="Issued">Issued</option>
                   <option value="Available">Available</option>
+                  <option value="Damaged">Damaged</option>
+                  <option value="Lost">Lost</option>
                 </select>
               </div>
             </div>
@@ -243,192 +324,156 @@ export default function AssetManagement() {
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
         <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="text-sm font-bold text-slate-700">
-              {activeTab === 'inventory' ? 'Asset Inventory' : activeTab === 'requests' ? 'Pending Requests' : 'Return Tracker'}
-            </div>
-            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource Intelligence</div>
+            <div className="text-sm font-bold text-slate-700">Asset Inventory</div>
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource Registry</div>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          {activeTab === 'inventory' && (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Asset Details</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Type</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Assignment</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Condition</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredAssets.map((asset) => {
-                  const Icon = typeIcons[asset.type] || HiArchiveBox;
-                  return (
-                    <tr key={asset.id} className="hover:bg-slate-50 transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 group-hover:bg-[#0F766E]/10 group-hover:text-[#0F766E] transition-all">
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <div className="font-bold text-slate-900">{asset.id}</div>
-                            <div className="text-xs text-slate-400 font-mono">SN: {asset.serial}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
-                          {asset.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {asset.assignedTo !== '-' ? (
-                          <div>
-                            <div className="font-semibold text-slate-700">{asset.assignedTo}</div>
-                            <div className="text-[10px] text-slate-400 uppercase font-black">{asset.department}</div>
-                          </div>
-                        ) : (
-                          <span className="text-slate-300 italic">Unassigned</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge label={asset.condition} color={asset.condition === 'New' || asset.condition === 'Good' ? 'green' : asset.condition === 'Fair' ? 'orange' : 'red'} />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge label={asset.status} color={asset.status === 'Available' ? 'green' : 'blue'} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-
-          {activeTab === 'requests' && (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Employee</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Requested Item</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Date</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {MOCK_REQUESTS.map((req) => (
-                  <tr key={req.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900">{req.employee}</div>
-                      <div className="text-xs text-slate-400">{req.empId}</div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-600">{req.type}</td>
-                    <td className="px-6 py-4 text-slate-500 font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <HiClock className="h-4 w-4 text-slate-400" />
-                        {req.requestedOn}
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Asset Details</th>
+                <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Category</th>
+                <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Assignment</th>
+                <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Condition</th>
+                <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Status</th>
+                {canManage && <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest text-right">Actions</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredAssets.length > 0 ? filteredAssets.map((asset) => (
+                <tr key={asset.id} className="hover:bg-slate-50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="flex h-10 w-10 items-center justify-center rounded-xl transition-all"
+                        style={{ backgroundColor: `${asset.categoryColor}15`, color: asset.categoryColor }}
+                      >
+                        {React.createElement(getCategoryIcon(asset.categoryIcon), { className: "h-5 w-5" })}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge label={req.status} color={req.status === 'Pending' ? 'orange' : 'green'} />
-                    </td>
+                      <div>
+                        <div className="font-bold text-slate-900">{asset.asset_id}</div>
+                        <div className="text-xs text-slate-400 font-mono">SN: {asset.serial_number}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
+                      {asset.categoryName || 'Unknown'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {asset.assignedTo !== '-' ? (
+                      <div className="font-semibold text-slate-700">{asset.assignedTo}</div>
+                    ) : (
+                      <span className="text-slate-300 italic text-xs">Unassigned</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge label={asset.condition} color={asset.condition === 'New' || asset.condition === 'Good' ? 'green' : asset.condition === 'Fair' ? 'orange' : 'red'} />
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge label={asset.status} color={asset.status === 'Available' ? 'green' : asset.status === 'Issued' ? 'blue' : 'red'} />
+                  </td>
+                  {canManage && (
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors">
-                          <HiCheck className="h-5 w-5" />
+                      <div className="flex justify-end gap-2 transition-opacity">
+                        <button 
+                          onClick={() => handleOpenModal(asset)}
+                          className="p-1.5 text-slate-400 hover:text-[#0F766E] transition-colors"
+                        >
+                          <HiPencilSquare className="h-5 w-5" />
                         </button>
-                        <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
-                          <HiXMark className="h-5 w-5" />
+                        <button 
+                          onClick={() => handleDelete(asset.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                        >
+                          <HiTrash className="h-5 w-5" />
                         </button>
                       </div>
                     </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          {activeTab === 'returns' && (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Employee</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Asset Details</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Condition</th>
-                  <th className="px-6 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                  )}
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {MOCK_RETURNS.map((ret) => (
-                  <tr key={ret.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900">{ret.employee}</td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-600">{ret.asset}</div>
-                      <div className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Return: {ret.returnDate}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge label={ret.condition} color="red" />
-                      <div className="mt-1 text-xs text-slate-400 italic">"{ret.remarks}"</div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button label="Process Return" size="sm" variant="primary" icon={HiArrowPath} className="rounded-full px-4" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              )) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No assets found in registry</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Add New Asset" size="xl">
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Asset' : 'Add New Asset'} size="xl">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Asset Type"
-              name="type"
-              type="select"
-              options={[
-                { value: 'Laptop', label: 'Laptop' },
-                { value: 'Mobile', label: 'Mobile' },
-                { value: 'Access Card', label: 'Access Card' },
-                { value: 'Uniform', label: 'Uniform' },
-              ]}
-              value={formData.type}
-              onChange={handleInputChange}
-              required
-            />
-            <Input label="Serial No" name="serial" value={formData.serial} onChange={handleInputChange} required />
+            <div className="space-y-1.5">
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Category</label>
+               <select
+                 name="categoryId"
+                 value={formData.categoryId}
+                 onChange={handleInputChange}
+                 required
+                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
+               >
+                 <option value="">Select Category</option>
+                 {categories.map(cat => (
+                   <option key={cat.id} value={cat.id}>{cat.name}</option>
+                 ))}
+               </select>
+            </div>
+            <Input label="Serial Number" name="serialNumber" value={formData.serialNumber} onChange={handleInputChange} required placeholder="e.g. SN-12345" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Condition"
-              name="condition"
-              type="select"
-              options={[
-                { value: 'New', label: 'New' },
-                { value: 'Good', label: 'Good' },
-                { value: 'Fair', label: 'Fair' },
-                { value: 'Damaged', label: 'Damaged' },
-              ]}
-              value={formData.condition}
+            <div className="space-y-1.5">
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Condition</label>
+               <select
+                 name="condition"
+                 value={formData.condition}
+                 onChange={handleInputChange}
+                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
+               >
+                 <option value="New">New</option>
+                 <option value="Good">Good</option>
+                 <option value="Fair">Fair</option>
+                 <option value="Damaged">Damaged</option>
+               </select>
+            </div>
+            <div className="space-y-1.5">
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Status</label>
+               <select
+                 name="status"
+                 value={formData.status}
+                 onChange={handleInputChange}
+                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
+               >
+                 <option value="Available">Available</option>
+                 <option value="Issued">Issued</option>
+                 <option value="In Repair">In Repair</option>
+                 <option value="Lost">Lost</option>
+               </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <SearchableSelect
+              label="Assign To Employee"
+              name="employeeId"
+              value={formData.employeeId}
               onChange={handleInputChange}
-              required
+              placeholder="Search employee by name or ID..."
+              options={[
+                { value: '', label: 'Not Assigned' },
+                ...employeeList.map(e => ({
+                  value: e.id,
+                  label: `${e.full_name} (${e.emp_id})`
+                }))
+              ]}
             />
             <Input label="Issue Date" name="issueDate" type="date" value={formData.issueDate} onChange={handleInputChange} />
           </div>
-
-          <Input
-            label="Assign To"
-            name="assignedTo"
-            type="select"
-            options={employees.map(e => ({ value: e.name, label: `${e.name} (${e.empId})` }))}
-            value={formData.assignedTo}
-            onChange={handleInputChange}
-          />
 
           <div>
             <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Administrative Notes</label>
@@ -443,8 +488,8 @@ export default function AssetManagement() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button label="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button label="Add Asset to Registry" variant="primary" type="submit" className="px-8" />
+            <Button label="Cancel" variant="ghost" onClick={handleCloseModal} type="button" />
+            <Button label={editMode ? 'Update Registry' : 'Add Asset to Registry'} variant="primary" type="submit" className="px-8" />
           </div>
         </form>
       </Modal>
