@@ -341,5 +341,3 @@ export default function DepartmentManagement() {
     </div>
   )
 }
-
-export default DepartmentManagement
