@@ -338,6 +338,7 @@ export default function DepartmentManagement() {
            </div>
         </form>
       </Modal>
-    </div>
   )
 }
+
+export default Departments

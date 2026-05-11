@@ -1,4 +1,18 @@
 import { useState } from 'react'
+import {
+  HiBell,
+  HiBriefcase,
+  HiBuildingOffice2,
+  HiCalendar,
+  HiChevronRight,
+  HiClock,
+  HiCog6Tooth,
+  HiDocumentText,
+  HiKey,
+  HiLockClosed,
+  HiShieldCheck,
+  HiSquares2X2,
+} from 'react-icons/hi2'
 import GeneralSection from './sections/GeneralSection.jsx'
 import AttendanceSection from './sections/AttendanceSection.jsx'
 import LeaveSettings from './LeaveSettings.jsx'
@@ -11,16 +25,21 @@ import RolesPermissions from './RolesPermissions.jsx'
 import SensitiveData from './SensitiveData.jsx'
 
 const navItems = [
-  { id: 'general', label: 'General', icon: '🏢', desc: 'Company & Policies' },
-  { id: 'roles', label: 'Roles & Permissions', icon: '🔐', desc: 'Access Control' },
-  { id: 'modules', label: 'Module Visibility', icon: '👁️', desc: 'Role-based Views' },
-  { id: 'sensitive', label: 'Sensitive Data', icon: '🔒', desc: 'Data Permissions' },
-  { id: 'attendance', label: 'Attendance & Time', icon: '🕐', desc: 'Work Hours & Rules' },
-  { id: 'leave', label: 'Leave Settings', icon: '🌴', desc: 'Leave Types & Rules' },
-  { id: 'documents', label: 'Document Settings', icon: '📄', desc: 'Upload & Tracking' },
-  { id: 'assets', label: 'Asset Settings', icon: '💼', desc: 'Categories & Rules' },
-  { id: 'notifications', label: 'Notifications', icon: '🔔', desc: 'Alerts & Channels' },
-  { id: 'security', label: 'Password & Security', icon: '🛡️', desc: 'Auth & Policies' },
+  { id: 'general', label: 'General', Icon: HiBuildingOffice2, desc: 'Company & policies' },
+  { id: 'roles', label: 'Roles & Permissions', Icon: HiShieldCheck, desc: 'Access control' },
+  { id: 'modules', label: 'Module Visibility', Icon: HiSquares2X2, desc: 'Role-based views' },
+  { id: 'sensitive', label: 'Sensitive Data', Icon: HiLockClosed, desc: 'Data permissions' },
+  { id: 'attendance', label: 'Attendance & Time', Icon: HiClock, desc: 'Work hours & rules' },
+  { id: 'leave', label: 'Leave Settings', Icon: HiCalendar, desc: 'Leave types & rules' },
+  {
+    id: 'documents',
+    label: 'Document Settings',
+    Icon: HiDocumentText,
+    desc: 'Upload & tracking',
+  },
+  { id: 'assets', label: 'Asset Settings', Icon: HiBriefcase, desc: 'Categories & rules' },
+  { id: 'notifications', label: 'Notifications', Icon: HiBell, desc: 'Alerts & channels' },
+  { id: 'security', label: 'Password & Security', Icon: HiKey, desc: 'Auth & policies' },
 ]
 
 function ActiveSection({
@@ -77,62 +96,74 @@ export default function HRISSettings() {
             : null
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-gray-100 bg-white">
-        <div className="border-b border-gray-100 px-5 py-5">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-              <span className="text-sm font-bold text-white">H</span>
+    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+      <aside className="flex w-64 shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-200 px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-[#0F766E] text-white shadow-sm">
+              <HiCog6Tooth className="h-5 w-5" aria-hidden />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900">HRIS Settings</p>
-              <p className="text-xs text-gray-400">System Configuration</p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-gray-900">Settings</p>
+              <p className="truncate text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                System configuration
+              </p>
             </div>
           </div>
         </div>
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setActive(item.id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all ${
-                active === item.id
-                  ? 'bg-[#0f766e] text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <span className="text-base leading-none">{item.icon}</span>
-              <div className="min-w-0 flex-1">
-                <p
-                  className={`truncate text-xs font-semibold ${
-                    active === item.id ? 'text-white' : 'text-gray-700'
+        <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
+          {navItems.map((item) => {
+            const isActive = active === item.id
+            const Icon = item.Icon
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActive(item.id)}
+                className={`group relative mx-0.5 flex w-full items-center gap-3 rounded-none px-3 py-2.5 text-left text-sm font-medium transition-all ${
+                  isActive
+                    ? 'bg-[#0F766E] text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-gray-50 hover:text-[#0F766E]'
+                }`}
+              >
+                <Icon
+                  className={`h-5 w-5 shrink-0 ${
+                    isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
                   }`}
-                >
-                  {item.label}
-                </p>
-                <p className="truncate text-[10px] text-gray-400">{item.desc}</p>
-              </div>
-              {active === item.id ? (
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
-              ) : null}
-            </button>
-          ))}
+                  aria-hidden
+                />
+                <div className="min-w-0 flex-1">
+                  <p className={`truncate ${isActive ? 'text-white' : 'text-slate-800'}`}>
+                    {item.label}
+                  </p>
+                  <p
+                    className={`truncate text-[11px] font-normal ${
+                      isActive ? 'text-teal-100/90' : 'text-gray-400 group-hover:text-gray-500'
+                    }`}
+                  >
+                    {item.desc}
+                  </p>
+                </div>
+              </button>
+            )
+          })}
         </nav>
       </aside>
 
-      <main className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-8 py-4">
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">{current.label}</h1>
-            <p className="mt-0.5 text-xs text-gray-400">{current.desc}</p>
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 py-4 sm:px-8">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold tracking-tight text-gray-900 sm:text-xl">
+              {current.label}
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500">{current.desc}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               disabled={!toolbar || !toolbar.dirty || toolbar.saving}
               onClick={() => toolbar?.onDiscard?.()}
-              className="h-8 rounded-lg border border-gray-200 bg-white px-4 text-sm text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-9 rounded-none border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Discard
             </button>
@@ -140,27 +171,29 @@ export default function HRISSettings() {
               type="button"
               disabled={!toolbar || toolbar.disableSave}
               onClick={() => toolbar?.onSave?.()}
-              className="h-8 rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-9 rounded-none bg-[#0F766E] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0c6d66] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {toolbar?.saving ? 'Saving…' : 'Save Changes'}
+              {toolbar?.saving ? 'Saving…' : 'Save changes'}
             </button>
           </div>
         </header>
 
-        <div className="flex items-center gap-1.5 border-b border-gray-100 bg-gray-50 px-8 py-2 text-xs text-gray-400">
-          <span>Settings</span>
-          <span>/</span>
-          <span className="font-medium text-indigo-600">{current.label}</span>
+        <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-6 py-2.5 text-xs text-gray-500 sm:px-8">
+          <span className="font-medium text-gray-600">Settings</span>
+          <HiChevronRight className="h-3.5 w-3.5 shrink-0 text-gray-300" aria-hidden />
+          <span className="font-medium text-[#0F766E]">{current.label}</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-8 py-6">
-          <ActiveSection
-            active={active}
-            registerGeneralToolbar={setGeneralToolbar}
-            registerAttendanceToolbar={setAttendanceToolbar}
-            registerAssetsToolbar={setAssetsToolbar}
-            registerLeaveToolbar={setLeaveToolbar}
-          />
+        <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-8">
+          <div className="mx-auto max-w-4xl">
+            <ActiveSection
+              active={active}
+              registerGeneralToolbar={setGeneralToolbar}
+              registerAttendanceToolbar={setAttendanceToolbar}
+              registerAssetsToolbar={setAssetsToolbar}
+              registerLeaveToolbar={setLeaveToolbar}
+            />
+          </div>
         </div>
       </main>
     </div>

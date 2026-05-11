@@ -5,6 +5,11 @@ export const listDepartments = async () => {
   return data.data
 }
 
+export const listDepartmentManagers = async () => {
+  const { data } = await api.get('/departments/managers')
+  return data.data
+}
+
 export const getDepartment = async (id) => {
   const { data } = await api.get(`/departments/${id}`)
   return data.data
