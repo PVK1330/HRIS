@@ -5,8 +5,6 @@ import { Avatar } from './Avatar.jsx'
 import { Button } from './Button.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 
-const FALLBACK_LOGO = '/HRIS_Logo.png'
-
 function roleSubtitle(role) {
   if (role === 'superadmin') return 'SUPER ADMIN'
   if (role === 'admin') return 'ADMIN'
@@ -23,16 +21,29 @@ function panelName(role) {
   return ''
 }
 
-export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileClose, logoUrl }) {
+export function Sidebar({
+  navGroups,
+  role,
+  user,
+  onLogout,
+  mobileOpen,
+  onMobileClose,
+  logoUrl,
+  logoLoading = false,
+  logoFallbackLabel,
+}) {
   const avatarPalette = role === 'superadmin' ? 'bg-purple-100 text-[#6D28D9]' : undefined
   const { hasModule } = useAuth()
 
-  const initialSrc = logoUrl && logoUrl.trim() ? logoUrl : FALLBACK_LOGO
-  const [imgSrc, setImgSrc] = useState(initialSrc)
+  const resolvedLabel = logoFallbackLabel ?? 'HRIS'
+  const trimmedLogo = logoUrl && String(logoUrl).trim()
 
+  const [imgBroken, setImgBroken] = useState(false)
   useEffect(() => {
-    setImgSrc(logoUrl && logoUrl.trim() ? logoUrl : FALLBACK_LOGO)
-  }, [logoUrl])
+    setImgBroken(false)
+  }, [trimmedLogo])
+
+  const showLogo = Boolean(trimmedLogo) && !imgBroken
 
   return (
     <>
@@ -48,15 +59,21 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
         className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col overflow-hidden border-r border-gray-200 bg-white shadow-sm transition-transform duration-300 ease-out md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
       >
-        <div className="flex shrink-0 items-center justify-center p-[5px] border-b border-slate-50">
-          <img
-            src={imgSrc}
-            alt="HRIS Logo"
-            className="h-16 w-auto object-contain"
-            onError={() => {
-              if (imgSrc !== FALLBACK_LOGO) setImgSrc(FALLBACK_LOGO)
-            }}
-          />
+        <div className="flex min-h-[4rem] shrink-0 items-center justify-center px-3 py-[5px] border-b border-slate-50">
+          {logoLoading ? (
+            <div className="h-10 w-32 animate-pulse rounded-md bg-slate-100" aria-hidden />
+          ) : showLogo ? (
+            <img
+              src={trimmedLogo}
+              alt="Company logo"
+              className="h-16 max-w-full object-contain"
+              onError={() => setImgBroken(true)}
+            />
+          ) : (
+            <span className="truncate text-center text-lg font-bold leading-tight tracking-tight text-[#0F766E]">
+              {resolvedLabel}
+            </span>
+          )}
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
