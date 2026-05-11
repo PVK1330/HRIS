@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+import { adminSettingsService } from './adminSettingsService'
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const BASE = `${API_URL}/api/v1/admin/settings`
 
@@ -55,13 +57,11 @@ export async function updateTenantAdminSettings(payload) {
 export async function uploadTenantLogo(file) {
   const fd = new FormData()
   fd.append('logo', file)
-  const token = readToken()
   try {
-    const { data } = await axios.post(`${BASE}/logo`, fd, {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    })
+    const { data } = await adminSettingsService.uploadTenantLogo(fd)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tenant-logo-updated'))
+    }
     return data
   } catch (err) {
     return unwrapError(err)

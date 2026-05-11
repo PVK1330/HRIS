@@ -340,6 +340,4 @@ export default function DepartmentManagement() {
       </Modal>
     </div>
   )
-}
-
-export default DepartmentManagement
+} 

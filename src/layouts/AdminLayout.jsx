@@ -29,6 +29,7 @@ import { Sidebar } from "../components/ui/Sidebar.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
 import NotificationDropdown from "../components/layout/NotificationDropdown.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import useTenantLogo from "../hooks/useTenantLogo.js";
 
 const adminNavGroups = [
   {
@@ -476,6 +477,15 @@ export default function AdminLayout() {
     return crumbs;
   }, [location.pathname]);
 
+  const sidebarBrandLabel =
+    user?.companyName ??
+    user?.company_name ??
+    user?.tenant_name ??
+    user?.tenantName ??
+    "HRIS";
+
+  const { logoUrl, loading: logoLoading } = useTenantLogo();
+
   return (
     <div className="flex h-screen min-h-0 w-full overflow-hidden bg-[#F9FAFB]">
       {/* Dev Role Indicator Banner */}
@@ -488,6 +498,9 @@ export default function AdminLayout() {
         onLogout={logout}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
+        logoUrl={logoUrl ?? undefined}
+        logoLoading={logoLoading}
+        logoFallbackLabel={sidebarBrandLabel}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
         <header className="z-30 flex h-12 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white/80 backdrop-blur-md px-4 sm:px-6">

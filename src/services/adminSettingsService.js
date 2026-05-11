@@ -39,6 +39,20 @@ adminClient.interceptors.request.use((config) => {
 
 adminClient.interceptors.response.use((res) => res, unwrapError)
 
+const SETTINGS_CLIENT_BASE = `${API_URL}/api/v1/settings`
+const settingsClient = axios.create({ baseURL: SETTINGS_CLIENT_BASE })
+
+settingsClient.interceptors.request.use((config) => {
+  const token = readToken()
+  if (token) {
+    config.headers = config.headers || {}
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+settingsClient.interceptors.response.use((res) => res, unwrapError)
+
 export async function getPasswordSecurity() {
   const { data } = await adminClient.get('/password-security')
   return data
@@ -125,6 +139,18 @@ export async function deleteLeaveType(id) {
 }
 
 export const adminSettingsService = {
+  getTenantLogo: () => adminClient.get('/logo'),
+  uploadTenantLogo: (formData) =>
+    adminClient.post('/logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  getSuperadminLogo: () => settingsClient.get('/logo'),
+  uploadSuperadminLogo: (type, formData) =>
+    settingsClient.post(`/logo/${type}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
   getAllPermissions: () => adminClient.get('/rbac/permissions'),
   getAvailablePermissions: () => adminClient.get('/rbac/permissions/available'),
   getAllRoles: () => adminClient.get('/rbac/roles'),
