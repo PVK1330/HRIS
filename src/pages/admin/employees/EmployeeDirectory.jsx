@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   HiDocumentText, HiEnvelope, HiEye, HiEyeSlash, HiPencil, HiTrash, HiPlus,
@@ -18,6 +18,8 @@ import {
   getEmployee, createEmployee, updateEmployee, deleteEmployee,
 } from '../../../services/employeeService.js'
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
+import { listDepartments } from '../../../services/departmentService.js'
+import { listDesignations } from '../../../services/designationService.js'
 
 const selectClass = 'mt-1.5 w-full rounded-md border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all focus:border-[#0F766E]'
 const textareaClass = 'w-full min-h-[100px] rounded-md border border-slate-200 bg-slate-50/50 p-4 text-sm font-bold text-slate-900 outline-none transition-all shadow-inner focus:border-[#f97316]'
@@ -95,7 +97,6 @@ function mapEmployeeFull(e) {
     awardsSummary: e.awards_summary || '',
     promotionHistory: e.promotion_history || '',
     bio: e.bio || '',
-    costCenter: e.cost_center || '',
     rbacRoleId: e.rbac_role_id ?? null,
     rbacRoleName: e.rbac_role_name || '',
     portalEnabled: Boolean(e.portal_enabled),
@@ -113,7 +114,6 @@ const initialFormData = {
   password: '',
   confirmPassword: '',
   phoneNumber: '',
-  company: '',
   department: '',
   jobTitle: '',
   about: '',
@@ -193,6 +193,26 @@ export default function EmployeeDirectory() {
     departments: [], jobTitles: [], workLocations: [], workModes: [], statuses: [],
   })
   const [tenantRoles, setTenantRoles] = useState([])
+  const [departmentsCatalog, setDepartmentsCatalog] = useState([])
+  const [designationsCatalog, setDesignationsCatalog] = useState([])
+
+  const departmentRows = useMemo(() => {
+    if (departmentsCatalog.length) return departmentsCatalog
+    return filterOptions.departments.map((name) => ({ id: name, name }))
+  }, [departmentsCatalog, filterOptions.departments])
+
+  const designationRowsForDept = useMemo(() => {
+    const dept = String(formData.department || '').trim()
+    if (!dept) return []
+    return designationsCatalog.filter((row) => {
+      const rowDept = String(row.department_name ?? row.departmentName ?? '').trim()
+      if (rowDept !== dept) return false
+      if (row.is_active === false) return false
+      const st = String(row.status ?? '').toLowerCase()
+      if (st === 'inactive') return false
+      return true
+    })
+  }, [designationsCatalog, formData.department])
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -235,11 +255,37 @@ export default function EmployeeDirectory() {
   }, [])
   useEffect(() => { fetchData() }, [currentPage, search, dept, job, loc, status, workMode])
 
+  useEffect(() => {
+    if (!modalOpen) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const [depts, desigs] = await Promise.all([listDepartments(), listDesignations()])
+        if (cancelled) return
+        setDepartmentsCatalog(Array.isArray(depts) ? depts : [])
+        setDesignationsCatalog(Array.isArray(desigs) ? desigs : [])
+      } catch {
+        if (!cancelled) {
+          setDepartmentsCatalog([])
+          setDesignationsCatalog([])
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [modalOpen])
+
   // ── Form handlers ──────────────────────────────────────────────────────────
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleDepartmentChange = (e) => {
+    const value = e.target.value
+    setFormData((prev) => ({ ...prev, department: value, jobTitle: '' }))
   }
 
   const revokeProfilePreview = () => {
@@ -362,7 +408,6 @@ export default function EmployeeDirectory() {
           ? parseFloat(String(formData.salary).replace(/[^0-9.]/g, '')) || null
           : null,
       grade: formData.grade || null,
-      costCenter: formData.company || null,
       passportNumber: formData.passportNumber || null,
       passportExpiry: formData.passportExpiry || null,
       emiratesIdNumber: formData.emiratesIdNumber || null,
@@ -430,7 +475,6 @@ export default function EmployeeDirectory() {
           password: '',
           confirmPassword: '',
           phoneNumber: f.phone,
-          company: f.costCenter || '',
           department: f.department,
           jobTitle: f.jobTitle,
           about: f.bio || '',
@@ -642,14 +686,14 @@ export default function EmployeeDirectory() {
       <Modal
         isOpen={modalOpen}
         onClose={handleCloseModal}
-        size="custom"
+        size="employee"
         showClose
         header={
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
-            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
               {editMode ? 'Edit Employee' : 'Add New Employee'}
             </h2>
-            <p className="text-sm font-medium text-slate-500">
+            <p className="text-xs font-medium text-slate-500">
               Employee ID :{' '}
               <span className="text-slate-800">{formData.employeeId || '—'}</span>
             </p>
@@ -717,7 +761,7 @@ export default function EmployeeDirectory() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="emp-first-name" className="mb-1 block text-sm font-medium text-slate-800">
                     First Name<span className="text-red-500"> *</span>
@@ -753,7 +797,6 @@ export default function EmployeeDirectory() {
                     value={formData.employeeId}
                     onChange={handleFormChange}
                     className={basicFieldClass}
-                    placeholder="EMP0024"
                     required
                   />
                 </div>
@@ -815,7 +858,6 @@ export default function EmployeeDirectory() {
                       onChange={handleFormChange}
                       className={`${basicFieldClass} pr-10`}
                       autoComplete="new-password"
-                      placeholder={editMode ? 'Leave blank to keep current' : ''}
                       required={!editMode}
                     />
                     <button
@@ -842,7 +884,6 @@ export default function EmployeeDirectory() {
                       onChange={handleFormChange}
                       className={`${basicFieldClass} pr-10`}
                       autoComplete="new-password"
-                      placeholder={editMode ? 'Leave blank to keep current' : ''}
                       required={!editMode}
                     />
                     <button
@@ -855,6 +896,51 @@ export default function EmployeeDirectory() {
                       {showConfirmPassword ? <HiEyeSlash className="h-5 w-5" /> : <HiEye className="h-5 w-5" />}
                     </button>
                   </div>
+                </div>
+                <div>
+                  <label htmlFor="emp-dept" className="mb-1 block text-sm font-medium text-slate-800">
+                    Department<span className="text-red-500"> *</span>
+                  </label>
+                  <select
+                    id="emp-dept"
+                    name="department"
+                    value={formData.department}
+                    onChange={handleDepartmentChange}
+                    className={`${basicFieldClass} mt-0`}
+                    required
+                  >
+                    <option value="">Select department</option>
+                    {departmentRows.map((d) => {
+                      const label = d.name ?? d.department_name ?? String(d.id)
+                      const val = d.name ?? d.department_name ?? String(d.id)
+                      return (
+                        <option key={d.id ?? val} value={val}>{label}</option>
+                      )
+                    })}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="emp-desig" className="mb-1 block text-sm font-medium text-slate-800">
+                    Designation<span className="text-red-500"> *</span>
+                  </label>
+                  <select
+                    id="emp-desig"
+                    name="jobTitle"
+                    value={formData.jobTitle}
+                    onChange={handleFormChange}
+                    className={`${basicFieldClass} mt-0`}
+                    required
+                    disabled={!formData.department}
+                  >
+                    <option value="">Select designation</option>
+                    {formData.jobTitle &&
+                    !designationRowsForDept.some((row) => row.name === formData.jobTitle) ? (
+                      <option value={formData.jobTitle}>{formData.jobTitle}</option>
+                    ) : null}
+                    {designationRowsForDept.map((row) => (
+                      <option key={row.id} value={row.name}>{row.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="emp-phone" className="mb-1 block text-sm font-medium text-slate-800">
@@ -871,55 +957,36 @@ export default function EmployeeDirectory() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="emp-company" className="mb-1 block text-sm font-medium text-slate-800">
-                    Company<span className="text-red-500"> *</span>
+                  <label htmlFor="emp-role" className="mb-1 block text-sm font-medium text-slate-800">
+                    Role
                   </label>
-                  <input
-                    id="emp-company"
-                    name="company"
-                    value={formData.company}
+                  <select
+                    id="emp-role"
+                    name="rbacRoleId"
+                    value={formData.rbacRoleId}
                     onChange={handleFormChange}
-                    className={basicFieldClass}
+                    className={`${basicFieldClass} mt-0`}
+                  >
+                    <option value="">Select role</option>
+                    {tenantRoles.map((r) => (
+                      <option key={r.id} value={String(r.id)}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="emp-about" className="mb-1 block text-sm font-medium text-slate-800">
+                    About<span className="text-red-500"> *</span>
+                  </label>
+                  <textarea
+                    id="emp-about"
+                    name="about"
+                    value={formData.about}
+                    onChange={handleFormChange}
+                    rows={4}
+                    className={`${basicFieldClass} min-h-[120px]`}
                     required
                   />
                 </div>
-                <div>
-                  <label htmlFor="emp-dept" className="mb-1 block text-sm font-medium text-slate-800">
-                    Department
-                  </label>
-                  <select id="emp-dept" name="department" value={formData.department} onChange={handleFormChange} className={`${basicFieldClass} mt-0`} required>
-                    <option value="">Select department</option>
-                    {filterOptions.departments.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="emp-desig" className="mb-1 block text-sm font-medium text-slate-800">
-                    Designation
-                  </label>
-                  <select id="emp-desig" name="jobTitle" value={formData.jobTitle} onChange={handleFormChange} className={`${basicFieldClass} mt-0`} required>
-                    <option value="">Select designation</option>
-                    {filterOptions.jobTitles.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="emp-about" className="mb-1 block text-sm font-medium text-slate-800">
-                  About<span className="text-red-500"> *</span>
-                </label>
-                <textarea
-                  id="emp-about"
-                  name="about"
-                  value={formData.about}
-                  onChange={handleFormChange}
-                  rows={4}
-                  className={`${basicFieldClass} min-h-[120px]`}
-                  required
-                />
               </div>
             </div>
           )}
@@ -997,7 +1064,7 @@ export default function EmployeeDirectory() {
                     </select>
                   </div>
                   <Input label="Probation End Date" name="probationEndDate" type="date" value={formData.probationEndDate} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Reporting Manager Employee ID" name="reportingManager" value={formData.reportingManager} onChange={handleFormChange} placeholder="EMP001" inputClassName="rounded-md" />
+                  <Input label="Reporting Manager Employee ID" name="reportingManager" value={formData.reportingManager} onChange={handleFormChange} inputClassName="rounded-md" />
                   <Input label="Gross Salary (AED)" name="salary" type="number" min="0" step="0.01" value={formData.salary} onChange={handleFormChange} inputClassName="rounded-md" />
                   <Input label="Grade Level" name="grade" value={formData.grade} onChange={handleFormChange} inputClassName="rounded-md" />
                 </div>
@@ -1043,39 +1110,27 @@ export default function EmployeeDirectory() {
           {formTab === 'permissions' && (
             <div className="space-y-4">
               <p className="text-xs text-slate-500 leading-relaxed">
-                Set portal access and role here. Login password for new employees is set under <strong>Basic Information</strong>.
+                Assign <strong>Role</strong> under Basic Information. Here you can toggle portal access and optionally set an alternate portal password.
               </p>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div>
-                  <label className="ml-1 block text-sm font-medium text-slate-800">Portal role</label>
-                  <select name="rbacRoleId" value={formData.rbacRoleId} onChange={handleFormChange} className={selectClass}>
-                    <option value="">None</option>
-                    {tenantRoles.map((r) => (
-                      <option key={r.id} value={String(r.id)}>{r.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="ml-1 block text-sm font-medium text-slate-800">Portal access</label>
-                  <select
-                    name="portalEnabled"
-                    value={formData.portalEnabled ? '1' : '0'}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, portalEnabled: e.target.value === '1' }))}
-                    className={selectClass}
-                  >
-                    <option value="0">Disabled</option>
-                    <option value="1">Enabled</option>
-                  </select>
-                </div>
+              <div>
+                <label className="mb-1 ml-1 block text-sm font-medium text-slate-800">Portal access</label>
+                <select
+                  name="portalEnabled"
+                  value={formData.portalEnabled ? '1' : '0'}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, portalEnabled: e.target.value === '1' }))}
+                  className={selectClass}
+                >
+                  <option value="0">Disabled</option>
+                  <option value="1">Enabled</option>
+                </select>
               </div>
               <Input
-                label="Optional alternate portal password"
+                label="Alternate portal password"
                 name="portalPassword"
                 type="password"
                 autoComplete="new-password"
                 value={formData.portalPassword}
                 onChange={handleFormChange}
-                helpText="If set, overrides the Basic Information password when both are submitted."
                 inputClassName="rounded-md"
               />
             </div>
