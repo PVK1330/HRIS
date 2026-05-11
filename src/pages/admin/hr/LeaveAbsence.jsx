@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { employees, leaveRequests } from '../../../data/mockData.js'
+import { getLeaveTypes } from '../../../services/adminSettingsService.js'
 import { HiCalendar, HiPlus, HiEye, HiCheck, HiXMark, HiTrash, HiPencil, HiDocumentArrowDown } from 'react-icons/hi2'
 
 const selectClass = 'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500'
@@ -46,16 +47,55 @@ export default function LeaveAbsence() {
    const [selectedRequest, setSelectedRequest] = useState(null)
    const [actionReason, setActionReason] = useState('')
    const [applyLeaveModalOpen, setApplyLeaveModalOpen] = useState(false)
+   const [leaveTypeOptions, setLeaveTypeOptions] = useState([])
+   const [leaveTypesLoading, setLeaveTypesLoading] = useState(true)
 
    // Form States
    const [leaveForm, setLeaveForm] = useState({
       employeeId: '',
-      type: 'Annual Leave',
+      type: '',
       from: '',
       to: '',
       reason: '',
       days: 1
    })
+
+   useEffect(() => {
+      let cancelled = false
+      ;(async () => {
+         try {
+            const res = await getLeaveTypes()
+            const list = (res?.data?.leaveTypes ?? []).filter((t) => t.isActive !== false)
+            if (!cancelled) {
+               setLeaveTypeOptions(list)
+               setLeaveForm((prev) => ({
+                  ...prev,
+                  type:
+                     prev.type && list.some((l) => l.name === prev.type)
+                        ? prev.type
+                        : (list[0]?.name ?? ''),
+               }))
+            }
+         } catch {
+            if (!cancelled) setLeaveTypeOptions([])
+         } finally {
+            if (!cancelled) setLeaveTypesLoading(false)
+         }
+      })()
+      return () => {
+         cancelled = true
+      }
+   }, [])
+
+   useEffect(() => {
+      if (!applyLeaveModalOpen || leaveTypeOptions.length === 0) return
+      setLeaveForm((prev) => ({
+         ...prev,
+         type: leaveTypeOptions.some((l) => l.name === prev.type)
+            ? prev.type
+            : (leaveTypeOptions[0]?.name ?? ''),
+      }))
+   }, [applyLeaveModalOpen, leaveTypeOptions])
 
    // --- Calculations ---
    const pendingRequests = useMemo(() => leaveRequests.filter(r => r.status === 'Pending'), [])
@@ -78,7 +118,14 @@ export default function LeaveAbsence() {
       e.preventDefault()
       // In a real app, we'd add to state here. For now, we'll just close.
       setApplyLeaveModalOpen(false)
-      setLeaveForm({ employeeId: '', type: 'Annual Leave', from: '', to: '', reason: '', days: 1 })
+      setLeaveForm({
+         employeeId: '',
+         type: leaveTypeOptions[0]?.name ?? '',
+         from: '',
+         to: '',
+         reason: '',
+         days: 1,
+      })
    }
 
    // --- Column Definitions ---
@@ -179,6 +226,11 @@ export default function LeaveAbsence() {
                </div>
                <h1 className="font-display text-3xl font-black text-slate-900 tracking-tight">Leave & Absence – Admin View</h1>
                <p className="text-sm text-slate-500 mt-1 font-medium">Holistic workforce presence tracking and policy compliance.</p>
+               <p className="mt-2 text-xs text-slate-400">
+                  Leave types are configured under{' '}
+                  <span className="font-semibold text-emerald-700">Settings → Leave Settings</span>
+                  . New types and approvers appear here automatically for admins.
+               </p>
             </div>
             <div className="flex gap-2">
                <Button label="Public Holiday Setup" variant="outline" onClick={() => setActiveTab('holidays')} className="rounded-md border-slate-200" />
@@ -310,11 +362,18 @@ export default function LeaveAbsence() {
                      value={leaveForm.type}
                      onChange={e => setLeaveForm({...leaveForm, type: e.target.value})}
                      className={selectClass}
+                     disabled={leaveTypesLoading || leaveTypeOptions.length === 0}
+                     required
                   >
-                     <option>Annual Leave</option>
-                     <option>Sick Leave</option>
-                     <option>Casual Leave</option>
-                     <option>Unpaid Leave</option>
+                     {leaveTypesLoading ? (
+                        <option value="">Loading leave types…</option>
+                     ) : leaveTypeOptions.length === 0 ? (
+                        <option value="">No active leave types — add them in Settings</option>
+                     ) : (
+                        leaveTypeOptions.map((t) => (
+                           <option key={t.id} value={t.name}>{t.name}</option>
+                        ))
+                     )}
                   </select>
                </div>
                <div className="grid grid-cols-2 gap-4">

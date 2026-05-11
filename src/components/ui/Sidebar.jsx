@@ -3,6 +3,7 @@ import { NavLink, Link } from 'react-router-dom'
 import { HiArrowRightOnRectangle, HiGlobeAlt, HiQuestionMarkCircle } from 'react-icons/hi2'
 import { Avatar } from './Avatar.jsx'
 import { Button } from './Button.jsx'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 const FALLBACK_LOGO = '/HRIS_Logo.png'
 
@@ -24,6 +25,7 @@ function panelName(role) {
 
 export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileClose, logoUrl }) {
   const avatarPalette = role === 'superadmin' ? 'bg-purple-100 text-[#6D28D9]' : undefined
+  const { hasModule } = useAuth()
 
   const initialSrc = logoUrl && logoUrl.trim() ? logoUrl : FALLBACK_LOGO
   const [imgSrc, setImgSrc] = useState(initialSrc)
@@ -58,15 +60,24 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-          {navGroups.map((group) => (
+          {navGroups.map((group) => {
+            const visibleItems = group.items.filter(
+              (item) =>
+                item.key == null ||
+                item.key === 'dashboard' ||
+                hasModule(item.key),
+            )
+            if (visibleItems.length === 0) return null
+            return (
             <div key={group.groupLabel}>
               <div className="mt-4 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 first:mt-0">
                 {group.groupLabel}
               </div>
-              {group.items.map((item) => {
+              {visibleItems.map((item) => {
                 const Icon = item.icon
+                const itemKey = item.key ?? item.path
                 return (
-                  <div key={item.path} className="relative group">
+                  <div key={itemKey} className="relative group">
                     <NavLink
                       to={item.path}
                       onClick={onMobileClose}
@@ -95,7 +106,8 @@ export function Sidebar({ navGroups, role, user, onLogout, mobileOpen, onMobileC
                 )
               })}
             </div>
-          ))}
+            )
+          })}
         </nav>
 
         <div className="shrink-0 space-y-3 border-t border-gray-100 bg-white px-4 py-4">

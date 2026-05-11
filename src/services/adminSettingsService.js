@@ -98,3 +98,40 @@ export async function updateSensitiveData(payload) {
   const { data } = await adminClient.put('/sensitive-data', payload)
   return data
 }
+
+export async function getLeaveTypes() {
+  const { data } = await adminClient.get('/leave-types')
+  return data
+}
+
+export async function getLeaveType(id) {
+  const { data } = await adminClient.get(`/leave-types/${id}`)
+  return data
+}
+
+export async function createLeaveType(payload) {
+  const { data } = await adminClient.post('/leave-types', payload)
+  return data
+}
+
+export async function updateLeaveType(id, payload) {
+  const { data } = await adminClient.put(`/leave-types/${id}`, payload)
+  return data
+}
+
+export async function deleteLeaveType(id) {
+  const { data } = await adminClient.delete(`/leave-types/${id}`)
+  return data
+}
+
+export const adminSettingsService = {
+  getAllPermissions: () => adminClient.get('/rbac/permissions'),
+  getAvailablePermissions: () => adminClient.get('/rbac/permissions/available'),
+  getAllRoles: () => adminClient.get('/rbac/roles'),
+  getRole: (id) => adminClient.get(`/rbac/roles/${id}`),
+  createRole: (data) => adminClient.post('/rbac/roles', data),
+  updateRole: (id, data) => adminClient.put(`/rbac/roles/${id}`, data),
+  deleteRole: (id) => adminClient.delete(`/rbac/roles/${id}`),
+  updateRolePermissions: (roleId, permissionIds) =>
+    adminClient.put(`/rbac/roles/${roleId}/permissions`, { permissionIds }),
+}
