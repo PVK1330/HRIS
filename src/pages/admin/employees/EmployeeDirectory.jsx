@@ -23,9 +23,11 @@ import { listDesignations } from '../../../services/designationService.js'
 
 const selectClass = 'mt-1.5 w-full rounded-md border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all focus:border-[#0F766E]'
 const textareaClass = 'w-full min-h-[100px] rounded-md border border-slate-200 bg-slate-50/50 p-4 text-sm font-bold text-slate-900 outline-none transition-all shadow-inner focus:border-[#0F766E]'
-/** Basic tab inputs — match reference UI (light radius + orange focus) */
+/** Form inputs — primary focus ring matches theme #0F766E */
 const basicFieldClass =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-orange-200'
+  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/25'
+
+const EMPLOYEE_FORM_STEPS = ['basic', 'personal', 'bank', 'family', 'secondary', 'education', 'experience']
 
 function statusColor(status) {
   if (status === 'Active')        return 'green'
@@ -79,12 +81,13 @@ function mapEmployeeList(e) {
     jobTitle: e.job_title,
     department: e.department,
     location: e.work_location || '',
-    manager: e.reporting_manager || 'N/A',
+    manager: e.manager_name || e.reporting_manager || 'N/A',
     status: e.employment_status || 'Active',
     joinDate: e.join_date || '',
     workMode: e.work_mode || '',
     initials: e.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
     portalRole: e.rbac_role_name || '',
+    rbacRoleName: e.rbac_role_name || '',
   }
 }
 
@@ -102,7 +105,7 @@ function mapEmployeeFull(e) {
     department: e.department,
     employmentType: e.employment_type || 'Full-time',
     location: e.work_location || '',
-    manager: e.manager_emp_id || e.reporting_manager || '',
+    manager: e.manager_name || e.manager_emp_id || e.reporting_manager || '',
     status: e.employment_status || 'Active',
     joinDate: d(e.join_date),
     workMode: e.work_mode || '',
@@ -146,6 +149,9 @@ function mapEmployeeFull(e) {
     education: e.education || [],
     workExperience: e.work_experience || [],
     isCurrentlyWorking: e.is_currently_working || false,
+    username: e.username || '',
+    createdAt: e.createdAt || '',
+    updatedAt: e.updatedAt || '',
   }
 }
 
@@ -262,6 +268,11 @@ export default function EmployeeDirectory() {
     if (departmentsCatalog.length) return departmentsCatalog
     return filterOptions.departments.map((name) => ({ id: name, name }))
   }, [departmentsCatalog, filterOptions.departments])
+
+  const employeeFormStepIndex = EMPLOYEE_FORM_STEPS.indexOf(formTab)
+  const safeFormStepIdx = employeeFormStepIndex < 0 ? 0 : employeeFormStepIndex
+  const isLastEmployeeStep = safeFormStepIdx === EMPLOYEE_FORM_STEPS.length - 1
+  const isFirstEmployeeStep = safeFormStepIdx === 0
 
   const designationRowsForDept = useMemo(() => {
     const dept = String(formData.department || '').trim()
@@ -471,6 +482,12 @@ export default function EmployeeDirectory() {
       return
     }
 
+    if (!String(formData.username || '').trim()) {
+      alert('Please enter a username on Basic Information.')
+      setFormTab('basic')
+      return
+    }
+
     if (!String(formData.department || '').trim() || !String(formData.jobTitle || '').trim()) {
       alert('Please select Department and Designation in Basic Information.')
       setFormTab('basic')
@@ -505,6 +522,7 @@ export default function EmployeeDirectory() {
 
     const payload = {
       empId: formData.employeeId,
+      username: String(formData.username || '').trim() || null,
       fullName,
       firstName: formData.firstName || null,
       lastName: formData.lastName || null,
@@ -521,7 +539,7 @@ export default function EmployeeDirectory() {
       employmentStatus: formData.employmentStatus,
       workMode: formData.workMode || null,
       dateOfBirth: formData.dateOfBirth || null,
-      gender: formData.gender || null,
+      gender: formData.gender || undefined,
       nationality: formData.nationality || null,
       countryOfResidence: formData.countryOfResidence || null,
       maritalStatus: formData.maritalStatus || null,
@@ -549,11 +567,66 @@ export default function EmployeeDirectory() {
       bankAccountNo: formData.bankAccountNo || null,
       ifscCode: formData.ifscCode || null,
       branchAddress: formData.branchAddress || null,
-      familyMembers: formData.familyMembers,
-      secondaryContact: formData.secondaryContact,
-      education: formData.education,
-      workExperience: formData.workExperience,
-      isCurrentlyWorking: formData.isCurrentlyWorking,
+      familyMembers: (formData.familyMembers || []).filter((m) => String(m?.name || '').trim()),
+      secondaryContact: formData.secondaryContact || {},
+      education: (formData.education || []).filter((x) => String(x?.institutionName || '').trim()),
+      workExperience: (formData.workExperience || []).filter((x) => String(x?.companyName || '').trim()),
+      isCurrentlyWorking: Boolean(formData.isCurrentlyWorking),
+      // Normalized section payloads for new employee_* tables
+      bankDetails: {
+        bankName: formData.bankName || null,
+        accountHolder: [formData.firstName, formData.lastName].filter(Boolean).join(' ').trim() || null,
+        accountNumber: formData.bankAccountNo || null,
+        ifscCode: formData.ifscCode || null,
+        branchAddress: formData.branchAddress || null,
+      },
+      emergencyContacts: [
+        {
+          contactName: formData.secondaryContact?.name || null,
+          relationship: formData.secondaryContact?.relationship || null,
+          phonePrimary: formData.secondaryContact?.phoneNo1 || null,
+          phoneSecondary: formData.secondaryContact?.phoneNo2 || null,
+          isPrimary: true,
+        },
+        {
+          contactName: formData.emergencyContactName || null,
+          phonePrimary: formData.emergencyContactPhone || null,
+          isPrimary: false,
+        },
+      ].filter((c) => String(c.contactName || c.phonePrimary || '').trim()),
+      addresses: [
+        {
+          addressType: 'home',
+          line1: formData.homeAddress || null,
+          country: formData.countryOfResidence || null,
+          isPrimary: true,
+        },
+      ].filter((a) => String(a.line1 || a.country || '').trim()),
+      educationDetails: (formData.education || [])
+        .filter((x) => String(x?.institutionName || '').trim())
+        .map((x) => ({
+          institutionName: x.institutionName || null,
+          courseName: x.course || null,
+          startDate: x.startDate || null,
+          endDate: x.endDate || null,
+        })),
+      experienceDetails: (formData.workExperience || [])
+        .filter((x) => String(x?.companyName || '').trim())
+        .map((x) => ({
+          companyName: x.companyName || null,
+          designation: x.designation || null,
+          startDate: x.startDate || null,
+          endDate: x.endDate || null,
+          isCurrent: Boolean(formData.isCurrentlyWorking),
+        })),
+      salaryDetails: formData.salary !== ''
+        ? {
+            currency: 'AED',
+            basicSalary: parseFloat(String(formData.salary).replace(/[^0-9.]/g, '')) || null,
+            paymentFrequency: 'Monthly',
+          }
+        : null,
+      documents: [],
     }
 
     const rbacNum =
@@ -578,7 +651,15 @@ export default function EmployeeDirectory() {
       fetchStatsAndFilters()
     } catch (err) {
       console.error(err)
-      alert('Failed to save employee.')
+      const apiErrors = err?.response?.data?.errors
+      const apiMessage = err?.response?.data?.message
+      if (Array.isArray(apiErrors) && apiErrors.length > 0) {
+        const first = apiErrors[0]
+        const field = first?.field ? `${first.field}: ` : ''
+        alert(`${field}${first?.message || 'Validation failed'}`)
+        return
+      }
+      alert(apiMessage || 'Failed to save employee.')
     }
   }
 
@@ -587,8 +668,13 @@ export default function EmployeeDirectory() {
   const handleView = async (employee) => {
     try {
       const data = await getEmployee(employee.id)
-      if (data) { setSelectedEmployee(mapEmployeeFull(data)); setViewActiveTab('personal'); setViewModalOpen(true) }
-    } catch (err) { console.error(err) }
+      if (data) { setSelectedEmployee(mapEmployeeFull(data)); setViewActiveTab('basic'); setViewModalOpen(true) }
+    } catch (err) {
+      console.error(err)
+      setSelectedEmployee(employee)
+      setViewActiveTab('basic')
+      setViewModalOpen(true)
+    }
   }
 
   const handleCloseViewModal = () => { setViewModalOpen(false); setSelectedEmployee(null) }
@@ -604,7 +690,7 @@ export default function EmployeeDirectory() {
         setFormData({
           firstName: f.firstName || firstFromName,
           lastName: f.lastName || lastFromName,
-          username: '',
+          username: f.username || '',
           employeeId: f.empId,
           joinDate: f.joinDate,
           workEmail: f.email,
@@ -745,22 +831,22 @@ export default function EmployeeDirectory() {
       key: 'actions', label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-1.5">
-          <button type="button" onClick={() => handleEmail(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="Email">
-            <HiEnvelope className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={() => handleView(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="View">
-            <HiEye className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={handleLetter} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="Letter">
-            <HiDocumentText className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={() => handleEdit(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600" aria-label="Edit">
-            <HiPencil className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={() => handleDelete(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" aria-label="Delete">
-            <HiTrash className="h-4 w-4" />
-          </button>
-        </div>
+        {/* <button type="button" onClick={() => handleEmail(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="Email">
+          <HiEnvelope className="h-4 w-4" />
+        </button>        
+        <button type="button" onClick={handleLetter} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="Letter">
+          <HiDocumentText className="h-4 w-4" />
+        </button> */}
+        <button type="button" onClick={() => handleView(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-blue-500 text-white transition-colors hover:bg-blue-600" aria-label="View">
+          <HiEye className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={() => handleEdit(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56]" aria-label="Edit">
+          <HiPencil className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={() => handleDelete(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" aria-label="Delete">
+          <HiTrash className="h-4 w-4" />
+        </button>
+      </div>
       ),
     },
   ]
@@ -859,56 +945,25 @@ export default function EmployeeDirectory() {
         <form onSubmit={handleSubmit} className="space-y-5 pt-1">
           <input ref={profileFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleProfilePick} />
 
-          <div className="flex flex-wrap gap-6 border-b border-slate-200 text-sm font-medium">
-            <button
-              type="button"
-              onClick={() => setFormTab('basic')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'basic' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            >
-              Basic Information
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormTab('personal')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'personal' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            >
-              Personal Information
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormTab('bank')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'bank' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            >
-              Bank Information
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormTab('family')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'family' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            >
-              Family Information
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormTab('secondary')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'secondary' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            >
-              Contact Section
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormTab('education')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'education' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            >
-              Educational Details
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormTab('experience')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'experience' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-            >
-              Experience
-            </button>
+          <div className="-mx-1 flex gap-5 overflow-x-auto border-b border-slate-200 pb-px text-sm font-medium whitespace-nowrap [scrollbar-width:thin]">
+            {[
+              { id: 'basic', label: 'Basic Information' },
+              { id: 'personal', label: 'Personal Information' },
+              { id: 'bank', label: 'Bank Information' },
+              { id: 'family', label: 'Family Information' },
+              { id: 'secondary', label: 'Contact Section' },
+              { id: 'education', label: 'Educational Details' },
+              { id: 'experience', label: 'Experience' },
+            ].map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setFormTab(id)}
+                className={`shrink-0 border-b-2 pb-2 transition-colors ${formTab === id ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Basic Information Tab - UNCHANGED */}
@@ -929,7 +984,7 @@ export default function EmployeeDirectory() {
                     <button
                       type="button"
                       onClick={() => profileFileInputRef.current?.click()}
-                      className="rounded-md bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white hover:bg-[#ea6a0b]"
+                      className="rounded-md bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0d5c56]"
                     >
                       Upload
                     </button>
@@ -956,6 +1011,7 @@ export default function EmployeeDirectory() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleFormChange}
+                    placeholder="Enter first name"
                     className={basicFieldClass}
                     required
                   />
@@ -969,6 +1025,7 @@ export default function EmployeeDirectory() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleFormChange}
+                    placeholder="Enter last name"
                     className={basicFieldClass}
                   />
                 </div>
@@ -981,6 +1038,7 @@ export default function EmployeeDirectory() {
                     name="employeeId"
                     value={formData.employeeId}
                     onChange={handleFormChange}
+                    placeholder="e.g. EMP-001"
                     className={basicFieldClass}
                     required
                   />
@@ -1011,6 +1069,7 @@ export default function EmployeeDirectory() {
                     name="username"
                     value={formData.username}
                     onChange={handleFormChange}
+                    placeholder="Portal login username"
                     className={basicFieldClass}
                     autoComplete="username"
                     required
@@ -1026,6 +1085,7 @@ export default function EmployeeDirectory() {
                     type="email"
                     value={formData.workEmail}
                     onChange={handleFormChange}
+                    placeholder="name@company.com"
                     className={basicFieldClass}
                     required
                   />
@@ -1041,6 +1101,7 @@ export default function EmployeeDirectory() {
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={handleFormChange}
+                      placeholder="Min. 8 characters"
                       className={`${basicFieldClass} pr-10`}
                       autoComplete="new-password"
                       required={!editMode}
@@ -1067,6 +1128,7 @@ export default function EmployeeDirectory() {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={formData.confirmPassword}
                       onChange={handleFormChange}
+                      placeholder="Repeat password"
                       className={`${basicFieldClass} pr-10`}
                       autoComplete="new-password"
                       required={!editMode}
@@ -1131,12 +1193,13 @@ export default function EmployeeDirectory() {
                   <label htmlFor="emp-phone" className="mb-1 block text-sm font-medium text-slate-800">
                     Phone Number<span className="text-red-500"> *</span>
                   </label>
-                  <input
+                    <input
                     id="emp-phone"
                     name="phoneNumber"
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={handleFormChange}
+                    placeholder="e.g. 501234567"
                     className={basicFieldClass}
                     required
                   />
@@ -1167,6 +1230,7 @@ export default function EmployeeDirectory() {
                     name="about"
                     value={formData.about}
                     onChange={handleFormChange}
+                    placeholder="Short professional summary or notes"
                     rows={4}
                     className={`${basicFieldClass} min-h-[120px]`}
                     required
@@ -1180,22 +1244,22 @@ export default function EmployeeDirectory() {
           {formTab === 'personal' && (
             <div className="space-y-5">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
+                {/* <div>
                   <label htmlFor="passport-number" className="mb-1 block text-sm font-medium text-slate-800">
-                    Passport No <span className="text-red-500">*</span>
+                    Passport No
                   </label>
                   <input
                     id="passport-number"
                     name="passportNumber"
                     value={formData.passportNumber}
                     onChange={handleFormChange}
+                    placeholder="Passport number"
                     className={basicFieldClass}
-                    required
                   />
                 </div>
                 <div>
                   <label htmlFor="passport-expiry" className="mb-1 block text-sm font-medium text-slate-800">
-                    Passport Expiry Date <span className="text-red-500">*</span>
+                    Passport Expiry Date
                   </label>
                   <input
                     id="passport-expiry"
@@ -1204,21 +1268,37 @@ export default function EmployeeDirectory() {
                     value={formData.passportExpiry}
                     onChange={handleFormChange}
                     className={basicFieldClass}
-                    required
                   />
-                </div>
+                </div> */}
                 <div>
                   <label htmlFor="nationality" className="mb-1 block text-sm font-medium text-slate-800">
-                    Nationality <span className="text-red-500">*</span>
+                    Nationality
                   </label>
                   <input
                     id="nationality"
                     name="nationality"
                     value={formData.nationality}
                     onChange={handleFormChange}
+                    placeholder="e.g. UAE, India, UK"
                     className={basicFieldClass}
-                    required
                   />
+                </div>
+                <div>
+                  <label htmlFor="gender" className="mb-1 block text-sm font-medium text-slate-800">
+                    Gender
+                  </label>
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  >
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="religion" className="mb-1 block text-sm font-medium text-slate-800">
@@ -1229,12 +1309,13 @@ export default function EmployeeDirectory() {
                     name="religion"
                     value={formData.religion}
                     onChange={handleFormChange}
+                    placeholder="Optional"
                     className={basicFieldClass}
                   />
                 </div>
                 <div>
                   <label htmlFor="marital-status" className="mb-1 block text-sm font-medium text-slate-800">
-                    Marital status <span className="text-red-500">*</span>
+                    Marital status
                   </label>
                   <select
                     id="marital-status"
@@ -1242,7 +1323,6 @@ export default function EmployeeDirectory() {
                     value={formData.maritalStatus}
                     onChange={handleFormChange}
                     className={basicFieldClass}
-                    required
                   >
                     <option value="">Select</option>
                     <option value="Single">Single</option>
@@ -1260,6 +1340,7 @@ export default function EmployeeDirectory() {
                     name="employmentSpouse"
                     value={formData.employmentSpouse}
                     onChange={handleFormChange}
+                    placeholder="Spouse employer / role"
                     className={basicFieldClass}
                   />
                 </div>
@@ -1274,6 +1355,7 @@ export default function EmployeeDirectory() {
                     min="0"
                     value={formData.noOfChildren}
                     onChange={handleFormChange}
+                    placeholder="0"
                     className={basicFieldClass}
                   />
                 </div>
@@ -1304,15 +1386,15 @@ export default function EmployeeDirectory() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="bank-name" className="mb-1 block text-sm font-medium text-slate-800">
-                    Bank Name <span className="text-red-500">*</span>
+                    Bank Name
                   </label>
                   <input
                     id="bank-name"
                     name="bankName"
                     value={formData.bankName}
                     onChange={handleFormChange}
+                    placeholder="Bank name"
                     className={basicFieldClass}
-                    required
                   />
                 </div>
                 <div>
@@ -1324,6 +1406,7 @@ export default function EmployeeDirectory() {
                     name="bankAccountNo"
                     value={formData.bankAccountNo}
                     onChange={handleFormChange}
+                    placeholder="Account number"
                     className={basicFieldClass}
                   />
                 </div>
@@ -1336,6 +1419,7 @@ export default function EmployeeDirectory() {
                     name="ifscCode"
                     value={formData.ifscCode}
                     onChange={handleFormChange}
+                    placeholder="e.g. ABCD0123456"
                     className={basicFieldClass}
                   />
                 </div>
@@ -1348,6 +1432,7 @@ export default function EmployeeDirectory() {
                     name="branchAddress"
                     value={formData.branchAddress}
                     onChange={handleFormChange}
+                    placeholder="Branch address"
                     className={basicFieldClass}
                   />
                 </div>
@@ -1375,13 +1460,13 @@ export default function EmployeeDirectory() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
-                        Name <span className="text-red-500">*</span>
+                        Name
                       </label>
                       <input
                         value={member.name}
                         onChange={(e) => handleFamilyMemberChange(index, 'name', e.target.value)}
+                        placeholder="Full name"
                         className={basicFieldClass}
-                        required
                       />
                     </div>
                     <div>
@@ -1391,6 +1476,7 @@ export default function EmployeeDirectory() {
                       <input
                         value={member.relationship}
                         onChange={(e) => handleFamilyMemberChange(index, 'relationship', e.target.value)}
+                        placeholder="e.g. Spouse, Child"
                         className={basicFieldClass}
                       />
                     </div>
@@ -1401,10 +1487,11 @@ export default function EmployeeDirectory() {
                       <input
                         value={member.phone}
                         onChange={(e) => handleFamilyMemberChange(index, 'phone', e.target.value)}
+                        placeholder="Phone number"
                         className={basicFieldClass}
                       />
                     </div>
-                    <div>
+                    {/* <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
                         Passport Expiry Date
                       </label>
@@ -1414,14 +1501,14 @@ export default function EmployeeDirectory() {
                         onChange={(e) => handleFamilyMemberChange(index, 'passportExpiry', e.target.value)}
                         className={basicFieldClass}
                       />
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               ))}
               <button
                 type="button"
                 onClick={addFamilyMember}
-                className="mt-2 inline-flex items-center gap-2 text-sm text-[#0F766E] hover:text-[#ea6a0b]"
+                className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-[#0F766E] hover:text-[#0d5c56]"
               >
                 <HiPlus className="h-4 w-4" /> Add Family Member
               </button>
@@ -1436,13 +1523,13 @@ export default function EmployeeDirectory() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-800">
-                      Name <span className="text-red-500">*</span>
+                      Name
                     </label>
                     <input
                       value={formData.secondaryContact.name}
                       onChange={(e) => handleSecondaryContactChange('name', e.target.value)}
+                      placeholder="Contact person name"
                       className={basicFieldClass}
-                      required
                     />
                   </div>
                   <div>
@@ -1452,18 +1539,19 @@ export default function EmployeeDirectory() {
                     <input
                       value={formData.secondaryContact.relationship}
                       onChange={(e) => handleSecondaryContactChange('relationship', e.target.value)}
+                      placeholder="Relationship to employee"
                       className={basicFieldClass}
                     />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-800">
-                      Phone No 1 <span className="text-red-500">*</span>
+                      Phone No 1
                     </label>
                     <input
                       value={formData.secondaryContact.phoneNo1}
                       onChange={(e) => handleSecondaryContactChange('phoneNo1', e.target.value)}
+                      placeholder="Primary phone"
                       className={basicFieldClass}
-                      required
                     />
                   </div>
                   <div>
@@ -1473,6 +1561,7 @@ export default function EmployeeDirectory() {
                     <input
                       value={formData.secondaryContact.phoneNo2}
                       onChange={(e) => handleSecondaryContactChange('phoneNo2', e.target.value)}
+                      placeholder="Alternate phone"
                       className={basicFieldClass}
                     />
                   </div>
@@ -1501,48 +1590,46 @@ export default function EmployeeDirectory() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
-                        Institution Name <span className="text-red-500">*</span>
+                        Institution Name
                       </label>
                       <input
                         value={edu.institutionName}
                         onChange={(e) => handleEducationChange(index, 'institutionName', e.target.value)}
+                        placeholder="School / university name"
                         className={basicFieldClass}
-                        required
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
-                        Course <span className="text-red-500">*</span>
+                        Course
                       </label>
                       <input
                         value={edu.course}
                         onChange={(e) => handleEducationChange(index, 'course', e.target.value)}
+                        placeholder="Degree / course title"
                         className={basicFieldClass}
-                        required
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
-                        Start Date <span className="text-red-500">*</span>
+                        Start Date
                       </label>
                       <input
                         type="date"
                         value={edu.startDate}
                         onChange={(e) => handleEducationChange(index, 'startDate', e.target.value)}
                         className={basicFieldClass}
-                        required
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
-                        End Date <span className="text-red-500">*</span>
+                        End Date
                       </label>
                       <input
                         type="date"
                         value={edu.endDate}
                         onChange={(e) => handleEducationChange(index, 'endDate', e.target.value)}
                         className={basicFieldClass}
-                        required
                       />
                     </div>
                   </div>
@@ -1551,7 +1638,7 @@ export default function EmployeeDirectory() {
               <button
                 type="button"
                 onClick={addEducation}
-                className="mt-2 inline-flex items-center gap-2 text-sm text-[#0F766E] hover:text-[#ea6a0b]"
+                className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-[#0F766E] hover:text-[#0d5c56]"
               >
                 <HiPlus className="h-4 w-4" /> Add Education
               </button>
@@ -1578,48 +1665,46 @@ export default function EmployeeDirectory() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
-                        Previous Company Name <span className="text-red-500">*</span>
+                        Previous Company Name
                       </label>
                       <input
                         value={exp.companyName}
                         onChange={(e) => handleWorkExpChange(index, 'companyName', e.target.value)}
+                        placeholder="Company name"
                         className={basicFieldClass}
-                        required
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
-                        Designation <span className="text-red-500">*</span>
+                        Designation
                       </label>
                       <input
                         value={exp.designation}
                         onChange={(e) => handleWorkExpChange(index, 'designation', e.target.value)}
+                        placeholder="Your role / title"
                         className={basicFieldClass}
-                        required
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
-                        Start Date <span className="text-red-500">*</span>
+                        Start Date
                       </label>
                       <input
                         type="date"
                         value={exp.startDate}
                         onChange={(e) => handleWorkExpChange(index, 'startDate', e.target.value)}
                         className={basicFieldClass}
-                        required
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-800">
-                        End Date <span className="text-red-500">*</span>
+                        End Date
                       </label>
                       <input
                         type="date"
                         value={exp.endDate}
                         onChange={(e) => handleWorkExpChange(index, 'endDate', e.target.value)}
                         className={basicFieldClass}
-                        required
                       />
                     </div>
                   </div>
@@ -1628,7 +1713,7 @@ export default function EmployeeDirectory() {
               <button
                 type="button"
                 onClick={addWorkExp}
-                className="mt-2 inline-flex items-center gap-2 text-sm text-[#0F766E] hover:text-[#ea6a0b]"
+                className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-[#0F766E] hover:text-[#0d5c56]"
               >
                 <HiPlus className="h-4 w-4" /> Add Experience
               </button>
@@ -1648,7 +1733,7 @@ export default function EmployeeDirectory() {
             </div>
           )}
 
-          <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
             <button
               type="button"
               onClick={handleCloseModal}
@@ -1656,164 +1741,261 @@ export default function EmployeeDirectory() {
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#ea6a0b]"
-            >
-              Save
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {!isFirstEmployeeStep && (
+                <button
+                  type="button"
+                  onClick={() => setFormTab(EMPLOYEE_FORM_STEPS[safeFormStepIdx - 1])}
+                  className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Previous
+                </button>
+              )}
+              {!isLastEmployeeStep && (
+                <button
+                  type="button"
+                  onClick={() => setFormTab(EMPLOYEE_FORM_STEPS[safeFormStepIdx + 1])}
+                  className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56]"
+                >
+                  Next
+                </button>
+              )}
+              {isLastEmployeeStep && (
+                <button
+                  type="submit"
+                  className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56]"
+                >
+                  Save
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </Modal>
 
       {/* ── View Profile Modal ───────────────────────────────────────────── */}
       {selectedEmployee && (
-        <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} title="Deep-Dive Identity Analysis" size="xl" showClose>
-          <div className="space-y-4 pt-1 animate-in fade-in duration-500">
+  <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} size="xl" showClose>
+    <div className="space-y-0 divide-y divide-slate-100">
 
-            {/* Hero header */}
-            <div className="flex flex-col md:flex-row items-center gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100 relative overflow-hidden shadow-inner">
-              <Avatar
-                initials={selectedEmployee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                size="xl" className="h-20 w-20 shadow-xl border-4 border-white"
-              />
-              <div className="relative z-10 text-center md:text-left">
-                <h2 className="text-xl font-black text-slate-900 leading-none">{selectedEmployee.name}</h2>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1.5">
-                  {selectedEmployee.empId} · {selectedEmployee.jobTitle}
-                </p>
-                <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-3">
-                  <Badge label={selectedEmployee.department} color="blue" variant="outline" className="font-black text-[8px] px-2 py-0.5" />
-                  <Badge label={selectedEmployee.status} color={statusColor(selectedEmployee.status)} variant="outline" className="font-black text-[8px] px-2 py-0.5" />
-                </div>
-              </div>
-              <div className="ml-auto flex gap-2 self-start md:self-center">
-                <Button variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEdit(selectedEmployee)} className="text-slate-400 hover:text-[#0F766E] bg-white shadow-sm border border-slate-100" />
-                <Button variant="ghost" size="sm" icon={HiTrash}  onClick={() => handleDelete(selectedEmployee)} className="text-slate-400 hover:text-rose-600 bg-white shadow-sm border border-slate-100" />
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-full border border-slate-200 overflow-x-auto no-scrollbar">
-              {[
-                { id: 'personal',     label: 'Identity',   icon: HiIdentification },
-                { id: 'work',         label: 'Employment', icon: HiBriefcase },
-                { id: 'documents',    label: 'Registry',   icon: HiFolder },
-                { id: 'visa',         label: 'Visa/Nat',   icon: HiCheckBadge },
-                { id: 'attendance',   label: 'Presence',   icon: HiClock },
-                { id: 'leave',        label: 'Absence',    icon: HiCalendarDays },
-                { id: 'performance',  label: 'Talent',     icon: HiPresentationChartLine },
-                { id: 'assets',       label: 'Assets',     icon: HiDevicePhoneMobile },
-              ].map(tab => (
-                <button key={tab.id} onClick={() => setViewActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${viewActiveTab === tab.id ? 'bg-white text-[#0F766E] shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}
-                >
-                  <tab.icon className="h-3.5 w-3.5" /> {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab content */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm min-h-[350px]">
-
-              {viewActiveTab === 'personal' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Identity</p><p className="text-xs font-black text-slate-900">{selectedEmployee.name}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Assigned ID</p><p className="text-xs font-black text-slate-900">{selectedEmployee.empId}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender</p><p className="text-xs font-black text-slate-900">{selectedEmployee.gender || '—'}</p></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Nationality</p><p className="text-xs font-black text-slate-900">{selectedEmployee.nationality || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Date of Birth</p><p className="text-xs font-black text-slate-900">{selectedEmployee.dateOfBirth || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Marital Status</p><p className="text-xs font-black text-slate-900">{selectedEmployee.maritalStatus || '—'}</p></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Email</p><p className="text-xs font-black text-[#0F766E]">{selectedEmployee.email}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Personal Email</p><p className="text-xs font-black text-slate-900">{selectedEmployee.personalEmail || '—'}</p></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Mobile</p><p className="text-xs font-black text-slate-900">{selectedEmployee.phone || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Dependents</p><p className="text-xs font-black text-slate-900">{selectedEmployee.dependents ?? '—'}</p></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Emergency Contact</p><p className="text-xs font-black text-slate-900">{selectedEmployee.emergencyContactName || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Emergency Phone</p><p className="text-xs font-black text-slate-900">{selectedEmployee.emergencyContactPhone || '—'}</p></div>
-                  </div>
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Residential Address</p><p className="text-xs font-black text-slate-900">{selectedEmployee.homeAddress || '—'}</p></div>
-                </div>
+      {/* Header */}
+      <div className="flex items-start justify-between pb-5">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Avatar
+              initials={selectedEmployee.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EM'}
+              size="xl"
+              className="h-14 w-14"
+            />
+            <div className={`absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full border-2 border-white ${
+              selectedEmployee.status === 'Active' ? 'bg-green-500' :
+              selectedEmployee.status === 'Probation' ? 'bg-blue-500' :
+              selectedEmployee.status === 'On Leave' ? 'bg-yellow-400' : 'bg-slate-400'
+            }`} />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">{selectedEmployee.name}</h2>
+            <p className="text-sm text-slate-500 mt-0.5">{displayEmpId(selectedEmployee.empId)} · {selectedEmployee.jobTitle || '—'}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />{selectedEmployee.status || '—'}
+              </span>
+              {selectedEmployee.department && (
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">{selectedEmployee.department}</span>
               )}
-
-              {viewActiveTab === 'work' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Designation</p><p className="text-xs font-black text-slate-900">{selectedEmployee.jobTitle}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Department</p><p className="text-xs font-black text-slate-900">{selectedEmployee.department}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Region</p><p className="text-xs font-black text-slate-900">{selectedEmployee.location || '—'}</p></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Portal role</p><p className="text-xs font-black text-slate-900">{selectedEmployee.rbacRoleName || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Portal access</p><p className="text-xs font-black text-slate-900">{selectedEmployee.portalEnabled ? 'Enabled' : 'Disabled'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Work email</p><p className="text-xs font-black text-[#0F766E]">{selectedEmployee.email}</p></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Manager</p><p className="text-xs font-black text-slate-900">{selectedEmployee.manager || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Join Date</p><p className="text-xs font-black text-slate-900">{selectedEmployee.joinDate || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Mode</p><p className="text-xs font-black text-slate-900">{selectedEmployee.workMode || '—'}</p></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Salary</p><p className="text-xs font-black text-slate-900">{selectedEmployee.salary ? `AED ${selectedEmployee.salary}` : '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Grade</p><p className="text-xs font-black text-slate-900">{selectedEmployee.grade || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Cost Center</p><p className="text-xs font-black text-slate-900">{selectedEmployee.costCenter || '—'}</p></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Probation End</p><p className="text-xs font-black text-slate-900">{selectedEmployee.probationEndDate || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p><p className="text-xs font-black text-slate-900">{selectedEmployee.status}</p></div>
-                  </div>
-                </div>
-              )}
-
-              {viewActiveTab === 'visa' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Passport No.</p><p className="text-xs font-black text-slate-900">{selectedEmployee.passportNumber || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Passport Expiry</p><p className="text-xs font-black text-slate-900">{selectedEmployee.passportExpiry || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Emirates ID</p><p className="text-xs font-black text-slate-900">{selectedEmployee.emiratesIdNumber || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Emirates ID Expiry</p><p className="text-xs font-black text-slate-900">{selectedEmployee.emiratesIdExpiry || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Visa Type</p><p className="text-xs font-black text-slate-900">{selectedEmployee.visaType || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Visa Expiry</p><p className="text-xs font-black text-slate-900">{selectedEmployee.visaExpiryDate || '—'}</p></div>
-                  </div>
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Sponsoring Entity</p><p className="text-xs font-black text-slate-900">{selectedEmployee.sponsoringEntity || '—'}</p></div>
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Country of Residence</p><p className="text-xs font-black text-slate-900">{selectedEmployee.countryOfResidence || '—'}</p></div>
-                </div>
-              )}
-
-              {viewActiveTab === 'documents' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Career History</p><p className="text-xs font-black text-slate-900 whitespace-pre-wrap">{selectedEmployee.careerHistory || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Awards Summary</p><p className="text-xs font-black text-slate-900 whitespace-pre-wrap">{selectedEmployee.awardsSummary || '—'}</p></div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Promotion History</p><p className="text-xs font-black text-slate-900 whitespace-pre-wrap">{selectedEmployee.promotionHistory || '—'}</p></div>
-                  </div>
-                </div>
-              )}
-
-              {(viewActiveTab === 'attendance' || viewActiveTab === 'leave' || viewActiveTab === 'performance' || viewActiveTab === 'assets') && (
-                <div className="flex items-center justify-center h-full min-h-[200px]">
-                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Module Intelligence Optimized</p>
-                </div>
+              {selectedEmployee.workMode && (
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{selectedEmployee.workMode}</span>
               )}
             </div>
           </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => handleEdit(selectedEmployee)} className="inline-flex items-center gap-1.5 rounded-md bg-[#0F766E] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#0d5c56]">
+            <HiPencil className="h-3.5 w-3.5" />Edit
+          </button>
+          <button onClick={() => handleDelete(selectedEmployee)} className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
+            <HiTrash className="h-3.5 w-3.5" />Delete
+          </button>
+        </div>
+      </div>
 
-          <div className="flex gap-3 pt-3 border-t border-slate-100 mt-4">
-            <Button label="EDIT IDENTITY" variant="primary" icon={HiPencil} onClick={() => handleEdit(selectedEmployee)} className="flex-1 py-3.5 uppercase font-black text-[10px]" />
-            <Button label="ARCHIVE"       variant="ghost"   icon={HiTrash}  onClick={() => handleDelete(selectedEmployee)} className="flex-1 py-3.5 font-black text-rose-400 uppercase text-[10px]" />
-            <Button label="CLOSE"         variant="ghost"                   onClick={handleCloseViewModal} className="flex-1 py-3.5 font-black text-slate-400 uppercase text-[10px]" />
+      {/* Quick stats */}
+      <div className="grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100">
+        {[
+          { label: 'Join Date', value: formatJoinDateDisplay(selectedEmployee.joinDate) },
+          { label: 'Work Email', value: selectedEmployee.email || '—' },
+          { label: 'Phone', value: formatPhoneDisplay(selectedEmployee.phone) },
+        ].map(({ label, value }) => (
+          <div key={label} className="px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+            <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{value}</p>
           </div>
-        </Modal>
-      )}
+        ))}
+      </div>
 
+      {/* Accordion */}
+      <div className="divide-y divide-slate-100">
+        {[
+          {
+            id: 'basic', label: 'Basic Information',
+            iconBg: 'bg-blue-50', iconColor: 'text-blue-600', icon: <HiBriefcase className="h-4 w-4" />,
+            content: (
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                {[
+                  ['Employee ID', displayEmpId(selectedEmployee.empId)],
+                  ['Full Name', selectedEmployee.name],
+                  ['Work Email', selectedEmployee.email],
+                  ['Phone', formatPhoneDisplay(selectedEmployee.phone)],
+                  ['Department', selectedEmployee.department],
+                  ['Designation', selectedEmployee.jobTitle],
+                  ['Join Date', formatJoinDateDisplay(selectedEmployee.joinDate)],
+                  ['Portal Role', selectedEmployee.rbacRoleName || selectedEmployee.portalRole],
+                ].map(([label, val]) => (
+                  <div key={label}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                    <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                  </div>
+                ))}
+              </div>
+            ),
+          },
+          {
+            id: 'personal', label: 'Personal Information',
+            iconBg: 'bg-teal-50', iconColor: 'text-teal-700', icon: <HiUserCircle className="h-4 w-4" />,
+            content: (
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                {[
+                  ['Gender', selectedEmployee.gender],
+                  ['Date of Birth', selectedEmployee.dateOfBirth],
+                  ['Nationality', selectedEmployee.nationality],
+                  ['Marital Status', selectedEmployee.maritalStatus],
+                  ['Religion', selectedEmployee.religion],
+                  ['No. of Children', selectedEmployee.dependents],
+                  ['Personal Email', selectedEmployee.personalEmail],
+                  ['Country of Residence', selectedEmployee.countryOfResidence],
+                  ['Home Address', selectedEmployee.homeAddress],
+                ].map(([label, val]) => (
+                  <div key={label} className={label === 'Home Address' ? 'col-span-2' : ''}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                    <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                  </div>
+                ))}
+              </div>
+            ),
+          },
+          {
+            id: 'bank', label: 'Bank Information',
+            iconBg: 'bg-amber-50', iconColor: 'text-amber-700', icon: <HiBanknotes className="h-4 w-4" />,
+            content: (
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                {[
+                  ['Bank Name', selectedEmployee.bankName],
+                  ['Account Number', selectedEmployee.bankAccountNo],
+                  ['IFSC Code', selectedEmployee.ifscCode],
+                  ['Branch Address', selectedEmployee.branchAddress],
+                ].map(([label, val]) => (
+                  <div key={label}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                    <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                  </div>
+                ))}
+              </div>
+            ),
+          },
+          {
+            id: 'family', label: 'Family Information',
+            iconBg: 'bg-pink-50', iconColor: 'text-pink-700', icon: <HiUserGroup className="h-4 w-4" />,
+            content: selectedEmployee.familyMembers?.length > 0 ? (
+              <div className="space-y-2">
+                {selectedEmployee.familyMembers.map((m, i) => (
+                  <div key={i} className="grid grid-cols-3 gap-4 rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
+                    {[['Name', m.name], ['Relationship', m.relationship], ['Phone', m.phone]].map(([label, val]) => (
+                      <div key={label}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                        <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-sm text-slate-400">No family members added</p>,
+          },
+          {
+            id: 'secondary', label: 'Contact Section',
+            iconBg: 'bg-purple-50', iconColor: 'text-purple-700', icon: <HiDevicePhoneMobile className="h-4 w-4" />,
+            content: (
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                {[
+                  ['Name', selectedEmployee.secondaryContact?.name],
+                  ['Relationship', selectedEmployee.secondaryContact?.relationship],
+                  ['Phone 1', selectedEmployee.secondaryContact?.phoneNo1],
+                  ['Phone 2', selectedEmployee.secondaryContact?.phoneNo2],
+                ].map(([label, val]) => (
+                  <div key={label}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                    <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                  </div>
+                ))}
+              </div>
+            ),
+          },
+          {
+            id: 'education', label: 'Educational Details',
+            iconBg: 'bg-green-50', iconColor: 'text-green-700', icon: <HiAcademicCap className="h-4 w-4" />,
+            content: selectedEmployee.education?.length > 0 ? (
+              <div className="space-y-2">
+                {selectedEmployee.education.map((edu, i) => (
+                  <div key={i} className="rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">{edu.course || '—'}</span>
+                      <span className="text-xs text-slate-400">{edu.startDate} – {edu.endDate || 'Present'}</span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-900">{edu.institutionName || '—'}</p>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-sm text-slate-400">No education records</p>,
+          },
+          {
+            id: 'experience', label: 'Experience',
+            iconBg: 'bg-slate-100', iconColor: 'text-slate-600', icon: <HiPresentationChartLine className="h-4 w-4" />,
+            content: selectedEmployee.workExperience?.length > 0 ? (
+              <div className="space-y-2">
+                {selectedEmployee.workExperience.map((exp, i) => (
+                  <div key={i} className="rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-800">{exp.designation || '—'}</span>
+                      <span className="text-xs text-slate-400">{exp.startDate} – {exp.endDate || (selectedEmployee.isCurrentlyWorking ? 'Present' : '—')}</span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-900">{exp.companyName || '—'}</p>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-sm text-slate-400">No work experience records</p>,
+          },
+        ].map(({ id, label, iconBg, iconColor, icon, content }) => {
+          const isOpen = viewActiveTab === id
+          return (
+            <div key={id} className="border-b border-slate-100 last:border-0">
+              <button
+                type="button"
+                onClick={() => setViewActiveTab(isOpen ? '' : id)}
+                className="flex w-full items-center justify-between px-0 py-3.5 text-left hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-md ${iconBg} ${iconColor}`}>{icon}</div>
+                  <span className="text-sm font-medium text-slate-800">{label}</span>
+                </div>
+                <HiChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isOpen && <div className="pb-5 pt-1">{content}</div>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  </Modal>
+)}
     </div>
   )
 }
