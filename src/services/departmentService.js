@@ -1,8 +1,14 @@
 import api from './api'
 
-export const listDepartments = async () => {
-  const { data } = await api.get('/departments')
-  return data.data
+/** @returns {Promise<{ departments: Array, total: number, page: number, limit: number, pages: number } | { departments: Array }>} */
+export const listDepartments = async (params = {}) => {
+  const { data } = await api.get('/departments', { params })
+  const payload = data.data
+  if (payload && Array.isArray(payload.departments)) return payload
+  if (Array.isArray(payload)) {
+    return { departments: payload, total: payload.length, page: 1, limit: payload.length, pages: 1 }
+  }
+  return { departments: [], total: 0, page: 1, limit: 20, pages: 1 }
 }
 
 export const listDepartmentManagers = async () => {

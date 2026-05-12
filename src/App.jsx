@@ -1,10 +1,13 @@
 import {Toaster} from "react-hot-toast"
+import { AuthProvider } from "./context/AuthContext.jsx";
 import AppRouter from './routes/AppRouter.jsx'
 
 export default function App() {
   return (
     <>
-      <AppRouter />
+      <AuthProvider>
+        <AppRouter />
+      </AuthProvider>
       <Toaster
         position="top-right"
         toastOptions={{

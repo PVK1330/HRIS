@@ -5,7 +5,7 @@ import {
   Outlet,
   RouterProvider,
 } from "react-router-dom";
-import { AuthProvider, useAuth } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import PermissionGate from "../components/PermissionGate.jsx";
 import AdminLayout from "../layouts/AdminLayout.jsx";
 import SuperAdminLayout from "../layouts/SuperAdminLayout.jsx";
@@ -91,11 +91,7 @@ function AdminModuleGate({ moduleKey, children }) {
 }
 
 function RootLayout() {
-  return (
-    <AuthProvider>
-      <Outlet />
-    </AuthProvider>
-  );
+  return <Outlet />;
 }
 
 const ADMIN_ROLES = [

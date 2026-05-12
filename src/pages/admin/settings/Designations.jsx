@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import {
   HiBriefcase,
   HiChevronDown,
@@ -23,6 +24,7 @@ import {
 const initialFormData = {
   designationName: '',
   departmentId: '',
+  description: '',
   status: '',
 }
 
@@ -35,18 +37,41 @@ export default function DesignationsManagement() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [designationList, setDesignationList] = useState([])
   const [departmentOptions, setDepartmentOptions] = useState([])
+  const [desPage, setDesPage] = useState(1)
+  const [desTotal, setDesTotal] = useState(0)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [departmentFilterId, setDepartmentFilterId] = useState('')
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const exportRef = useRef(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 350)
+    return () => clearTimeout(t)
+  }, [search])
+
+  useEffect(() => {
+    setDesPage(1)
+  }, [debouncedSearch, statusFilter, departmentFilterId])
 
   const fetchDesignations = async () => {
     try {
       setLoading(true)
-      const data = await listDesignations()
-      setDesignationList(Array.isArray(data) ? data : [])
+      const statusParam = statusFilter === 'all' ? 'all' : statusFilter
+      const params = {
+        page: desPage,
+        limit: 10,
+        search: debouncedSearch,
+        status: statusParam,
+      }
+      if (departmentFilterId) params.departmentId = Number(departmentFilterId)
+      const data = await listDesignations(params)
+      setDesignationList(data?.designations ?? [])
+      setDesTotal(data?.total ?? 0)
     } catch (err) {
       console.error('Failed to fetch designations:', err)
-      Swal.fire('Error', 'Failed to load designations.', 'error')
+      toast.error('Failed to load designations.')
     } finally {
       setLoading(false)
     }
@@ -54,8 +79,8 @@ export default function DesignationsManagement() {
 
   const fetchDepartments = async () => {
     try {
-      const data = await listDepartments()
-      setDepartmentOptions(Array.isArray(data) ? data : [])
+      const data = await listDepartments({ limit: 500, status: 'active' })
+      setDepartmentOptions(data?.departments ?? [])
     } catch (err) {
       console.error('Failed to fetch departments:', err)
       setDepartmentOptions([])
@@ -64,6 +89,9 @@ export default function DesignationsManagement() {
 
   React.useEffect(() => {
     fetchDesignations()
+  }, [debouncedSearch, statusFilter, departmentFilterId, desPage])
+
+  React.useEffect(() => {
     fetchDepartments()
   }, [])
 
@@ -90,17 +118,6 @@ export default function DesignationsManagement() {
     return () => document.removeEventListener('mousedown', onOutsideClick)
   }, [exportOpen])
 
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return designationList.filter((d) => {
-      const currentStatus = (d.status ?? (d.is_active ? 'Active' : 'Inactive')).toLowerCase()
-      const statusMatch = statusFilter === 'all' || currentStatus === statusFilter
-      if (!statusMatch) return false
-      if (!query) return true
-      return `${d.name ?? ''} ${d.department_name ?? ''}`.toLowerCase().includes(query)
-    })
-  }, [designationList, search, statusFilter])
-
   const handleFormChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -115,25 +132,34 @@ export default function DesignationsManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (submitting) return
+    setSubmitting(true)
     const payload = {
       name: formData.designationName,
       department_id: Number(formData.departmentId),
       isActive: formData.status === 'Active',
     }
+    if (editMode) {
+      payload.description = formData.description?.trim() ? formData.description.trim() : null
+    } else if (formData.description?.trim()) {
+      payload.description = formData.description.trim()
+    }
 
     try {
       if (editMode) {
         await updateDesignation(editingId, payload)
-        Swal.fire('Updated!', 'Designation updated successfully.', 'success')
+        toast.success('Designation updated.')
       } else {
         await createDesignation(payload)
-        Swal.fire('Created!', 'Designation created successfully.', 'success')
+        toast.success('Designation created.')
       }
       handleCloseModal()
       fetchDesignations()
     } catch (err) {
       console.error('Failed to submit designation:', err)
-      Swal.fire('Error', 'Failed to save designation.', 'error')
+      toast.error(err?.response?.data?.message || 'Failed to save designation.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -141,6 +167,7 @@ export default function DesignationsManagement() {
     setFormData({
       designationName: item.name ?? '',
       departmentId: item.department_id ? String(item.department_id) : '',
+      description: item.description ?? '',
       status: item.status ?? (item.is_active ? 'Active' : 'Inactive'),
     })
     setEditingId(item.id)
@@ -151,7 +178,7 @@ export default function DesignationsManagement() {
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
-      text: "You won't be able to revert this!",
+      text: 'The designation will be marked inactive (soft delete).',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#0F766E',
@@ -162,11 +189,11 @@ export default function DesignationsManagement() {
 
     try {
       await deleteDesignation(id)
-      Swal.fire('Deleted!', 'Designation removed successfully.', 'success')
+      toast.success('Designation archived.')
       fetchDesignations()
     } catch (err) {
       console.error('Failed to delete designation:', err)
-      Swal.fire('Error', 'Failed to delete designation.', 'error')
+      toast.error('Failed to archive designation.')
     }
   }
 
@@ -187,6 +214,15 @@ export default function DesignationsManagement() {
       key: 'department_name',
       label: 'Department Name',
       render: (v) => <span className="text-sm font-medium text-slate-600">{v || '-'}</span>,
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      render: (v) => (
+        <span className="max-w-[220px] truncate text-sm text-slate-600" title={v || ''}>
+          {v || '—'}
+        </span>
+      ),
     },
     {
       key: 'status',
@@ -235,12 +271,13 @@ export default function DesignationsManagement() {
 
   const exportRows = useMemo(
     () =>
-      filtered.map((row) => ({
+      designationList.map((row) => ({
         designation: row.name ?? '-',
         department: row.department_name ?? '-',
+        description: row.description ?? '-',
         status: row.status ?? (row.is_active ? 'Active' : 'Inactive'),
       })),
-    [filtered]
+    [designationList]
   )
 
   const exportAsExcel = () => {
@@ -249,11 +286,11 @@ export default function DesignationsManagement() {
       return
     }
 
-    const headers = ['Designation', 'Department Name', 'Status']
+    const headers = ['Designation', 'Department Name', 'Description', 'Status']
     const lines = [
       headers.join(','),
       ...exportRows.map((row) =>
-        [row.designation, row.department, row.status]
+        [row.designation, row.department, row.description, row.status]
           .map((value) => `"${String(value).replace(/"/g, '""')}"`)
           .join(',')
       ),
@@ -313,7 +350,7 @@ export default function DesignationsManagement() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
-          <div className="relative min-w-[250px] flex-1">
+          <div className="relative min-w-[200px] flex-1">
             <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -323,6 +360,16 @@ export default function DesignationsManagement() {
               className="h-10 w-full rounded-none border border-slate-200 bg-slate-50 px-3 pl-9 text-sm text-slate-700 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-2 focus:ring-[#0F766E]/10"
             />
           </div>
+          <select
+            value={departmentFilterId}
+            onChange={(e) => setDepartmentFilterId(e.target.value)}
+            className="h-10 min-w-[180px] rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]"
+          >
+            <option value="">All departments</option>
+            {departmentOptions.map((d) => (
+              <option key={d.id} value={String(d.id)}>{d.name}</option>
+            ))}
+          </select>
           <div className="flex items-center gap-2">
             {[
               { id: 'all', label: 'All' },
@@ -344,11 +391,20 @@ export default function DesignationsManagement() {
             ))}
           </div>
           <p className="text-xs font-medium text-slate-400">
-            {filtered.length} of {designationList.length} designations
+            {desTotal} total · page {desPage}
           </p>
         </div>
 
-        <Table columns={columns} data={filtered} pageSize={10} loading={loading} square />
+        <Table
+          columns={columns}
+          data={designationList}
+          pageSize={10}
+          loading={loading}
+          square
+          totalCount={desTotal}
+          currentPage={desPage - 1}
+          onPageChange={(idx) => setDesPage(idx + 1)}
+        />
       </div>
 
       {modalOpen ? (
@@ -397,6 +453,15 @@ export default function DesignationsManagement() {
                   labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
                 />
                 <Input
+                  label="Description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleFormChange}
+                  placeholder="Optional description"
+                  inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
+                />
+                <Input
                   label="Status"
                   name="status"
                   type="select"
@@ -423,9 +488,10 @@ export default function DesignationsManagement() {
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex h-9 items-center justify-center rounded-none bg-[#0F766E] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64]"
+                  disabled={submitting}
+                  className="inline-flex h-9 items-center justify-center rounded-none bg-[#0F766E] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {editMode ? 'Save Changes' : 'Add Designation'}
+                  {submitting ? 'Saving…' : editMode ? 'Save Changes' : 'Add Designation'}
                 </button>
               </div>
             </form>

@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
@@ -40,26 +41,46 @@ export default function DepartmentManagement() {
   const [formData, setFormData] = useState(initialFormData)
   const [search, setSearch] = useState('')
   const [departmentList, setDepartmentList] = useState([])
+  const [deptPage, setDeptPage] = useState(1)
+  const [deptTotal, setDeptTotal] = useState(0)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [managerOptions, setManagerOptions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const exportRef = useRef(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 350)
+    return () => clearTimeout(t)
+  }, [search])
+
+  useEffect(() => {
+    setDeptPage(1)
+  }, [debouncedSearch, statusFilter])
 
   const fetchDepartments = async () => {
     try {
       setLoading(true)
-      const data = await listDepartments()
-      setDepartmentList(data || [])
+      const statusParam = statusFilter === 'all' ? 'all' : statusFilter
+      const data = await listDepartments({
+        page: deptPage,
+        limit: 10,
+        search: debouncedSearch,
+        status: statusParam,
+      })
+      setDepartmentList(data?.departments ?? [])
+      setDeptTotal(data?.total ?? 0)
     } catch (err) {
       console.error('Failed to fetch departments:', err)
-      Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
-        text: 'Failed to load organizational units',
-      })
+      toast.error('Failed to load departments.')
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchDepartments()
+  }, [debouncedSearch, statusFilter, deptPage])
 
   const fetchManagers = async () => {
     try {
@@ -70,10 +91,6 @@ export default function DepartmentManagement() {
       setManagerOptions([])
     }
   }
-
-  React.useEffect(() => {
-    fetchDepartments()
-  }, [])
 
   React.useEffect(() => {
     fetchManagers()
@@ -106,20 +123,6 @@ export default function DepartmentManagement() {
     return () => document.removeEventListener('mousedown', onOutsideClick)
   }, [exportOpen])
 
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return departmentList.filter((d) => {
-      const currentStatus = (d.status ?? (d.is_active ? 'Active' : 'Inactive')).toLowerCase()
-      const statusMatch =
-        statusFilter === 'all' || currentStatus === statusFilter.toLowerCase()
-      if (!statusMatch) return false
-      if (!query) return true
-      return `${d.name ?? ''} ${d.code ?? ''} ${d.location ?? ''} ${d.head ?? ''}`
-        .toLowerCase()
-        .includes(query)
-    })
-  }, [search, departmentList, statusFilter])
-
   const handleFormChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -134,6 +137,8 @@ export default function DepartmentManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (submitting) return
+    setSubmitting(true)
     try {
       const payload = {
         name: formData.departmentName,
@@ -144,23 +149,25 @@ export default function DepartmentManagement() {
 
       if (editMode) {
         await updateDepartment(editingId, payload)
-        Swal.fire('Updated!', 'Department has been modified.', 'success')
+        toast.success('Department updated.')
       } else {
         await createDepartment(payload)
-        Swal.fire('Created!', 'Department created successfully.', 'success')
+        toast.success('Department created.')
       }
       handleCloseModal()
       fetchDepartments()
     } catch (err) {
       console.error('Submission failed:', err)
-      Swal.fire('Error', 'Transaction failed. Please try again.', 'error')
+      toast.error(err?.response?.data?.message || 'Could not save department.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
-      text: "You won't be able to revert this!",
+      text: 'The department will be marked inactive (soft delete).',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#0F766E',
@@ -171,10 +178,11 @@ export default function DepartmentManagement() {
     if (result.isConfirmed) {
       try {
         await deleteDepartment(id)
-        Swal.fire('Deleted!', 'Unit has been removed.', 'success')
+        toast.success('Department archived.')
         fetchDepartments()
       } catch (err) {
-        Swal.fire('Error', 'Deletion failed.', 'error')
+        console.error(err)
+        toast.error('Could not archive department.')
       }
     }
   }
@@ -282,14 +290,14 @@ export default function DepartmentManagement() {
 
   const exportRows = useMemo(
     () =>
-      filtered.map((row) => ({
+      departmentList.map((row) => ({
         department: row.name ?? '-',
         description: row.description ?? '-',
         head: row.head ?? '-',
         headcount: row.employeeCount ?? 0,
         status: row.status ?? (row.isActive ? 'Active' : 'Inactive'),
       })),
-    [filtered]
+    [departmentList]
   )
 
   const exportAsExcel = () => {
@@ -475,9 +483,18 @@ export default function DepartmentManagement() {
                   </button>
                 ))}
               </div>
-              <p className="text-xs font-medium text-slate-400">{filtered.length} of {departmentList.length} units</p>
+              <p className="text-xs font-medium text-slate-400">{deptTotal} total · page {deptPage}</p>
             </div>
-            <Table columns={columns} data={filtered} pageSize={10} loading={loading} square />
+            <Table
+              columns={columns}
+              data={departmentList}
+              pageSize={10}
+              loading={loading}
+              square
+              totalCount={deptTotal}
+              currentPage={deptPage - 1}
+              onPageChange={(idx) => setDeptPage(idx + 1)}
+            />
       </div>
 
       {modalOpen ? (
@@ -567,9 +584,10 @@ export default function DepartmentManagement() {
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex h-9 items-center justify-center rounded-none bg-[#0F766E] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64]"
+                  disabled={submitting}
+                  className="inline-flex h-9 items-center justify-center rounded-none bg-[#0F766E] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {editMode ? 'Save Changes' : 'Add Department'}
+                  {submitting ? 'Saving…' : editMode ? 'Save Changes' : 'Add Department'}
                 </button>
               </div>
             </form>

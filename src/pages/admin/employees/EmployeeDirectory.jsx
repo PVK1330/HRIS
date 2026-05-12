@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import {
   HiDocumentText, HiEnvelope, HiEye, HiEyeSlash, HiPencil, HiTrash, HiPlus,
   HiMagnifyingGlass, HiArrowTrendingUp, HiIdentification,
@@ -204,6 +205,7 @@ const initialFormData = {
   salary: '',
   employmentStatus: 'Active',
   grade: '',
+  costCenter: '',
   workMode: 'In Office',
   /** Compliance */
   passportNumber: '',
@@ -250,13 +252,15 @@ export default function EmployeeDirectory() {
   const [profileImagePreview, setProfileImagePreview] = useState('')
   const profileObjectUrlRef = useRef(null)
   const profileFileInputRef = useRef(null)
+  const profileFileRef = useRef(null)
 
   // Data
   const [employeeList, setEmployeeList] = useState([])
   const [totalRecords, setTotalRecords] = useState(0)
   const [currentPage, setCurrentPage]   = useState(1)
   const [loading, setLoading]           = useState(false)
-  const [stats, setStats]               = useState({ total: 0, active: 0, onLeave: 0 })
+  const [stats, setStats]               = useState({ total: 0, active: 0, onLeave: 0, probation: 0 })
+  const [submitting, setSubmitting]     = useState(false)
   const [filterOptions, setFilterOptions] = useState({
     departments: [], jobTitles: [], workLocations: [], workModes: [], statuses: [],
   })
@@ -358,7 +362,10 @@ export default function EmployeeDirectory() {
         setEmployeeList(data.employees.map(mapEmployeeList))
         setTotalRecords(data.total)
       }
-    } catch (err) { console.error(err) }
+    } catch (err) {
+      console.error(err)
+      toast.error('Could not load employees.')
+    }
     finally { setLoading(false) }
   }
 
@@ -372,6 +379,11 @@ export default function EmployeeDirectory() {
 
   useEffect(() => { fetchStatsAndFilters() }, [])
   useEffect(() => {
+    setCurrentPage(1)
+  }, [search, dept, job, loc, status, workMode])
+  useEffect(() => { fetchData() }, [currentPage, search, dept, job, loc, status, workMode])
+
+  useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
@@ -384,7 +396,6 @@ export default function EmployeeDirectory() {
     })()
     return () => { cancelled = true }
   }, [])
-  useEffect(() => { fetchData() }, [currentPage, search, dept, job, loc, status, workMode])
 
   useEffect(() => {
     if (!modalOpen) return
@@ -393,8 +404,8 @@ export default function EmployeeDirectory() {
       try {
         const [depts, desigs] = await Promise.all([listDepartments(), listDesignations()])
         if (cancelled) return
-        setDepartmentsCatalog(Array.isArray(depts) ? depts : [])
-        setDesignationsCatalog(Array.isArray(desigs) ? desigs : [])
+        setDepartmentsCatalog(depts?.departments ?? [])
+        setDesignationsCatalog(desigs?.designations ?? [])
       } catch {
         if (!cancelled) {
           setDepartmentsCatalog([])
@@ -439,13 +450,14 @@ export default function EmployeeDirectory() {
     e.target.value = ''
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      alert('Please choose an image file.')
+      toast.error('Please choose an image file.')
       return
     }
     if (file.size > 4 * 1024 * 1024) {
-      alert('Image should be below 4 mb')
+      toast.error('Image should be below 4 mb')
       return
     }
+    profileFileRef.current = file
     revokeProfilePreview()
     profileObjectUrlRef.current = URL.createObjectURL(file)
     setProfileImagePreview(profileObjectUrlRef.current)
@@ -456,6 +468,7 @@ export default function EmployeeDirectory() {
     setEditingEmployeeId(null)
     setFormData(initialFormData)
     setFormTab('basic')
+    profileFileRef.current = null
     revokeProfilePreview()
     setShowPassword(false)
     setShowConfirmPassword(false)
@@ -471,6 +484,7 @@ export default function EmployeeDirectory() {
     setShowPassword(false)
     setShowConfirmPassword(false)
     revokeProfilePreview()
+    profileFileRef.current = null
   }
 
   const handleSubmit = async (e) => {
@@ -478,18 +492,18 @@ export default function EmployeeDirectory() {
 
     const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ').trim()
     if (fullName.length < 2) {
-      alert('Please enter a valid first name and last name.')
+      toast.error('Please enter a valid first name and last name.')
       return
     }
 
     if (!String(formData.username || '').trim()) {
-      alert('Please enter a username on Basic Information.')
+      toast.error('Please enter a username on Basic Information.')
       setFormTab('basic')
       return
     }
 
     if (!String(formData.department || '').trim() || !String(formData.jobTitle || '').trim()) {
-      alert('Please select Department and Designation in Basic Information.')
+      toast.error('Please select Department and Designation in Basic Information.')
       setFormTab('basic')
       return
     }
@@ -500,20 +514,20 @@ export default function EmployeeDirectory() {
 
     if (!editMode) {
       if (!pwd || pwd !== pwdConfirm) {
-        alert('Password and confirm password must match.')
+        toast.error('Password and confirm password must match.')
         return
       }
       if (pwd.length < 8) {
-        alert('Password must be at least 8 characters.')
+        toast.error('Password must be at least 8 characters.')
         return
       }
     } else if (pwd || pwdConfirm) {
       if (pwd !== pwdConfirm) {
-        alert('Password and confirm password must match.')
+        toast.error('Password and confirm password must match.')
         return
       }
       if (pwd.length < 8) {
-        alert('Password must be at least 8 characters.')
+        toast.error('Password must be at least 8 characters.')
         return
       }
     }
@@ -550,6 +564,7 @@ export default function EmployeeDirectory() {
       bio: formData.about || null,
       salary: formData.salary !== '' ? parseFloat(String(formData.salary).replace(/[^0-9.]/g, '')) || null : null,
       grade: formData.grade || null,
+      costCenter: formData.costCenter?.trim() ? formData.costCenter.trim() : null,
       passportNumber: formData.passportNumber || null,
       passportExpiry: formData.passportExpiry || null,
       emiratesIdNumber: formData.emiratesIdNumber || null,
@@ -640,12 +655,36 @@ export default function EmployeeDirectory() {
     if (resolvedPortalPassword) {
       payload.portalPassword = resolvedPortalPassword
     }
+
+    const file = profileFileRef.current
+    if (file) {
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+        if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image')) {
+          payload.profileImageBase64 = dataUrl
+        }
+      } catch (imgErr) {
+        console.error(imgErr)
+        toast.error('Could not read profile image.')
+        return
+      }
+    }
+
+    setSubmitting(true)
     try {
       if (editMode && editingEmployeeId) {
         await updateEmployee(editingEmployeeId, payload)
+        toast.success('Employee updated.')
       } else {
         await createEmployee(payload)
+        toast.success('Employee created.')
       }
+      profileFileRef.current = null
       handleCloseModal()
       fetchData()
       fetchStatsAndFilters()
@@ -656,10 +695,12 @@ export default function EmployeeDirectory() {
       if (Array.isArray(apiErrors) && apiErrors.length > 0) {
         const first = apiErrors[0]
         const field = first?.field ? `${first.field}: ` : ''
-        alert(`${field}${first?.message || 'Validation failed'}`)
+        toast.error(`${field}${first?.message || 'Validation failed'}`)
         return
       }
-      alert(apiMessage || 'Failed to save employee.')
+      toast.error(apiMessage || 'Failed to save employee.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -718,6 +759,7 @@ export default function EmployeeDirectory() {
           salary: f.salary,
           employmentStatus: f.status,
           grade: f.grade,
+          costCenter: f.costCenter || '',
           workMode: f.workMode || 'In Office',
           countryOfResidence: f.countryOfResidence,
           passportNumber: f.passportNumber,
@@ -745,7 +787,11 @@ export default function EmployeeDirectory() {
           isCurrentlyWorking: f.isCurrentlyWorking || false,
         })
         setFormTab('basic')
+        profileFileRef.current = null
         revokeProfilePreview()
+        if (data.profile_image_url) {
+          setProfileImagePreview(String(data.profile_image_url))
+        }
         setShowPassword(false)
         setShowConfirmPassword(false)
         setEditMode(true)
@@ -763,7 +809,11 @@ export default function EmployeeDirectory() {
         setViewModalOpen(false)
         fetchData()
         fetchStatsAndFilters()
-      } catch (err) { console.error(err) }
+        toast.success('Employee archived.')
+      } catch (err) {
+        console.error(err)
+        toast.error('Could not archive employee.')
+      }
     }
   }
 
@@ -876,7 +926,7 @@ export default function EmployeeDirectory() {
         </div>
 
         <div className="space-y-3 border-b border-slate-200 bg-white px-4 py-3">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
             <div className="relative">
               <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -907,6 +957,11 @@ export default function EmployeeDirectory() {
               <option value="">All Modes</option>
               {filterOptions.workModes.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
+
+            <select value={loc} onChange={(e) => setLoc(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+              <option value="">All Locations</option>
+              {filterOptions.workLocations?.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
           </div>
 
           <div className="flex items-center justify-between">
@@ -921,7 +976,16 @@ export default function EmployeeDirectory() {
           </div>
         </div>
 
-        <Table columns={columns} data={employeeList} pageSize={8} square />
+        <Table
+          columns={columns}
+          data={employeeList}
+          pageSize={8}
+          square
+          loading={loading}
+          totalCount={totalRecords}
+          currentPage={currentPage - 1}
+          onPageChange={(idx) => setCurrentPage(idx + 1)}
+        />
       </div>
 
       {/* ── Add / Edit Modal ─────────────────────────────────────────────── */}
@@ -1220,6 +1284,19 @@ export default function EmployeeDirectory() {
                       <option key={r.id} value={String(r.id)}>{r.name}</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label htmlFor="emp-cost-center" className="mb-1 block text-sm font-medium text-slate-800">
+                    Cost center
+                  </label>
+                  <input
+                    id="emp-cost-center"
+                    name="costCenter"
+                    value={formData.costCenter}
+                    onChange={handleFormChange}
+                    placeholder="e.g. CC-1001"
+                    className={basicFieldClass}
+                  />
                 </div>
                 <div className="sm:col-span-2">
                   <label htmlFor="emp-about" className="mb-1 block text-sm font-medium text-slate-800">
@@ -1763,9 +1840,10 @@ export default function EmployeeDirectory() {
               {isLastEmployeeStep && (
                 <button
                   type="submit"
-                  className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56]"
+                  disabled={submitting}
+                  className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Save
+                  {submitting ? 'Saving…' : 'Save'}
                 </button>
               )}
             </div>

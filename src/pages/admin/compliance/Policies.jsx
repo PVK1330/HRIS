@@ -92,7 +92,7 @@ export default function Policies() {
       ])
       setPolicies(policiesRes)
       setRoles(rolesRes?.data?.data || [])
-      setDepartments(deptsRes || [])
+      setDepartments((deptsRes?.departments ?? deptsRes) || [])
       setCategories(catsRes)
     } catch (err) {
       toast.error('Failed to load data')

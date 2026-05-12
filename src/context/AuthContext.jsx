@@ -8,7 +8,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 const STORAGE_KEY = "hris_auth_user";
@@ -127,6 +126,8 @@ const TENANT_FEATURE_CODE_TO_MODULE_KEYS = {
   training_development: ["training-development"],
   department: ["departments"],
   departments: ["departments"],
+  designation: ["designations"],
+  designations: ["designations"],
   projects: [],
   task_management: [],
   messages: ["messages"],
@@ -200,6 +201,7 @@ const DEFAULT_MOCK_ALLOWED_MODULES = [
   "shift-management",
   "overtime-management",
   "departments",
+  "designations",
   "messages",
   "system-settings",
 ];
@@ -245,7 +247,6 @@ const PERMISSIONS = {
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const navigate = useNavigate();
   const [user, setUser] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -462,8 +463,12 @@ export function AuthProvider({ children }) {
     setAllowedModules([]);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem("allowedModules");
-    navigate("/login", { replace: true });
-  }, [navigate]);
+    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "") || "";
+    const target = `${base}/login`.replace(/\/+/g, "/") || "/login";
+    window.location.replace(
+      target.startsWith("http") ? target : `${window.location.origin}${target}`,
+    );
+  }, []);
 
   const switchRole = useCallback((newRole) => {
     const matchingAccount = Object.values(accounts).find(

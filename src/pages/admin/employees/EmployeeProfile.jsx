@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
@@ -200,12 +200,8 @@ export default function EmployeeProfile() {
   )
 
   const renderPersonal = () => (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-50">
-        <div>
-          <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Personal Identity</h2>
-          <p className="text-xs text-slate-400 font-medium">Core personal records and emergency contacts</p>
-        </div>
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="flex justify-end">
         {isHrAdmin && <Button label="UPDATE RECORDS" variant="outline" size="sm" icon={HiPencilSquare} className="text-[10px] font-black tracking-widest" />}
       </div>
       <div className="grid gap-8 md:grid-cols-2">
@@ -310,8 +306,7 @@ export default function EmployeeProfile() {
   )
 
   const renderJob = () => (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-8">Job & Organization</h2>
+    <div className="space-y-6 animate-in fade-in duration-300">
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
           <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Designation</p><p className="text-sm font-black text-slate-900">{emp?.job_title || '—'}</p></div>
@@ -396,13 +391,7 @@ export default function EmployeeProfile() {
   }
 
   const renderVisa = () => (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-50">
-        <div>
-          <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Visa & Nationality</h2>
-          <p className="text-xs text-slate-400 font-medium">Legal stay and identity documentation</p>
-        </div>
-      </div>
+    <div className="space-y-6 animate-in fade-in duration-300">
       <div className="grid gap-8 md:grid-cols-2">
         <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Passport Intelligence</h3>
@@ -596,53 +585,69 @@ export default function EmployeeProfile() {
     if (loadingTab && !assets) return <Spinner />
     const list = assets?.assets || []
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+      <div className="space-y-4 animate-in fade-in duration-300">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Assigned Assets</h3>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{assets?.counts?.active ?? 0} active / {assets?.counts?.total ?? 0} total</p>
+            <p className="text-sm font-semibold text-slate-800">Assigned assets</p>
+            <p className="text-xs text-slate-500">
+              {assets?.counts?.active ?? 0} active · {assets?.counts?.total ?? 0} total
+            </p>
           </div>
-          {isHrAdmin && <Button label="ASSIGN ASSET" variant="primary" size="sm" className="text-[10px] font-black tracking-widest" />}
+          {isHrAdmin && (
+            <Button label="ASSIGN ASSET" variant="primary" size="sm" className="text-[10px] font-black tracking-widest shrink-0" />
+          )}
         </div>
         {list.length === 0 ? (
-          <div className="flex items-center justify-center min-h-[200px]">
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No assets assigned</p>
+          <div className="flex min-h-[160px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+            <p className="text-sm text-slate-500">No assets assigned</p>
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 border-b border-slate-100">
-              <tr>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Asset</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Serial No.</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Condition</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Assigned</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {list.map(a => (
-                <tr key={a.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded bg-slate-100 flex items-center justify-center text-slate-400">
-                        <HiArchiveBox className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-700 text-xs">{a.asset_name}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase">{a.asset_tag}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase">{a.category}</td>
-                  <td className="px-6 py-4 text-[11px] font-bold text-slate-500">{a.serial_number || '—'}</td>
-                  <td className="px-6 py-4"><Badge label={a.condition} color="green" variant="soft" className="text-[9px] font-black" /></td>
-                  <td className="px-6 py-4"><Badge label={a.status} color={statusColor(a.status)} className="text-[9px] font-black tracking-widest" /></td>
-                  <td className="px-6 py-4 text-[11px] font-bold text-slate-500">{a.assigned_date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul className="space-y-3">
+            {list.map((a) => (
+              <li
+                key={a.id}
+                className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4"
+              >
+                <div className="flex min-w-0 flex-1 items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+                    <HiArchiveBox className="h-6 w-6" aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-slate-900">{a.asset_name || '—'}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      <span className="font-semibold text-[#0F766E]">{a.asset_tag || '—'}</span>
+                      {a.assigned_date ? (
+                        <>
+                          <span className="mx-1.5 text-slate-300">·</span>
+                          <span>Assigned {a.assigned_date}</span>
+                        </>
+                      ) : null}
+                    </p>
+                    {(a.category || a.serial_number) && (
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        {[a.category, a.serial_number].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                  {a.condition && (
+                    <Badge label={a.condition} color="green" variant="soft" className="text-[9px] font-black" />
+                  )}
+                  {a.status && (
+                    <Badge label={a.status} color={statusColor(a.status)} className="text-[9px] font-black tracking-widest" />
+                  )}
+                  <button
+                    type="button"
+                    className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
+                    aria-label="More options"
+                  >
+                    <HiEllipsisVertical className="h-5 w-5" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     )
@@ -685,9 +690,9 @@ export default function EmployeeProfile() {
               )}
             </div>
             <div className="text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-2 text-emerald-100 mb-2">
-                <HiIdentification className="w-4 h-4" />
-                <span className="text-[9px] font-black uppercase tracking-[0.3em]">Personnel Identity Profile</span>
+              <div className="mb-2 flex items-center justify-center gap-2 sm:justify-start">
+                <HiIdentification className="h-4 w-4 shrink-0 text-emerald-200" aria-hidden />
+                <span className="text-xs font-semibold tracking-wide text-emerald-100/90">Employee profile</span>
               </div>
               {loadingProfile ? (
                 <div className="h-8 w-48 bg-white/10 rounded-lg animate-pulse" />
@@ -743,51 +748,39 @@ export default function EmployeeProfile() {
         <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
       </div>
 
-      <div className="flex flex-col gap-8 lg:flex-row">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-72 shrink-0">
-          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sticky top-6">
-            <div className="px-4 py-3 border-b border-slate-50 mb-3">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Navigator</h3>
-            </div>
-            <nav className="space-y-1">
-              {TABS.map(tab => {
-                const Icon = tab.icon
-                const isActive = activeTab === tab.id
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-4 rounded-xl px-4 py-3.5 text-[11px] font-black uppercase tracking-widest transition-all ${
-                      isActive
-                        ? 'bg-[#0F766E] text-white shadow-lg shadow-emerald-900/10'
-                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <Icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-emerald-300' : 'text-slate-400'}`} />
-                    <span>{tab.label}</span>
-                  </button>
-                )
-              })}
-            </nav>
-            <div className="mt-6 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-              <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <HiClock className="h-4 w-4" />
-                <span className="text-[9px] font-black uppercase tracking-widest">Last Updated</span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
-                {emp?.updatedAt
-                  ? <><span className="text-slate-900">{emp.updatedAt}</span></>
-                  : 'Not available'}
-              </p>
-            </div>
+      {/* Horizontal tabs — same pattern as Add / Edit employee modal */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium sm:gap-x-6">
+            {TABS.map((tab) => {
+              const Icon = tab.icon
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`inline-flex items-center gap-2 border-b-2 pb-2.5 pt-0.5 transition-colors ${
+                    isActive
+                      ? 'border-[#0F766E] text-[#0F766E]'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                  {tab.label}
+                </button>
+              )
+            })}
           </div>
-        </aside>
-
-        {/* Main content */}
-        <div className="flex-1 min-w-0">
-          {renderTabContent()}
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-right text-xs text-slate-500">
+            <HiClock className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+            <span>
+              <span className="font-medium text-slate-400">Updated </span>
+              <span className="font-semibold text-slate-700">{emp?.updatedAt || '—'}</span>
+            </span>
+          </div>
         </div>
+        <div className="min-w-0 p-4 sm:p-6">{renderTabContent()}</div>
       </div>
     </div>
   )
