@@ -198,15 +198,16 @@ export default function LeaveAbsence() {
   const handleProcess = async () => {
     setSubmitting(true)
     try {
-      await processLeave(selected.id, {
-        action: actionType === 'Approve' ? 'approve' : 'reject',
-        reason: actionReason || undefined,
-      })
-      toast.success(
-        actionType === 'Approve'
-          ? `Leave approved for ${selected.employee_name}`
-          : `Leave rejected for ${selected.employee_name}`
-      )
+      const action = actionType === 'Approve' ? 'approve'
+                   : actionType === 'Reject'  ? 'reject'
+                   : 'cancel'
+      await processLeave(selected.id, { action, reason: actionReason || undefined })
+      const msgs = {
+        Approve: `Leave approved for ${selected.employee_name} — ${selected.total_days}d deducted`,
+        Reject:  `Leave rejected for ${selected.employee_name} — no balance change`,
+        Cancel:  `Leave cancelled for ${selected.employee_name}${selected.status === 'Approved' ? ' — days restored' : ''}`,
+      }
+      toast.success(msgs[actionType] || 'Done')
       setActionModal(false); setActionReason('')
       fetchRequests()
       if (activeTab === 'balances') fetchBalances()
@@ -268,6 +269,23 @@ export default function LeaveAbsence() {
       render: (v) => <Badge label={`${v}d`} color="blue" variant="soft" className="font-black text-[9px]" />,
     },
     {
+      key: 'balance_remaining', label: 'Remaining',
+      render: (v, row) => {
+        if (v === null || v === undefined) return <span className="text-xs text-slate-300">—</span>
+        const low = v <= 2
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className={`text-xs font-black ${low ? 'text-red-600' : 'text-emerald-700'}`}>
+              {v}d left
+            </span>
+            <span className="text-[9px] text-slate-400 font-medium">
+              {row.balance_used ?? 0} used / {row.total_allocated ?? 0}
+            </span>
+          </div>
+        )
+      },
+    },
+    {
       key: 'status', label: 'Status',
       render: (v) => <Badge label={v} color={statusColor(v)} variant="outline" className="font-black text-[9px] tracking-widest" />,
     },
@@ -281,14 +299,23 @@ export default function LeaveAbsence() {
           {showActions && row.status === 'Pending' && (
             <>
               <button onClick={() => openAction(row, 'Approve')}
-                className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors">
+                className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
+                title="Approve">
                 <HiCheck className="h-3.5 w-3.5" />
               </button>
               <button onClick={() => openAction(row, 'Reject')}
-                className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors">
+                className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors"
+                title="Reject">
                 <HiXMark className="h-3.5 w-3.5" />
               </button>
             </>
+          )}
+          {showActions && row.status === 'Approved' && (
+            <button onClick={() => openAction(row, 'Cancel')}
+              className="p-1.5 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-100 transition-colors text-[9px] font-black uppercase tracking-widest px-2"
+              title="Cancel approved leave (restores balance)">
+              Cancel
+            </button>
           )}
         </div>
       ),
@@ -403,7 +430,7 @@ export default function LeaveAbsence() {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {[
             { label: 'Pending Requests', data: pendingReqs,  color: 'bg-amber-500',   showActions: true },
-            { label: 'Approved History', data: approvedReqs, color: 'bg-emerald-500', showActions: false },
+            { label: 'Approved History', data: approvedReqs, color: 'bg-emerald-500', showActions: true },
             { label: 'Rejected Records', data: rejectedReqs, color: 'bg-rose-500',    showActions: false },
           ].map(({ label, data, color, showActions }) => (
             <div key={label} className="space-y-2">
@@ -591,6 +618,14 @@ export default function LeaveAbsence() {
                   className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-black uppercase tracking-widest">Reject</button>
               </div>
             )}
+            {selected.status === 'Approved' && (
+              <div className="flex gap-3 pt-2 border-t border-slate-100">
+                <button onClick={() => { setViewModal(false); openAction(selected, 'Cancel') }}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-600 text-white text-xs font-black uppercase tracking-widest">
+                  Cancel Leave (restore balance)
+                </button>
+              </div>
+            )}
           </div>
         </Modal>
       )}
@@ -600,23 +635,30 @@ export default function LeaveAbsence() {
         <Modal isOpen={actionModal} onClose={() => { setActionModal(false); setActionReason('') }} title={`${actionType} Leave Request`} size="sm">
           <div className="space-y-4 pt-2">
             <p className="text-sm text-slate-600">
-              {actionType} leave request for <strong>{selected.employee_name}</strong>?
-              <br /><span className="text-xs text-slate-400">{selected.leave_type} · {selected.from_date} → {selected.to_date} ({selected.total_days}d)</span>
+              {actionType === 'Cancel' && selected?.status === 'Approved'
+                ? <>Cancel approved leave for <strong>{selected?.employee_name}</strong>? The <strong>{selected?.total_days} day(s)</strong> will be <span className="text-emerald-700 font-bold">restored</span> to their balance.</>
+                : <>{actionType} leave request for <strong>{selected?.employee_name}</strong>?</>
+              }
+              <br /><span className="text-xs text-slate-400">{selected?.leave_type} · {selected?.from_date} → {selected?.to_date} ({selected?.total_days}d)</span>
             </p>
-            {actionType === 'Reject' && (
+            {(actionType === 'Reject' || actionType === 'Cancel') && (
               <div>
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Reason</label>
-                <textarea value={actionReason} onChange={e => setActionReason(e.target.value)} className={textareaClass} placeholder="Reason for rejection…" />
+                <textarea value={actionReason} onChange={e => setActionReason(e.target.value)} className={textareaClass} placeholder={`Reason for ${actionType.toLowerCase()}…`} />
               </div>
             )}
             <div className="flex gap-3 pt-2 border-t border-slate-100">
               <button onClick={handleProcess} disabled={submitting}
-                className={`flex-1 py-3 rounded-xl text-white text-sm font-black uppercase tracking-widest shadow-lg disabled:opacity-50 ${actionType === 'Approve' ? 'bg-emerald-600' : 'bg-rose-600'}`}>
+                className={`flex-1 py-3 rounded-xl text-white text-sm font-black uppercase tracking-widest shadow-lg disabled:opacity-50 ${
+                  actionType === 'Approve' ? 'bg-emerald-600'
+                  : actionType === 'Reject' ? 'bg-rose-600'
+                  : 'bg-slate-600'
+                }`}>
                 {submitting ? 'Processing…' : actionType}
               </button>
               <button onClick={() => { setActionModal(false); setActionReason('') }}
                 className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-500 text-sm font-black uppercase tracking-widest">
-                Cancel
+                Back
               </button>
             </div>
           </div>
