@@ -4,8 +4,8 @@ import { HiXMark } from 'react-icons/hi2'
 
 const sizeClasses = {
   sm: 'max-w-md',
-  /** Same width as Departments / Designations CRUD dialogs */
-  employee: 'max-w-[760px]',
+  /** Employee add/edit wizard (a little narrower) */
+  employee: 'max-w-[min(1000px,calc(100vw-2rem))]',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
@@ -99,7 +99,7 @@ export function Modal({
           </div>
 
           {/* Body */}
-          <div className="px-5 py-1 sm:px-6 max-h-[calc(100vh-16rem)] overflow-y-auto custom-scrollbar">
+          <div className="px-5 py-1 sm:px-6 max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar">
             <div className="pb-8">
               {children}
             </div>

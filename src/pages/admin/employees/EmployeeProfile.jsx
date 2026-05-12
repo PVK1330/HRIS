@@ -229,7 +229,81 @@ export default function EmployeeProfile() {
           <div className="grid grid-cols-2 gap-4">
             <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Marital Status</p><p className="text-sm font-bold text-slate-900">{emp?.marital_status || '—'}</p></div>
             <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Dependents</p><p className="text-sm font-bold text-slate-900">{emp?.dependents ?? '—'}</p></div>
+            <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Religion</p><p className="text-sm font-bold text-slate-900">{emp?.religion || '—'}</p></div>
+            <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Employment (spouse)</p><p className="text-sm font-bold text-slate-900">{emp?.employment_spouse || '—'}</p></div>
+            <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Portal username</p><p className="text-sm font-bold text-[#0F766E]">{emp?.username || '—'}</p></div>
           </div>
+          {(emp?.bank_name || emp?.bank_account_no) ? (
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-3 mt-6">
+              <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Bank</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bank name</p><p className="text-sm font-bold text-slate-900">{emp?.bank_name || '—'}</p></div>
+                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Account no.</p><p className="text-sm font-bold text-slate-900">{emp?.bank_account_no || '—'}</p></div>
+                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">IFSC</p><p className="text-sm font-bold text-slate-900">{emp?.ifsc_code || '—'}</p></div>
+                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Branch</p><p className="text-sm font-bold text-slate-900">{emp?.branch_address || '—'}</p></div>
+              </div>
+            </div>
+          ) : null}
+          {emp?.secondary_contact && typeof emp.secondary_contact === 'object' && (emp.secondary_contact.name || emp.secondary_contact.phoneNo1 || emp.secondary_contact.phone_no1) ? (
+            <div className="p-6 rounded-2xl border border-slate-100 bg-white space-y-3 mt-6">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Secondary contact</h3>
+              <div className="grid gap-4 sm:grid-cols-2 text-sm font-bold text-slate-900">
+                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Name</p>{emp.secondary_contact.name || '—'}</div>
+                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Relationship</p>{emp.secondary_contact.relationship || '—'}</div>
+                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Phone 1</p>{emp.secondary_contact.phone_no1 || emp.secondary_contact.phoneNo1 || '—'}</div>
+                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Phone 2</p>{emp.secondary_contact.phone_no2 || emp.secondary_contact.phoneNo2 || '—'}</div>
+              </div>
+            </div>
+          ) : null}
+          {Array.isArray(emp?.family_members) && emp.family_members.length > 0 ? (
+            <div className="mt-6 space-y-3">
+              <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Family members</h3>
+              <ul className="space-y-2">
+                {emp.family_members.map((m, i) => (
+                  <li key={i} className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm font-bold text-slate-900">
+                    <span className="text-[#0F766E]">{m.name || '—'}</span>
+                    {(m.relationship || m.phone || m.passport_expiry) ? (
+                      <span className="block text-xs font-medium text-slate-500 mt-1">
+                        {[m.relationship, m.phone, m.passport_expiry].filter(Boolean).join(' · ')}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {Array.isArray(emp?.education) && emp.education.length > 0 ? (
+            <div className="mt-6 space-y-3 md:col-span-2">
+              <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Education</h3>
+              <ul className="space-y-2">
+                {emp.education.map((ed, i) => (
+                  <li key={i} className="rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm">
+                    <p className="font-black text-slate-900">{ed.institution_name || ed.institutionName || '—'}</p>
+                    <p className="text-xs text-slate-500 font-medium mt-1">{ed.course || '—'}{ed.start_date || ed.startDate ? ` · ${ed.start_date || ed.startDate} → ${ed.end_date || ed.endDate || ''}` : ''}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {Array.isArray(emp?.work_experience) && emp.work_experience.length > 0 ? (
+            <div className="mt-6 space-y-3 md:col-span-2">
+              <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Prior experience</h3>
+              <ul className="space-y-2">
+                {emp.work_experience.map((wx, i) => (
+                  <li key={i} className="rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm">
+                    <p className="font-black text-slate-900">{wx.company_name || wx.companyName || '—'} — <span className="text-[#0F766E]">{wx.designation || '—'}</span></p>
+                    <p className="text-xs text-slate-500 font-medium mt-1">{wx.start_date || wx.startDate || ''}{wx.end_date || wx.endDate ? ` → ${wx.end_date || wx.endDate}` : ''}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {emp?.is_currently_working !== undefined ? (
+            <div className="mt-6">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Currently employed (prior role)</p>
+              <p className="text-sm font-bold text-slate-900">{emp.is_currently_working ? 'Yes — current role flagged' : 'No'}</p>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -367,7 +441,7 @@ export default function EmployeeProfile() {
           {[
             { label: 'Present',  value: s?.present  ?? '—', color: 'emerald' },
             { label: 'Absent',   value: s?.absent   ?? '—', color: 'red' },
-            { label: 'Late',     value: s?.late     ?? '—', color: 'orange' },
+            { label: 'Late',     value: s?.late     ?? '—', color: 'amber' },
             { label: 'Half Day', value: s?.half_day ?? '—', color: 'yellow' },
             { label: 'On Leave', value: s?.on_leave ?? '—', color: 'blue' },
           ].map(c => (
