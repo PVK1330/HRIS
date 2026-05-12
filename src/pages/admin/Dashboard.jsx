@@ -53,6 +53,7 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { adminDashboardService } from '../../services/adminDashboardService'
 import { dashboardStats, dashboardAlerts } from '../../data/mockData.js'
 import toast from 'react-hot-toast'
+import api from '../../services/api.js'
 
 const COLORS = ['#0F766E', '#14B8A6', '#2DD4BF', '#99F6E4', '#F0FDFA']
 
@@ -84,12 +85,27 @@ export default function Dashboard() {
     [],
   )
 
+  const [liveAnnouncements, setLiveAnnouncements] = useState([])
+
+  const fetchLiveAnnouncements = async () => {
+    try {
+      const res = await api.get('/admin/announcements')
+      const allAnns = res.data?.data || []
+      // Display published ones on dashboard
+      setLiveAnnouncements(allAnns.filter(a => a.status === 'Published').slice(0, 4))
+    } catch (e) {
+      console.warn('Could not pull live broadcasts:', e)
+    }
+  }
+
   useEffect(() => {
     setIsLoading(false)
+    fetchLiveAnnouncements()
   }, [])
 
   const loadDashboardData = () => {
     setIsLoading(true)
+    fetchLiveAnnouncements()
     setTimeout(() => setIsLoading(false), 800)
   }
 
@@ -122,7 +138,7 @@ export default function Dashboard() {
     }
   }
 
-  const announcements = [
+  const announcements = liveAnnouncements.length > 0 ? liveAnnouncements : [
     { id: 1, title: 'Annual General Meeting 2026', content: 'The annual general meeting for all shareholders and employees will be held in the main auditorium.', priority: 'High', created_at: new Date().toISOString() },
     { id: 2, title: 'New Health Insurance Policy', content: 'We have updated our health insurance provider to ensure better coverage for all employees.', priority: 'Standard', created_at: new Date().toISOString() },
   ]
