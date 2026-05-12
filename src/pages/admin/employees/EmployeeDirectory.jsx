@@ -5,7 +5,7 @@ import {
   HiMagnifyingGlass, HiArrowTrendingUp, HiIdentification,
   HiBriefcase, HiFolder, HiClock, HiCalendarDays,
   HiPresentationChartLine, HiDevicePhoneMobile, HiCheckBadge,
-  HiUserCircle, HiChevronDown, HiArrowsUpDown,
+  HiUserCircle, HiChevronDown, HiArrowsUpDown, HiBanknotes, HiUserGroup, HiAcademicCap, HiBriefcase as HiBriefcaseIcon,
 } from 'react-icons/hi2'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -22,10 +22,10 @@ import { listDepartments } from '../../../services/departmentService.js'
 import { listDesignations } from '../../../services/designationService.js'
 
 const selectClass = 'mt-1.5 w-full rounded-md border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all focus:border-[#0F766E]'
-const textareaClass = 'w-full min-h-[100px] rounded-md border border-slate-200 bg-slate-50/50 p-4 text-sm font-bold text-slate-900 outline-none transition-all shadow-inner focus:border-[#f97316]'
+const textareaClass = 'w-full min-h-[100px] rounded-md border border-slate-200 bg-slate-50/50 p-4 text-sm font-bold text-slate-900 outline-none transition-all shadow-inner focus:border-[#0F766E]'
 /** Basic tab inputs — match reference UI (light radius + orange focus) */
 const basicFieldClass =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#f97316] focus:ring-1 focus:ring-orange-200'
+  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-orange-200'
 
 function statusColor(status) {
   if (status === 'Active')        return 'green'
@@ -134,6 +134,18 @@ function mapEmployeeFull(e) {
     rbacRoleId: e.rbac_role_id ?? null,
     rbacRoleName: e.rbac_role_name || '',
     portalEnabled: Boolean(e.portal_enabled),
+    // New fields
+    religion: e.religion || '',
+    employmentSpouse: e.employment_spouse || '',
+    bankName: e.bank_name || '',
+    bankAccountNo: e.bank_account_no || '',
+    ifscCode: e.ifsc_code || '',
+    branchAddress: e.branch_address || '',
+    familyMembers: e.family_members || [],
+    secondaryContact: e.secondary_contact || {},
+    education: e.education || [],
+    workExperience: e.work_experience || [],
+    isCurrentlyWorking: e.is_currently_working || false,
   }
 }
 
@@ -151,18 +163,34 @@ const initialFormData = {
   department: '',
   jobTitle: '',
   about: '',
-  /** Others — personal */
+  /** Personal Information */
   dateOfBirth: '',
   gender: '',
   nationality: '',
+  religion: '',
+  maritalStatus: '',
+  employmentSpouse: '',
+  noOfChildren: '',
   personalEmail: '',
   emergencyContactName: '',
   emergencyContactPhone: '',
   homeAddress: '',
-  maritalStatus: '',
-  dependents: '',
   countryOfResidence: '',
-  /** Others — employment */
+  /** Bank Information */
+  bankName: '',
+  bankAccountNo: '',
+  ifscCode: '',
+  branchAddress: '',
+  /** Family Information */
+  familyMembers: [{ name: '', relationship: '', phone: '', passportExpiry: '' }],
+  /** Secondary Contact */
+  secondaryContact: { name: '', relationship: '', phoneNo1: '', phoneNo2: '' },
+  /** Educational Details */
+  education: [{ institutionName: '', course: '', startDate: '', endDate: '' }],
+  /** Experience */
+  workExperience: [{ companyName: '', designation: '', startDate: '', endDate: '' }],
+  isCurrentlyWorking: false,
+  /** Employment */
   employmentType: 'Full-time',
   workLocation: '',
   reportingManager: '',
@@ -171,7 +199,7 @@ const initialFormData = {
   employmentStatus: 'Active',
   grade: '',
   workMode: 'In Office',
-  /** Others — compliance */
+  /** Compliance */
   passportNumber: '',
   passportExpiry: '',
   emiratesIdNumber: '',
@@ -179,7 +207,7 @@ const initialFormData = {
   visaType: '',
   visaExpiryDate: '',
   sponsoringEntity: '',
-  /** Others — career */
+  /** Career */
   careerHistory: '',
   awardsSummary: '',
   promotionHistory: '',
@@ -248,6 +276,64 @@ export default function EmployeeDirectory() {
     })
   }, [designationsCatalog, formData.department])
 
+  // Helper functions for dynamic arrays
+  const handleFamilyMemberChange = (index, field, value) => {
+    const updated = [...formData.familyMembers]
+    updated[index][field] = value
+    setFormData(prev => ({ ...prev, familyMembers: updated }))
+  }
+
+  const addFamilyMember = () => {
+    setFormData(prev => ({
+      ...prev,
+      familyMembers: [...prev.familyMembers, { name: '', relationship: '', phone: '', passportExpiry: '' }]
+    }))
+  }
+
+  const removeFamilyMember = (index) => {
+    const updated = [...formData.familyMembers]
+    updated.splice(index, 1)
+    setFormData(prev => ({ ...prev, familyMembers: updated }))
+  }
+
+  const handleEducationChange = (index, field, value) => {
+    const updated = [...formData.education]
+    updated[index][field] = value
+    setFormData(prev => ({ ...prev, education: updated }))
+  }
+
+  const addEducation = () => {
+    setFormData(prev => ({
+      ...prev,
+      education: [...prev.education, { institutionName: '', course: '', startDate: '', endDate: '' }]
+    }))
+  }
+
+  const removeEducation = (index) => {
+    const updated = [...formData.education]
+    updated.splice(index, 1)
+    setFormData(prev => ({ ...prev, education: updated }))
+  }
+
+  const handleWorkExpChange = (index, field, value) => {
+    const updated = [...formData.workExperience]
+    updated[index][field] = value
+    setFormData(prev => ({ ...prev, workExperience: updated }))
+  }
+
+  const addWorkExp = () => {
+    setFormData(prev => ({
+      ...prev,
+      workExperience: [...prev.workExperience, { companyName: '', designation: '', startDate: '', endDate: '' }]
+    }))
+  }
+
+  const removeWorkExp = (index) => {
+    const updated = [...formData.workExperience]
+    updated.splice(index, 1)
+    setFormData(prev => ({ ...prev, workExperience: updated }))
+  }
+
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   const fetchData = async () => {
@@ -315,6 +401,13 @@ export default function EmployeeDirectory() {
   const handleFormChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSecondaryContactChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      secondaryContact: { ...prev.secondaryContact, [field]: value }
+    }))
   }
 
   const handleDepartmentChange = (e) => {
@@ -432,15 +525,12 @@ export default function EmployeeDirectory() {
       nationality: formData.nationality || null,
       countryOfResidence: formData.countryOfResidence || null,
       maritalStatus: formData.maritalStatus || null,
-      dependents: Math.max(0, parseInt(String(formData.dependents || 0), 10) || 0),
+      dependents: Math.max(0, parseInt(String(formData.noOfChildren || 0), 10) || 0),
       emergencyContactName: formData.emergencyContactName || null,
       emergencyContactPhone: formData.emergencyContactPhone || null,
       homeAddress: formData.homeAddress || null,
       bio: formData.about || null,
-      salary:
-        formData.salary !== ''
-          ? parseFloat(String(formData.salary).replace(/[^0-9.]/g, '')) || null
-          : null,
+      salary: formData.salary !== '' ? parseFloat(String(formData.salary).replace(/[^0-9.]/g, '')) || null : null,
       grade: formData.grade || null,
       passportNumber: formData.passportNumber || null,
       passportExpiry: formData.passportExpiry || null,
@@ -452,6 +542,18 @@ export default function EmployeeDirectory() {
       careerHistory: formData.careerHistory || null,
       awardsSummary: formData.awardsSummary || null,
       promotionHistory: formData.promotionHistory || null,
+      // New fields
+      religion: formData.religion || null,
+      employmentSpouse: formData.employmentSpouse || null,
+      bankName: formData.bankName || null,
+      bankAccountNo: formData.bankAccountNo || null,
+      ifscCode: formData.ifscCode || null,
+      branchAddress: formData.branchAddress || null,
+      familyMembers: formData.familyMembers,
+      secondaryContact: formData.secondaryContact,
+      education: formData.education,
+      workExperience: formData.workExperience,
+      isCurrentlyWorking: formData.isCurrentlyWorking,
     }
 
     const rbacNum =
@@ -515,6 +617,10 @@ export default function EmployeeDirectory() {
           dateOfBirth: f.dateOfBirth,
           gender: f.gender,
           nationality: f.nationality,
+          religion: f.religion || '',
+          maritalStatus: f.maritalStatus,
+          employmentSpouse: f.employmentSpouse || '',
+          noOfChildren: f.dependents?.toString() || '',
           personalEmail: f.personalEmail,
           emergencyContactName: f.emergencyContactName,
           emergencyContactPhone: f.emergencyContactPhone,
@@ -527,8 +633,6 @@ export default function EmployeeDirectory() {
           employmentStatus: f.status,
           grade: f.grade,
           workMode: f.workMode || 'In Office',
-          maritalStatus: f.maritalStatus,
-          dependents: f.dependents,
           countryOfResidence: f.countryOfResidence,
           passportNumber: f.passportNumber,
           passportExpiry: f.passportExpiry,
@@ -543,6 +647,16 @@ export default function EmployeeDirectory() {
           rbacRoleId: f.rbacRoleId != null && f.rbacRoleId !== '' ? String(f.rbacRoleId) : '',
           portalEnabled: f.portalEnabled,
           portalPassword: '',
+          // New fields
+          bankName: f.bankName || '',
+          bankAccountNo: f.bankAccountNo || '',
+          ifscCode: f.ifscCode || '',
+          branchAddress: f.branchAddress || '',
+          familyMembers: f.familyMembers || [{ name: '', relationship: '', phone: '', passportExpiry: '' }],
+          secondaryContact: f.secondaryContact || { name: '', relationship: '', phoneNo1: '', phoneNo2: '' },
+          education: f.education || [{ institutionName: '', course: '', startDate: '', endDate: '' }],
+          workExperience: f.workExperience || [{ companyName: '', designation: '', startDate: '', endDate: '' }],
+          isCurrentlyWorking: f.isCurrentlyWorking || false,
         })
         setFormTab('basic')
         revokeProfilePreview()
@@ -749,26 +863,55 @@ export default function EmployeeDirectory() {
             <button
               type="button"
               onClick={() => setFormTab('basic')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'basic' ? 'border-[#f97316] text-[#f97316]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'basic' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
               Basic Information
             </button>
             <button
               type="button"
-              onClick={() => setFormTab('others')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'others' ? 'border-[#f97316] text-[#f97316]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+              onClick={() => setFormTab('personal')}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'personal' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
-              Others
+              Personal Information
             </button>
             <button
               type="button"
-              onClick={() => setFormTab('permissions')}
-              className={`border-b-2 pb-2 transition-colors ${formTab === 'permissions' ? 'border-[#f97316] text-[#f97316]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+              onClick={() => setFormTab('bank')}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'bank' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
-              Permissions
+              Bank Information
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTab('family')}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'family' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              Family Information
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTab('secondary')}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'secondary' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              Contact Section
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTab('education')}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'education' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              Educational Details
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTab('experience')}
+              className={`border-b-2 pb-2 transition-colors ${formTab === 'experience' ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              Experience
             </button>
           </div>
 
+          {/* Basic Information Tab - UNCHANGED */}
           {formTab === 'basic' && (
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-4">
@@ -786,7 +929,7 @@ export default function EmployeeDirectory() {
                     <button
                       type="button"
                       onClick={() => profileFileInputRef.current?.click()}
-                      className="rounded-md bg-[#f97316] px-4 py-2 text-xs font-semibold text-white hover:bg-[#ea6a0b]"
+                      className="rounded-md bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white hover:bg-[#ea6a0b]"
                     >
                       Upload
                     </button>
@@ -1033,148 +1176,475 @@ export default function EmployeeDirectory() {
             </div>
           )}
 
-          {formTab === 'others' && (
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <h3 className="flex items-center gap-2 border-b border-slate-100 pb-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
-                  <HiIdentification className="h-4 w-4 text-[#f97316]" />
-                  Personal details
-                </h3>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <Input label="Date of Birth" name="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Gender</label>
-                    <select name="gender" value={formData.gender} onChange={handleFormChange} className={selectClass}>
-                      <option value="">Select...</option>
-                      <option>Male</option><option>Female</option><option>Other</option>
-                    </select>
-                  </div>
-                  <Input label="Nationality" name="nationality" value={formData.nationality} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Country of Residence" name="countryOfResidence" value={formData.countryOfResidence} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Marital Status</label>
-                    <select name="maritalStatus" value={formData.maritalStatus} onChange={handleFormChange} className={selectClass}>
-                      <option value="">Select status</option>
-                      <option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option>
-                    </select>
-                  </div>
-                  <Input label="Number of Dependents" name="dependents" type="number" value={formData.dependents} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Personal Email" name="personalEmail" type="email" value={formData.personalEmail} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Emergency Contact Name" name="emergencyContactName" value={formData.emergencyContactName} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Emergency Contact Phone" name="emergencyContactPhone" type="tel" value={formData.emergencyContactPhone} onChange={handleFormChange} inputClassName="rounded-md" />
+          {/* Personal Information Tab */}
+          {formTab === 'personal' && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="passport-number" className="mb-1 block text-sm font-medium text-slate-800">
+                    Passport No <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="passport-number"
+                    name="passportNumber"
+                    value={formData.passportNumber}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    required
+                  />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Residential Address</label>
-                  <textarea name="homeAddress" value={formData.homeAddress} onChange={handleFormChange} className={textareaClass} rows={2} />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="flex items-center gap-2 border-b border-slate-100 pb-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
-                  <HiBriefcase className="h-4 w-4 text-[#f97316]" />
-                  Employment
-                </h3>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Employment Type</label>
-                    <select name="employmentType" value={formData.employmentType} onChange={handleFormChange} className={selectClass} required>
-                      <option value="">Select type</option>
-                      <option>Full-time</option><option>Part-time</option><option>Contract</option><option>Intern</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Work Region</label>
-                    <select name="workLocation" value={formData.workLocation} onChange={handleFormChange} className={selectClass}>
-                      <option value="">Select location</option>
-                      {(filterOptions.workLocations?.length ? filterOptions.workLocations : ['Dubai', 'Abu Dhabi', 'Remote', 'UK', 'India']).map((loc) => (
-                        <option key={loc} value={loc}>{loc}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Work Mode</label>
-                    <select name="workMode" value={formData.workMode} onChange={handleFormChange} className={selectClass}>
-                      <option value="">Select work mode</option>
-                      <option>In Office</option><option>Remote</option><option>Hybrid</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Employment Status</label>
-                    <select name="employmentStatus" value={formData.employmentStatus} onChange={handleFormChange} className={selectClass}>
-                      <option value="">Select status</option>
-                      <option>Active</option><option>Probation</option><option>Notice Period</option><option>On Leave</option><option>Terminated</option>
-                    </select>
-                  </div>
-                  <Input label="Probation End Date" name="probationEndDate" type="date" value={formData.probationEndDate} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Reporting Manager Employee ID" name="reportingManager" value={formData.reportingManager} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Gross Salary (AED)" name="salary" type="number" min="0" step="0.01" value={formData.salary} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Grade Level" name="grade" value={formData.grade} onChange={handleFormChange} inputClassName="rounded-md" />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="flex items-center gap-2 border-b border-slate-100 pb-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
-                  <HiDocumentText className="h-4 w-4 text-[#f97316]" />
-                  Compliance &amp; records
-                </h3>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <Input label="Passport Number" name="passportNumber" value={formData.passportNumber} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Passport Expiry" name="passportExpiry" type="date" value={formData.passportExpiry} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Emirates ID" name="emiratesIdNumber" value={formData.emiratesIdNumber} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Emirates ID Expiry" name="emiratesIdExpiry" type="date" value={formData.emiratesIdExpiry} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Visa Type" name="visaType" value={formData.visaType} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Visa Expiry Date" name="visaExpiryDate" type="date" value={formData.visaExpiryDate} onChange={handleFormChange} inputClassName="rounded-md" />
-                  <Input label="Sponsoring Entity" name="sponsoringEntity" value={formData.sponsoringEntity} onChange={handleFormChange} inputClassName="rounded-md" />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="flex items-center gap-2 border-b border-slate-100 pb-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
-                  <HiArrowTrendingUp className="h-4 w-4 text-[#f97316]" />
-                  Career &amp; achievements
-                </h3>
-                <div>
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Career History</label>
-                  <textarea name="careerHistory" value={formData.careerHistory} onChange={handleFormChange} className={textareaClass} rows={2} />
+                  <label htmlFor="passport-expiry" className="mb-1 block text-sm font-medium text-slate-800">
+                    Passport Expiry Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="passport-expiry"
+                    name="passportExpiry"
+                    type="date"
+                    value={formData.passportExpiry}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    required
+                  />
                 </div>
                 <div>
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Awards Summary</label>
-                  <textarea name="awardsSummary" value={formData.awardsSummary} onChange={handleFormChange} className={textareaClass} rows={2} />
+                  <label htmlFor="nationality" className="mb-1 block text-sm font-medium text-slate-800">
+                    Nationality <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="nationality"
+                    name="nationality"
+                    value={formData.nationality}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    required
+                  />
                 </div>
                 <div>
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Promotion History</label>
-                  <textarea name="promotionHistory" value={formData.promotionHistory} onChange={handleFormChange} className={textareaClass} rows={2} />
+                  <label htmlFor="religion" className="mb-1 block text-sm font-medium text-slate-800">
+                    Religion
+                  </label>
+                  <input
+                    id="religion"
+                    name="religion"
+                    value={formData.religion}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="marital-status" className="mb-1 block text-sm font-medium text-slate-800">
+                    Marital status <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="marital-status"
+                    name="maritalStatus"
+                    value={formData.maritalStatus}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    required
+                  >
+                    <option value="">Select</option>
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                    <option value="Divorced">Divorced</option>
+                    <option value="Widowed">Widowed</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="employment-spouse" className="mb-1 block text-sm font-medium text-slate-800">
+                    Employment spouse
+                  </label>
+                  <input
+                    id="employment-spouse"
+                    name="employmentSpouse"
+                    value={formData.employmentSpouse}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="no-of-children" className="mb-1 block text-sm font-medium text-slate-800">
+                    No. of children
+                  </label>
+                  <input
+                    id="no-of-children"
+                    name="noOfChildren"
+                    type="number"
+                    min="0"
+                    value={formData.noOfChildren}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="work-location" className="mb-1 block text-sm font-medium text-slate-800">
+                    Work Location
+                  </label>
+                  <select
+                    id="work-location"
+                    name="workLocation"
+                    value={formData.workLocation}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  >
+                    <option value="">Select location</option>
+                    {(filterOptions.workLocations?.length ? filterOptions.workLocations : ['Dubai', 'Abu Dhabi', 'Remote', 'UK', 'India']).map((loc) => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
           )}
 
-          {formTab === 'permissions' && (
-            <div className="space-y-4">
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Assign <strong>Role</strong> under Basic Information. Here you can toggle portal access and optionally set an alternate portal password.
-              </p>
-              <div>
-                <label className="mb-1 ml-1 block text-sm font-medium text-slate-800">Portal access</label>
-                <select
-                  name="portalEnabled"
-                  value={formData.portalEnabled ? '1' : '0'}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, portalEnabled: e.target.value === '1' }))}
-                  className={selectClass}
-                >
-                  <option value="0">Disabled</option>
-                  <option value="1">Enabled</option>
-                </select>
+          {/* Bank Information Tab */}
+          {formTab === 'bank' && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="bank-name" className="mb-1 block text-sm font-medium text-slate-800">
+                    Bank Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="bank-name"
+                    name="bankName"
+                    value={formData.bankName}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="bank-account-no" className="mb-1 block text-sm font-medium text-slate-800">
+                    Bank account No
+                  </label>
+                  <input
+                    id="bank-account-no"
+                    name="bankAccountNo"
+                    value={formData.bankAccountNo}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="ifsc-code" className="mb-1 block text-sm font-medium text-slate-800">
+                    IFSC Code
+                  </label>
+                  <input
+                    id="ifsc-code"
+                    name="ifscCode"
+                    value={formData.ifscCode}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="branch-address" className="mb-1 block text-sm font-medium text-slate-800">
+                    Branch Address
+                  </label>
+                  <input
+                    id="branch-address"
+                    name="branchAddress"
+                    value={formData.branchAddress}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  />
+                </div>
               </div>
-              <Input
-                label="Alternate portal password"
-                name="portalPassword"
-                type="password"
-                autoComplete="new-password"
-                value={formData.portalPassword}
-                onChange={handleFormChange}
-                inputClassName="rounded-md"
-              />
+            </div>
+          )}
+
+          {/* Family Information Tab */}
+          {formTab === 'family' && (
+            <div className="space-y-5">
+              {formData.familyMembers.map((member, index) => (
+                <div key={index} className="rounded-lg border border-slate-200 p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-slate-800">Family Member {index + 1}</h4>
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removeFamilyMember(index)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        value={member.name}
+                        onChange={(e) => handleFamilyMemberChange(index, 'name', e.target.value)}
+                        className={basicFieldClass}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Relationship
+                      </label>
+                      <input
+                        value={member.relationship}
+                        onChange={(e) => handleFamilyMemberChange(index, 'relationship', e.target.value)}
+                        className={basicFieldClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Phone
+                      </label>
+                      <input
+                        value={member.phone}
+                        onChange={(e) => handleFamilyMemberChange(index, 'phone', e.target.value)}
+                        className={basicFieldClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Passport Expiry Date
+                      </label>
+                      <input
+                        type="date"
+                        value={member.passportExpiry}
+                        onChange={(e) => handleFamilyMemberChange(index, 'passportExpiry', e.target.value)}
+                        className={basicFieldClass}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addFamilyMember}
+                className="mt-2 inline-flex items-center gap-2 text-sm text-[#0F766E] hover:text-[#ea6a0b]"
+              >
+                <HiPlus className="h-4 w-4" /> Add Family Member
+              </button>
+            </div>
+          )}
+
+          {/* Contact Section Tab */}
+          {formTab === 'secondary' && (
+            <div className="space-y-6">
+              <div className="rounded-lg border border-slate-200 p-4 space-y-4">
+                <h4 className="font-semibold text-slate-800">Secondary Contact Details</h4>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-800">
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      value={formData.secondaryContact.name}
+                      onChange={(e) => handleSecondaryContactChange('name', e.target.value)}
+                      className={basicFieldClass}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-800">
+                      Relationship
+                    </label>
+                    <input
+                      value={formData.secondaryContact.relationship}
+                      onChange={(e) => handleSecondaryContactChange('relationship', e.target.value)}
+                      className={basicFieldClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-800">
+                      Phone No 1 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      value={formData.secondaryContact.phoneNo1}
+                      onChange={(e) => handleSecondaryContactChange('phoneNo1', e.target.value)}
+                      className={basicFieldClass}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-800">
+                      Phone No 2
+                    </label>
+                    <input
+                      value={formData.secondaryContact.phoneNo2}
+                      onChange={(e) => handleSecondaryContactChange('phoneNo2', e.target.value)}
+                      className={basicFieldClass}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Educational Details Tab */}
+          {formTab === 'education' && (
+            <div className="space-y-5">
+              {formData.education.map((edu, index) => (
+                <div key={index} className="rounded-lg border border-slate-200 p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-slate-800">Education {index + 1}</h4>
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removeEducation(index)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Institution Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        value={edu.institutionName}
+                        onChange={(e) => handleEducationChange(index, 'institutionName', e.target.value)}
+                        className={basicFieldClass}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Course <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        value={edu.course}
+                        onChange={(e) => handleEducationChange(index, 'course', e.target.value)}
+                        className={basicFieldClass}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Start Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={edu.startDate}
+                        onChange={(e) => handleEducationChange(index, 'startDate', e.target.value)}
+                        className={basicFieldClass}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        End Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={edu.endDate}
+                        onChange={(e) => handleEducationChange(index, 'endDate', e.target.value)}
+                        className={basicFieldClass}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addEducation}
+                className="mt-2 inline-flex items-center gap-2 text-sm text-[#0F766E] hover:text-[#ea6a0b]"
+              >
+                <HiPlus className="h-4 w-4" /> Add Education
+              </button>
+            </div>
+          )}
+
+          {/* Experience Tab */}
+          {formTab === 'experience' && (
+            <div className="space-y-5">
+              {formData.workExperience.map((exp, index) => (
+                <div key={index} className="rounded-lg border border-slate-200 p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-slate-800">Experience {index + 1}</h4>
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removeWorkExp(index)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Previous Company Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        value={exp.companyName}
+                        onChange={(e) => handleWorkExpChange(index, 'companyName', e.target.value)}
+                        className={basicFieldClass}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Designation <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        value={exp.designation}
+                        onChange={(e) => handleWorkExpChange(index, 'designation', e.target.value)}
+                        className={basicFieldClass}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        Start Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={exp.startDate}
+                        onChange={(e) => handleWorkExpChange(index, 'startDate', e.target.value)}
+                        className={basicFieldClass}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-800">
+                        End Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={exp.endDate}
+                        onChange={(e) => handleWorkExpChange(index, 'endDate', e.target.value)}
+                        className={basicFieldClass}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addWorkExp}
+                className="mt-2 inline-flex items-center gap-2 text-sm text-[#0F766E] hover:text-[#ea6a0b]"
+              >
+                <HiPlus className="h-4 w-4" /> Add Experience
+              </button>
+              
+              <div className="mt-4 flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="currently-working"
+                  checked={formData.isCurrentlyWorking}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isCurrentlyWorking: e.target.checked }))}
+                  className="h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                />
+                <label htmlFor="currently-working" className="text-sm font-medium text-slate-800">
+                  Check if you are currently working here
+                </label>
+              </div>
             </div>
           )}
 
@@ -1188,7 +1658,7 @@ export default function EmployeeDirectory() {
             </button>
             <button
               type="submit"
-              className="h-10 rounded-md bg-[#f97316] px-6 text-sm font-semibold text-white hover:bg-[#ea6a0b]"
+              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#ea6a0b]"
             >
               Save
             </button>
