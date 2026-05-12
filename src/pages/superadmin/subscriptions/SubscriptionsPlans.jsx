@@ -49,9 +49,6 @@ export default function SubscriptionsPlans() {
     plan_description: '',
     monthly_price: 0,
     annual_price: 0,
-    user_quota: 0,
-    storage_quota_gb: 0,
-    company_quota: 1,
     trial_days: 0,
     support_level: '',
     isActive: true
@@ -149,9 +146,6 @@ export default function SubscriptionsPlans() {
         plan_description: planData.plan_description || '',
         monthly_price: Number(planData.monthly_price || 0),
         annual_price: Number(planData.annual_price || 0),
-        user_quota: Number(planData.user_quota || 0),
-        storage_quota_gb: Number(planData.storage_quota_gb || 0),
-        company_quota: Number(planData.company_quota || 1),
         trial_days: Number(planData.trial_days || 0),
         support_level: planData.support_level || '',
         isActive: Boolean(planData.is_active)
@@ -221,16 +215,13 @@ export default function SubscriptionsPlans() {
 
   // Export functionality
   const handleExport = () => {
-    const headers = ['ID', 'Name', 'Code', 'Monthly Price', 'Annual Price', 'Users', 'Storage', 'Companies', 'Trial Days', 'Support Level', 'Status']
+    const headers = ['ID', 'Name', 'Code', 'Monthly Price', 'Annual Price', 'Trial Days', 'Support Level', 'Status']
     const csvData = plans.map(p => [
       p.id,
       p.plan_name,
       p.plan_code,
       p.monthly_price,
       p.annual_price,
-      p.user_quota === -1 ? 'Unlimited' : p.user_quota,
-      p.storage_quota_gb === -1 ? 'Unlimited' : p.storage_quota_gb,
-      p.company_quota === -1 ? 'Unlimited' : p.company_quota,
       p.trial_days,
       p.support_level || 'Standard',
       p.is_active ? 'Active' : 'Inactive'
@@ -250,7 +241,6 @@ export default function SubscriptionsPlans() {
 
   // Calculations for stats
   const activePlansCount = plans.filter(p => p.is_active).length
-  const totalCompanyQuota = plans.reduce((sum, p) => sum + (p.company_quota === -1 ? 0 : Number(p.company_quota || 0)), 0)
   const totalMonthlyRevenue = plans.reduce((sum, p) => sum + Number(p.monthly_price || 0), 0)
   const totalAnnualRevenue = plans.reduce((sum, p) => sum + Number(p.annual_price || 0), 0)
 
@@ -306,13 +296,6 @@ export default function SubscriptionsPlans() {
           subtitle={`out of ${plans.length} total`}
           icon={HiCheckCircle}
           trendColor="blue"
-        />
-        <StatCard
-          title="TOTAL PLAN SLOTS"
-          value={totalCompanyQuota.toString()}
-          subtitle="total company capacity"
-          icon={HiUsers}
-          trendColor="indigo"
         />
         <StatCard
           title="MONTHLY POTENTIAL"
@@ -431,18 +414,6 @@ export default function SubscriptionsPlans() {
                 </p>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Users</span>
-                    <span className="text-sm font-bold text-slate-900">{formatQuota(plan.user_quota)}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Storage</span>
-                    <span className="text-sm font-bold text-slate-900">{formatQuota(plan.storage_quota_gb, 'GB')}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Companies</span>
-                    <span className="text-sm font-bold text-slate-900">{formatQuota(plan.company_quota)}</span>
-                  </div>
                 </div>
 
                 {/* Features List */}
@@ -561,24 +532,6 @@ export default function SubscriptionsPlans() {
                 Recommended: ${Math.round(newPlan.monthly_price * 10.8 * 100) / 100} (10% discount)
               </p>
             </div>
-            <Input
-              label="User Quota (use -1 for unlimited)"
-              type="number"
-              value={newPlan.user_quota}
-              onChange={(e) => setNewPlan({ ...newPlan, user_quota: parseInt(e.target.value) || 0 })}
-            />
-            <Input
-              label="Storage Quota (GB) (use -1 for unlimited)"
-              type="number"
-              value={newPlan.storage_quota_gb}
-              onChange={(e) => setNewPlan({ ...newPlan, storage_quota_gb: parseInt(e.target.value) || 0 })}
-            />
-            <Input
-              label="Company Quota (use -1 for unlimited)"
-              type="number"
-              value={newPlan.company_quota}
-              onChange={(e) => setNewPlan({ ...newPlan, company_quota: parseInt(e.target.value) || 1 })}
-            />
             <Input
               label="Trial Days (0 for no trial)"
               type="number"
@@ -706,24 +659,6 @@ export default function SubscriptionsPlans() {
                 Recommended: ${Math.round(editForm.monthly_price * 10.8 * 100) / 100} (10% discount)
               </p>
             </div>
-            <Input
-              label="User Quota (use -1 for unlimited)"
-              type="number"
-              value={editForm.user_quota}
-              onChange={(e) => setEditForm({ ...editForm, user_quota: parseInt(e.target.value) || 0 })}
-            />
-            <Input
-              label="Storage Quota (GB) (use -1 for unlimited)"
-              type="number"
-              value={editForm.storage_quota_gb}
-              onChange={(e) => setEditForm({ ...editForm, storage_quota_gb: parseInt(e.target.value) || 0 })}
-            />
-            <Input
-              label="Company Quota (use -1 for unlimited)"
-              type="number"
-              value={editForm.company_quota}
-              onChange={(e) => setEditForm({ ...editForm, company_quota: parseInt(e.target.value) || 1 })}
-            />
             <Input
               label="Trial Days"
               type="number"

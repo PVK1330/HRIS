@@ -39,12 +39,7 @@ const superNavGroups = [
         path: '/superadmin/tenants',
         roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
-      {
-        label: 'Usage & Platform Health',
-        icon: HiServerStack,
-        path: '/superadmin/system-health',
-        roles: ['superadmin', 'support_admin'],
-      },
+
       {
         label: 'Global Modules',
         icon: HiWrenchScrewdriver,
