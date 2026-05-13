@@ -293,109 +293,118 @@ export default function Announcements() {
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight uppercase flex items-center gap-3">
-               <HiMegaphone className="h-8 w-8" /> Announcements & Broadcasts
-            </h1>
-            <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
-              Keep your organization informed. Broadcast critical updates, policy changes, and events across departments.
-            </p>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+
+      {/* Top Title Bar with Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Announcements Registry</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Corporate Feed</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Announcements Registry</span>
           </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           {isHrAdmin && (
-            <button 
-               onClick={() => handleOpenModal()}
-               className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95"
+            <button
+              type="button"
+              onClick={() => handleOpenModal()}
+              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
             >
-               <HiPlus className="h-4 w-4" /> Create Announcement
+              <HiPlus className="h-4 w-4" />
+              Create Announcement
             </button>
           )}
         </div>
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
       </div>
 
-      {/* Analytics Horizontal Toolbar Above Registry */}
-      <div className="space-y-3">
-         <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Dispatch Analytics Overview</p>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">Live Telemetry</span>
-         </div>
-         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { id: 'All', label: 'All Announcements', count: stats.total, icon: HiGlobeAlt, color: 'emerald' },
-              { id: 'Published', label: 'Published Now', count: stats.published, icon: HiCheckCircle, color: 'blue' },
-              { id: 'Scheduled', label: 'Scheduled Posts', count: stats.scheduled, icon: HiClock, color: 'orange' },
-              { id: 'Draft', label: 'Drafted Content', count: stats.drafts, icon: HiExclamationCircle, color: 'slate' }
-            ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveStatus(item.id)}
-                className={`group flex items-center justify-between rounded-2xl border p-4 transition-all ${
-                  activeStatus === item.id 
-                  ? 'border-[#0F766E] bg-emerald-50/50 shadow-md ring-1 ring-[#0F766E]' 
-                  : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600`}>
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-sm font-bold text-slate-700">{item.label}</div>
-                    <div className="text-[10px] text-slate-400 font-medium tracking-tight">Active Reach</div>
-                  </div>
-                </div>
-                <div className={`text-lg font-black ${activeStatus === item.id ? 'text-[#0F766E]' : 'text-slate-400'}`}>
-                  {item.count}
-                </div>
-              </button>
-            ))}
-         </div>
-      </div>
+      {/* Requested KPI Metrics Cards Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          {
+            label: 'TOTAL POSTS',
+            count: stats.total || announcements.length || 0,
+            bgColor: 'bg-[#0F172A]',
+            icon: HiMegaphone,
+            onClickFilter: () => setActiveStatus('All')
+          },
+          {
+            label: 'PUBLISHED',
+            count: stats.published || announcements.filter(a => a.status === 'Published').length || 0,
+            bgColor: 'bg-[#10B981]',
+            icon: HiCheckCircle,
+            onClickFilter: () => setActiveStatus('Published')
+          },
+          {
+            label: 'DRAFTS',
+            count: stats.drafts || announcements.filter(a => a.status === 'Draft').length || 0,
+            bgColor: 'bg-[#F59E0B]',
+            icon: HiPencilSquare,
+            onClickFilter: () => setActiveStatus('Draft')
+          },
+          {
+            label: 'SCHEDULED',
+            count: stats.scheduled || announcements.filter(a => a.status === 'Scheduled').length || 0,
+            bgColor: 'bg-[#3B82F6]',
+            icon: HiClock,
+            onClickFilter: () => setActiveStatus('Scheduled')
+          }
+        ].map((card, idx) => {
+          const isActiveFilter = 
+            (card.label === 'TOTAL POSTS' && activeStatus === 'All') ||
+            (card.label === 'PUBLISHED' && activeStatus === 'Published') ||
+            (card.label === 'DRAFTS' && activeStatus === 'Draft') ||
+            (card.label === 'SCHEDULED' && activeStatus === 'Scheduled');
 
-      {/* Pro Tip Toolbar & Full Width Registry Area */}
-      <div className="space-y-6">
-         <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-2 group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex flex-col gap-4 md:flex-row md:items-end">
-                <div className="flex-1">
-                  <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Registry</label>
-                  <div className="relative">
-                    <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search by title, category, or author..."
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all"
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <Button label="FILTERS" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200" />
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={card.onClickFilter}
+              title={`Filter by ${card.label}`}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
+                isActiveFilter
+                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                <card.icon className="h-5 w-5" />
               </div>
-            </div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                  {card.label}
+                </div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
-            <div className="rounded-2xl border border-dashed border-slate-300 p-4 bg-slate-50/50 flex flex-col justify-center">
-               <div className="flex items-center gap-2 mb-1 text-slate-500">
-                  <HiBellAlert className="h-4 w-4 text-amber-500" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Pro Tip</span>
-               </div>
-               <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
-                  "High" priority posts are broadcasted instantly via Email and Push notifications.
-               </p>
-            </div>
-         </div>
+      {/* Filters + Full width Table container */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Announcements Listing</h2>
+        </div>
 
-         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
-            <div className="bg-[#0F766E] px-6 py-3 text-white flex items-center justify-between">
-               <h2 className="text-sm font-bold uppercase tracking-wider">Announcement Registry</h2>
-               <HiDocumentText className="h-4 w-4 opacity-50" />
+        <div className="space-y-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="relative">
+              <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search announcements..."
+                className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+              />
             </div>
-            <Table columns={columns} data={filtered} pageSize={8} />
-         </div>
+          </div>
+        </div>
+
+        <Table columns={columns} data={filtered} pageSize={8} />
       </div>
 
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingId ? "Edit Announcement" : "Create Announcement"} size="xl">
