@@ -47,6 +47,25 @@ export const getDocuments = async (employeeId) => {
 }
 
 /**
+ * GET /api/v1/employees/:employeeId/documents/catalog
+ * Active document type names from tenant settings (for upload picker).
+ */
+export const getEmployeeDocumentCatalog = async (employeeId) => {
+  const { data } = await api.get(`/employees/${employeeId}/documents/catalog`)
+  return data.data
+}
+
+/**
+ * POST /api/v1/employees/:employeeId/documents (multipart)
+ * @param {number} employeeId
+ * @param {FormData} formData — must include `file`; optional text fields per API
+ */
+export const uploadEmployeeDocument = async (employeeId, formData) => {
+  const { data } = await api.post(`/employees/${employeeId}/documents`, formData)
+  return data.data
+}
+
+/**
  * GET /api/v1/employees/:employeeId/performance
  * @param {number} employeeId
  * @returns {{ reviews: Array, latest: Object|null }}
