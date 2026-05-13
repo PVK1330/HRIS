@@ -16,6 +16,8 @@ export function Table({
   currentPage,
   onPageChange,
   square = false,
+  /** Optional Tailwind classes per data row (server-side pagination). */
+  rowClassName,
 }) {
   const [internalPage, setInternalPage] = useState(0)
 
@@ -93,7 +95,7 @@ export function Table({
                 <tr
                   key={row.id ?? ri}
                   onClick={() => onRowClick?.(row)}
-                  className={`${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                  className={`${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''} ${rowClassName ? rowClassName(row) : ''}`.trim()}
                 >
                   {columns.map((col) => {
                     const raw = row[col.key]
