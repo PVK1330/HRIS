@@ -789,25 +789,25 @@ export default function VisaNationality() {
   )
 
   return (
-    <div className="space-y-6 px-4 py-6 lg:px-8">
-      {/* Section 1 — header */}
-      <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
-            <HiShieldCheck className="h-7 w-7" aria-hidden />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Visa & Nationality Compliance</h1>
-            <p className="mt-1 text-sm text-slate-600">Track passport, visa and Emirates ID validity</p>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+
+      {/* Top Title Bar with Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Visa & Nationality</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Compliance</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Visa & Nationality Records</span>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="relative" ref={exportRef}>
             <button
               type="button"
               disabled={exportLoading}
               onClick={() => setExportOpen((o) => !o)}
-              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 shadow-sm"
             >
               <HiDocumentArrowDown className="h-4 w-4" />
               Export
@@ -840,7 +840,7 @@ export default function VisaNationality() {
             <button
               type="button"
               onClick={openAdd}
-              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64]"
+              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
             >
               <HiPlus className="h-4 w-4" /> Add Record
             </button>
@@ -848,58 +848,66 @@ export default function VisaNationality() {
         </div>
       </div>
 
-      {/* Section 2 — stats (dashboard-style cards + static sparklines) */}
-      <div className="grid grid-cols-1 gap-4 border-b border-slate-200 pb-6 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Requested KPI Metrics Cards Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
           {
-            label: 'Total Visa Records',
-            value: stats.total,
-            iconBg: 'bg-[#F97316]',
-            Icon: HiShieldCheck,
-            sparkVariant: 0,
+            label: 'TOTAL RECORDS',
+            count: stats.total,
+            bgColor: 'bg-[#0F172A]',
+            icon: HiShieldCheck,
+            onClickFilter: () => setExpiryWindow('all')
           },
           {
-            label: 'Active Visas',
-            value: stats.valid,
-            iconBg: 'bg-[#22C55E]',
-            Icon: HiCheckCircle,
-            sparkVariant: 1,
+            label: 'ACTIVE VISAS',
+            count: stats.valid,
+            bgColor: 'bg-[#10B981]',
+            icon: HiCheckCircle,
+            onClickFilter: () => setExpiryWindow('all')
           },
           {
-            label: 'Expiring Soon',
-            value: stats.expiringSoon,
-            iconBg: 'bg-[#F59E0B]',
-            Icon: HiClock,
-            sparkVariant: 2,
+            label: 'EXPIRING SOON',
+            count: stats.expiringSoon,
+            bgColor: 'bg-[#F59E0B]',
+            icon: HiClock,
+            onClickFilter: () => setExpiryWindow('60')
           },
           {
-            label: 'Expired Visas',
-            value: stats.expired,
-            iconBg: 'bg-[#EF4444]',
-            Icon: HiExclamationTriangle,
-            sparkVariant: 3,
-          },
-        ].map((c) => {
-          const IconEl = c.Icon
+            label: 'EXPIRED',
+            count: stats.expired,
+            bgColor: 'bg-[#EF4444]',
+            icon: HiExclamationTriangle,
+            onClickFilter: () => setExpiryWindow('expired')
+          }
+        ].map((card, idx) => {
+          const isActiveFilter = 
+            (card.label === 'TOTAL RECORDS' && expiryWindow === 'all') ||
+            (card.label === 'EXPIRING SOON' && expiryWindow === '60') ||
+            (card.label === 'EXPIRED' && expiryWindow === 'expired');
+
           return (
-          <div
-            key={c.label}
-            className="flex min-h-[5.5rem] items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-          >
-            <div
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${c.iconBg} text-white shadow-sm`}
+            <button
+              key={idx}
+              type="button"
+              onClick={card.onClickFilter}
+              title={`Filter by ${card.label}`}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
+                isActiveFilter
+                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
             >
-              <IconEl className="h-6 w-6" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-slate-500">{c.label}</p>
-              <p className="mt-0.5 font-display text-2xl font-bold tracking-tight text-slate-900">{c.value}</p>
-            </div>
-            <div className="hidden h-11 w-14 shrink-0 sm:block">
-              <VisaStatSparkline className="h-full w-full" variant={c.sparkVariant} />
-            </div>
-          </div>
-          )
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                <card.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                  {card.label}
+                </div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </button>
+          );
         })}
       </div>
 
