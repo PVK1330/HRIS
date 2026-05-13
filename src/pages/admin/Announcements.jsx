@@ -62,7 +62,8 @@ export default function Announcements() {
       ]);
       setAnnouncements(annRes.data.data || []);
       setStats(statRes.data.data || { total: 0, published: 0, drafts: 0, scheduled: 0 });
-      setDepartments(deptRes.data.data || []);
+      const deptPayload = deptRes.data.data;
+      setDepartments(deptPayload?.departments || (Array.isArray(deptPayload) ? deptPayload : []));
       setEmployees(empRes.data.data?.employees || []);
     } catch (err) {
       console.error('Failed to fetch data', err);
