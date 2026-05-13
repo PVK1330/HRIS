@@ -169,6 +169,48 @@ export default function DocumentSettings() {
         </div>
       </SectionCard>
 
+      <SectionCard title="Document catalog overview">
+        {list.length === 0 ? (
+          <p className="text-sm text-gray-500">No document types configured yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-[760px] w-full border-collapse text-left text-sm text-gray-800">
+              <thead>
+                <tr className="border-b border-gray-200 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="py-2 pr-4">Name</th>
+                  <th className="py-2 pr-4">Mandatory</th>
+                  <th className="py-2 pr-4">Who uploads</th>
+                  <th className="py-2 pr-4">Expiry</th>
+                  <th className="py-2 pr-4">HR approval</th>
+                  <th className="py-2">Visibility</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((doc) => (
+                  <tr key={doc.id} className="border-b border-gray-100 last:border-0">
+                    <td className="py-2.5 pr-4 font-medium text-gray-900">{doc.name}</td>
+                    <td className="py-2.5 pr-4">
+                      <Badge
+                        label={doc.mandatoryOrOptional || (doc.isRequired ? 'Mandatory' : 'Optional')}
+                        color={doc.mandatoryOrOptional === 'Optional' || doc.isRequired === false ? 'gray' : 'indigo'}
+                      />
+                    </td>
+                    <td className="py-2.5 pr-4 text-gray-700">{doc.whoMustUpload || '—'}</td>
+                    <td className="py-2.5 pr-4 text-gray-700">
+                      {doc.expiryTracking
+                        ? `Yes (${doc.reminderBeforeExpiryDays ?? 30}d reminder)`
+                        : 'No'}
+                    </td>
+                    <td className="py-2.5 pr-4 text-gray-700">{doc.hrApprovalRequired ? 'Yes' : 'No'}</td>
+                    <td className="py-2.5 text-gray-700">{doc.visibility || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
       {selectedDoc && form ? (
         <SectionCard title={`Per-Document Settings (${selectedDoc.name})`}>
           <FieldRow label="Mandatory or Optional">

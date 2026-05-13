@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
+import { Modal } from '../../../components/ui/Modal.jsx'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import {
   getEmployeeProfile, getAttendance, getLeave,
-  getDocuments, getPerformance, getAssets,
+  getDocuments, getEmployeeDocumentCatalog, uploadEmployeeDocument,
+  getPerformance, getAssets,
 } from '../../../services/employeeProfileService.js'
 import { listEmployees } from '../../../services/employeeService.js'
 import {
@@ -16,6 +19,8 @@ import {
   HiCheckCircle, HiExclamationCircle, HiNoSymbol, HiArrowUpCircle,
   HiBolt, HiPrinter, HiPencilSquare, HiArrowPath,
 } from 'react-icons/hi2'
+
+const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const TABS = [
   { id: 'overview',    label: 'Overview',              icon: HiUser },
@@ -57,6 +62,8 @@ export default function EmployeeProfile() {
   const [attendance,  setAttendance]  = useState(null)
   const [leave,       setLeave]       = useState(null)
   const [documents,   setDocuments]   = useState(null)
+  /** Tenant document_types rows — drives checklist + per-type upload on Documents tab */
+  const [employeeDocTypes, setEmployeeDocTypes] = useState([])
   const [performance, setPerformance] = useState(null)
   const [assets,      setAssets]      = useState(null)
 
@@ -64,7 +71,131 @@ export default function EmployeeProfile() {
   const [loadingTab,         setLoadingTab]         = useState(false)
   const [loadingList,        setLoadingList]        = useState(true)
 
+  const [docUploadOpen, setDocUploadOpen] = useState(false)
+  const [docUploading, setDocUploading] = useState(false)
+  const [docCatalog, setDocCatalog] = useState([])
+  const [docCatalogLoading, setDocCatalogLoading] = useState(false)
+  const [docFile, setDocFile] = useState(null)
+  const [docForm, setDocForm] = useState({
+    document_type: '',
+    document_title: '',
+    document_number: '',
+    notes: '',
+    issue_date: '',
+    expiry_date: '',
+  })
+
   const isHrAdmin = currentUser?.role === 'hr_admin' || currentUser?.role === 'admin'
+
+  const resolveDocFileUrl = (url) => {
+    if (!url) return null
+    if (/^https?:\/\//i.test(url)) return url
+    const path = url.startsWith('/') ? url : `/${url}`
+    return `${API_ORIGIN}${path}`
+  }
+
+  const closeDocUpload = () => {
+    setDocUploadOpen(false)
+    setDocFile(null)
+    setDocCatalog([])
+    setDocForm({
+      document_type: '',
+      document_title: '',
+      document_number: '',
+      notes: '',
+      issue_date: '',
+      expiry_date: '',
+    })
+  }
+
+  const openDocUpload = async (initialDocumentType = '') => {
+    if (!selectedId) return
+    setDocUploadOpen(true)
+    setDocFile(null)
+    setDocForm({
+      document_type: '',
+      document_title: '',
+      document_number: '',
+      notes: '',
+      issue_date: '',
+      expiry_date: '',
+    })
+    setDocCatalogLoading(true)
+    try {
+      let list = employeeDocTypes
+      if (!list.length) {
+        const res = await getEmployeeDocumentCatalog(selectedId)
+        list = res?.types || []
+        if (list.length) setEmployeeDocTypes(list)
+      }
+      setDocCatalog([...list])
+      const initial = String(initialDocumentType || '').trim()
+      const pick =
+        initial && list.some((t) => String(t.name).trim() === initial)
+          ? initial
+          : list[0]?.name || initial
+      setDocForm({
+        document_type: pick,
+        document_title: '',
+        document_number: '',
+        notes: '',
+        issue_date: '',
+        expiry_date: '',
+      })
+    } catch (e) {
+      console.error(e)
+      setDocCatalog([])
+      setDocForm({
+        document_type: String(initialDocumentType || '').trim(),
+        document_title: '',
+        document_number: '',
+        notes: '',
+        issue_date: '',
+        expiry_date: '',
+      })
+      toast.error(e.message || 'Could not load document types')
+    } finally {
+      setDocCatalogLoading(false)
+    }
+  }
+
+  const submitDocUpload = async (e) => {
+    e.preventDefault()
+    if (!selectedId) return
+    const type = docForm.document_type.trim()
+    if (!type) {
+      toast.error('Choose or enter a document type.')
+      return
+    }
+    if (!docFile) {
+      toast.error('Select a file to upload (PDF, JPG, or PNG).')
+      return
+    }
+    const fd = new FormData()
+    fd.append('file', docFile)
+    fd.append('document_type', type.slice(0, 100))
+    if (docForm.document_title.trim()) fd.append('document_title', docForm.document_title.trim())
+    if (docForm.document_number.trim()) fd.append('document_number', docForm.document_number.trim())
+    if (docForm.notes.trim()) fd.append('notes', docForm.notes.trim())
+    if (docForm.issue_date) fd.append('issue_date', docForm.issue_date)
+    if (docForm.expiry_date) fd.append('expiry_date', docForm.expiry_date)
+    setDocUploading(true)
+    try {
+      await uploadEmployeeDocument(selectedId, fd)
+      toast.success('Document uploaded.')
+      closeDocUpload()
+      const [docData, catRes] = await Promise.all([
+        getDocuments(selectedId),
+        getEmployeeDocumentCatalog(selectedId).catch(() => ({ types: [] })),
+      ])
+      setDocuments(docData)
+      setEmployeeDocTypes(catRes?.types || [])
+    } catch (err) {
+      toast.error(err.message || 'Upload failed.')
+    } finally {
+      setDocUploading(false)
+    }
+  }
 
   // ── Load employee list for switcher ──────────────────────────────────────
   useEffect(() => {
@@ -82,6 +213,7 @@ export default function EmployeeProfile() {
     if (!selectedId) return
     setProfile(null)
     setAttendance(null); setLeave(null); setDocuments(null)
+    setEmployeeDocTypes([])
     setPerformance(null); setAssets(null)
     setActiveTab('overview')
     setLoadingProfile(true)
@@ -104,9 +236,15 @@ export default function EmployeeProfile() {
           case 'leave':
             if (!leave) setLeave(await getLeave(selectedId))
             break
-          case 'documents':
-            if (!documents) setDocuments(await getDocuments(selectedId))
+          case 'documents': {
+            const [docData, catRes] = await Promise.all([
+              getDocuments(selectedId),
+              getEmployeeDocumentCatalog(selectedId).catch(() => ({ types: [] })),
+            ])
+            setDocuments(docData)
+            setEmployeeDocTypes(catRes?.types || [])
             break
+          }
           case 'performance':
             if (!performance) setPerformance(await getPerformance(selectedId))
             break
@@ -331,61 +469,217 @@ export default function EmployeeProfile() {
   )
 
   const renderDocuments = () => {
-    if (loadingTab && !documents) return <Spinner />
+    if (loadingTab && documents === null) return <Spinner />
     const docs = documents?.documents || []
+    const types = employeeDocTypes
+
+    const norm = (s) => String(s || '').trim().toLowerCase()
+    const latestForType = (typeName) => {
+      const n = norm(typeName)
+      const matches = docs.filter((d) => norm(d.document_type) === n)
+      return matches[0] || null
+    }
+    const catalogNorms = new Set(types.map((t) => norm(t.name)))
+    const otherDocs = docs.filter((d) => !catalogNorms.has(norm(d.document_type)))
+
     return (
-      <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Document Compliance Registry</h3>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{docs.length} document(s) on file</p>
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Document Compliance Registry</h3>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                {types.length} required type{types.length === 1 ? '' : 's'}
+                <span className="text-slate-300"> · </span>
+                {docs.length} file{docs.length === 1 ? '' : 's'} on record
+              </p>
+            </div>
+            {isHrAdmin && (
+              <Button
+                type="button"
+                label="UPLOAD NEW"
+                variant="primary"
+                size="sm"
+                icon={HiArrowUpCircle}
+                className="text-[10px] font-black tracking-widest"
+                onClick={() => openDocUpload('')}
+              />
+            )}
           </div>
-          {isHrAdmin && <Button label="UPLOAD NEW" variant="primary" size="sm" icon={HiArrowUpCircle} className="text-[10px] font-black tracking-widest" />}
+
+          {types.length === 0 ? (
+            <div className="px-6 py-8 space-y-4">
+              <p className="text-sm text-slate-600">
+                No document types are configured for this company. Add them under{' '}
+                <span className="font-semibold text-slate-800">Admin → Settings → Documents</span>, then return here to upload per employee.
+              </p>
+              {docs.length > 0 ? (
+                <div className="overflow-x-auto rounded-none border border-slate-100">
+                  <table className="w-full text-left text-sm min-w-[560px]">
+                    <thead className="bg-slate-50 border-b border-slate-100">
+                      <tr>
+                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Document</th>
+                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {docs.map((doc) => (
+                        <tr key={doc.id}>
+                          <td className="px-4 py-3">
+                            <p className="font-bold text-slate-800 text-xs">{doc.document_title}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase">{doc.document_type}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge label={doc.status} color={statusColor(doc.status)} variant="outline" className="font-black text-[9px] tracking-widest" />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {doc.file_url ? (
+                              <a href={resolveDocFileUrl(doc.file_url)} target="_blank" rel="noreferrer">
+                                <Button label="VIEW" variant="ghost" size="sm" className="text-[9px] font-black text-[#0F766E] uppercase" />
+                              </a>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+              {isHrAdmin ? (
+                <Button
+                  type="button"
+                  label="UPLOAD OTHER DOCUMENT"
+                  variant="outline"
+                  size="sm"
+                  icon={HiArrowUpCircle}
+                  className="text-[10px] font-black tracking-widest border-[#0F766E] text-[#0F766E]"
+                  onClick={() => openDocUpload('')}
+                />
+              ) : null}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm min-w-[720px]">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Required document</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">On file</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Latest title</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Expiry</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {types.map((t) => {
+                    const latest = latestForType(t.name)
+                    const count = docs.filter((d) => norm(d.document_type) === norm(t.name)).length
+                    return (
+                      <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded bg-slate-100 flex items-center justify-center text-slate-400">
+                              <HiDocumentText className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-800 text-xs">{t.name}</p>
+                              {count > 1 ? (
+                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{count} versions</p>
+                              ) : null}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {latest ? (
+                            <Badge label="Yes" color="green" variant="soft" className="text-[9px] font-black" />
+                          ) : (
+                            <Badge label="Missing" color="orange" variant="outline" className="text-[9px] font-black tracking-widest" />
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-[11px] font-semibold text-slate-600">{latest?.document_title || '—'}</td>
+                        <td className="px-6 py-4">
+                          {latest ? (
+                            <Badge label={latest.status} color={statusColor(latest.status)} variant="outline" className="font-black text-[9px] tracking-widest" />
+                          ) : (
+                            <span className="text-[11px] text-slate-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-[11px] font-bold text-slate-500">{latest?.expiry_date || '—'}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex flex-wrap justify-end gap-1">
+                            {latest?.file_url ? (
+                              <a href={resolveDocFileUrl(latest.file_url)} target="_blank" rel="noreferrer">
+                                <Button label="VIEW" variant="ghost" size="sm" className="text-[9px] font-black text-[#0F766E] uppercase" />
+                              </a>
+                            ) : null}
+                            {isHrAdmin ? (
+                              <Button
+                                type="button"
+                                label={latest ? 'ADD FILE' : 'UPLOAD'}
+                                variant={latest ? 'outline' : 'primary'}
+                                size="sm"
+                                icon={HiArrowUpCircle}
+                                className={`text-[9px] font-black tracking-widest ${latest ? 'border-slate-200' : ''}`}
+                                onClick={() => openDocUpload(t.name)}
+                              />
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-        {docs.length === 0 ? (
-          <div className="flex items-center justify-center min-h-[200px]">
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No documents on file</p>
-          </div>
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 border-b border-slate-100">
-              <tr>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Document</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Expiry</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {docs.map(doc => (
-                <tr key={doc.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded bg-slate-100 flex items-center justify-center text-slate-400">
-                        <HiDocumentText className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-700 text-xs">{doc.document_title}</p>
+
+        {otherDocs.length > 0 ? (
+          <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50">
+              <h4 className="text-xs font-black text-slate-700 uppercase tracking-tight">Other documents on record</h4>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                Types not in the checklist above (still stored in the documents table)
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm min-w-[560px]">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Type / title</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {otherDocs.map((doc) => (
+                    <tr key={doc.id}>
+                      <td className="px-6 py-3">
+                        <p className="font-bold text-slate-800 text-xs">{doc.document_title}</p>
                         <p className="text-[9px] text-slate-400 font-bold uppercase">{doc.document_type}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <Badge label={doc.status} color={statusColor(doc.status)} variant="outline" className="font-black text-[9px] tracking-widest" />
-                  </td>
-                  <td className="px-6 py-4 text-[11px] font-bold text-slate-500">{doc.expiry_date || '—'}</td>
-                  <td className="px-6 py-4 text-[11px] text-slate-500 font-medium italic">{doc.notes || '—'}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-1">
-                      {doc.file_url && <a href={doc.file_url} target="_blank" rel="noreferrer"><Button label="VIEW" variant="ghost" size="sm" className="text-[9px] font-black text-[#0F766E] uppercase" /></a>}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                      </td>
+                      <td className="px-6 py-3">
+                        <Badge label={doc.status} color={statusColor(doc.status)} variant="outline" className="font-black text-[9px] tracking-widest" />
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        {doc.file_url ? (
+                          <a href={resolveDocFileUrl(doc.file_url)} target="_blank" rel="noreferrer">
+                            <Button label="VIEW" variant="ghost" size="sm" className="text-[9px] font-black text-[#0F766E] uppercase" />
+                          </a>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
       </div>
     )
   }
@@ -793,6 +1087,159 @@ export default function EmployeeProfile() {
         </div>
         <div className="min-w-0 p-4 sm:p-6">{renderTabContent()}</div>
       </div>
+
+      <Modal
+        isOpen={docUploadOpen}
+        onClose={() => {
+          if (!docUploading) closeDocUpload()
+        }}
+        title="Upload employee document"
+        description="File is stored against this employee’s record. Status starts as Pending until reviewed."
+        size="md"
+        icon={HiDocumentText}
+        showClose={!docUploading}
+      >
+        <form className="space-y-4" onSubmit={submitDocUpload}>
+          {docCatalogLoading ? (
+            <p className="text-sm text-slate-500">Loading document types…</p>
+          ) : docCatalog.length > 0 ? (
+            <div>
+              <label htmlFor="doc-type-select" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Document type
+              </label>
+              <select
+                id="doc-type-select"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+                value={
+                  docCatalog.some((t) => t.name === docForm.document_type)
+                    ? docForm.document_type
+                    : (docCatalog[0]?.name ?? '')
+                }
+                onChange={(e) => setDocForm((f) => ({ ...f, document_type: e.target.value }))}
+              >
+                {docCatalog.map((t) => (
+                  <option key={t.id} value={t.name}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label htmlFor="doc-type-text" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Document type
+              </label>
+              <input
+                id="doc-type-text"
+                type="text"
+                placeholder="e.g. Passport Copy"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+                value={docForm.document_type}
+                onChange={(e) => setDocForm((f) => ({ ...f, document_type: e.target.value }))}
+                maxLength={100}
+              />
+            </div>
+          )}
+          <div>
+            <label htmlFor="doc-title" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Display title (optional)
+            </label>
+            <input
+              id="doc-title"
+              type="text"
+              placeholder="Defaults to document type"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+              value={docForm.document_title}
+              onChange={(e) => setDocForm((f) => ({ ...f, document_title: e.target.value }))}
+              maxLength={255}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="doc-number" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Document number
+              </label>
+              <input
+                id="doc-number"
+                type="text"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+                value={docForm.document_number}
+                onChange={(e) => setDocForm((f) => ({ ...f, document_number: e.target.value }))}
+                maxLength={100}
+              />
+            </div>
+            <div>
+              <label htmlFor="doc-file" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                File (PDF, JPG, PNG)
+              </label>
+              <input
+                id="doc-file"
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                className="w-full text-sm text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-bold"
+                onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="doc-issue" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Issue date
+              </label>
+              <input
+                id="doc-issue"
+                type="date"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+                value={docForm.issue_date}
+                onChange={(e) => setDocForm((f) => ({ ...f, issue_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label htmlFor="doc-expiry" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Expiry date
+              </label>
+              <input
+                id="doc-expiry"
+                type="date"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+                value={docForm.expiry_date}
+                onChange={(e) => setDocForm((f) => ({ ...f, expiry_date: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="doc-notes" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Notes
+            </label>
+            <textarea
+              id="doc-notes"
+              rows={3}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
+              value={docForm.notes}
+              onChange={(e) => setDocForm((f) => ({ ...f, notes: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+            <Button
+              type="button"
+              label="Cancel"
+              variant="outline"
+              size="sm"
+              disabled={docUploading}
+              onClick={closeDocUpload}
+            />
+            <Button
+              type="submit"
+              label={docUploading ? 'UPLOADING…' : 'UPLOAD'}
+              variant="primary"
+              size="sm"
+              icon={HiArrowUpCircle}
+              disabled={docUploading}
+              className="text-[10px] font-black tracking-widest"
+            />
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
