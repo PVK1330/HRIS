@@ -119,20 +119,25 @@ export default function Onboarding() {
               Orchestrate the perfect welcome. Track multi-role checklists and monitor new hire integration progress.
             </p>
           </div>
-          <button 
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95"
-          >
-            <HiPlus className="h-4 w-4" /> Initialize Onboarding
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button 
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95 shrink-0"
+            >
+              <HiPlus className="h-4 w-4 shrink-0" /> Initialize Onboarding
+            </button>
+          </div>
         </div>
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
-        {/* Sidebar Filters */}
-        <div className="space-y-4">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Onboarding Status</p>
+      {/* Onboarding Status Horizontal Toolbar */}
+      <div className="space-y-3 min-w-0">
+        <div className="flex items-center justify-between min-w-0">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Onboarding Metrics Overview</p>
+          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shrink-0">Active Pipelines</span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
           {[
             { label: 'All', count: stats.newHires, icon: HiUserGroup, color: 'slate' },
             { label: 'In Progress', count: stats.inProgress, icon: HiClock, color: 'blue' },
@@ -142,58 +147,58 @@ export default function Onboarding() {
             <button
               key={item.label}
               onClick={() => setActiveStatus(item.label)}
-              className={`group flex w-full items-center justify-between rounded-2xl border p-4 transition-all hover:scale-[1.02] active:scale-95 ${
+              className={`group flex items-center justify-between gap-2 rounded-2xl border p-4 transition-all min-w-0 ${
                 activeStatus === item.label 
                 ? 'border-[#0F766E] bg-emerald-50/50 shadow-md ring-1 ring-[#0F766E]' 
-                : 'border-slate-200 bg-white hover:border-slate-300'
+                : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600 group-hover:scale-110 transition-transform`}>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600 group-hover:scale-110 transition-transform`}>
                   <item.icon className="h-5 w-5" />
                 </div>
-                <div className="text-left">
-                  <div className="text-sm font-bold text-slate-700">{item.label === 'All' ? 'New Hires/ month' : `Onboarding ${item.label}`}</div>
-                  <div className="text-[10px] text-slate-400 font-medium tracking-tight">Clickable-opens filtered list</div>
+                <div className="text-left min-w-0">
+                  <div className="text-sm font-bold text-slate-700 truncate">{item.label === 'All' ? 'New Hires' : item.label}</div>
+                  <div className="text-[10px] text-slate-400 font-medium tracking-tight truncate">Pipelines</div>
                 </div>
               </div>
-              <div className={`text-lg font-black ${activeStatus === item.label ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+              <div className={`text-lg font-black shrink-0 ${activeStatus === item.label ? 'text-[#0F766E]' : 'text-slate-400'}`}>
                 {item.count}
               </div>
             </button>
           ))}
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end">
-              <div className="flex-1">
-                <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Filter Registry</label>
-                <div className="relative">
-                  <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Name, ID, DEPT, MANAGER..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                  />
-                </div>
+      {/* Main Content Workspace Area */}
+      <div className="space-y-6 min-w-0">
+        <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm min-w-0">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end min-w-0">
+            <div className="flex-1 min-w-0">
+              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Filter Registry</label>
+              <div className="relative min-w-0">
+                <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Name, ID, DEPT, MANAGER..."
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all min-w-0"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
               </div>
-              <Button label="FILTER" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200" />
+            </div>
+            <Button label="FILTER" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200 shrink-0 justify-center w-full md:w-auto" />
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md min-w-0">
+          <div className="bg-[#0F766E] px-6 py-3 text-white min-w-0">
+            <div className="flex items-center justify-between min-w-0">
+              <h2 className="text-sm font-bold uppercase tracking-wider truncate">Onboarding Registry</h2>
+              <HiUserGroup className="h-4 w-4 opacity-50 shrink-0" />
             </div>
           </div>
-
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
-             <div className="bg-[#0F766E] px-6 py-3 text-white">
-                <div className="flex items-center justify-between">
-                   <h2 className="text-sm font-bold uppercase tracking-wider">Onboarding Registry</h2>
-                   <HiUserGroup className="h-4 w-4 opacity-50" />
-                </div>
-             </div>
-             <Table columns={columns} data={filtered} pageSize={8} />
-          </div>
+          <Table columns={columns} data={filtered} pageSize={8} />
         </div>
       </div>
 
