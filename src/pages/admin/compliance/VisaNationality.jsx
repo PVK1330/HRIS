@@ -7,6 +7,7 @@ import {
   HiBriefcase,
   HiChevronDown,
   HiChevronRight,
+  HiClock,
   HiCreditCard,
   HiDocumentArrowDown,
   HiDocumentText,
@@ -18,6 +19,7 @@ import {
   HiPlus,
   HiShieldCheck,
   HiTrash,
+  HiCheckCircle,
 } from 'react-icons/hi2'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
@@ -25,7 +27,7 @@ import { Input } from '../../../components/ui/Input.jsx'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { VisaDocUploadZone } from '../../../components/compliance/VisaDocUploadZone.jsx'
 import { useAuth } from '../../../context/AuthContext.jsx'
-import { listEmployees } from '../../../services/employeeService.js'
+import { listEmployeesDropdown } from '../../../services/employeeService.js'
 import {
   createVisaRecord,
   getVisaFilterOptions,
@@ -115,6 +117,30 @@ const MODAL_INPUT =
   'box-border min-h-[2.75rem] w-full !rounded-md !border-slate-200 bg-white !px-3 !py-2.5 text-sm leading-normal text-slate-800 !shadow-sm outline-none transition placeholder:text-slate-400 focus:!border-[#0F766E] focus:!ring-1 focus:!ring-[#0F766E]/25 disabled:cursor-not-allowed disabled:bg-slate-50'
 const MODAL_LABEL = 'mb-1 block text-xs font-semibold text-[#1f2a44]'
 
+/** Decorative static sparkline (matches dashboard-style reference) */
+function VisaStatSparkline({ className, stroke = '#F97316', variant = 0 }) {
+  const paths = [
+    'M1,18 L10.5,12 L20,17 L29.5,9 L39,14 L48.5,7 L58,11 L61,15',
+    'M1,14 L11,20 L21,11 L31,16 L41,8 L51,13 L61,10',
+    'M1,16 L12,22 L23,12 L34,19 L45,10 L56,15 L61,12',
+    'M1,20 L11,13 L22,18 L33,9 L44,14 L55,6 L61,11',
+  ]
+  const d = paths[variant % paths.length]
+  return (
+    <svg viewBox="0 0 62 26" className={className} preserveAspectRatio="none" aria-hidden>
+      <path
+        d={d}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.35"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  )
+}
+
 export default function VisaNationality() {
   const { user } = useAuth()
   const isHR = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin'
@@ -163,8 +189,8 @@ export default function VisaNationality() {
   const [vtEdit, setVtEdit] = useState({ name: '', description: '', is_active: true })
 
   const [employees, setEmployees] = useState([])
+  const [employeeListLoading, setEmployeeListLoading] = useState(false)
   const [empSearch, setEmpSearch] = useState('')
-  const [debouncedEmpSearch, setDebouncedEmpSearch] = useState('')
   const [empDropdownOpen, setEmpDropdownOpen] = useState(false)
   const empFieldRef = useRef(null)
 
@@ -176,11 +202,6 @@ export default function VisaNationality() {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 350)
     return () => clearTimeout(t)
   }, [search])
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedEmpSearch(empSearch.trim()), 280)
-    return () => clearTimeout(t)
-  }, [empSearch])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -252,26 +273,29 @@ export default function VisaNationality() {
     fetchRecords()
   }, [fetchRecords])
 
+  /** Full list from GET /employees/dropdown (no pagination); filter in UI with empSearch. */
   useEffect(() => {
     if (!modalOpen) return undefined
     let cancelled = false
+    setEmployeeListLoading(true)
     ;(async () => {
       try {
-        const res = await listEmployees({
-          page: 1,
-          limit: 200,
-          search: debouncedEmpSearch || undefined,
-        })
-        const list = res?.records ?? res?.employees ?? []
+        const data = await listEmployeesDropdown()
+        const list = data?.employees ?? []
         if (!cancelled) setEmployees(Array.isArray(list) ? list : [])
       } catch (e) {
-        if (!cancelled) setEmployees([])
+        if (!cancelled) {
+          setEmployees([])
+          toast.error(errMsg(e) || 'Could not load employees')
+        }
+      } finally {
+        if (!cancelled) setEmployeeListLoading(false)
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [modalOpen, debouncedEmpSearch])
+  }, [modalOpen])
 
   useEffect(() => {
     if (!empDropdownOpen) return undefined
@@ -300,6 +324,17 @@ export default function VisaNationality() {
     const eid = em.emp_id || em.empId || ''
     return `${name} (${eid})`
   }, [formData.employee_id, employees])
+
+  /** Client filter over full list loaded from /employees/dropdown */
+  const filteredEmployees = useMemo(() => {
+    const q = empSearch.trim().toLowerCase()
+    if (!q) return employees
+    return employees.filter((e) => {
+      const n = String(e.full_name || e.name || '').toLowerCase()
+      const id = String(e.emp_id || e.empId || '').toLowerCase()
+      return n.includes(q) || id.includes(q)
+    })
+  }, [employees, empSearch])
 
   const liveVisaBadge = useMemo(() => visaClientStatus(formData.visa_expiry_date), [formData.visa_expiry_date])
 
@@ -813,19 +848,59 @@ export default function VisaNationality() {
         </div>
       </div>
 
-      {/* Section 2 — stats */}
-      <div className="grid grid-cols-1 gap-3 border-b border-slate-200 pb-5 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Section 2 — stats (dashboard-style cards + static sparklines) */}
+      <div className="grid grid-cols-1 gap-4 border-b border-slate-200 pb-6 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: 'Total Records', value: stats.total, color: 'border-slate-900', text: 'text-slate-900' },
-          { title: 'Valid', value: stats.valid, color: 'border-green-500', text: 'text-green-600' },
-          { title: 'Expiring Soon', value: stats.expiringSoon, color: 'border-orange-500', text: 'text-orange-600' },
-          { title: 'Expired', value: stats.expired, color: 'border-red-500', text: 'text-red-600' },
-        ].map((c) => (
-          <div key={c.title} className={`rounded-none border border-slate-200 bg-white p-4 shadow-sm ${c.color} border-l-4`}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{c.title}</p>
-            <p className={`mt-1 font-display text-2xl font-bold ${c.text}`}>{c.value}</p>
+          {
+            label: 'Total Visa Records',
+            value: stats.total,
+            iconBg: 'bg-[#F97316]',
+            Icon: HiShieldCheck,
+            sparkVariant: 0,
+          },
+          {
+            label: 'Active Visas',
+            value: stats.valid,
+            iconBg: 'bg-[#22C55E]',
+            Icon: HiCheckCircle,
+            sparkVariant: 1,
+          },
+          {
+            label: 'Expiring Soon',
+            value: stats.expiringSoon,
+            iconBg: 'bg-[#F59E0B]',
+            Icon: HiClock,
+            sparkVariant: 2,
+          },
+          {
+            label: 'Expired Visas',
+            value: stats.expired,
+            iconBg: 'bg-[#EF4444]',
+            Icon: HiExclamationTriangle,
+            sparkVariant: 3,
+          },
+        ].map((c) => {
+          const IconEl = c.Icon
+          return (
+          <div
+            key={c.label}
+            className="flex min-h-[5.5rem] items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+          >
+            <div
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${c.iconBg} text-white shadow-sm`}
+            >
+              <IconEl className="h-6 w-6" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-slate-500">{c.label}</p>
+              <p className="mt-0.5 font-display text-2xl font-bold tracking-tight text-slate-900">{c.value}</p>
+            </div>
+            <div className="hidden h-11 w-14 shrink-0 sm:block">
+              <VisaStatSparkline className="h-full w-full" variant={c.sparkVariant} />
+            </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Main listing card */}
@@ -1160,12 +1235,16 @@ export default function VisaNationality() {
                 </div>
                 {empDropdownOpen && !editMode ? (
                   <div className="absolute left-0 right-0 z-30 mt-1 max-h-56 overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black/5">
-                    {employees.length === 0 ? (
+                    {employeeListLoading ? (
+                      <p className="px-3 py-3 text-center text-xs text-slate-500">Loading employees…</p>
+                    ) : employees.length === 0 ? (
+                      <p className="px-3 py-3 text-center text-xs text-slate-500">No employees found.</p>
+                    ) : filteredEmployees.length === 0 ? (
                       <p className="px-3 py-3 text-center text-xs text-slate-500">
-                        No employees found. Try another search.
+                        No matches for &quot;{empSearch.trim()}&quot;. Try a different name or ID.
                       </p>
                     ) : (
-                      employees.slice(0, 80).map((em) => {
+                      filteredEmployees.map((em) => {
                         const name = em.full_name || em.name || '—'
                         const eid = em.emp_id || em.empId || '—'
                         return (
