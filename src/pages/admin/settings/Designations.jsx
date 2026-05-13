@@ -419,8 +419,8 @@ export default function DesignationsManagement() {
 
       {/* Main Table Registry Area */}
       <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
-          <h2 className="text-sm font-semibold text-slate-800">Designation Listing</h2>
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Designation Listing</h2>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">

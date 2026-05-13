@@ -91,6 +91,7 @@ function mapEmployeeList(e) {
     initials: e.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
     portalRole: e.rbac_role_name || '',
     rbacRoleName: e.rbac_role_name || '',
+    profileImageUrl: e.profile_image_url || '',
   }
 }
 
@@ -153,6 +154,7 @@ function mapEmployeeFull(e) {
     workExperience: e.work_experience || [],
     isCurrentlyWorking: e.is_currently_working || false,
     username: e.username || '',
+    profileImageUrl: e.profile_image_url || '',
     createdAt: e.createdAt || '',
     updatedAt: e.updatedAt || '',
   }
@@ -876,7 +878,11 @@ export default function EmployeeDirectory() {
       label: colLabel('Name'),
       render: (_v, row) => (
         <div className="flex items-center gap-3 py-1">
-          <Avatar initials={row.initials} size="sm" className="h-9 w-9 shrink-0 border border-slate-200 shadow-sm" />
+          {row.profileImageUrl ? (
+            <img src={row.profileImageUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover border border-slate-200 shadow-sm" />
+          ) : (
+            <Avatar name={row.name} size="sm" />
+          )}
           <div className="min-w-0">
             <div className="truncate text-sm font-bold text-slate-900">{row.name}</div>
             <div className="truncate text-xs text-slate-500">{row.department || '—'}</div>
@@ -1065,8 +1071,8 @@ export default function EmployeeDirectory() {
 
       {/* Filters + Full width Table */}
       <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
-          <h2 className="text-sm font-semibold text-slate-800">Employee Listing</h2>
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Employee Listing</h2>
         </div>
 
         <div className="space-y-3 border-b border-slate-200 bg-white px-4 py-3">
@@ -2003,12 +2009,12 @@ export default function EmployeeDirectory() {
             {/* Header */}
             <div className="flex items-start justify-between pb-5">
               <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Avatar
-                    initials={selectedEmployee.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EM'}
-                    size="xl"
-                    className="h-14 w-14"
-                  />
+                <div className="relative shrink-0">
+                  {selectedEmployee.profileImageUrl ? (
+                    <img src={selectedEmployee.profileImageUrl} alt="" className="h-14 w-14 rounded-full object-cover border border-slate-200 shadow-sm" />
+                  ) : (
+                    <Avatar name={selectedEmployee.name} size="lg" />
+                  )}
                   <div className={`absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full border-2 border-white ${selectedEmployee.status === 'Active' ? 'bg-green-500' :
                     selectedEmployee.status === 'Probation' ? 'bg-blue-500' :
                       selectedEmployee.status === 'On Leave' ? 'bg-yellow-400' : 'bg-slate-400'
