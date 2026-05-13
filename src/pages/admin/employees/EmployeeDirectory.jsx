@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -33,10 +33,10 @@ const basicFieldClass =
 const EMPLOYEE_FORM_STEPS = ['basic', 'personal', 'bank', 'family', 'secondary', 'education', 'experience']
 
 function statusColor(status) {
-  if (status === 'Active')        return 'green'
-  if (status === 'Probation')     return 'blue'
+  if (status === 'Active') return 'green'
+  if (status === 'Probation') return 'blue'
   if (status === 'Notice Period') return 'orange'
-  if (status === 'On Leave')      return 'yellow'
+  if (status === 'On Leave') return 'yellow'
   return 'gray'
 }
 
@@ -231,11 +231,11 @@ export default function EmployeeDirectory() {
   const navigate = useNavigate()
 
   // Filters
-  const [search, setSearch]   = useState('')
-  const [dept, setDept]       = useState('')
-  const [job, setJob]         = useState('')
-  const [loc, setLoc]         = useState('')
-  const [status, setStatus]   = useState('')
+  const [search, setSearch] = useState('')
+  const [dept, setDept] = useState('')
+  const [job, setJob] = useState('')
+  const [loc, setLoc] = useState('')
+  const [status, setStatus] = useState('')
   const [workMode, setWorkMode] = useState('')
 
   const [exportOpen, setExportOpen] = useState(false)
@@ -243,17 +243,17 @@ export default function EmployeeDirectory() {
   const exportRef = useRef(null)
 
   // Add/Edit modal
-  const [modalOpen, setModalOpen]           = useState(false)
-  const [formData, setFormData]             = useState(initialFormData)
-  const [editMode, setEditMode]             = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [formData, setFormData] = useState(initialFormData)
+  const [editMode, setEditMode] = useState(false)
   const [editingEmployeeId, setEditingEmployeeId] = useState(null)
 
   // View modal
-  const [viewModalOpen, setViewModalOpen]     = useState(false)
+  const [viewModalOpen, setViewModalOpen] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState(null)
-  const [viewActiveTab, setViewActiveTab]     = useState('personal')
-  const [formTab, setFormTab]                 = useState('basic')
-  const [showPassword, setShowPassword]       = useState(false)
+  const [viewActiveTab, setViewActiveTab] = useState('personal')
+  const [formTab, setFormTab] = useState('basic')
+  const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [profileImagePreview, setProfileImagePreview] = useState('')
   const profileObjectUrlRef = useRef(null)
@@ -263,10 +263,10 @@ export default function EmployeeDirectory() {
   // Data
   const [employeeList, setEmployeeList] = useState([])
   const [totalRecords, setTotalRecords] = useState(0)
-  const [currentPage, setCurrentPage]   = useState(1)
-  const [loading, setLoading]           = useState(false)
-  const [stats, setStats]               = useState({ total: 0, active: 0, onLeave: 0, probation: 0 })
-  const [submitting, setSubmitting]     = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [stats, setStats] = useState({ total: 0, active: 0, onLeave: 0, probation: 0 })
+  const [submitting, setSubmitting] = useState(false)
   const [filterOptions, setFilterOptions] = useState({
     departments: [], jobTitles: [], workLocations: [], workModes: [], statuses: [],
   })
@@ -426,34 +426,34 @@ export default function EmployeeDirectory() {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        const res = await adminSettingsService.getAllRoles()
-        const list = res?.data?.data
-        if (!cancelled && Array.isArray(list)) setTenantRoles(list)
-      } catch (err) {
-        console.error(err)
-      }
-    })()
+      ; (async () => {
+        try {
+          const res = await adminSettingsService.getAllRoles()
+          const list = res?.data?.data
+          if (!cancelled && Array.isArray(list)) setTenantRoles(list)
+        } catch (err) {
+          console.error(err)
+        }
+      })()
     return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
     if (!modalOpen) return
     let cancelled = false
-    ;(async () => {
-      try {
-        const [depts, desigs] = await Promise.all([listDepartments(), listDesignations()])
-        if (cancelled) return
-        setDepartmentsCatalog(depts?.departments ?? depts?.records ?? [])
-        setDesignationsCatalog(desigs?.designations ?? desigs?.records ?? [])
-      } catch {
-        if (!cancelled) {
-          setDepartmentsCatalog([])
-          setDesignationsCatalog([])
+      ; (async () => {
+        try {
+          const [depts, desigs] = await Promise.all([listDepartments(), listDesignations()])
+          if (cancelled) return
+          setDepartmentsCatalog(depts?.departments ?? depts?.records ?? [])
+          setDesignationsCatalog(desigs?.designations ?? desigs?.records ?? [])
+        } catch {
+          if (!cancelled) {
+            setDepartmentsCatalog([])
+            setDesignationsCatalog([])
+          }
         }
-      }
-    })()
+      })()
     return () => {
       cancelled = true
     }
@@ -677,10 +677,10 @@ export default function EmployeeDirectory() {
         })),
       salaryDetails: formData.salary !== ''
         ? {
-            currency: 'AED',
-            basicSalary: parseFloat(String(formData.salary).replace(/[^0-9.]/g, '')) || null,
-            paymentFrequency: 'Monthly',
-          }
+          currency: 'AED',
+          basicSalary: parseFloat(String(formData.salary).replace(/[^0-9.]/g, '')) || null,
+          paymentFrequency: 'Monthly',
+        }
         : null,
       documents: [],
     }
@@ -858,8 +858,8 @@ export default function EmployeeDirectory() {
     }
   }
 
-  const handleEmail  = (emp) => { window.location.href = `mailto:${emp.email}` }
-  const handleLetter = ()    => { navigate('/admin/letters') }
+  const handleEmail = (emp) => { window.location.href = `mailto:${emp.email}` }
+  const handleLetter = () => { navigate('/admin/letters') }
 
   // ── Table columns ──────────────────────────────────────────────────────────
 
@@ -902,13 +902,9 @@ export default function EmployeeDirectory() {
       key: 'designation',
       label: colLabel('Designation'),
       render: (_v, row) => (
-        <div
-          title={row.jobTitle || ''}
-          className="inline-flex max-w-[200px] min-w-[140px] cursor-default items-center justify-between gap-2 rounded border border-slate-200 bg-white px-3 py-1.5 text-left text-sm text-slate-800 shadow-sm"
-        >
-          <span className="truncate">{row.jobTitle || '—'}</span>
-          <HiChevronDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
-        </div>
+        <span className="text-sm font-medium text-slate-700 block truncate max-w-[180px]" title={row.jobTitle || ''}>
+          {row.jobTitle || '—'}
+        </span>
       ),
     },
     {
@@ -922,22 +918,22 @@ export default function EmployeeDirectory() {
       key: 'actions', label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-1.5">
-        {/* <button type="button" onClick={() => handleEmail(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="Email">
+          {/* <button type="button" onClick={() => handleEmail(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="Email">
           <HiEnvelope className="h-4 w-4" />
         </button>        
         <button type="button" onClick={handleLetter} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100" aria-label="Letter">
           <HiDocumentText className="h-4 w-4" />
         </button> */}
-        <button type="button" onClick={() => handleView(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-blue-500 text-white transition-colors hover:bg-blue-600" aria-label="View">
-          <HiEye className="h-4 w-4" />
-        </button>
-        <button type="button" onClick={() => handleEdit(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56]" aria-label="Edit">
-          <HiPencil className="h-4 w-4" />
-        </button>
-        <button type="button" onClick={() => handleDelete(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" aria-label="Delete">
-          <HiTrash className="h-4 w-4" />
-        </button>
-      </div>
+          <button type="button" onClick={() => handleView(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-blue-500 text-white transition-colors hover:bg-blue-600" aria-label="View">
+            <HiEye className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => handleEdit(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56]" aria-label="Edit">
+            <HiPencil className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => handleDelete(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" aria-label="Delete">
+            <HiTrash className="h-4 w-4" />
+          </button>
+        </div>
       ),
     },
   ]
@@ -945,56 +941,132 @@ export default function EmployeeDirectory() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+
+      {/* Top Title Bar with Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Employee Directory</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Employees</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Employees Directory</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="relative" ref={exportRef}>
+            <button
+              type="button"
+              disabled={exportLoading}
+              onClick={() => setExportOpen((v) => !v)}
+              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 shadow-sm"
+            >
+              <HiDocumentArrowDown className="h-4 w-4" />
+              Export
+              <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {exportOpen ? (
+              <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  disabled={exportLoading}
+                  onClick={() => runEmployeeExport('excel')}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                >
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
+                  Export as Excel
+                </button>
+                <button
+                  type="button"
+                  disabled={exportLoading}
+                  onClick={() => runEmployeeExport('pdf')}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                >
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
+                  Export as PDF
+                </button>
+              </div>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={openAddModal}
+            className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
+          >
+            <HiPlus className="h-4 w-4" />
+            Add Employee
+          </button>
+        </div>
+      </div>
+
+      {/* Requested KPI Metrics Cards Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          {
+            label: 'TOTAL EMPLOYEE',
+            count: stats.total || totalRecords || employeeList.length || 0,
+            bgColor: 'bg-[#0F172A]',
+            icon: HiUserGroup,
+            onClickFilter: () => setStatus('')
+          },
+          {
+            label: 'ACTIVE',
+            count: stats.active || employeeList.filter(e => e.status === 'Active').length || 0,
+            bgColor: 'bg-[#10B981]',
+            icon: HiCheckBadge,
+            onClickFilter: () => setStatus('Active')
+          },
+          {
+            label: 'INACTIVE',
+            count: Math.max(0, (stats.total || totalRecords || employeeList.length || 0) - (stats.active || employeeList.filter(e => e.status === 'Active').length || 0)),
+            bgColor: 'bg-[#EF4444]',
+            icon: HiUserCircle,
+            onClickFilter: () => setStatus('Inactive')
+          },
+          {
+            label: 'NEW JOINERS',
+            count: stats.probation || employeeList.filter(e => e.status === 'Probation').length || 0,
+            bgColor: 'bg-[#3B82F6]',
+            icon: HiPlus,
+            onClickFilter: () => setStatus('Probation')
+          }
+        ].map((card, idx) => {
+          const isActiveFilter = 
+            (card.label === 'TOTAL EMPLOYEE' && status === '') ||
+            (card.label === 'ACTIVE' && status === 'Active') ||
+            (card.label === 'INACTIVE' && status === 'Inactive') ||
+            (card.label === 'NEW JOINERS' && status === 'Probation');
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={card.onClickFilter}
+              title={`Filter by ${card.label}`}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
+                isActiveFilter
+                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                <card.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                  {card.label}
+                </div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Filters + Full width Table */}
       <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
           <h2 className="text-sm font-semibold text-slate-800">Employee Listing</h2>
-          <div className="flex items-center gap-2">
-            <div className="relative" ref={exportRef}>
-              <button
-                type="button"
-                disabled={exportLoading}
-                onClick={() => setExportOpen((v) => !v)}
-                className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-              >
-                <HiDocumentArrowDown className="h-4 w-4" />
-                Export
-                <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {exportOpen ? (
-                <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
-                  <button
-                    type="button"
-                    disabled={exportLoading}
-                    onClick={() => runEmployeeExport('excel')}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
-                    Export as Excel
-                  </button>
-                  <button
-                    type="button"
-                    disabled={exportLoading}
-                    onClick={() => runEmployeeExport('pdf')}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
-                    Export as PDF
-                  </button>
-                </div>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64]"
-            >
-              <HiPlus className="h-4 w-4" />
-              Add Employee
-            </button>
-          </div>
         </div>
 
         <div className="space-y-3 border-b border-slate-200 bg-white px-4 py-3">
@@ -1006,42 +1078,42 @@ export default function EmployeeDirectory() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search employee..."
-                className="h-10 w-full rounded-none border border-slate-200 bg-slate-50 px-3 pl-9 text-sm text-slate-700 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-2 focus:ring-[#0F766E]/10"
+                className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
               />
             </div>
 
-            <select value={dept} onChange={(e) => setDept(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+            <select value={dept} onChange={(e) => setDept(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
               <option value="">All Departments</option>
               {filterOptions.departments.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
 
-            <select value={job} onChange={(e) => setJob(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+            <select value={job} onChange={(e) => setJob(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
               <option value="">All Designations</option>
               {filterOptions.jobTitles.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
 
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
               <option value="">All Statuses</option>
               {filterOptions.statuses?.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
 
-            <select value={workMode} onChange={(e) => setWorkMode(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+            <select value={workMode} onChange={(e) => setWorkMode(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
               <option value="">All Modes</option>
               {filterOptions.workModes.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
 
-            <select value={loc} onChange={(e) => setLoc(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-[#0F766E]">
+            <select value={loc} onChange={(e) => setLoc(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
               <option value="">All Locations</option>
               {filterOptions.workLocations?.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-slate-400">{employeeList.length} shown</p>
+          <div className="flex items-center justify-between pt-1">
+            <p className="text-xs font-medium text-slate-500">{employeeList.length} records shown</p>
             <button
               type="button"
               onClick={() => { setSearch(''); setDept(''); setJob(''); setLoc(''); setStatus(''); setWorkMode('') }}
-              className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400 transition hover:border-red-200 hover:text-red-500"
+              className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
             >
               Reset Filters
             </button>
@@ -1317,7 +1389,7 @@ export default function EmployeeDirectory() {
                   >
                     <option value="">Select designation</option>
                     {formData.jobTitle &&
-                    !designationRowsForDept.some((row) => row.name === formData.jobTitle) ? (
+                      !designationRowsForDept.some((row) => row.name === formData.jobTitle) ? (
                       <option value={formData.jobTitle}>{formData.jobTitle}</option>
                     ) : null}
                     {designationRowsForDept.map((row) => (
@@ -1329,7 +1401,7 @@ export default function EmployeeDirectory() {
                   <label htmlFor="emp-phone" className="mb-1 block text-sm font-medium text-slate-800">
                     Phone Number<span className="text-red-500"> *</span>
                   </label>
-                    <input
+                  <input
                     id="emp-phone"
                     name="phoneNumber"
                     type="tel"
@@ -1866,7 +1938,7 @@ export default function EmployeeDirectory() {
               >
                 <HiPlus className="h-4 w-4" /> Add Experience
               </button>
-              
+
               <div className="mt-4 flex items-center gap-3">
                 <input
                   type="checkbox"
@@ -1925,227 +1997,226 @@ export default function EmployeeDirectory() {
 
       {/* ── View Profile Modal ───────────────────────────────────────────── */}
       {selectedEmployee && (
-  <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} size="xl" showClose>
-    <div className="space-y-0 divide-y divide-slate-100">
+        <Modal isOpen={viewModalOpen} onClose={handleCloseViewModal} size="xl" showClose>
+          <div className="space-y-0 divide-y divide-slate-100">
 
-      {/* Header */}
-      <div className="flex items-start justify-between pb-5">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Avatar
-              initials={selectedEmployee.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EM'}
-              size="xl"
-              className="h-14 w-14"
-            />
-            <div className={`absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full border-2 border-white ${
-              selectedEmployee.status === 'Active' ? 'bg-green-500' :
-              selectedEmployee.status === 'Probation' ? 'bg-blue-500' :
-              selectedEmployee.status === 'On Leave' ? 'bg-yellow-400' : 'bg-slate-400'
-            }`} />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">{selectedEmployee.name}</h2>
-            <p className="text-sm text-slate-500 mt-0.5">{displayEmpId(selectedEmployee.empId)} · {selectedEmployee.jobTitle || '—'}</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />{selectedEmployee.status || '—'}
-              </span>
-              {selectedEmployee.department && (
-                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">{selectedEmployee.department}</span>
-              )}
-              {selectedEmployee.workMode && (
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{selectedEmployee.workMode}</span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => handleEdit(selectedEmployee)} className="inline-flex items-center gap-1.5 rounded-md bg-[#0F766E] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#0d5c56]">
-            <HiPencil className="h-3.5 w-3.5" />Edit
-          </button>
-          <button onClick={() => handleDelete(selectedEmployee)} className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
-            <HiTrash className="h-3.5 w-3.5" />Delete
-          </button>
-        </div>
-      </div>
-
-      {/* Quick stats */}
-      <div className="grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100">
-        {[
-          { label: 'Join Date', value: formatJoinDateDisplay(selectedEmployee.joinDate) },
-          { label: 'Work Email', value: selectedEmployee.email || '—' },
-          { label: 'Phone', value: formatPhoneDisplay(selectedEmployee.phone) },
-        ].map(({ label, value }) => (
-          <div key={label} className="px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-            <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Accordion */}
-      <div className="divide-y divide-slate-100">
-        {[
-          {
-            id: 'basic', label: 'Basic Information',
-            iconBg: 'bg-blue-50', iconColor: 'text-blue-600', icon: <HiBriefcase className="h-4 w-4" />,
-            content: (
-              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                {[
-                  ['Employee ID', displayEmpId(selectedEmployee.empId)],
-                  ['Full Name', selectedEmployee.name],
-                  ['Work Email', selectedEmployee.email],
-                  ['Phone', formatPhoneDisplay(selectedEmployee.phone)],
-                  ['Department', selectedEmployee.department],
-                  ['Designation', selectedEmployee.jobTitle],
-                  ['Join Date', formatJoinDateDisplay(selectedEmployee.joinDate)],
-                  ['Portal Role', selectedEmployee.rbacRoleName || selectedEmployee.portalRole],
-                ].map(([label, val]) => (
-                  <div key={label}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                    <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
-                  </div>
-                ))}
-              </div>
-            ),
-          },
-          {
-            id: 'personal', label: 'Personal Information',
-            iconBg: 'bg-teal-50', iconColor: 'text-teal-700', icon: <HiUserCircle className="h-4 w-4" />,
-            content: (
-              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                {[
-                  ['Gender', selectedEmployee.gender],
-                  ['Date of Birth', selectedEmployee.dateOfBirth],
-                  ['Nationality', selectedEmployee.nationality],
-                  ['Marital Status', selectedEmployee.maritalStatus],
-                  ['Religion', selectedEmployee.religion],
-                  ['No. of Children', selectedEmployee.dependents],
-                  ['Personal Email', selectedEmployee.personalEmail],
-                  ['Country of Residence', selectedEmployee.countryOfResidence],
-                  ['Home Address', selectedEmployee.homeAddress],
-                ].map(([label, val]) => (
-                  <div key={label} className={label === 'Home Address' ? 'col-span-2' : ''}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                    <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
-                  </div>
-                ))}
-              </div>
-            ),
-          },
-          {
-            id: 'bank', label: 'Bank Information',
-            iconBg: 'bg-amber-50', iconColor: 'text-amber-700', icon: <HiBanknotes className="h-4 w-4" />,
-            content: (
-              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                {[
-                  ['Bank Name', selectedEmployee.bankName],
-                  ['Account Number', selectedEmployee.bankAccountNo],
-                  ['IFSC Code', selectedEmployee.ifscCode],
-                  ['Branch Address', selectedEmployee.branchAddress],
-                ].map(([label, val]) => (
-                  <div key={label}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                    <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
-                  </div>
-                ))}
-              </div>
-            ),
-          },
-          {
-            id: 'family', label: 'Family Information',
-            iconBg: 'bg-pink-50', iconColor: 'text-pink-700', icon: <HiUserGroup className="h-4 w-4" />,
-            content: selectedEmployee.familyMembers?.length > 0 ? (
-              <div className="space-y-2">
-                {selectedEmployee.familyMembers.map((m, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-4 rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
-                    {[['Name', m.name], ['Relationship', m.relationship], ['Phone', m.phone]].map(([label, val]) => (
-                      <div key={label}>
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                        <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : <p className="text-sm text-slate-400">No family members added</p>,
-          },
-          {
-            id: 'secondary', label: 'Contact Section',
-            iconBg: 'bg-purple-50', iconColor: 'text-purple-700', icon: <HiDevicePhoneMobile className="h-4 w-4" />,
-            content: (
-              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                {[
-                  ['Name', selectedEmployee.secondaryContact?.name],
-                  ['Relationship', selectedEmployee.secondaryContact?.relationship],
-                  ['Phone 1', selectedEmployee.secondaryContact?.phoneNo1],
-                  ['Phone 2', selectedEmployee.secondaryContact?.phoneNo2],
-                ].map(([label, val]) => (
-                  <div key={label}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                    <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
-                  </div>
-                ))}
-              </div>
-            ),
-          },
-          {
-            id: 'education', label: 'Educational Details',
-            iconBg: 'bg-green-50', iconColor: 'text-green-700', icon: <HiAcademicCap className="h-4 w-4" />,
-            content: selectedEmployee.education?.length > 0 ? (
-              <div className="space-y-2">
-                {selectedEmployee.education.map((edu, i) => (
-                  <div key={i} className="rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">{edu.course || '—'}</span>
-                      <span className="text-xs text-slate-400">{edu.startDate} – {edu.endDate || 'Present'}</span>
-                    </div>
-                    <p className="text-sm font-medium text-slate-900">{edu.institutionName || '—'}</p>
-                  </div>
-                ))}
-              </div>
-            ) : <p className="text-sm text-slate-400">No education records</p>,
-          },
-          {
-            id: 'experience', label: 'Experience',
-            iconBg: 'bg-slate-100', iconColor: 'text-slate-600', icon: <HiPresentationChartLine className="h-4 w-4" />,
-            content: selectedEmployee.workExperience?.length > 0 ? (
-              <div className="space-y-2">
-                {selectedEmployee.workExperience.map((exp, i) => (
-                  <div key={i} className="rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-800">{exp.designation || '—'}</span>
-                      <span className="text-xs text-slate-400">{exp.startDate} – {exp.endDate || (selectedEmployee.isCurrentlyWorking ? 'Present' : '—')}</span>
-                    </div>
-                    <p className="text-sm font-medium text-slate-900">{exp.companyName || '—'}</p>
-                  </div>
-                ))}
-              </div>
-            ) : <p className="text-sm text-slate-400">No work experience records</p>,
-          },
-        ].map(({ id, label, iconBg, iconColor, icon, content }) => {
-          const isOpen = viewActiveTab === id
-          return (
-            <div key={id} className="border-b border-slate-100 last:border-0">
-              <button
-                type="button"
-                onClick={() => setViewActiveTab(isOpen ? '' : id)}
-                className="flex w-full items-center justify-between px-0 py-3.5 text-left hover:bg-slate-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-7 w-7 items-center justify-center rounded-md ${iconBg} ${iconColor}`}>{icon}</div>
-                  <span className="text-sm font-medium text-slate-800">{label}</span>
+            {/* Header */}
+            <div className="flex items-start justify-between pb-5">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Avatar
+                    initials={selectedEmployee.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EM'}
+                    size="xl"
+                    className="h-14 w-14"
+                  />
+                  <div className={`absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full border-2 border-white ${selectedEmployee.status === 'Active' ? 'bg-green-500' :
+                    selectedEmployee.status === 'Probation' ? 'bg-blue-500' :
+                      selectedEmployee.status === 'On Leave' ? 'bg-yellow-400' : 'bg-slate-400'
+                    }`} />
                 </div>
-                <HiChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {isOpen && <div className="pb-5 pt-1">{content}</div>}
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900">{selectedEmployee.name}</h2>
+                  <p className="text-sm text-slate-500 mt-0.5">{displayEmpId(selectedEmployee.empId)} · {selectedEmployee.jobTitle || '—'}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />{selectedEmployee.status || '—'}
+                    </span>
+                    {selectedEmployee.department && (
+                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">{selectedEmployee.department}</span>
+                    )}
+                    {selectedEmployee.workMode && (
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{selectedEmployee.workMode}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => handleEdit(selectedEmployee)} className="inline-flex items-center gap-1.5 rounded-md bg-[#0F766E] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#0d5c56]">
+                  <HiPencil className="h-3.5 w-3.5" />Edit
+                </button>
+                <button onClick={() => handleDelete(selectedEmployee)} className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
+                  <HiTrash className="h-3.5 w-3.5" />Delete
+                </button>
+              </div>
             </div>
-          )
-        })}
-      </div>
-    </div>
-  </Modal>
-)}
+
+            {/* Quick stats */}
+            <div className="grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100">
+              {[
+                { label: 'Join Date', value: formatJoinDateDisplay(selectedEmployee.joinDate) },
+                { label: 'Work Email', value: selectedEmployee.email || '—' },
+                { label: 'Phone', value: formatPhoneDisplay(selectedEmployee.phone) },
+              ].map(({ label, value }) => (
+                <div key={label} className="px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                  <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Accordion */}
+            <div className="divide-y divide-slate-100">
+              {[
+                {
+                  id: 'basic', label: 'Basic Information',
+                  iconBg: 'bg-blue-50', iconColor: 'text-blue-600', icon: <HiBriefcase className="h-4 w-4" />,
+                  content: (
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                      {[
+                        ['Employee ID', displayEmpId(selectedEmployee.empId)],
+                        ['Full Name', selectedEmployee.name],
+                        ['Work Email', selectedEmployee.email],
+                        ['Phone', formatPhoneDisplay(selectedEmployee.phone)],
+                        ['Department', selectedEmployee.department],
+                        ['Designation', selectedEmployee.jobTitle],
+                        ['Join Date', formatJoinDateDisplay(selectedEmployee.joinDate)],
+                        ['Portal Role', selectedEmployee.rbacRoleName || selectedEmployee.portalRole],
+                      ].map(([label, val]) => (
+                        <div key={label}>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  id: 'personal', label: 'Personal Information',
+                  iconBg: 'bg-teal-50', iconColor: 'text-teal-700', icon: <HiUserCircle className="h-4 w-4" />,
+                  content: (
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                      {[
+                        ['Gender', selectedEmployee.gender],
+                        ['Date of Birth', selectedEmployee.dateOfBirth],
+                        ['Nationality', selectedEmployee.nationality],
+                        ['Marital Status', selectedEmployee.maritalStatus],
+                        ['Religion', selectedEmployee.religion],
+                        ['No. of Children', selectedEmployee.dependents],
+                        ['Personal Email', selectedEmployee.personalEmail],
+                        ['Country of Residence', selectedEmployee.countryOfResidence],
+                        ['Home Address', selectedEmployee.homeAddress],
+                      ].map(([label, val]) => (
+                        <div key={label} className={label === 'Home Address' ? 'col-span-2' : ''}>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  id: 'bank', label: 'Bank Information',
+                  iconBg: 'bg-amber-50', iconColor: 'text-amber-700', icon: <HiBanknotes className="h-4 w-4" />,
+                  content: (
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                      {[
+                        ['Bank Name', selectedEmployee.bankName],
+                        ['Account Number', selectedEmployee.bankAccountNo],
+                        ['IFSC Code', selectedEmployee.ifscCode],
+                        ['Branch Address', selectedEmployee.branchAddress],
+                      ].map(([label, val]) => (
+                        <div key={label}>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  id: 'family', label: 'Family Information',
+                  iconBg: 'bg-pink-50', iconColor: 'text-pink-700', icon: <HiUserGroup className="h-4 w-4" />,
+                  content: selectedEmployee.familyMembers?.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedEmployee.familyMembers.map((m, i) => (
+                        <div key={i} className="grid grid-cols-3 gap-4 rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
+                          {[['Name', m.name], ['Relationship', m.relationship], ['Phone', m.phone]].map(([label, val]) => (
+                            <div key={label}>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                              <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="text-sm text-slate-400">No family members added</p>,
+                },
+                {
+                  id: 'secondary', label: 'Contact Section',
+                  iconBg: 'bg-purple-50', iconColor: 'text-purple-700', icon: <HiDevicePhoneMobile className="h-4 w-4" />,
+                  content: (
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                      {[
+                        ['Name', selectedEmployee.secondaryContact?.name],
+                        ['Relationship', selectedEmployee.secondaryContact?.relationship],
+                        ['Phone 1', selectedEmployee.secondaryContact?.phoneNo1],
+                        ['Phone 2', selectedEmployee.secondaryContact?.phoneNo2],
+                      ].map(([label, val]) => (
+                        <div key={label}>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  id: 'education', label: 'Educational Details',
+                  iconBg: 'bg-green-50', iconColor: 'text-green-700', icon: <HiAcademicCap className="h-4 w-4" />,
+                  content: selectedEmployee.education?.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedEmployee.education.map((edu, i) => (
+                        <div key={i} className="rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">{edu.course || '—'}</span>
+                            <span className="text-xs text-slate-400">{edu.startDate} – {edu.endDate || 'Present'}</span>
+                          </div>
+                          <p className="text-sm font-medium text-slate-900">{edu.institutionName || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="text-sm text-slate-400">No education records</p>,
+                },
+                {
+                  id: 'experience', label: 'Experience',
+                  iconBg: 'bg-slate-100', iconColor: 'text-slate-600', icon: <HiPresentationChartLine className="h-4 w-4" />,
+                  content: selectedEmployee.workExperience?.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedEmployee.workExperience.map((exp, i) => (
+                        <div key={i} className="rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-800">{exp.designation || '—'}</span>
+                            <span className="text-xs text-slate-400">{exp.startDate} – {exp.endDate || (selectedEmployee.isCurrentlyWorking ? 'Present' : '—')}</span>
+                          </div>
+                          <p className="text-sm font-medium text-slate-900">{exp.companyName || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="text-sm text-slate-400">No work experience records</p>,
+                },
+              ].map(({ id, label, iconBg, iconColor, icon, content }) => {
+                const isOpen = viewActiveTab === id
+                return (
+                  <div key={id} className="border-b border-slate-100 last:border-0">
+                    <button
+                      type="button"
+                      onClick={() => setViewActiveTab(isOpen ? '' : id)}
+                      className="flex w-full items-center justify-between px-0 py-3.5 text-left hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-7 w-7 items-center justify-center rounded-md ${iconBg} ${iconColor}`}>{icon}</div>
+                        <span className="text-sm font-medium text-slate-800">{label}</span>
+                      </div>
+                      <HiChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isOpen && <div className="pb-5 pt-1">{content}</div>}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

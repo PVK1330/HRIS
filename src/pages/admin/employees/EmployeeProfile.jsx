@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
@@ -39,7 +39,7 @@ function Spinner() {
 
 function InfoCard({ label, value, highlight }) {
   return (
-    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+    <div className="bg-slate-50 p-3 rounded-none border border-slate-100">
       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
       <p className={`text-xs font-black ${highlight ? 'text-[#0F766E]' : 'text-slate-900'}`}>{value || '—'}</p>
     </div>
@@ -144,28 +144,28 @@ export default function EmployeeProfile() {
         <StatCard title="Assets"         value={assets?.counts?.active ?? '—'} subtitle="Assigned Items" color="amber" icon={HiArchiveBox} />
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="lg:col-span-2 rounded-none border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Operational Identity</h3>
-            <Badge label={emp?.employment_status || 'Active'} color={statusColor(emp?.employment_status)} variant="soft" className="text-[8px] font-black" />
+            <Badge label={emp?.employment_status || 'Active'} color={statusColor(emp?.employment_status)} variant="soft" className="text-[8px] font-black rounded-none" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-4 rounded-none bg-slate-50 border border-slate-100">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Direct Manager</p>
                 <p className="text-sm font-bold text-slate-900">{emp?.manager_name || '—'}</p>
               </div>
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-4 rounded-none bg-slate-50 border border-slate-100">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Cost Center / Dept</p>
                 <p className="text-sm font-bold text-slate-900">{emp?.cost_center || emp?.department || '—'}</p>
               </div>
             </div>
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-4 rounded-none bg-slate-50 border border-slate-100">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Hired Date</p>
                 <p className="text-sm font-bold text-slate-900">{emp?.join_date || '—'}</p>
               </div>
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-4 rounded-none bg-slate-50 border border-slate-100">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Employment Type</p>
                 <p className="text-sm font-bold text-slate-900">{emp?.employment_type || '—'}</p>
               </div>
@@ -179,7 +179,7 @@ export default function EmployeeProfile() {
             </div>
           )}
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Career Evolution</h3>
           <div className="space-y-4 relative">
             <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-slate-100" />
@@ -217,7 +217,7 @@ export default function EmployeeProfile() {
           <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Home Address</p><p className="text-sm font-bold text-slate-900">{emp?.home_address || '—'}</p></div>
         </div>
         <div className="space-y-4">
-          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
+          <div className="p-6 rounded-none bg-slate-50 border border-slate-100 space-y-4">
             <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Emergency Contact</h3>
             <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Contact Name</p><p className="text-sm font-bold text-slate-900">{emp?.emergency_contact_name || '—'}</p></div>
             <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Emergency Phone</p><p className="text-sm font-bold text-[#0F766E]">{emp?.emergency_contact_phone || '—'}</p></div>
@@ -230,7 +230,7 @@ export default function EmployeeProfile() {
             <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Portal username</p><p className="text-sm font-bold text-[#0F766E]">{emp?.username || '—'}</p></div>
           </div>
           {(emp?.bank_name || emp?.bank_account_no) ? (
-            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-3 mt-6">
+            <div className="p-6 rounded-none bg-slate-50 border border-slate-100 space-y-3 mt-6">
               <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Bank</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bank name</p><p className="text-sm font-bold text-slate-900">{emp?.bank_name || '—'}</p></div>
@@ -241,7 +241,7 @@ export default function EmployeeProfile() {
             </div>
           ) : null}
           {emp?.secondary_contact && typeof emp.secondary_contact === 'object' && (emp.secondary_contact.name || emp.secondary_contact.phoneNo1 || emp.secondary_contact.phone_no1) ? (
-            <div className="p-6 rounded-2xl border border-slate-100 bg-white space-y-3 mt-6">
+            <div className="p-6 rounded-none border border-slate-100 bg-white space-y-3 mt-6">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Secondary contact</h3>
               <div className="grid gap-4 sm:grid-cols-2 text-sm font-bold text-slate-900">
                 <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Name</p>{emp.secondary_contact.name || '—'}</div>
@@ -256,7 +256,7 @@ export default function EmployeeProfile() {
               <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Family members</h3>
               <ul className="space-y-2">
                 {emp.family_members.map((m, i) => (
-                  <li key={i} className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm font-bold text-slate-900">
+                  <li key={i} className="rounded-none border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm font-bold text-slate-900">
                     <span className="text-[#0F766E]">{m.name || '—'}</span>
                     {(m.relationship || m.phone || m.passport_expiry) ? (
                       <span className="block text-xs font-medium text-slate-500 mt-1">
@@ -273,7 +273,7 @@ export default function EmployeeProfile() {
               <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Education</h3>
               <ul className="space-y-2">
                 {emp.education.map((ed, i) => (
-                  <li key={i} className="rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm">
+                  <li key={i} className="rounded-none border border-slate-100 bg-white px-4 py-3 text-sm">
                     <p className="font-black text-slate-900">{ed.institution_name || ed.institutionName || '—'}</p>
                     <p className="text-xs text-slate-500 font-medium mt-1">{ed.course || '—'}{ed.start_date || ed.startDate ? ` · ${ed.start_date || ed.startDate} → ${ed.end_date || ed.endDate || ''}` : ''}</p>
                   </li>
@@ -286,7 +286,7 @@ export default function EmployeeProfile() {
               <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Prior experience</h3>
               <ul className="space-y-2">
                 {emp.work_experience.map((wx, i) => (
-                  <li key={i} className="rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm">
+                  <li key={i} className="rounded-none border border-slate-100 bg-white px-4 py-3 text-sm">
                     <p className="font-black text-slate-900">{wx.company_name || wx.companyName || '—'} — <span className="text-[#0F766E]">{wx.designation || '—'}</span></p>
                     <p className="text-xs text-slate-500 font-medium mt-1">{wx.start_date || wx.startDate || ''}{wx.end_date || wx.endDate ? ` → ${wx.end_date || wx.endDate}` : ''}</p>
                   </li>
@@ -309,23 +309,23 @@ export default function EmployeeProfile() {
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
-          <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Designation</p><p className="text-sm font-black text-slate-900">{emp?.job_title || '—'}</p></div>
-          <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Division / Dept</p><p className="text-sm font-black text-slate-900">{emp?.department || '—'}</p></div>
-          <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Location</p><p className="text-sm font-black text-slate-900">{emp?.work_location || '—'}</p></div>
-          <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Mode</p><p className="text-sm font-black text-slate-900">{emp?.work_mode || '—'}</p></div>
+          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Designation</p><p className="text-sm font-black text-slate-900">{emp?.job_title || '—'}</p></div>
+          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Division / Dept</p><p className="text-sm font-black text-slate-900">{emp?.department || '—'}</p></div>
+          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Location</p><p className="text-sm font-black text-slate-900">{emp?.work_location || '—'}</p></div>
+          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Mode</p><p className="text-sm font-black text-slate-900">{emp?.work_mode || '—'}</p></div>
         </div>
         <div className="space-y-4">
-          <div className="p-5 rounded-2xl border border-emerald-100 bg-emerald-50/20"><p className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest mb-1">Reporting Manager</p><p className="text-sm font-black text-slate-900">{emp?.manager_name || '—'}</p></div>
-          <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Employment Type</p><p className="text-sm font-black text-slate-900">{emp?.employment_type || '—'}</p></div>
-          <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grade</p><p className="text-sm font-black text-slate-900">{emp?.grade || '—'}</p></div>
-          <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cost Center</p><p className="text-sm font-black text-slate-900">{emp?.cost_center || '—'}</p></div>
+          <div className="p-5 rounded-none border border-emerald-100 bg-emerald-50/20"><p className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest mb-1">Reporting Manager</p><p className="text-sm font-black text-slate-900">{emp?.manager_name || '—'}</p></div>
+          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Employment Type</p><p className="text-sm font-black text-slate-900">{emp?.employment_type || '—'}</p></div>
+          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grade</p><p className="text-sm font-black text-slate-900">{emp?.grade || '—'}</p></div>
+          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cost Center</p><p className="text-sm font-black text-slate-900">{emp?.cost_center || '—'}</p></div>
         </div>
       </div>
       <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Join Date</p><p className="text-xs font-black text-slate-900">{emp?.join_date || '—'}</p></div>
-        <div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Probation End</p><p className="text-xs font-black text-slate-900">{emp?.probation_end_date || '—'}</p></div>
-        <div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p><Badge label={emp?.employment_status || '—'} color={statusColor(emp?.employment_status)} variant="soft" className="text-[8px] font-black mt-1" /></div>
-        <div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Salary</p><p className="text-xs font-black text-slate-900">{emp?.salary ? `AED ${emp.salary}` : '—'}</p></div>
+        <div className="p-4 rounded-none bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Join Date</p><p className="text-xs font-black text-slate-900">{emp?.join_date || '—'}</p></div>
+        <div className="p-4 rounded-none bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Probation End</p><p className="text-xs font-black text-slate-900">{emp?.probation_end_date || '—'}</p></div>
+        <div className="p-4 rounded-none bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p><Badge label={emp?.employment_status || '—'} color={statusColor(emp?.employment_status)} variant="soft" className="text-[8px] font-black mt-1 rounded-none" /></div>
+        <div className="p-4 rounded-none bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Salary</p><p className="text-xs font-black text-slate-900">{emp?.salary ? `AED ${emp.salary}` : '—'}</p></div>
       </div>
     </div>
   )
@@ -334,7 +334,7 @@ export default function EmployeeProfile() {
     if (loadingTab && !documents) return <Spinner />
     const docs = documents?.documents || []
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <div>
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Document Compliance Registry</h3>
@@ -393,7 +393,7 @@ export default function EmployeeProfile() {
   const renderVisa = () => (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="grid gap-8 md:grid-cols-2">
-        <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
+        <div className="p-6 rounded-none bg-slate-50 border border-slate-100 space-y-4">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Passport Intelligence</h3>
           <div className="grid grid-cols-2 gap-4">
             <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Passport Number</p><p className="text-sm font-black text-slate-900">{emp?.passport_number || '—'}</p></div>
@@ -401,7 +401,7 @@ export default function EmployeeProfile() {
             <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Expiry</p><p className="text-sm font-black text-rose-600">{emp?.passport_expiry || '—'}</p></div>
           </div>
         </div>
-        <div className="p-6 rounded-2xl bg-emerald-50/30 border border-emerald-100 space-y-4">
+        <div className="p-6 rounded-none bg-emerald-50/30 border border-emerald-100 space-y-4">
           <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Resident Visa Status</h3>
           <div className="grid grid-cols-2 gap-4">
             <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Visa Type</p><p className="text-sm font-black text-slate-900">{emp?.visa_type || '—'}</p></div>
@@ -409,7 +409,7 @@ export default function EmployeeProfile() {
             <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Visa Expiry</p><p className="text-sm font-black text-amber-600">{emp?.visa_expiry_date || '—'}</p></div>
           </div>
         </div>
-        <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
+        <div className="p-6 rounded-none bg-slate-50 border border-slate-100 space-y-4">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Emirates ID</h3>
           <div className="grid grid-cols-2 gap-4">
             <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">ID Number</p><p className="text-sm font-black text-slate-900">{emp?.emirates_id_number || '—'}</p></div>
@@ -434,13 +434,13 @@ export default function EmployeeProfile() {
             { label: 'Half Day', value: s?.half_day ?? '—', color: 'yellow' },
             { label: 'On Leave', value: s?.on_leave ?? '—', color: 'blue' },
           ].map(c => (
-            <div key={c.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm text-center">
+            <div key={c.label} className="rounded-none border border-slate-200 bg-white p-4 shadow-sm text-center">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{c.label}</p>
               <p className={`text-2xl font-black text-${c.color}-600`}>{c.value}</p>
             </div>
           ))}
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Attendance Log — {attendance?.month}/{attendance?.year}</h3>
           </div>
@@ -474,18 +474,18 @@ export default function EmployeeProfile() {
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {balances.length === 0 ? (
-            <div className="col-span-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm text-center">
+            <div className="col-span-4 rounded-none border border-slate-200 bg-white p-5 shadow-sm text-center">
               <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No leave balances configured</p>
             </div>
           ) : balances.map(b => (
-            <div key={b.leave_type} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div key={b.leave_type} className="rounded-none border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{b.leave_type}</p>
               <p className="text-2xl font-black text-emerald-600">{b.remaining} <span className="text-[10px] font-bold text-slate-400 uppercase ml-1">Days</span></p>
               <p className="text-[9px] text-slate-400 mt-1">{b.used} used / {b.total_allocated} allocated</p>
             </div>
           ))}
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Leave History — {leave?.year}</h3>
           </div>
@@ -517,19 +517,19 @@ export default function EmployeeProfile() {
     const reviews = performance?.reviews || []
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Performance Intel</h2>
-            {latest && <Badge label={latest.review_period} color="blue" className="text-[9px] font-black" />}
+            {latest && <Badge label={latest.review_period} color="blue" className="text-[9px] font-black rounded-none" />}
           </div>
           {latest ? (
             <div className="grid gap-6 md:grid-cols-3">
-              <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
+              <div className="p-6 rounded-none bg-emerald-50 border border-emerald-100 text-center">
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Latest Rating</p>
                 <p className="text-3xl font-black text-emerald-600 mt-2">{latest.overall_rating}</p>
-                <p className="text-[10px] text-emerald-800 font-bold mt-2 bg-white/50 py-1 rounded-full px-4 inline-block uppercase">{latest.review_period}</p>
+                <p className="text-[10px] text-emerald-800 font-bold mt-2 bg-white/50 py-1 rounded-none px-4 inline-block uppercase">{latest.review_period}</p>
               </div>
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+              <div className="p-6 rounded-none bg-slate-50 border border-slate-100 space-y-2">
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Skill Ratings</p>
                 {[
                   ['Work Quality',   latest.work_quality],
@@ -542,13 +542,13 @@ export default function EmployeeProfile() {
                     <span className="text-[9px] font-black text-slate-500 uppercase">{label}</span>
                     <div className="flex gap-0.5">
                       {[1,2,3,4,5].map(i => (
-                        <div key={i} className={`h-2 w-4 rounded-sm ${i <= (val || 0) ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                        <div key={i} className={`h-2 w-4 rounded-none ${i <= (val || 0) ? 'bg-emerald-500' : 'bg-slate-200'}`} />
                       ))}
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="p-6 rounded-none bg-slate-50 border border-slate-100">
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Review Date</p>
                 <p className="text-lg font-black text-slate-900">{latest.review_date}</p>
               </div>
@@ -560,7 +560,7 @@ export default function EmployeeProfile() {
           )}
         </div>
         {reviews.length > 0 && (
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Historical Performance Audits</h3>
             </div>
@@ -598,7 +598,7 @@ export default function EmployeeProfile() {
           )}
         </div>
         {list.length === 0 ? (
-          <div className="flex min-h-[160px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+          <div className="flex min-h-[160px] items-center justify-center rounded-none border border-dashed border-slate-200 bg-slate-50/50">
             <p className="text-sm text-slate-500">No assets assigned</p>
           </div>
         ) : (
@@ -606,7 +606,7 @@ export default function EmployeeProfile() {
             {list.map((a) => (
               <li
                 key={a.id}
-                className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4"
+                className="flex flex-col gap-4 rounded-none border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4"
               >
                 <div className="flex min-w-0 flex-1 items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
@@ -671,20 +671,31 @@ export default function EmployeeProfile() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-500">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar with Breadcrumbs */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Employee Profile Portal</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Employees</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">360° Profile Audit</span>
+          </div>
+        </div>
+      </div>
 
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-none bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-md">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="relative">
               <Avatar
                 initials={initials}
                 size="xl"
-                className="ring-4 ring-white/20 shadow-2xl"
+                className="ring-4 ring-white/20 shadow-2xl rounded-none"
               />
               {emp && (
-                <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-400 border-2 border-white flex items-center justify-center">
+                <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-none bg-emerald-400 border-2 border-white flex items-center justify-center">
                   <HiCheckCircle className="h-4 w-4 text-[#0F766E]" />
                 </div>
               )}
@@ -695,7 +706,7 @@ export default function EmployeeProfile() {
                 <span className="text-xs font-semibold tracking-wide text-emerald-100/90">Employee profile</span>
               </div>
               {loadingProfile ? (
-                <div className="h-8 w-48 bg-white/10 rounded-lg animate-pulse" />
+                <div className="h-8 w-48 bg-white/10 rounded-none animate-pulse" />
               ) : (
                 <>
                   <h1 className="text-3xl font-black text-white tracking-tight uppercase leading-none mb-2">
@@ -707,7 +718,7 @@ export default function EmployeeProfile() {
                       {emp?.job_title && ` • ${emp.job_title}`}
                     </p>
                     {emp?.department && (
-                      <Badge label={emp.department} color="white" variant="soft" className="text-[8px] bg-white/10 text-white font-black px-2" />
+                      <Badge label={emp.department} color="white" variant="soft" className="text-[8px] bg-white/10 text-white font-black px-2 rounded-none" />
                     )}
                   </div>
                 </>
@@ -719,12 +730,12 @@ export default function EmployeeProfile() {
             <div className="w-full sm:w-64">
               <p className="text-[9px] font-black text-emerald-300 uppercase tracking-widest mb-1.5 ml-1">Switch Employee</p>
               {loadingList ? (
-                <div className="h-10 w-full bg-white/10 rounded-xl animate-pulse" />
+                <div className="h-10 w-full bg-white/10 rounded-none animate-pulse" />
               ) : (
                 <select
                   value={selectedId || ''}
                   onChange={e => setSelectedId(Number(e.target.value))}
-                  className="w-full rounded-xl bg-white/10 backdrop-blur-md border border-white/20 p-2.5 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-emerald-400/50"
+                  className="w-full rounded-none bg-white/10 backdrop-blur-md border border-white/20 p-2.5 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-emerald-400/50 cursor-pointer"
                 >
                   {employeeList.map(e => (
                     <option key={e.id} value={e.id} className="text-slate-900">
@@ -735,10 +746,10 @@ export default function EmployeeProfile() {
               )}
             </div>
             <div className="flex gap-2">
-              <button className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all text-white shadow-lg">
+              <button className="p-3 rounded-none bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all text-white shadow-sm">
                 <HiPrinter className="h-5 w-5" />
               </button>
-              <button className="p-3 rounded-xl bg-emerald-400 hover:bg-emerald-300 transition-all text-[#0F766E] shadow-lg">
+              <button className="p-3 rounded-none bg-emerald-400 hover:bg-emerald-300 transition-all text-[#0F766E] shadow-sm">
                 <HiEllipsisVertical className="h-5 w-5" />
               </button>
             </div>
@@ -748,10 +759,10 @@ export default function EmployeeProfile() {
         <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
       </div>
 
-      {/* Horizontal tabs — same pattern as Add / Edit employee modal */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium sm:gap-x-6">
+      {/* Horizontal tabs — standardized layout border framing */}
+      <div className="rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 min-w-0">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium sm:gap-x-6 min-w-0">
             {TABS.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id

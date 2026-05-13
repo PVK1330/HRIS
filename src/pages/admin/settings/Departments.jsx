@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
+import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { 
   HiBuildingOffice, 
@@ -14,6 +15,10 @@ import {
   HiAdjustmentsHorizontal,
   HiBriefcase,
   HiDocumentArrowDown,
+  HiUserGroup,
+  HiCheckBadge,
+  HiUserCircle,
+  HiUser,
 } from 'react-icons/hi2'
 import { 
   listDepartments, 
@@ -314,196 +319,258 @@ export default function DepartmentManagement() {
   }
 
   return (
-    <>
-      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
-              <h2 className="text-sm font-semibold text-slate-800">Department Listing</h2>
-              <div className="flex items-center gap-2">
-                <div className="relative" ref={exportRef}>
-                  <button
-                    type="button"
-                    disabled={exportLoading}
-                    onClick={() => setExportOpen((prev) => !prev)}
-                    className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    <HiDocumentArrowDown className="h-4 w-4" />
-                    Export
-                    <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {exportOpen ? (
-                    <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
-                      <button
-                        type="button"
-                        disabled={exportLoading}
-                        onClick={() => runServerExport('pdf')}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
-                        Export as PDF
-                      </button>
-                      <button
-                        type="button"
-                        disabled={exportLoading}
-                        onClick={() => runServerExport('excel')}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
-                        Export as Excel
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64]"
-                >
-                  <HiPlus className="h-4 w-4" /> Add Department
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
-              <div className="relative min-w-[250px] flex-1">
-                <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search department, code or description..."
-                  className="h-10 w-full rounded-none border border-slate-200 bg-slate-50 px-3 pl-9 text-sm text-slate-700 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-2 focus:ring-[#0F766E]/10"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                {[
-                  { id: 'all', label: 'All' },
-                  { id: 'active', label: 'Active' },
-                  { id: 'inactive', label: 'Inactive' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setStatusFilter(item.id)}
-                    className={`rounded-none border px-3 py-1.5 text-xs font-medium transition ${
-                      statusFilter === item.id
-                        ? 'border-[#6366F1] bg-indigo-50 text-[#4F46E5]'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs font-medium text-slate-400">{deptTotal} total · page {deptPage}</p>
-            </div>
-            <Table
-              columns={columns}
-              data={departmentList}
-              pageSize={10}
-              loading={loading}
-              square
-              totalCount={deptTotal}
-              currentPage={deptPage - 1}
-              onPageChange={(idx) => setDeptPage(idx + 1)}
-            />
-      </div>
-
-      {modalOpen ? (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/35"
-            onClick={handleCloseModal}
-            aria-label="Close modal"
-          />
-
-          <div className="relative w-full max-w-[760px] overflow-hidden rounded-none bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-              <h2 className="text-3xl leading-none text-[#1f2a44]">{editMode ? 'Edit Department' : 'Add Department'}</h2>
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-none text-slate-500 transition-colors hover:bg-slate-100"
-                aria-label="Close"
-              >
-                <HiXMark className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-5 px-6 py-5">
-                <Input
-                  label="Department Name"
-                  name="departmentName"
-                  placeholder="Enter department name"
-                  value={formData.departmentName}
-                  onChange={handleFormChange}
-                  required
-                  inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
-                  labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
-                />
-
-                <Input
-                  label="Description"
-                  name="description"
-                  placeholder="Enter department description"
-                  value={formData.description}
-                  onChange={handleFormChange}
-                  inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
-                  labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
-                />
-
-                <Input
-                  label="Head of Department"
-                  name="managerId"
-                  type="select"
-                  value={formData.managerId}
-                  onChange={handleFormChange}
-                  placeholder="Select employee"
-                  options={managerOptions.map((m) => ({
-                    label: m.name,
-                    value: String(m.id),
-                  }))}
-                  inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
-                  labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
-                />
-
-                <Input
-                  label="Status"
-                  name="status"
-                  type="select"
-                  value={formData.status}
-                  onChange={handleFormChange}
-                  placeholder="Select"
-                  required
-                  options={[
-                    { label: 'Active', value: 'Active' },
-                    { label: 'Inactive', value: 'Inactive' },
-                  ]}
-                  inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
-                  labelClassName="mb-2 block text-sm font-medium text-[#1f2a44]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="inline-flex h-9 items-center justify-center rounded-none border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex h-9 items-center justify-center rounded-none bg-[#0F766E] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? 'Saving…' : editMode ? 'Save Changes' : 'Add Department'}
-                </button>
-              </div>
-            </form>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar with Moved Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Department Management</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Departments</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Department Listing</span>
           </div>
         </div>
-      ) : null}
-    </>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="relative" ref={exportRef}>
+            <button
+              type="button"
+              disabled={exportLoading}
+              onClick={() => setExportOpen((prev) => !prev)}
+              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 shadow-sm"
+            >
+              <HiDocumentArrowDown className="h-4 w-4" />
+              Export
+              <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {exportOpen ? (
+              <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  disabled={exportLoading}
+                  onClick={() => runServerExport('pdf')}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                >
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
+                  Export as PDF
+                </button>
+                <button
+                  type="button"
+                  disabled={exportLoading}
+                  onClick={() => runServerExport('excel')}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                >
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
+                  Export as Excel
+                </button>
+              </div>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
+          >
+            <HiPlus className="h-4 w-4" /> Add Department
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Metrics Cards Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          {
+            label: 'TOTAL DEPARTMENTS',
+            count: deptTotal || departmentList.length || 0,
+            bgColor: 'bg-[#0F172A]',
+            icon: HiBuildingOffice,
+            onClickFilter: () => setStatusFilter('all'),
+            filterId: 'all'
+          },
+          {
+            label: 'ACTIVE',
+            count: departmentList.filter(d => d.status === 'Active' || d.isActive).length || 0,
+            bgColor: 'bg-[#10B981]',
+            icon: HiCheckBadge,
+            onClickFilter: () => setStatusFilter('active'),
+            filterId: 'active'
+          },
+          {
+            label: 'INACTIVE',
+            count: departmentList.filter(d => d.status === 'Inactive' || d.status === 'Archived' || (!d.isActive && d.status !== 'Active')).length || 0,
+            bgColor: 'bg-[#EF4444]',
+            icon: HiUserCircle,
+            onClickFilter: () => setStatusFilter('inactive'),
+            filterId: 'inactive'
+          },
+          {
+            label: 'ASSIGNED HEADS',
+            count: departmentList.filter(d => d.head || d.manager_id).length || 0,
+            bgColor: 'bg-[#3B82F6]',
+            icon: HiUser,
+            onClickFilter: () => setStatusFilter('all'),
+            filterId: null
+          }
+        ].map((card, idx) => {
+          const isActiveFilter = card.filterId !== null && statusFilter === card.filterId;
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={card.onClickFilter}
+              title={`Filter by ${card.label}`}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
+                isActiveFilter
+                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                <card.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                  {card.label}
+                </div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Main Table Registry Area */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
+          <h2 className="text-sm font-semibold text-slate-800">Department Listing</h2>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="relative min-w-[250px] flex-1 max-w-md">
+            <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search department, code or description..."
+              className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-medium text-slate-500">{deptTotal} records shown</p>
+            {search || statusFilter !== 'all' ? (
+              <button
+                type="button"
+                onClick={() => { setSearch(''); setStatusFilter('all') }}
+                className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
+              >
+                Reset Filters
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <Table
+          columns={columns}
+          data={departmentList}
+          pageSize={10}
+          loading={loading}
+          square
+          totalCount={deptTotal}
+          currentPage={deptPage - 1}
+          onPageChange={(idx) => setDeptPage(idx + 1)}
+        />
+      </div>
+
+      {/* ── Add / Edit Modal ─────────────────────────────────────────────── */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={handleCloseModal}
+        size="md"
+        showClose
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
+              {editMode ? 'Edit Department' : 'Add New Department'}
+            </h2>
+            <p className="text-xs font-medium text-slate-500">
+              Configure department profile settings and assignments below.
+            </p>
+          </div>
+        }
+      >
+        <form onSubmit={handleSubmit} className="pt-2">
+          <div className="space-y-4">
+            <Input
+              label="Department Name"
+              name="departmentName"
+              placeholder="Enter department name"
+              value={formData.departmentName}
+              onChange={handleFormChange}
+              required
+              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              labelClassName="mb-1 block text-sm font-medium text-slate-800"
+            />
+
+            <Input
+              label="Description"
+              name="description"
+              placeholder="Enter department description"
+              value={formData.description}
+              onChange={handleFormChange}
+              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              labelClassName="mb-1 block text-sm font-medium text-slate-800"
+            />
+
+            <Input
+              label="Head of Department"
+              name="managerId"
+              type="select"
+              value={formData.managerId}
+              onChange={handleFormChange}
+              placeholder="Select employee"
+              options={managerOptions.map((m) => ({
+                label: m.name,
+                value: String(m.id),
+              }))}
+              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              labelClassName="mb-1 block text-sm font-medium text-slate-800"
+            />
+
+            <Input
+              label="Status"
+              name="status"
+              type="select"
+              value={formData.status}
+              onChange={handleFormChange}
+              placeholder="Select"
+              required
+              options={[
+                { label: 'Active', value: 'Active' },
+                { label: 'Inactive', value: 'Inactive' },
+              ]}
+              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              labelClassName="mb-1 block text-sm font-medium text-slate-800"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? 'Saving…' : editMode ? 'Save Changes' : 'Add Department'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </div>
   )
 }
