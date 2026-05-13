@@ -1,21 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HiBell, HiCheckCircle, HiExclamationCircle, HiInformationCircle, HiTrash } from 'react-icons/hi2';
-import { notifications as initialNotifications } from '../../data/mockData.js';
+import api from '../../services/api.js';
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchNotifications = async () => {
+    try {
+      const { data } = await api.get('/notifications');
+      if (data?.data && Array.isArray(data.data)) {
+        setNotifications(data.data);
+      }
+    } catch (err) {
+      // Keep silent on client feed sync errors
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // Poll every 30 seconds for live corporate alerts
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const toggleDropdown = () => setIsOpen(!isOpen);
+  const toggleDropdown = () => {
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    if (nextState) {
+      fetchNotifications();
+    }
+  };
   
-  const markAsRead = (id) => {
+  const markAsRead = async (id) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    try {
+      await api.patch(`/notifications/${id}/read`);
+    } catch (err) {}
   };
 
-  const deleteNotification = (id) => {
+  const markAllAsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    try {
+      await api.patch('/notifications/mark-all-read');
+    } catch (err) {}
+  };
+
+  const deleteNotification = async (id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
+    try {
+      await api.delete(`/notifications/${id}`);
+    } catch (err) {}
   };
 
   const getIcon = (type) => {
@@ -48,12 +86,14 @@ export default function NotificationDropdown() {
           <div className="absolute right-0 mt-2 w-80 rounded-xl border border-border-tertiary bg-background-primary shadow-2xl z-50 overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-border-tertiary">
               <h3 className="font-bold text-text-primary">Notifications</h3>
-              <button 
-                className="text-xs font-semibold text-primary hover:underline"
-                onClick={() => setNotifications(notifications.map(n => ({...n, read: true})))}
-              >
-                Mark all as read
-              </button>
+              {notifications.length > 0 && (
+                <button 
+                  className="text-xs font-semibold text-primary hover:underline"
+                  onClick={markAllAsRead}
+                >
+                  Mark all as read
+                </button>
+              )}
             </div>
             <div className="max-h-[400px] overflow-y-auto">
               {notifications.length > 0 ? (
@@ -98,8 +138,11 @@ export default function NotificationDropdown() {
               )}
             </div>
             <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">
-              <button className="text-xs font-bold text-text-secondary hover:text-primary transition-colors uppercase tracking-wider">
-                View all notifications
+              <button 
+                onClick={() => setIsOpen(false)}
+                className="text-xs font-bold text-text-secondary hover:text-primary transition-colors uppercase tracking-wider"
+              >
+                Close View
               </button>
             </div>
           </div>

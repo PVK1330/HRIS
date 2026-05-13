@@ -47,6 +47,40 @@ export const getDocuments = async (employeeId) => {
 }
 
 /**
+ * GET /api/v1/employees/:employeeId/documents/catalog
+ * Active document type names from tenant settings (for upload picker).
+ */
+export const getEmployeeDocumentCatalog = async (employeeId) => {
+  const { data } = await api.get(`/employees/${employeeId}/documents/catalog`)
+  return data.data
+}
+
+/**
+ * POST /api/v1/employees/:employeeId/documents (multipart)
+ * @param {number} employeeId
+ * @param {FormData} formData — must include `file`; optional text fields per API
+ */
+export const uploadEmployeeDocument = async (employeeId, formData) => {
+  try {
+    const { data } = await api.post(`/employees/${employeeId}/documents`, formData)
+    return data.data
+  } catch (err) {
+    const apiErr = err?.response?.data?.errors
+    const fieldMsg =
+      Array.isArray(apiErr) && apiErr.length
+        ? apiErr.map((e) => `${e.field || ''}: ${e.message || ''}`.trim()).join(' · ')
+        : null
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      fieldMsg ||
+      err?.message ||
+      'Upload failed'
+    throw new Error(msg)
+  }
+}
+
+/**
  * GET /api/v1/employees/:employeeId/performance
  * @param {number} employeeId
  * @returns {{ reviews: Array, latest: Object|null }}

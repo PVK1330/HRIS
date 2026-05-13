@@ -467,25 +467,28 @@ export default function LettersTemplates() {
               Standardize HR communications with dynamic templates. Create, automate, and track every letter sent to your workforce.
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button className="flex items-center gap-2 rounded-xl bg-white/10 px-6 py-2.5 text-sm font-bold text-white border border-white/20 transition-all hover:bg-white/20 hover:scale-105 active:scale-95">
-              <HiUsers className="h-4 w-4" /> Bulk Dispatch
+              <HiUsers className="h-4 w-4 shrink-0" /> Bulk Dispatch
             </button>
             <button
               onClick={() => { setForm(EMPTY_FORM); setModalOpen(true) }}
               className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95"
             >
-              <HiPlus className="h-4 w-4" /> New Template
+              <HiPlus className="h-4 w-4 shrink-0" /> New Template
             </button>
           </div>
         </div>
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
-        {/* Navigation Sidebar */}
-        <div className="space-y-4">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Library Navigation</p>
+      {/* Library Navigation Horizontal Toolbar */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Library Navigation Overview</p>
+          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">Active Vault</span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
           {[
             { id: 'Templates', label: 'Template Library',   count: kpis.templates,           icon: HiDocumentText, color: 'emerald' },
             { id: 'History',   label: 'Dispatch History',   count: kpis.generatedThisMonth,  icon: HiClock,        color: 'blue'    },
@@ -494,35 +497,41 @@ export default function LettersTemplates() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`group flex w-full items-center justify-between rounded-2xl border p-4 transition-all hover:scale-[1.02] active:scale-95 ${
+              className={`group flex items-center justify-between gap-2 rounded-2xl border p-4 transition-all min-w-0 ${
                 activeTab === item.id
                   ? 'border-[#0F766E] bg-emerald-50/50 shadow-md ring-1 ring-[#0F766E]'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
+                  : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600`}>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600`}>
                   <item.icon className="h-5 w-5" />
                 </div>
-                <div className="text-left">
-                  <div className="text-sm font-bold text-slate-700">{item.label}</div>
-                  <div className="text-[10px] text-slate-400 font-medium tracking-tight">Active Vault</div>
+                <div className="text-left min-w-0">
+                  <div className="text-sm font-bold text-slate-700 truncate">{item.label}</div>
+                  <div className="text-[10px] text-slate-400 font-medium tracking-tight truncate">Active Vault</div>
                 </div>
               </div>
-              <div className={`text-lg font-black ${activeTab === item.id ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+              <div className={`text-lg font-black shrink-0 ${activeTab === item.id ? 'text-[#0F766E]' : 'text-slate-400'}`}>
                 {item.count}
               </div>
             </button>
           ))}
+        </div>
+      </div>
 
-          <div className="mt-8 rounded-2xl bg-slate-50 p-5 border border-slate-200">
+      {/* Workspace Grid */}
+      <div className="grid gap-6 lg:grid-cols-4">
+        {/* Left Column: Dynamic Tags */}
+        <div className="space-y-4 min-w-0">
+          <div className="rounded-2xl bg-slate-50 p-5 border border-slate-200 min-w-0">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <HiCodeBracket className="h-4 w-4" /> Dynamic Tags
+                <HiCodeBracket className="h-4 w-4 shrink-0" /> Dynamic Tags
               </h3>
               <button
                 onClick={openCreateTag}
-                className="flex items-center gap-1 text-[10px] font-black text-[#0F766E] hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-colors"
+                className="flex items-center gap-1 text-[10px] font-black text-[#0F766E] hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-colors shrink-0"
               >
                 <HiPlus className="h-3 w-3" /> Add
               </button>
@@ -532,10 +541,10 @@ export default function LettersTemplates() {
                 <p className="text-[10px] text-slate-400 italic text-center py-2">No tags yet</p>
               )}
               {tags.map(t => (
-                <div key={t.id} className="group flex items-start gap-2 rounded-xl p-2 hover:bg-white transition-colors border border-transparent hover:border-slate-200">
+                <div key={t.id} className="group flex items-start gap-2 rounded-xl p-2 hover:bg-white transition-colors border border-transparent hover:border-slate-200 min-w-0">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <code className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded truncate max-w-[140px]">{t.tag}</code>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <code className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded truncate max-w-[140px] block">{t.tag}</code>
                       {t.isSystem && <HiLockClosed className="h-3 w-3 text-slate-300 shrink-0" title="System tag" />}
                     </div>
                     <span className="text-[10px] text-slate-400 font-medium italic truncate block mt-0.5">{t.description}</span>
@@ -553,17 +562,17 @@ export default function LettersTemplates() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-[10px] text-slate-400 italic text-center border-t border-slate-200 pt-3">
+            <p className="mt-3 text-[10px] text-slate-400 italic text-center border-t border-slate-200 pt-3 truncate">
               {tags.filter(t => !t.isSystem).length} custom · {tags.filter(t => t.isSystem).length} system
             </p>
           </div>
         </div>
 
         {/* Main Workspace */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="lg:col-span-3 space-y-6 min-w-0">
+          <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm min-w-0">
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Vault</label>
                 <div className="relative">
                   <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -576,7 +585,7 @@ export default function LettersTemplates() {
                   />
                 </div>
               </div>
-              <Button label="FILTERS" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200" />
+              <Button label="FILTERS" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200 shrink-0" />
             </div>
           </div>
 
@@ -584,12 +593,12 @@ export default function LettersTemplates() {
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
           )}
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
-            <div className="bg-[#0F766E] px-6 py-3 text-white flex items-center justify-between">
-              <h2 className="text-sm font-bold uppercase tracking-wider">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md min-w-0">
+            <div className="bg-[#0F766E] px-6 py-3 text-white flex items-center justify-between min-w-0">
+              <h2 className="text-sm font-bold uppercase tracking-wider truncate">
                 {activeTab === 'History' ? 'Dispatch Registry' : 'Template Library'}
               </h2>
-              <HiDocumentText className="h-4 w-4 opacity-50" />
+              <HiDocumentText className="h-4 w-4 opacity-50 shrink-0" />
             </div>
             {loading ? (
               <div className="flex items-center justify-center py-16 text-slate-400 text-sm">Loading…</div>

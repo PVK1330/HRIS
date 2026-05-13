@@ -24,21 +24,58 @@ export const getFilterOptions = async () => {
 }
 
 /**
- * GET /api/v1/employees
- * @param {Object} params
- * @param {number}  [params.page=1]
- * @param {number}  [params.limit=20]
- * @param {string}  [params.search]
- * @param {string}  [params.department]
- * @param {string}  [params.status]
- * @param {string}  [params.workMode]
- * @param {string}  [params.jobTitle]
- * @param {string}  [params.workLocation]
- * @returns {{ employees: Array, total: number, page: number, limit: number, pages: number }}
+ * GET /api/v1/employees/dropdown?search=
+ * Full employee list for dropdowns (id, emp_id, full_name) — no pagination, capped server-side.
+ */
+export const listEmployeesDropdown = async (params = {}) => {
+  const { data } = await api.get('/employees/dropdown', { params })
+  return data.data
+}
+
+/**
+ * GET /api/v1/employees (paginated directory listing)
+ * @returns {Promise<{ records: Array, employees: Array, pagination: object, filters?: object, total: number, page: number, limit: number, pages: number }>}
  */
 export const listEmployees = async (params = {}) => {
   const { data } = await api.get('/employees', { params })
-  return data.data
+  const p = data.data
+  if (p && Array.isArray(p.records)) {
+    const total = p.pagination?.total ?? 0
+    const page = p.pagination?.page ?? 1
+    const limit = p.pagination?.limit ?? 10
+    const pages = p.pagination?.totalPages ?? 1
+    return {
+      ...p,
+      employees: p.records,
+      total,
+      page,
+      limit,
+      pages,
+    }
+  }
+  if (p && Array.isArray(p.employees)) {
+    return {
+      ...p,
+      records: p.employees,
+      pagination: {
+        total: p.total ?? p.employees.length,
+        page: p.page ?? 1,
+        limit: p.limit ?? p.employees.length,
+        totalPages: p.pages ?? 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    }
+  }
+  return {
+    records: [],
+    employees: [],
+    pagination: { total: 0, page: 1, limit: 10, totalPages: 1, hasNext: false, hasPrev: false },
+    total: 0,
+    page: 1,
+    limit: 10,
+    pages: 1,
+  }
 }
 
 /**
