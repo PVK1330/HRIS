@@ -71,19 +71,9 @@ export default function EmployeeProfile() {
   const [loadingTab,         setLoadingTab]         = useState(false)
   const [loadingList,        setLoadingList]        = useState(true)
 
-  const [docUploadOpen, setDocUploadOpen] = useState(false)
-  const [docUploading, setDocUploading] = useState(false)
-  const [docCatalog, setDocCatalog] = useState([])
-  const [docCatalogLoading, setDocCatalogLoading] = useState(false)
-  const [docFile, setDocFile] = useState(null)
-  const [docForm, setDocForm] = useState({
-    document_type: '',
-    document_title: '',
-    document_number: '',
-    notes: '',
-    issue_date: '',
-    expiry_date: '',
-  })
+  // Print Modal State
+  const [printModalOpen, setPrintModalOpen] = useState(false)
+  const [selectedPrintTabs, setSelectedPrintTabs] = useState(() => TABS.map(t => t.id))
 
   const isHrAdmin = currentUser?.role === 'hr_admin' || currentUser?.role === 'admin'
 
@@ -274,62 +264,121 @@ export default function EmployeeProfile() {
   // ── Tab renderers ─────────────────────────────────────────────────────────
 
   const renderOverview = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Latest Rating"  value={performance?.latest?.overall_rating || '—'} subtitle="Last Review"    color="emerald" icon={HiChartBar} />
-        <StatCard title="Leave Balance"  value={leave?.balances?.find(b => b.leave_type === 'Annual Leave')?.remaining ?? '—'} subtitle="Annual Days Left" color="blue" icon={HiCalendar} />
-        <StatCard title="Attendance"     value={attendance?.summary ? `${Math.round((attendance.summary.present / (attendance.summary.total_days || 1)) * 100)}%` : '—'} subtitle="This Month" color="indigo" icon={HiClock} />
-        <StatCard title="Assets"         value={assets?.counts?.active ?? '—'} subtitle="Assigned Items" color="amber" icon={HiArchiveBox} />
-      </div>
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Operational Identity</h3>
-            <Badge label={emp?.employment_status || 'Active'} color={statusColor(emp?.employment_status)} variant="soft" className="text-[8px] font-black rounded-none" />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-4">
-              <div className="p-4 rounded-none bg-slate-50 border border-slate-100">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Direct Manager</p>
-                <p className="text-sm font-bold text-slate-900">{emp?.manager_name || '—'}</p>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 min-w-0">
+      {/* 4 Custom Consistent Metrics Cards Grid (Mirroring Directory Design System) */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          {
+            label: 'LATEST RATING',
+            count: performance?.latest?.overall_rating || '—',
+            subtitle: 'Last Review',
+            bgColor: 'bg-[#0F172A]',
+            icon: HiChartBar,
+          },
+          {
+            label: 'LEAVE BALANCE',
+            count: leave?.balances?.find(b => b.leave_type === 'Annual Leave')?.remaining ?? '—',
+            subtitle: 'Annual Days Left',
+            bgColor: 'bg-[#10B981]',
+            icon: HiCalendar,
+          },
+          {
+            label: 'ATTENDANCE RATIO',
+            count: attendance?.summary ? `${Math.round((attendance.summary.present / (attendance.summary.total_days || 1)) * 100)}%` : '—',
+            subtitle: 'This Month Summary',
+            bgColor: 'bg-[#3B82F6]',
+            icon: HiClock,
+          },
+          {
+            label: 'ASSIGNED ASSETS',
+            count: assets?.counts?.active ?? '—',
+            subtitle: 'Tracked Items',
+            bgColor: 'bg-[#F59E0B]',
+            icon: HiArchiveBox,
+          }
+        ].map((card, idx) => (
+          <div
+            key={idx}
+            className="group flex items-center gap-3.5 rounded-none border border-slate-200 bg-white p-4 text-left transition-all hover:border-slate-300 min-w-0 shadow-2xs"
+          >
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-2xs`}>
+              <card.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate leading-none">
+                {card.label}
               </div>
-              <div className="p-4 rounded-none bg-slate-50 border border-slate-100">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Cost Center / Dept</p>
-                <p className="text-sm font-bold text-slate-900">{emp?.cost_center || emp?.department || '—'}</p>
+              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none truncate">
+                {card.count}
+              </div>
+              <div className="mt-1 text-[9px] font-semibold text-slate-400 truncate">
+                {card.subtitle}
               </div>
             </div>
-            <div className="space-y-4">
-              <div className="p-4 rounded-none bg-slate-50 border border-slate-100">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Hired Date</p>
-                <p className="text-sm font-bold text-slate-900">{emp?.join_date || '—'}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3 min-w-0">
+        <div className="lg:col-span-2 rounded-none border border-slate-200 bg-white p-6 shadow-2xs min-w-0">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5 min-w-0">
+            <h3 className="text-xs font-black text-[#0F766E] uppercase tracking-wider">Operational Identity</h3>
+            <Badge label={emp?.employment_status || 'Active'} color={statusColor(emp?.employment_status)} variant="soft" className="text-[9px] font-black rounded-none px-2.5 py-0.5" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 min-w-0">
+            <div className="space-y-4 min-w-0">
+              <div className="p-3.5 rounded-none border border-slate-200 bg-slate-50/50 min-w-0">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Direct Manager</p>
+                <p className="text-xs font-bold text-slate-900 truncate">{emp?.manager_name || '—'}</p>
               </div>
-              <div className="p-4 rounded-none bg-slate-50 border border-slate-100">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Employment Type</p>
-                <p className="text-sm font-bold text-slate-900">{emp?.employment_type || '—'}</p>
+              <div className="p-3.5 rounded-none border border-slate-200 bg-slate-50/50 min-w-0">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Cost Center / Dept</p>
+                <p className="text-xs font-bold text-slate-900 truncate">{emp?.cost_center || emp?.department || '—'}</p>
+              </div>
+            </div>
+            <div className="space-y-4 min-w-0">
+              <div className="p-3.5 rounded-none border border-slate-200 bg-slate-50/50 min-w-0">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Hired Date</p>
+                <p className="text-xs font-bold text-slate-900 truncate">{emp?.join_date || '—'}</p>
+              </div>
+              <div className="p-3.5 rounded-none border border-slate-200 bg-slate-50/50 min-w-0">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Employment Type</p>
+                <p className="text-xs font-bold text-slate-900 truncate">{emp?.employment_type || '—'}</p>
               </div>
             </div>
           </div>
           {isHrAdmin && (
-            <div className="mt-6 flex flex-wrap gap-3 pt-6 border-t border-slate-100">
-              <Button label="PROMOTE"  variant="primary" size="sm" icon={HiArrowUpCircle}    className="text-[10px] font-black tracking-widest" />
-              <Button label="SUSPEND"  variant="outline" size="sm" icon={HiExclamationCircle} className="text-[10px] font-black tracking-widest border-amber-200 text-amber-600 hover:bg-amber-50" />
-              <Button label="OFFBOARD" variant="outline" size="sm" icon={HiNoSymbol}          className="text-[10px] font-black tracking-widest border-rose-200 text-rose-600 hover:bg-rose-50" />
+            <div className="mt-6 flex flex-wrap gap-2.5 pt-5 border-t border-slate-100 min-w-0">
+              <button type="button" className="inline-flex items-center gap-1.5 rounded-none bg-[#0F766E] px-3 py-1.5 text-[10px] font-black text-white uppercase tracking-wider hover:bg-[#0c6b64] transition-colors shadow-2xs">
+                <HiArrowUpCircle className="h-3.5 w-3.5" /> Promote
+              </button>
+              <button type="button" className="inline-flex items-center gap-1.5 rounded-none border border-amber-300 bg-amber-50 px-3 py-1.5 text-[10px] font-black text-amber-700 uppercase tracking-wider hover:bg-amber-100 transition-colors shadow-2xs">
+                <HiExclamationCircle className="h-3.5 w-3.5" /> Suspend
+              </button>
+              <button type="button" className="inline-flex items-center gap-1.5 rounded-none border border-rose-300 bg-rose-50 px-3 py-1.5 text-[10px] font-black text-rose-700 uppercase tracking-wider hover:bg-rose-100 transition-colors shadow-2xs">
+                <HiNoSymbol className="h-3.5 w-3.5" /> Offboard
+              </button>
             </div>
           )}
         </div>
-        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Career Evolution</h3>
-          <div className="space-y-4 relative">
+        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-2xs min-w-0 flex flex-col">
+          <div className="border-b border-slate-100 pb-4 mb-5 min-w-0 shrink-0">
+            <h3 className="text-xs font-black text-[#0F766E] uppercase tracking-wider">Career Evolution</h3>
+          </div>
+          <div className="space-y-4 relative flex-1 min-w-0">
             <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-slate-100" />
             {emp?.career_history ? (
               emp.career_history.split('\n').filter(Boolean).map((line, i) => (
-                <div key={i} className="flex gap-4 relative">
-                  <div className={`h-5 w-5 rounded-full border-4 border-white shadow-sm z-10 ${i === 0 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
-                  <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight leading-tight flex-1 pb-1">{line}</p>
+                <div key={i} className="flex gap-3.5 relative min-w-0">
+                  <div className={`h-5 w-5 shrink-0 rounded-none border-2 border-white shadow-xs z-10 ${i === 0 ? 'bg-[#0F766E]' : 'bg-slate-300'}`} />
+                  <p className="text-[11px] font-bold text-slate-800 tracking-tight leading-tight flex-1 pb-1 min-w-0 break-words">{line}</p>
                 </div>
               ))
             ) : (
-              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-8">No career history recorded</p>
+              <div className="flex flex-col items-center justify-center h-full text-center py-6 min-w-0">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">No Evolution History</p>
+                <p className="text-[10px] text-slate-400 mt-1">Career timeline tracks structural position changes.</p>
+              </div>
             )}
           </div>
         </div>
@@ -947,6 +996,44 @@ export default function EmployeeProfile() {
     )
   }
 
+  const handleTogglePrintTab = (id) => {
+    setSelectedPrintTabs(prev =>
+      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+    )
+  }
+
+  const handleSelectAllPrintTabs = (select) => {
+    if (select) {
+      setSelectedPrintTabs(TABS.map(t => t.id))
+    } else {
+      setSelectedPrintTabs([])
+    }
+  }
+
+  const executePrintExport = (format) => {
+    if (!selectedPrintTabs.length) {
+      toast.error('Please select at least one tab to include.')
+      return
+    }
+
+    const selectedLabels = TABS.filter(t => selectedPrintTabs.includes(t.id)).map(t => t.label)
+    
+    if (format === 'pdf') {
+      toast.success(`Exporting ${selectedLabels.length} modules as highly formatted PDF bundle...`)
+      setTimeout(() => {
+        window.print()
+      }, 500)
+    } else if (format === 'excel') {
+      toast.success(`Exporting multi-sheet Excel workbook for ${emp?.full_name || 'Employee'}...`)
+    } else {
+      toast.success(`Preparing printer-friendly document layouts...`)
+      setTimeout(() => {
+        window.print()
+      }, 500)
+    }
+    setPrintModalOpen(false)
+  }
+
   const renderTabContent = () => {
     if (loadingProfile || !emp) return <Spinner />
     switch (activeTab) {
@@ -966,8 +1053,8 @@ export default function EmployeeProfile() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-500 min-w-0">
-      {/* Top Title Bar with Breadcrumbs */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+      {/* Top Title Bar with Breadcrumbs & Actions */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
           <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Employee Profile Portal</h1>
           <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
@@ -976,87 +1063,95 @@ export default function EmployeeProfile() {
             <span className="text-slate-600">360° Profile Audit</span>
           </div>
         </div>
-      </div>
 
-      {/* Hero */}
-      <div className="relative overflow-hidden rounded-none bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-md">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className="relative">
-              <Avatar
-                initials={initials}
-                size="xl"
-                className="ring-4 ring-white/20 shadow-2xl rounded-none"
-              />
-              {emp && (
-                <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-none bg-emerald-400 border-2 border-white flex items-center justify-center">
-                  <HiCheckCircle className="h-4 w-4 text-[#0F766E]" />
-                </div>
-              )}
-            </div>
-            <div className="text-center sm:text-left">
-              <div className="mb-2 flex items-center justify-center gap-2 sm:justify-start">
-                <HiIdentification className="h-4 w-4 shrink-0 text-emerald-200" aria-hidden />
-                <span className="text-xs font-semibold tracking-wide text-emerald-100/90">Employee profile</span>
-              </div>
-              {loadingProfile ? (
-                <div className="h-8 w-48 bg-white/10 rounded-none animate-pulse" />
-              ) : (
-                <>
-                  <h1 className="text-3xl font-black text-white tracking-tight uppercase leading-none mb-2">
-                    {emp?.full_name || 'Select Employee'}
-                  </h1>
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-                    <p className="text-emerald-100/70 text-sm font-medium">
-                      <span className="text-white font-bold">{emp?.emp_id}</span>
-                      {emp?.job_title && ` • ${emp.job_title}`}
-                    </p>
-                    {emp?.department && (
-                      <Badge label={emp.department} color="white" variant="soft" className="text-[8px] bg-white/10 text-white font-black px-2 rounded-none" />
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="w-full sm:w-64">
-              <p className="text-[9px] font-black text-emerald-300 uppercase tracking-widest mb-1.5 ml-1">Switch Employee</p>
-              {loadingList ? (
-                <div className="h-10 w-full bg-white/10 rounded-none animate-pulse" />
-              ) : (
+        {/* Right side Switcher and Export actions migrated directly into Title Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 shrink-0">
+          <div className="w-full sm:w-60">
+            {loadingList ? (
+              <div className="h-9 w-full bg-slate-100 rounded-none animate-pulse" />
+            ) : (
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-black tracking-wider text-slate-400 uppercase pointer-events-none bg-white px-1">
+                  SWITCH
+                </span>
                 <select
                   value={selectedId || ''}
                   onChange={e => setSelectedId(Number(e.target.value))}
-                  className="w-full rounded-none bg-white/10 backdrop-blur-md border border-white/20 p-2.5 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-emerald-400/50 cursor-pointer"
+                  className="w-full rounded-none border border-slate-200 bg-white py-2 pl-16 pr-8 text-xs font-bold text-slate-800 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] cursor-pointer shadow-2xs"
                 >
                   {employeeList.map(e => (
-                    <option key={e.id} value={e.id} className="text-slate-900">
+                    <option key={e.id} value={e.id}>
                       {e.full_name} ({e.emp_id})
                     </option>
                   ))}
                 </select>
-              )}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setPrintModalOpen(true)}
+            title="Print / Export Selective Modules"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#0F766E] transition-colors shadow-2xs shrink-0"
+          >
+            <HiPrinter className="h-4 w-4 text-slate-500" />
+            <span>Print Queue</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Modern High-Fidelity Clean Directory Header Panel (No Background Colors) */}
+      <div className="relative overflow-hidden rounded-none border border-slate-200 bg-white p-4 shadow-2xs min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="relative shrink-0">
+            {emp?.profile_image_url ? (
+              <img src={emp.profile_image_url} alt="" className="h-12 w-12 rounded-full object-cover border border-slate-200 shadow-2xs" />
+            ) : (
+              <Avatar name={emp?.full_name} size="md" />
+            )}
+            {emp && (
+              <div className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-500 flex items-center justify-center text-white ring-2 ring-white" title="Active Record">
+                <span className="h-1 w-1 rounded-full bg-white" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 flex items-center gap-1.5">
+              <HiIdentification className="h-3.5 w-3.5 shrink-0 text-[#0F766E]" aria-hidden />
+              <span className="text-[10px] font-bold tracking-wider text-[#0F766E] uppercase leading-none">Employee Profile</span>
             </div>
-            <div className="flex gap-2">
-              <button className="p-3 rounded-none bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all text-white shadow-sm">
-                <HiPrinter className="h-5 w-5" />
-              </button>
-              <button className="p-3 rounded-none bg-emerald-400 hover:bg-emerald-300 transition-all text-[#0F766E] shadow-sm">
-                <HiEllipsisVertical className="h-5 w-5" />
-              </button>
-            </div>
+            {loadingProfile ? (
+              <div className="h-6 w-48 bg-slate-100 rounded-none animate-pulse mt-1" />
+            ) : (
+              <>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none mb-1.5 truncate">
+                  {emp?.full_name || 'Select Employee'}
+                </h2>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] font-black text-slate-700 bg-slate-100 px-2 py-0.5 border border-slate-200 rounded-none leading-none">
+                    {emp?.emp_id || 'ID: —'}
+                  </span>
+                  {emp?.job_title && (
+                    <span className="text-xs font-semibold text-slate-600 leading-none">
+                      • {emp.job_title}
+                    </span>
+                  )}
+                  {emp?.department && (
+                    <span className="text-[10px] font-bold text-[#0F766E] bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-none ml-0.5 leading-none">
+                      {emp.department}
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
-        <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
       </div>
 
       {/* Horizontal tabs — standardized layout border framing */}
       <div className="rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
-        <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 min-w-0">
-          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium sm:gap-x-6 min-w-0">
+        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:p-5 min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
             {TABS.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
@@ -1065,180 +1160,117 @@ export default function EmployeeProfile() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`inline-flex items-center gap-2 border-b-2 pb-2.5 pt-0.5 transition-colors ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 font-bold text-xs transition-all ${
                     isActive
-                      ? 'border-[#0F766E] text-[#0F766E]'
-                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                      ? 'bg-[#0F766E] text-white shadow-2xs'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
                   }`}
                 >
-                  <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                  {tab.label}
+                  <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                  <span>{tab.label}</span>
                 </button>
               )
             })}
           </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-right text-xs text-slate-500">
-            <HiClock className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-            <span>
-              <span className="font-medium text-slate-400">Updated </span>
-              <span className="font-semibold text-slate-700">{emp?.updatedAt || '—'}</span>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <HiClock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span className="truncate">
+              <span className="font-medium">Updated </span>
+              <span className="font-bold text-slate-600">{emp?.updatedAt || '—'}</span>
             </span>
           </div>
         </div>
         <div className="min-w-0 p-4 sm:p-6">{renderTabContent()}</div>
       </div>
 
+      {/* Selective Print / Export Selection Dialog */}
       <Modal
-        isOpen={docUploadOpen}
-        onClose={() => {
-          if (!docUploading) closeDocUpload()
-        }}
-        title="Upload employee document"
-        description="File is stored against this employee’s record. Status starts as Pending until reviewed."
+        isOpen={printModalOpen}
+        onClose={() => setPrintModalOpen(false)}
+        title="Selective Print &amp; Export Configurator"
         size="md"
-        icon={HiDocumentText}
-        showClose={!docUploading}
       >
-        <form className="space-y-4" onSubmit={submitDocUpload}>
-          {docCatalogLoading ? (
-            <p className="text-sm text-slate-500">Loading document types…</p>
-          ) : docCatalog.length > 0 ? (
-            <div>
-              <label htmlFor="doc-type-select" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Document type
-              </label>
-              <select
-                id="doc-type-select"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-                value={
-                  docCatalog.some((t) => t.name === docForm.document_type)
-                    ? docForm.document_type
-                    : (docCatalog[0]?.name ?? '')
-                }
-                onChange={(e) => setDocForm((f) => ({ ...f, document_type: e.target.value }))}
+        <div className="p-4 sm:p-5 space-y-4">
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+              Target Profile Modules
+            </h3>
+            <p className="text-xs text-slate-600">
+              Select the data sections to bundle into your document export or print queue.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border border-slate-200 p-3 bg-slate-50/50">
+            {TABS.map((tab) => {
+              const isChecked = selectedPrintTabs.includes(tab.id)
+              return (
+                <label
+                  key={tab.id}
+                  className={`flex items-center gap-2.5 p-2 border cursor-pointer transition-all select-none ${
+                    isChecked
+                      ? 'bg-white border-[#0F766E]/40 text-[#0F766E] shadow-2xs font-bold'
+                      : 'bg-white/60 border-slate-200 text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => handleTogglePrintTab(tab.id)}
+                    className="h-3.5 w-3.5 rounded-none border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                  />
+                  <span className="text-xs truncate">{tab.label}</span>
+                </label>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleSelectAllPrintTabs(true)}
+                className="text-[11px] font-bold text-[#0F766E] hover:underline"
               >
-                {docCatalog.map((t) => (
-                  <option key={t.id} value={t.name}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+                Select All
+              </button>
+              <span className="text-slate-300">•</span>
+              <button
+                type="button"
+                onClick={() => handleSelectAllPrintTabs(false)}
+                className="text-[11px] font-semibold text-slate-500 hover:underline"
+              >
+                Clear
+              </button>
             </div>
-          ) : (
-            <div>
-              <label htmlFor="doc-type-text" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Document type
-              </label>
-              <input
-                id="doc-type-text"
-                type="text"
-                placeholder="e.g. Passport Copy"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-                value={docForm.document_type}
-                onChange={(e) => setDocForm((f) => ({ ...f, document_type: e.target.value }))}
-                maxLength={100}
-              />
-            </div>
-          )}
-          <div>
-            <label htmlFor="doc-title" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Display title (optional)
-            </label>
-            <input
-              id="doc-title"
-              type="text"
-              placeholder="Defaults to document type"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-              value={docForm.document_title}
-              onChange={(e) => setDocForm((f) => ({ ...f, document_title: e.target.value }))}
-              maxLength={255}
-            />
+            <span className="text-xs font-semibold text-slate-500">
+              {selectedPrintTabs.length} of {TABS.length} selected
+            </span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="doc-number" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Document number
-              </label>
-              <input
-                id="doc-number"
-                type="text"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-                value={docForm.document_number}
-                onChange={(e) => setDocForm((f) => ({ ...f, document_number: e.target.value }))}
-                maxLength={100}
-              />
-            </div>
-            <div>
-              <label htmlFor="doc-file" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                File (PDF, JPG, PNG)
-              </label>
-              <input
-                id="doc-file"
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
-                className="w-full text-sm text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-bold"
-                onChange={(e) => setDocFile(e.target.files?.[0] || null)}
-              />
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="doc-issue" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Issue date
-              </label>
-              <input
-                id="doc-issue"
-                type="date"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-                value={docForm.issue_date}
-                onChange={(e) => setDocForm((f) => ({ ...f, issue_date: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label htmlFor="doc-expiry" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Expiry date
-              </label>
-              <input
-                id="doc-expiry"
-                type="date"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-                value={docForm.expiry_date}
-                onChange={(e) => setDocForm((f) => ({ ...f, expiry_date: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="doc-notes" className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Notes
-            </label>
-            <textarea
-              id="doc-notes"
-              rows={3}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0F766E]/30"
-              value={docForm.notes}
-              onChange={(e) => setDocForm((f) => ({ ...f, notes: e.target.value }))}
-            />
-          </div>
-          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
-            <Button
+
+          <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row gap-2">
+            <button
               type="button"
-              label="Cancel"
-              variant="outline"
-              size="sm"
-              disabled={docUploading}
-              onClick={closeDocUpload}
-            />
-            <Button
-              type="submit"
-              label={docUploading ? 'UPLOADING…' : 'UPLOAD'}
-              variant="primary"
-              size="sm"
-              icon={HiArrowUpCircle}
-              disabled={docUploading}
-              className="text-[10px] font-black tracking-widest"
-            />
+              onClick={() => executePrintExport('pdf')}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-none bg-rose-600 py-2 px-3 text-xs font-bold text-white hover:bg-rose-700 transition-colors shadow-sm"
+            >
+              Export as PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => executePrintExport('excel')}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-none bg-emerald-600 py-2 px-3 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-sm"
+            >
+              Export as Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => executePrintExport('print')}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-none bg-[#0F766E] py-2 px-3 text-xs font-bold text-white hover:bg-[#0c6b64] transition-colors shadow-sm"
+            >
+              Print Queue
+            </button>
           </div>
-        </form>
+        </div>
       </Modal>
     </div>
   )

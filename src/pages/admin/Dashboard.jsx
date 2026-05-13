@@ -91,8 +91,12 @@ export default function Dashboard() {
     try {
       const res = await api.get('/admin/announcements')
       const allAnns = res.data?.data || []
-      // Display published ones on dashboard
-      setLiveAnnouncements(allAnns.filter(a => a.status === 'Published').slice(0, 4))
+      // Display published ones targeted for In App or Both on dashboard
+      setLiveAnnouncements(
+        allAnns
+          .filter(a => a.status === 'Published' && (!a.dispatch_channels || a.dispatch_channels === 'In App' || a.dispatch_channels === 'Both'))
+          .slice(0, 4)
+      )
     } catch (e) {
       console.warn('Could not pull live broadcasts:', e)
     }
