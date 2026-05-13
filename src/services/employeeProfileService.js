@@ -61,8 +61,23 @@ export const getEmployeeDocumentCatalog = async (employeeId) => {
  * @param {FormData} formData — must include `file`; optional text fields per API
  */
 export const uploadEmployeeDocument = async (employeeId, formData) => {
-  const { data } = await api.post(`/employees/${employeeId}/documents`, formData)
-  return data.data
+  try {
+    const { data } = await api.post(`/employees/${employeeId}/documents`, formData)
+    return data.data
+  } catch (err) {
+    const apiErr = err?.response?.data?.errors
+    const fieldMsg =
+      Array.isArray(apiErr) && apiErr.length
+        ? apiErr.map((e) => `${e.field || ''}: ${e.message || ''}`.trim()).join(' · ')
+        : null
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      fieldMsg ||
+      err?.message ||
+      'Upload failed'
+    throw new Error(msg)
+  }
 }
 
 /**

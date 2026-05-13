@@ -111,5 +111,9 @@ export function Modal({
     </div>
   )
 
-  return createPortal(modalContent, document.getElementById('modal-root'))
+  const mount =
+    typeof document !== 'undefined' &&
+    (document.getElementById('modal-root') || document.body)
+  if (!mount) return null
+  return createPortal(modalContent, mount)
 }

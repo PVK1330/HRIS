@@ -77,6 +77,12 @@ export default function EmployeeProfile() {
 
   const isHrAdmin = currentUser?.role === 'hr_admin' || currentUser?.role === 'admin'
 
+  /** Matches documents POST allow-list on API (upload / add file). */
+  const canUploadDocuments = (() => {
+    const r = String(currentUser?.role || '').toLowerCase()
+    return ['superadmin', 'admin', 'hr_admin', 'hr_executive'].includes(r)
+  })()
+
   const resolveDocFileUrl = (url) => {
     if (!url) return null
     if (/^https?:\/\//i.test(url)) return url
@@ -543,7 +549,7 @@ export default function EmployeeProfile() {
                 {docs.length} file{docs.length === 1 ? '' : 's'} on record
               </p>
             </div>
-            {isHrAdmin && (
+            {canUploadDocuments && (
               <Button
                 type="button"
                 label="UPLOAD NEW"
@@ -597,7 +603,7 @@ export default function EmployeeProfile() {
                   </table>
                 </div>
               ) : null}
-              {isHrAdmin ? (
+              {canUploadDocuments ? (
                 <Button
                   type="button"
                   label="UPLOAD OTHER DOCUMENT"
@@ -664,7 +670,7 @@ export default function EmployeeProfile() {
                                 <Button label="VIEW" variant="ghost" size="sm" className="text-[9px] font-black text-[#0F766E] uppercase" />
                               </a>
                             ) : null}
-                            {isHrAdmin ? (
+                            {canUploadDocuments ? (
                               <Button
                                 type="button"
                                 label={latest ? 'ADD FILE' : 'UPLOAD'}
