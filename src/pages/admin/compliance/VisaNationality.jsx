@@ -110,6 +110,11 @@ const EXPIRY_OPTIONS = [
   { value: 'expired', label: 'Already expired' },
 ]
 
+/** Visa modal fields — unified min-height + padding (overrides Input’s py-2 via !py-2.5) */
+const MODAL_INPUT =
+  'box-border min-h-[2.75rem] w-full !rounded-md !border-slate-200 bg-white !px-3 !py-2.5 text-sm leading-normal text-slate-800 !shadow-sm outline-none transition placeholder:text-slate-400 focus:!border-[#0F766E] focus:!ring-1 focus:!ring-[#0F766E]/25 disabled:cursor-not-allowed disabled:bg-slate-50'
+const MODAL_LABEL = 'mb-1 block text-xs font-semibold text-[#1f2a44]'
+
 export default function VisaNationality() {
   const { user } = useAuth()
   const isHR = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin'
@@ -159,7 +164,9 @@ export default function VisaNationality() {
 
   const [employees, setEmployees] = useState([])
   const [empSearch, setEmpSearch] = useState('')
+  const [debouncedEmpSearch, setDebouncedEmpSearch] = useState('')
   const [empDropdownOpen, setEmpDropdownOpen] = useState(false)
+  const empFieldRef = useRef(null)
 
   const [exportOpen, setExportOpen] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
@@ -169,6 +176,11 @@ export default function VisaNationality() {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 350)
     return () => clearTimeout(t)
   }, [search])
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedEmpSearch(empSearch.trim()), 280)
+    return () => clearTimeout(t)
+  }, [empSearch])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -245,9 +257,13 @@ export default function VisaNationality() {
     let cancelled = false
     ;(async () => {
       try {
-        const res = await listEmployees({ page: 1, limit: 500, search: empSearch.trim() || undefined })
+        const res = await listEmployees({
+          page: 1,
+          limit: 200,
+          search: debouncedEmpSearch || undefined,
+        })
         const list = res?.records ?? res?.employees ?? []
-        if (!cancelled) setEmployees(list)
+        if (!cancelled) setEmployees(Array.isArray(list) ? list : [])
       } catch (e) {
         if (!cancelled) setEmployees([])
       }
@@ -255,7 +271,18 @@ export default function VisaNationality() {
     return () => {
       cancelled = true
     }
-  }, [modalOpen, empSearch])
+  }, [modalOpen, debouncedEmpSearch])
+
+  useEffect(() => {
+    if (!empDropdownOpen) return undefined
+    const onDown = (e) => {
+      if (empFieldRef.current && !empFieldRef.current.contains(e.target)) {
+        setEmpDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [empDropdownOpen])
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -273,18 +300,6 @@ export default function VisaNationality() {
     const eid = em.emp_id || em.empId || ''
     return `${name} (${eid})`
   }, [formData.employee_id, employees])
-
-  const filteredEmployees = useMemo(() => {
-    const q = empSearch.trim().toLowerCase()
-    if (!q) return employees.slice(0, 80)
-    return employees
-      .filter((e) => {
-        const n = String(e.full_name || e.name || '').toLowerCase()
-        const id = String(e.emp_id || e.empId || '').toLowerCase()
-        return n.includes(q) || id.includes(q)
-      })
-      .slice(0, 80)
-  }, [employees, empSearch])
 
   const liveVisaBadge = useMemo(() => visaClientStatus(formData.visa_expiry_date), [formData.visa_expiry_date])
 
@@ -815,15 +830,15 @@ export default function VisaNationality() {
 
       {/* Main listing card */}
       <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
-          <h2 className="text-sm font-semibold text-slate-800">Visa & nationality records</h2>
+        <div className="flex items-center justify-between border-b border-[#0d5c56] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold tracking-wide text-white">Visa & nationality records</h2>
           <button
             type="button"
             onClick={() => {
               loadStats()
               fetchRecords()
             }}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#0F766E] hover:text-[#0d5c56]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-white/90 hover:text-white"
           >
             <HiArrowPath className="h-4 w-4" />
             Refresh
@@ -916,10 +931,10 @@ export default function VisaNationality() {
         <button
           type="button"
           onClick={() => setVisaTypePanelOpen((o) => !o)}
-          className="flex w-full items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3 text-left"
+          className="flex w-full items-center justify-between border-b border-[#0d5c56] bg-[#0F766E] px-5 py-3 text-left transition-colors hover:bg-[#0c6b64]"
         >
-          <span className="text-sm font-semibold text-slate-800">Manage Visa Types</span>
-          <HiChevronRight className={`h-5 w-5 text-slate-500 transition-transform ${visaTypePanelOpen ? 'rotate-90' : ''}`} />
+          <span className="text-sm font-semibold tracking-wide text-white">Manage Visa Types</span>
+          <HiChevronRight className={`h-5 w-5 shrink-0 text-white/90 transition-transform ${visaTypePanelOpen ? 'rotate-90' : ''}`} />
         </button>
         {visaTypePanelOpen ? (
           <div className="space-y-4 px-4 py-4">
@@ -1088,7 +1103,7 @@ export default function VisaNationality() {
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        size="employee"
+        size="visa"
         showClose
         header={
           <div className="flex flex-col gap-1">
@@ -1101,7 +1116,7 @@ export default function VisaNationality() {
           </div>
         }
       >
-        <form onSubmit={handleSave} className="space-y-4 pt-1">
+        <form onSubmit={handleSave} className="space-y-4 pt-1 [&_input]:min-h-[2.75rem] [&_select]:min-h-[2.75rem]">
           <div className="-mx-1 flex gap-4 overflow-x-auto border-b border-slate-200 pb-px text-sm font-medium whitespace-nowrap [scrollbar-width:thin]">
             {['Passport', 'Visa Details', 'Emirates ID', 'Documents'].map((label, i) => {
               const n = i + 1
@@ -1121,58 +1136,85 @@ export default function VisaNationality() {
           </div>
 
           {formTab === 1 ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="relative md:col-span-2">
-                <label className="mb-1 block text-xs font-semibold text-[#1f2a44]">Employee (id) *</label>
-                <input
-                  type="text"
-                  value={empSearch}
-                  disabled={editMode}
-                  onChange={(e) => {
-                    setEmpSearch(e.target.value)
-                    setEmpDropdownOpen(true)
-                  }}
-                  onFocus={() => setEmpDropdownOpen(true)}
-                  placeholder="Search name or emp ID…"
-                  className="h-10 w-full rounded-none border border-slate-200 px-3 text-sm focus:border-[#0F766E] disabled:bg-slate-100"
-                />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div ref={empFieldRef} className="relative sm:col-span-2">
+                <label htmlFor="visa-emp-search" className={MODAL_LABEL}>
+                  Employee *
+                </label>
+                <div className="relative">
+                  <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="visa-emp-search"
+                    type="text"
+                    value={empSearch}
+                    disabled={editMode}
+                    onChange={(e) => {
+                      setEmpSearch(e.target.value)
+                      setEmpDropdownOpen(true)
+                    }}
+                    onFocus={() => !editMode && setEmpDropdownOpen(true)}
+                    placeholder="Search by employee name or ID…"
+                    autoComplete="off"
+                    className={`${MODAL_INPUT} pl-9`}
+                  />
+                </div>
                 {empDropdownOpen && !editMode ? (
-                  <div className="absolute z-30 mt-1 max-h-52 w-full overflow-auto border border-slate-200 bg-white shadow-lg">
-                    {filteredEmployees.map((em) => (
-                      <button
-                        key={em.id}
-                        type="button"
-                        className="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-slate-50"
-                        onClick={() => {
-                          setFormData((p) => ({ ...p, employee_id: String(em.id) }))
-                          setEmpSearch(`${em.full_name || em.name || 'Employee'} (${em.emp_id || em.empId || ''})`)
-                          setEmpDropdownOpen(false)
-                        }}
-                      >
-                        <span className="font-medium text-slate-900">{em.full_name || em.name}</span>
-                        <span className="text-xs text-slate-500">{em.emp_id || em.empId}</span>
-                      </button>
-                    ))}
+                  <div className="absolute left-0 right-0 z-30 mt-1 max-h-56 overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black/5">
+                    {employees.length === 0 ? (
+                      <p className="px-3 py-3 text-center text-xs text-slate-500">
+                        No employees found. Try another search.
+                      </p>
+                    ) : (
+                      employees.slice(0, 80).map((em) => {
+                        const name = em.full_name || em.name || '—'
+                        const eid = em.emp_id || em.empId || '—'
+                        return (
+                          <button
+                            key={em.id}
+                            type="button"
+                            className="grid w-full grid-cols-[1fr_auto] items-center gap-2 px-3 py-2 text-left text-sm hover:bg-emerald-50/80"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setFormData((p) => ({ ...p, employee_id: String(em.id) }))
+                              setEmpSearch(`${name} (${eid})`)
+                              setEmpDropdownOpen(false)
+                            }}
+                          >
+                            <span className="min-w-0 truncate font-medium text-slate-900" title={name}>
+                              {name}
+                            </span>
+                            <span
+                              className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-600"
+                              title={`Emp ID: ${eid}`}
+                            >
+                              {eid}
+                            </span>
+                          </button>
+                        )
+                      })
+                    )}
                   </div>
                 ) : null}
               </div>
               <Input
                 label="Nationality *"
                 name="nationality"
+                placeholder="e.g. United Arab Emirates"
                 value={formData.nationality}
                 onChange={(e) => setFormData((p) => ({ ...p, nationality: e.target.value }))}
                 required
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
               <Input
                 label="Passport Number *"
                 name="passport_number"
+                placeholder="Passport document number"
                 value={formData.passport_number}
                 onChange={(e) => setFormData((p) => ({ ...p, passport_number: e.target.value }))}
                 required
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
               <Input
                 label="Passport Issue Date *"
@@ -1181,8 +1223,8 @@ export default function VisaNationality() {
                 value={formData.passport_issue_date}
                 onChange={(e) => setFormData((p) => ({ ...p, passport_issue_date: e.target.value }))}
                 required
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
               <Input
                 label="Passport Expiry Date *"
@@ -1191,43 +1233,47 @@ export default function VisaNationality() {
                 value={formData.passport_expiry_date}
                 onChange={(e) => setFormData((p) => ({ ...p, passport_expiry_date: e.target.value }))}
                 required
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
-              <Input
-                label="Country of Issue *"
-                name="country_of_issue"
-                value={formData.country_of_issue}
-                onChange={(e) => setFormData((p) => ({ ...p, country_of_issue: e.target.value }))}
-                required
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
-              />
+              <div className="sm:col-span-2">
+                <Input
+                  label="Country of Issue *"
+                  name="country_of_issue"
+                  placeholder="Country that issued the passport"
+                  value={formData.country_of_issue}
+                  onChange={(e) => setFormData((p) => ({ ...p, country_of_issue: e.target.value }))}
+                  required
+                  inputClassName={MODAL_INPUT}
+                  labelClassName={MODAL_LABEL}
+                />
+              </div>
             </div>
           ) : null}
 
           {formTab === 2 ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Input
-                label="Visa Type (id) *"
+                label="Visa Type *"
                 name="visa_type_id"
                 type="select"
-                placeholder="Select visa type"
+                placeholder="Choose visa type"
                 value={formData.visa_type_id}
                 onChange={(e) => setFormData((p) => ({ ...p, visa_type_id: e.target.value }))}
                 required
                 options={filterOptions.visaTypes.map((vt) => ({ label: vt.name, value: String(vt.id) }))}
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
               <Input
                 label="Visa Number *"
                 name="visa_number"
+                placeholder="Visa / permit reference number"
                 value={formData.visa_number}
                 onChange={(e) => setFormData((p) => ({ ...p, visa_number: e.target.value }))}
                 required
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
               <Input
                 label="Visa Issue Date *"
@@ -1236,14 +1282,14 @@ export default function VisaNationality() {
                 value={formData.visa_issue_date}
                 onChange={(e) => setFormData((p) => ({ ...p, visa_issue_date: e.target.value }))}
                 required
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
               <div>
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <label className="text-xs font-semibold text-[#1f2a44]">Visa Expiry Date *</label>
+                  <span className="text-xs font-semibold text-[#1f2a44]">Visa Expiry Date *</span>
                   <span
-                    className={`rounded-none px-2 py-0.5 text-[10px] font-bold ${
+                    className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
                       liveVisaBadge.key === 'valid'
                         ? 'bg-emerald-100 text-emerald-800'
                         : liveVisaBadge.key === 'soon'
@@ -1259,37 +1305,41 @@ export default function VisaNationality() {
                   value={formData.visa_expiry_date}
                   onChange={(e) => setFormData((p) => ({ ...p, visa_expiry_date: e.target.value }))}
                   required
-                  className="h-10 w-full rounded-none border border-slate-300 px-3 text-sm focus:border-[#0F766E]"
+                  title="Select visa expiry date"
+                  className={MODAL_INPUT}
                 />
               </div>
               <Input
                 label="Issued By"
                 name="issued_by"
+                placeholder="Authority or office (optional)"
                 value={formData.issued_by}
                 onChange={(e) => setFormData((p) => ({ ...p, issued_by: e.target.value }))}
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
               <Input
                 label="Sponsoring Entity"
                 name="sponsoring_entity"
+                placeholder="Company or sponsor name (optional)"
                 value={formData.sponsoring_entity}
                 onChange={(e) => setFormData((p) => ({ ...p, sponsoring_entity: e.target.value }))}
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
             </div>
           ) : null}
 
           {formTab === 3 ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Input
                 label="Emirates ID Number"
                 name="emirates_id_number"
+                placeholder="EID number (optional)"
                 value={formData.emirates_id_number}
                 onChange={(e) => setFormData((p) => ({ ...p, emirates_id_number: e.target.value }))}
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
               <Input
                 label="Emirates ID Expiry"
@@ -1297,14 +1347,14 @@ export default function VisaNationality() {
                 type="date"
                 value={formData.emirates_id_expiry}
                 onChange={(e) => setFormData((p) => ({ ...p, emirates_id_expiry: e.target.value }))}
-                inputClassName="h-10 rounded-none border-slate-300 focus:border-[#0F766E]"
-                labelClassName="mb-1 block text-xs font-semibold text-[#1f2a44]"
+                inputClassName={MODAL_INPUT}
+                labelClassName={MODAL_LABEL}
               />
             </div>
           ) : null}
 
           {formTab === 4 ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <VisaDocUploadZone
                 label="Passport Scan"
                 required={!editMode}
@@ -1334,7 +1384,7 @@ export default function VisaNationality() {
             <button
               type="button"
               onClick={closeModal}
-              className="inline-flex h-9 items-center justify-center rounded-none border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100"
             >
               Cancel
             </button>
@@ -1342,7 +1392,7 @@ export default function VisaNationality() {
               <button
                 type="button"
                 onClick={goPrev}
-                className="inline-flex h-9 items-center justify-center rounded-none border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100"
               >
                 Previous
               </button>
@@ -1351,7 +1401,7 @@ export default function VisaNationality() {
               <button
                 type="button"
                 onClick={goNext}
-                className="inline-flex h-9 items-center justify-center rounded-none bg-[#0F766E] px-4 text-sm font-semibold text-white hover:bg-[#0c6b64]"
+                className="inline-flex h-9 items-center justify-center rounded-md bg-[#0F766E] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0c6b64]"
               >
                 Next →
               </button>
@@ -1359,7 +1409,7 @@ export default function VisaNationality() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex h-9 items-center justify-center rounded-none bg-[#0F766E] px-4 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-60"
+                className="inline-flex h-9 items-center justify-center rounded-md bg-[#0F766E] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0c6b64] disabled:opacity-60"
               >
                 {submitting ? 'Saving…' : 'Save Record'}
               </button>

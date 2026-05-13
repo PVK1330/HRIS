@@ -6,6 +6,8 @@ const sizeClasses = {
   sm: 'max-w-md',
   /** Employee add/edit wizard (a little narrower) */
   employee: 'max-w-[min(1000px,calc(100vw-2rem))]',
+  /** Visa & nationality stepped form — compact width */
+  visa: 'max-w-[min(640px,calc(100vw-1.5rem))]',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
