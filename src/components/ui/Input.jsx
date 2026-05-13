@@ -41,7 +41,7 @@ export function Input({
           name={name}
           value={value}
           onChange={onChange}
-          className={`${baseInput} ${borderClass} bg-white px-3 py-2`}
+          className={`${baseInput} ${borderClass} box-border bg-white px-3 py-2 leading-normal ${inputClassName}`}
         >
           {placeholder && (
             <option value="" disabled hidden>
@@ -77,7 +77,7 @@ export function Input({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          className={`${baseInput} ${borderClass} px-3 py-2 ${inputClassName}`}
+          className={`${baseInput} ${borderClass} box-border px-3 py-2 leading-normal ${inputClassName}`}
         />
       )}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}

@@ -68,7 +68,7 @@ export function VisaDocUploadZone({ label, required, file, onChange, disabled })
         }}
         onDrop={onDrop}
         onClick={() => !disabled && inputRef.current?.click()}
-        className={`rounded-none border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center transition hover:border-[#0F766E]/50 ${
+        className={`rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center shadow-sm transition hover:border-[#0F766E]/50 ${
           disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
         }`}
       >
@@ -103,7 +103,7 @@ export function VisaDocUploadZone({ label, required, file, onChange, disabled })
                 e.stopPropagation()
                 onChange(null)
               }}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
               aria-label="Remove file"
             >
               <HiXMark className="h-5 w-5" />

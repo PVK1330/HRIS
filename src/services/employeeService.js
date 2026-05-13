@@ -24,7 +24,16 @@ export const getFilterOptions = async () => {
 }
 
 /**
- * GET /api/v1/employees
+ * GET /api/v1/employees/dropdown?search=
+ * Full employee list for dropdowns (id, emp_id, full_name) — no pagination, capped server-side.
+ */
+export const listEmployeesDropdown = async (params = {}) => {
+  const { data } = await api.get('/employees/dropdown', { params })
+  return data.data
+}
+
+/**
+ * GET /api/v1/employees (paginated directory listing)
  * @returns {Promise<{ records: Array, employees: Array, pagination: object, filters?: object, total: number, page: number, limit: number, pages: number }>}
  */
 export const listEmployees = async (params = {}) => {
