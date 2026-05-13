@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
@@ -15,7 +15,6 @@ import {
   HiBriefcase,
   HiDocumentArrowDown,
 } from 'react-icons/hi2'
-import { jsPDF } from 'jspdf'
 import { 
   listDepartments, 
   listDepartmentManagers,
@@ -23,6 +22,7 @@ import {
   updateDepartment, 
   deleteDepartment 
 } from '../../../services/departmentService'
+import { triggerExport } from '../../../utils/exportHelper'
 import Swal from 'sweetalert2'
 
 const initialFormData = {
@@ -47,6 +47,7 @@ export default function DepartmentManagement() {
   const [managerOptions, setManagerOptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
   const exportRef = useRef(null)
 
   useEffect(() => {
@@ -68,8 +69,8 @@ export default function DepartmentManagement() {
         search: debouncedSearch,
         status: statusParam,
       })
-      setDepartmentList(data?.departments ?? [])
-      setDeptTotal(data?.total ?? 0)
+      setDepartmentList(data?.departments ?? data?.records ?? [])
+      setDeptTotal(data?.total ?? data?.pagination?.total ?? 0)
     } catch (err) {
       console.error('Failed to fetch departments:', err)
       toast.error('Failed to load departments.')
@@ -288,122 +289,28 @@ export default function DepartmentManagement() {
     },
   ]
 
-  const exportRows = useMemo(
-    () =>
-      departmentList.map((row) => ({
-        department: row.name ?? '-',
-        description: row.description ?? '-',
-        head: row.head ?? '-',
-        headcount: row.employeeCount ?? 0,
-        status: row.status ?? (row.isActive ? 'Active' : 'Inactive'),
-      })),
-    [departmentList]
-  )
-
-  const exportAsExcel = () => {
-    if (!exportRows.length) {
-      Swal.fire('No data', 'There is no department data to export.', 'info')
-      return
+  const runServerExport = async (type) => {
+    const ext = type === 'pdf' ? 'pdf' : 'xlsx'
+    const today = new Date().toISOString().slice(0, 10)
+    const filename = `departments_${today}.${ext}`
+    const statusParam = statusFilter === 'all' ? 'all' : statusFilter
+    setExportLoading(true)
+    const tid = toast.loading('Preparing export…')
+    try {
+      await triggerExport(
+        'departments',
+        { search: debouncedSearch, status: statusParam },
+        type,
+        filename,
+      )
+      toast.success('Export ready.', { id: tid })
+    } catch (err) {
+      console.error(err)
+      toast.error('Export failed.', { id: tid })
+    } finally {
+      setExportLoading(false)
+      setExportOpen(false)
     }
-
-    const headers = ['Department', 'Description', 'Head of Department', 'No of Employees', 'Status']
-    const lines = [
-      headers.join(','),
-      ...exportRows.map((row) =>
-        [
-          row.department,
-          row.description,
-          row.head,
-          row.headcount,
-          row.status,
-        ]
-          .map((value) => `"${String(value).replace(/"/g, '""')}"`)
-          .join(',')
-      ),
-    ]
-
-    const csv = `\uFEFF${lines.join('\n')}`
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    const date = new Date().toISOString().slice(0, 10)
-    link.href = url
-    link.setAttribute('download', `departments-${date}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
-    setExportOpen(false)
-  }
-
-  const exportAsPdf = () => {
-    if (!exportRows.length) {
-      Swal.fire('No data', 'There is no department data to export.', 'info')
-      return
-    }
-
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
-    const pageWidth = pdf.internal.pageSize.getWidth()
-    const rowHeight = 22
-    const startX = 40
-    let y = 70
-
-    pdf.setFontSize(14)
-    pdf.text('Department Listing', startX, 40)
-    pdf.setFontSize(9)
-    pdf.setTextColor(100)
-    pdf.text(`Generated on ${new Date().toLocaleString()}`, startX, 56)
-    pdf.setTextColor(0)
-
-    const columnsMeta = [
-      { key: 'department', title: 'Department', width: 180 },
-      { key: 'description', title: 'Description', width: 170 },
-      { key: 'head', title: 'Head of Department', width: 170 },
-      { key: 'headcount', title: 'No of Employees', width: 90 },
-      { key: 'status', title: 'Status', width: 100 },
-    ]
-
-    const drawHeader = () => {
-      let x = startX
-      pdf.setFillColor(15, 118, 110)
-      pdf.rect(startX, y, pageWidth - 80, rowHeight, 'F')
-      pdf.setTextColor(255, 255, 255)
-      pdf.setFontSize(10)
-      columnsMeta.forEach((column) => {
-        pdf.text(column.title, x + 8, y + 15)
-        x += column.width
-      })
-      pdf.setTextColor(0, 0, 0)
-      y += rowHeight
-    }
-
-    drawHeader()
-
-    exportRows.forEach((row, index) => {
-      if (y > pdf.internal.pageSize.getHeight() - 35) {
-        pdf.addPage()
-        y = 40
-        drawHeader()
-      }
-
-      if (index % 2 === 0) {
-        pdf.setFillColor(247, 250, 252)
-        pdf.rect(startX, y, pageWidth - 80, rowHeight, 'F')
-      }
-
-      let x = startX
-      columnsMeta.forEach((column) => {
-        const value = String(row[column.key] ?? '-')
-        pdf.setFontSize(9)
-        pdf.text(value.slice(0, 28), x + 8, y + 15)
-        x += column.width
-      })
-      y += rowHeight
-    })
-
-    const date = new Date().toISOString().slice(0, 10)
-    pdf.save(`departments-${date}.pdf`)
-    setExportOpen(false)
   }
 
   return (
@@ -415,8 +322,9 @@ export default function DepartmentManagement() {
                 <div className="relative" ref={exportRef}>
                   <button
                     type="button"
+                    disabled={exportLoading}
                     onClick={() => setExportOpen((prev) => !prev)}
-                    className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                   >
                     <HiDocumentArrowDown className="h-4 w-4" />
                     Export
@@ -426,16 +334,18 @@ export default function DepartmentManagement() {
                     <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
                       <button
                         type="button"
-                        onClick={exportAsPdf}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                        disabled={exportLoading}
+                        onClick={() => runServerExport('pdf')}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                       >
                         <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
                         Export as PDF
                       </button>
                       <button
                         type="button"
-                        onClick={exportAsExcel}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                        disabled={exportLoading}
+                        onClick={() => runServerExport('excel')}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                       >
                         <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
                         Export as Excel

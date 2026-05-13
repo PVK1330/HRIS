@@ -60,11 +60,12 @@ export default function EmployeeGrid() {
         getEmployeeStats(),
         getFilterOptions(),
         listEmployees({ page: 1, limit: 24 }),
-        listDesignations().catch(() => []),
+        listDesignations({ limit: 500 }).catch(() => ({ designations: [] })),
       ])
       setStats(statsRes || { total: 0, active: 0, onLeave: 0 })
       setFilters(filterRes || { departments: [], statuses: [] })
-      setDesignationOptions(Array.isArray(designationRes) ? designationRes : [])
+      const des = designationRes?.designations ?? designationRes?.records ?? []
+      setDesignationOptions(Array.isArray(des) ? des : [])
       setEmployees(Array.isArray(listRes?.employees) ? listRes.employees : [])
     } catch (err) {
       console.error('Failed to load employee grid data:', err)

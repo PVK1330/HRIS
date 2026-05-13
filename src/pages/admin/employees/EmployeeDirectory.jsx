@@ -7,6 +7,7 @@ import {
   HiBriefcase, HiFolder, HiClock, HiCalendarDays,
   HiPresentationChartLine, HiDevicePhoneMobile, HiCheckBadge,
   HiUserCircle, HiChevronDown, HiArrowsUpDown, HiBanknotes, HiUserGroup, HiAcademicCap, HiBriefcase as HiBriefcaseIcon,
+  HiDocumentArrowDown,
 } from 'react-icons/hi2'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -21,6 +22,7 @@ import {
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
 import { listDesignations } from '../../../services/designationService.js'
+import { triggerExport } from '../../../utils/exportHelper.js'
 
 const selectClass = 'mt-1.5 w-full rounded-md border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all focus:border-[#0F766E]'
 const textareaClass = 'w-full min-h-[100px] rounded-md border border-slate-200 bg-slate-50/50 p-4 text-sm font-bold text-slate-900 outline-none transition-all shadow-inner focus:border-[#0F766E]'
@@ -236,6 +238,10 @@ export default function EmployeeDirectory() {
   const [status, setStatus]   = useState('')
   const [workMode, setWorkMode] = useState('')
 
+  const [exportOpen, setExportOpen] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
+  const exportRef = useRef(null)
+
   // Add/Edit modal
   const [modalOpen, setModalOpen]           = useState(false)
   const [formData, setFormData]             = useState(initialFormData)
@@ -359,14 +365,41 @@ export default function EmployeeDirectory() {
         department: dept, status, workMode, jobTitle: job, workLocation: loc,
       })
       if (data) {
-        setEmployeeList(data.employees.map(mapEmployeeList))
-        setTotalRecords(data.total)
+        const rows = data.employees || data.records || []
+        setEmployeeList(rows.map(mapEmployeeList))
+        setTotalRecords(data.total ?? data.pagination?.total ?? 0)
       }
     } catch (err) {
       console.error(err)
       toast.error('Could not load employees.')
     }
     finally { setLoading(false) }
+  }
+
+  const runEmployeeExport = async (type) => {
+    const ext = type === 'pdf' ? 'pdf' : 'xlsx'
+    const today = new Date().toISOString().slice(0, 10)
+    const filename = `employees_${today}.${ext}`
+    const filters = {
+      search,
+      department: dept,
+      status,
+      workMode,
+      jobTitle: job,
+      workLocation: loc,
+    }
+    setExportLoading(true)
+    const tid = toast.loading('Preparing export…')
+    try {
+      await triggerExport('employees', filters, type, filename)
+      toast.success('Export ready.', { id: tid })
+    } catch (err) {
+      console.error(err)
+      toast.error('Export failed.', { id: tid })
+    } finally {
+      setExportLoading(false)
+      setExportOpen(false)
+    }
   }
 
   const fetchStatsAndFilters = async () => {
@@ -376,6 +409,14 @@ export default function EmployeeDirectory() {
       if (f) setFilterOptions(f)
     } catch (err) { console.error(err) }
   }
+
+  useEffect(() => {
+    const onOutside = (e) => {
+      if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false)
+    }
+    if (exportOpen) document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [exportOpen])
 
   useEffect(() => { fetchStatsAndFilters() }, [])
   useEffect(() => {
@@ -404,8 +445,8 @@ export default function EmployeeDirectory() {
       try {
         const [depts, desigs] = await Promise.all([listDepartments(), listDesignations()])
         if (cancelled) return
-        setDepartmentsCatalog(depts?.departments ?? [])
-        setDesignationsCatalog(desigs?.designations ?? [])
+        setDepartmentsCatalog(depts?.departments ?? depts?.records ?? [])
+        setDesignationsCatalog(desigs?.designations ?? desigs?.records ?? [])
       } catch {
         if (!cancelled) {
           setDepartmentsCatalog([])
@@ -911,9 +952,40 @@ export default function EmployeeDirectory() {
         <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
           <h2 className="text-sm font-semibold text-slate-800">Employee Listing</h2>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded-none border border-blue-200 bg-blue-50 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-blue-700">
-              {totalRecords} Records
-            </span>
+            <div className="relative" ref={exportRef}>
+              <button
+                type="button"
+                disabled={exportLoading}
+                onClick={() => setExportOpen((v) => !v)}
+                className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+              >
+                <HiDocumentArrowDown className="h-4 w-4" />
+                Export
+                <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {exportOpen ? (
+                <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
+                  <button
+                    type="button"
+                    disabled={exportLoading}
+                    onClick={() => runEmployeeExport('excel')}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
+                    Export as Excel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={exportLoading}
+                    onClick={() => runEmployeeExport('pdf')}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
+                    Export as PDF
+                  </button>
+                </div>
+              ) : null}
+            </div>
             <button
               type="button"
               onClick={openAddModal}
