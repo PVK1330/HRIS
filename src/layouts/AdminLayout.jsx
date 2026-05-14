@@ -171,12 +171,17 @@ const adminNavGroups = [
         permission: "view_announcements",
       },
       {
-        label: "Payroll Management",
+        label: "Payroll",
         icon: HiCurrencyDollar,
         path: "/admin/payroll",
         key: "payroll-management",
         permission: "view_payroll",
         featureCode: "payroll",
+        children: [
+          { label: "Employee Salary", path: "/admin/payroll?tab=summary" },
+          { label: "Payslip", path: "/admin/payroll?tab=payslips" },
+          { label: "Payroll Items", path: "/admin/payroll?tab=run" }
+        ]
       },
       /*
             {

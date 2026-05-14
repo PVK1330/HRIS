@@ -23,15 +23,15 @@ import {
 const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const TABS = [
-  { id: 'overview',    label: 'Overview',              icon: HiUser },
-  { id: 'personal',   label: 'Personal Information',   icon: HiIdentification },
-  { id: 'job',        label: 'Job & Organization',     icon: HiBriefcase },
-  { id: 'documents',  label: 'Documents',              icon: HiDocumentText },
-  { id: 'visa',       label: 'Visa & Nationality',     icon: HiCreditCard },
+  { id: 'overview', label: 'Overview', icon: HiUser },
+  { id: 'personal', label: 'Personal Information', icon: HiIdentification },
+  { id: 'job', label: 'Job & Organization', icon: HiBriefcase },
+  { id: 'documents', label: 'Documents', icon: HiDocumentText },
+  { id: 'visa', label: 'Visa & Nationality', icon: HiCreditCard },
   { id: 'attendance', label: 'Attendance & Timesheet', icon: HiClock },
-  { id: 'leave',      label: 'Leave',                  icon: HiCalendar },
-  { id: 'performance',label: 'Performance',            icon: HiChartBar },
-  { id: 'assets',     label: 'Assets',                 icon: HiArchiveBox },
+  { id: 'leave', label: 'Leave', icon: HiCalendar },
+  { id: 'performance', label: 'Performance', icon: HiChartBar },
+  { id: 'assets', label: 'Assets', icon: HiArchiveBox },
 ]
 
 function Spinner() {
@@ -53,23 +53,38 @@ function InfoCard({ label, value, highlight }) {
 
 export default function EmployeeProfile() {
   const { user: currentUser } = useAuth()
-  const [activeTab, setActiveTab]       = useState('overview')
-  const [selectedId, setSelectedId]     = useState(null)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [selectedId, setSelectedId] = useState(null)
   const [employeeList, setEmployeeList] = useState([])
 
   // Per-tab data
-  const [profile,     setProfile]     = useState(null)
-  const [attendance,  setAttendance]  = useState(null)
-  const [leave,       setLeave]       = useState(null)
-  const [documents,   setDocuments]   = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [attendance, setAttendance] = useState(null)
+  const [leave, setLeave] = useState(null)
+  const [documents, setDocuments] = useState(null)
   /** Tenant document_types rows — drives checklist + per-type upload on Documents tab */
   const [employeeDocTypes, setEmployeeDocTypes] = useState([])
   const [performance, setPerformance] = useState(null)
-  const [assets,      setAssets]      = useState(null)
+  const [assets, setAssets] = useState(null)
 
-  const [loadingProfile,     setLoadingProfile]     = useState(false)
-  const [loadingTab,         setLoadingTab]         = useState(false)
-  const [loadingList,        setLoadingList]        = useState(true)
+  const [loadingProfile, setLoadingProfile] = useState(false)
+  const [loadingTab, setLoadingTab] = useState(false)
+  const [loadingList, setLoadingList] = useState(true)
+
+  // Document Upload State
+  const [docUploadOpen, setDocUploadOpen] = useState(false)
+  const [docFile, setDocFile] = useState(null)
+  const [docCatalog, setDocCatalog] = useState([])
+  const [docCatalogLoading, setDocCatalogLoading] = useState(false)
+  const [docUploading, setDocUploading] = useState(false)
+  const [docForm, setDocForm] = useState({
+    document_type: '',
+    document_title: '',
+    document_number: '',
+    notes: '',
+    issue_date: '',
+    expiry_date: '',
+  })
 
   // Print Modal State
   const [printModalOpen, setPrintModalOpen] = useState(false)
@@ -549,17 +564,6 @@ export default function EmployeeProfile() {
                 {docs.length} file{docs.length === 1 ? '' : 's'} on record
               </p>
             </div>
-            {canUploadDocuments && (
-              <Button
-                type="button"
-                label="UPLOAD NEW"
-                variant="primary"
-                size="sm"
-                icon={HiArrowUpCircle}
-                className="text-[10px] font-black tracking-widest"
-                onClick={() => openDocUpload('')}
-              />
-            )}
           </div>
 
           {types.length === 0 ? (
@@ -777,9 +781,9 @@ export default function EmployeeProfile() {
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="grid gap-4 sm:grid-cols-5">
           {[
-            { label: 'Present',  value: s?.present  ?? '—', color: 'emerald' },
-            { label: 'Absent',   value: s?.absent   ?? '—', color: 'red' },
-            { label: 'Late',     value: s?.late     ?? '—', color: 'amber' },
+            { label: 'Present', value: s?.present ?? '—', color: 'emerald' },
+            { label: 'Absent', value: s?.absent ?? '—', color: 'red' },
+            { label: 'Late', value: s?.late ?? '—', color: 'amber' },
             { label: 'Half Day', value: s?.half_day ?? '—', color: 'yellow' },
             { label: 'On Leave', value: s?.on_leave ?? '—', color: 'blue' },
           ].map(c => (
@@ -800,11 +804,11 @@ export default function EmployeeProfile() {
           ) : (
             <Table
               columns={[
-                { key: 'date',           label: 'DATE' },
-                { key: 'check_in_time',  label: 'PUNCH IN',  render: v => <span className="font-bold text-slate-900">{v || '—'}</span> },
+                { key: 'date', label: 'DATE' },
+                { key: 'check_in_time', label: 'PUNCH IN', render: v => <span className="font-bold text-slate-900">{v || '—'}</span> },
                 { key: 'check_out_time', label: 'PUNCH OUT', render: v => <span className="font-bold text-slate-900">{v || '—'}</span> },
-                { key: 'total_hours',    label: 'HOURS',     render: v => <Badge label={v ? `${v}h` : '—'} color="blue" variant="soft" className="font-black" /> },
-                { key: 'status',         label: 'STATUS',    render: v => <Badge label={v} color={statusColor(v)} className="font-black text-[9px] tracking-widest" /> },
+                { key: 'total_hours', label: 'HOURS', render: v => <Badge label={v ? `${v}h` : '—'} color="blue" variant="soft" className="font-black" /> },
+                { key: 'status', label: 'STATUS', render: v => <Badge label={v} color={statusColor(v)} className="font-black text-[9px] tracking-widest" /> },
               ]}
               data={records}
               pageSize={10}
@@ -817,8 +821,8 @@ export default function EmployeeProfile() {
 
   const renderLeave = () => {
     if (loadingTab && !leave) return <Spinner />
-    const balances  = leave?.balances  || []
-    const requests  = leave?.requests  || []
+    const balances = leave?.balances || []
+    const requests = leave?.requests || []
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -846,10 +850,10 @@ export default function EmployeeProfile() {
             <Table
               columns={[
                 { key: 'leave_type', label: 'TYPE' },
-                { key: 'from_date',  label: 'FROM',  render: v => <span className="text-xs font-bold text-slate-900">{v}</span> },
-                { key: 'to_date',    label: 'TO',    render: v => <span className="text-xs font-bold text-slate-900">{v}</span> },
-                { key: 'total_days', label: 'DAYS',  render: v => <Badge label={`${v}d`} color="slate" variant="soft" className="font-black" /> },
-                { key: 'status',     label: 'STATUS',render: v => <Badge label={v} color={statusColor(v)} className="font-black text-[9px] tracking-widest" /> },
+                { key: 'from_date', label: 'FROM', render: v => <span className="text-xs font-bold text-slate-900">{v}</span> },
+                { key: 'to_date', label: 'TO', render: v => <span className="text-xs font-bold text-slate-900">{v}</span> },
+                { key: 'total_days', label: 'DAYS', render: v => <Badge label={`${v}d`} color="slate" variant="soft" className="font-black" /> },
+                { key: 'status', label: 'STATUS', render: v => <Badge label={v} color={statusColor(v)} className="font-black text-[9px] tracking-widest" /> },
               ]}
               data={requests}
               pageSize={8}
@@ -862,7 +866,7 @@ export default function EmployeeProfile() {
 
   const renderPerformance = () => {
     if (loadingTab && !performance) return <Spinner />
-    const latest  = performance?.latest
+    const latest = performance?.latest
     const reviews = performance?.reviews || []
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -881,16 +885,16 @@ export default function EmployeeProfile() {
               <div className="p-6 rounded-none bg-slate-50 border border-slate-100 space-y-2">
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Skill Ratings</p>
                 {[
-                  ['Work Quality',   latest.work_quality],
-                  ['Productivity',   latest.productivity],
-                  ['Communication',  latest.communication],
-                  ['Teamwork',       latest.teamwork],
-                  ['Leadership',     latest.leadership],
+                  ['Work Quality', latest.work_quality],
+                  ['Productivity', latest.productivity],
+                  ['Communication', latest.communication],
+                  ['Teamwork', latest.teamwork],
+                  ['Leadership', latest.leadership],
                 ].map(([label, val]) => (
                   <div key={label} className="flex items-center justify-between">
                     <span className="text-[9px] font-black text-slate-500 uppercase">{label}</span>
                     <div className="flex gap-0.5">
-                      {[1,2,3,4,5].map(i => (
+                      {[1, 2, 3, 4, 5].map(i => (
                         <div key={i} className={`h-2 w-4 rounded-none ${i <= (val || 0) ? 'bg-emerald-500' : 'bg-slate-200'}`} />
                       ))}
                     </div>
@@ -915,11 +919,11 @@ export default function EmployeeProfile() {
             </div>
             <Table
               columns={[
-                { key: 'review_period', label: 'CYCLE',    render: v => <span className="text-xs font-black text-slate-900">{v}</span> },
-                { key: 'review_type',   label: 'TYPE',     render: v => <Badge label={v} color="slate" variant="soft" className="font-black text-[9px]" /> },
-                { key: 'overall_rating',label: 'RATING',   render: v => <Badge label={v || '—'} color="green" className="font-black" /> },
+                { key: 'review_period', label: 'CYCLE', render: v => <span className="text-xs font-black text-slate-900">{v}</span> },
+                { key: 'review_type', label: 'TYPE', render: v => <Badge label={v} color="slate" variant="soft" className="font-black text-[9px]" /> },
+                { key: 'overall_rating', label: 'RATING', render: v => <Badge label={v || '—'} color="green" className="font-black" /> },
                 { key: 'reviewer_name', label: 'REVIEWER', render: v => <span className="text-xs font-bold text-slate-500">{v || '—'}</span> },
-                { key: 'status',        label: 'STATUS',   render: v => <Badge label={v} color={statusColor(v)} variant="soft" className="font-black text-[9px]" /> },
+                { key: 'status', label: 'STATUS', render: v => <Badge label={v} color={statusColor(v)} variant="soft" className="font-black text-[9px]" /> },
               ]}
               data={reviews}
               pageSize={5}
@@ -1023,7 +1027,7 @@ export default function EmployeeProfile() {
     }
 
     const selectedLabels = TABS.filter(t => selectedPrintTabs.includes(t.id)).map(t => t.label)
-    
+
     if (format === 'pdf') {
       toast.success(`Exporting ${selectedLabels.length} modules as highly formatted PDF bundle...`)
       setTimeout(() => {
@@ -1043,16 +1047,16 @@ export default function EmployeeProfile() {
   const renderTabContent = () => {
     if (loadingProfile || !emp) return <Spinner />
     switch (activeTab) {
-      case 'overview':    return renderOverview()
-      case 'personal':    return renderPersonal()
-      case 'job':         return renderJob()
-      case 'documents':   return renderDocuments()
-      case 'visa':        return renderVisa()
-      case 'attendance':  return renderAttendance()
-      case 'leave':       return renderLeave()
+      case 'overview': return renderOverview()
+      case 'personal': return renderPersonal()
+      case 'job': return renderJob()
+      case 'documents': return renderDocuments()
+      case 'visa': return renderVisa()
+      case 'attendance': return renderAttendance()
+      case 'leave': return renderLeave()
       case 'performance': return renderPerformance()
-      case 'assets':      return renderAssets()
-      default:            return null
+      case 'assets': return renderAssets()
+      default: return null
     }
   }
 
@@ -1166,11 +1170,10 @@ export default function EmployeeProfile() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2 font-bold text-xs transition-all ${
-                    isActive
-                      ? 'bg-[#0F766E] text-white shadow-2xs'
-                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
-                  }`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 font-bold text-xs transition-all ${isActive
+                    ? 'bg-[#0F766E] text-white shadow-2xs'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
+                    }`}
                 >
                   <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
                   <span>{tab.label}</span>
@@ -1212,11 +1215,10 @@ export default function EmployeeProfile() {
               return (
                 <label
                   key={tab.id}
-                  className={`flex items-center gap-2.5 p-2 border cursor-pointer transition-all select-none ${
-                    isChecked
-                      ? 'bg-white border-[#0F766E]/40 text-[#0F766E] shadow-2xs font-bold'
-                      : 'bg-white/60 border-slate-200 text-slate-600 hover:bg-white'
-                  }`}
+                  className={`flex items-center gap-2.5 p-2 border cursor-pointer transition-all select-none ${isChecked
+                    ? 'bg-white border-[#0F766E]/40 text-[#0F766E] shadow-2xs font-bold'
+                    : 'bg-white/60 border-slate-200 text-slate-600 hover:bg-white'
+                    }`}
                 >
                   <input
                     type="checkbox"
@@ -1277,6 +1279,102 @@ export default function EmployeeProfile() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Document Upload Modal */}
+      <Modal
+        isOpen={docUploadOpen}
+        onClose={closeDocUpload}
+        title="Upload Employee Document"
+        size="md"
+      >
+        <form onSubmit={submitDocUpload} className="p-5 space-y-4">
+          {docCatalogLoading ? (
+            <div className="flex items-center justify-center min-h-[200px]">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Document Type <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  list="doc-types-list"
+                  placeholder="e.g. Passport, Offer Letter"
+                  value={docForm.document_type}
+                  onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value })}
+                  className="w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-[#0F766E] focus:bg-white transition-colors"
+                />
+                <datalist id="doc-types-list">
+                  {docCatalog.map((t) => (
+                    <option key={t.id || t.name} value={t.name} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Document Title</label>
+                <input
+                  type="text"
+                  placeholder="Optional title/description"
+                  value={docForm.document_title}
+                  onChange={(e) => setDocForm({ ...docForm, document_title: e.target.value })}
+                  className="w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-[#0F766E] focus:bg-white transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Document / ID Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. A1234567"
+                  value={docForm.document_number}
+                  onChange={(e) => setDocForm({ ...docForm, document_number: e.target.value })}
+                  className="w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-[#0F766E] focus:bg-white transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Issue Date</label>
+                  <input
+                    type="date"
+                    value={docForm.issue_date}
+                    onChange={(e) => setDocForm({ ...docForm, issue_date: e.target.value })}
+                    className="w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-[#0F766E] focus:bg-white transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Expiry Date</label>
+                  <input
+                    type="date"
+                    value={docForm.expiry_date}
+                    onChange={(e) => setDocForm({ ...docForm, expiry_date: e.target.value })}
+                    className="w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-[#0F766E] focus:bg-white transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Upload File <span className="text-rose-500">*</span></label>
+                <input
+                  type="file"
+                  required
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setDocFile(e.target.files[0] || null)}
+                  className="w-full text-xs font-bold text-slate-800 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer transition-colors"
+                />
+                <p className="text-[10px] font-semibold text-slate-500 mt-1.5">PDF, JPG, PNG up to 10MB.</p>
+              </div>
+
+              <div className="pt-5 border-t border-slate-100 flex justify-end gap-2.5">
+                <Button type="button" label="CANCEL" variant="outline" onClick={closeDocUpload} className="text-[10px] font-black tracking-widest" />
+                <Button type="submit" label={docUploading ? 'UPLOADING...' : 'UPLOAD'} variant="primary" disabled={docUploading} className="text-[10px] font-black tracking-widest" />
+              </div>
+            </>
+          )}
+        </form>
       </Modal>
     </div>
   )

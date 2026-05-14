@@ -111,110 +111,99 @@ export default function ExitManagement() {
   ]
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight uppercase">EXIT MANAGEMENT – ADMIN VIEW</h1>
-            <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
-              Manage employee departures, asset recovery, and final settlements with a streamlined professional workflow.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button 
-              onClick={() => setModalOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95 shrink-0"
-            >
-              <HiPlus className="h-4 w-4 shrink-0" /> Initiate Exit
-            </button>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar — Standardized */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Exit Management</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Human Capital</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600 uppercase font-black tracking-widest text-[10px]">Offboarding Governance</span>
           </div>
         </div>
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setModalOpen(true)}
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#0c6b64] shadow-lg shadow-emerald-900/10"
+          >
+            <HiPlus className="h-4 w-4" /> Initiate Exit
+          </button>
+        </div>
       </div>
 
-      {/* Exit Management Status Horizontal Toolbar */}
-      <div className="space-y-3 min-w-0">
-        <div className="flex items-center justify-between min-w-0">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Exit Operations Overview</p>
-          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shrink-0">Active Transitions</span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 min-w-0">
-          {[
-            { id: 'All', label: 'All Exits', count: exitData.length, icon: HiUserGroup, color: 'slate' },
-            { id: 'Pending Approval', label: 'Pending Approval', count: exitData.filter(e => e.status === 'Pending Approval').length, icon: HiClock, color: 'orange' },
-            { id: 'In Progress', label: 'In Progress', count: exitData.filter(e => e.status === 'In Progress').length, icon: HiArrowPathRoundedSquare, color: 'blue' },
-            { id: 'Completed', label: 'Completed', count: exitData.filter(e => e.status === 'Completed').length, icon: HiCheckBadge, color: 'emerald' },
-            { id: 'Settlement Pending', label: 'Settlement Pending', count: exitData.filter(e => e.status === 'Settlement Pending').length, icon: HiCurrencyDollar, color: 'red' }
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveStatus(item.id)}
-              className={`group flex items-center justify-between gap-2 rounded-2xl border p-4 transition-all min-w-0 ${
-                activeStatus === item.id 
-                ? 'border-[#0F766E] bg-emerald-50/50 shadow-md ring-1 ring-[#0F766E]' 
-                : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600 group-hover:scale-110 transition-transform`}>
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div className="text-left min-w-0">
-                  <div className="text-sm font-bold text-slate-700 truncate">{item.label}</div>
-                  <div className="text-[10px] text-slate-400 font-medium tracking-tight truncate">System Registry</div>
-                </div>
+      {/* Metrics Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 min-w-0">
+        {[
+          { id: 'All', label: 'TOTAL OFBOARDING', count: exitData.length, icon: HiUserGroup, bgColor: 'bg-slate-900' },
+          { id: 'Pending Approval', label: 'GOVERNANCE PENDING', count: exitData.filter(e => e.status === 'Pending Approval').length, icon: HiClock, bgColor: 'bg-[#F59E0B]' },
+          { id: 'In Progress', label: 'PROTOCOL ACTIVE', count: exitData.filter(e => e.status === 'In Progress').length, icon: HiArrowPathRoundedSquare, bgColor: 'bg-[#3B82F6]' },
+          { id: 'Completed', label: 'OFFBOARDED', count: exitData.filter(e => e.status === 'Completed').length, icon: HiCheckBadge, bgColor: 'bg-[#10B981]' },
+          { id: 'Settlement Pending', label: 'FINANCIAL SETTLEMENT', count: exitData.filter(e => e.status === 'Settlement Pending').length, icon: HiCurrencyDollar, bgColor: 'bg-[#EF4444]' }
+        ].map((card, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveStatus(card.id)}
+            className={`flex items-center gap-3.5 rounded-none border p-4 shadow-sm min-w-0 transition-all ${
+              activeStatus === card.id ? 'border-[#0F766E] bg-emerald-50/30' : 'border-slate-200 bg-white hover:border-slate-300'
+            }`}
+          >
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+              <card.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1 text-left">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate leading-none">
+                {card.label}
               </div>
-              <div className={`text-lg font-black shrink-0 ${activeStatus === item.id ? 'text-[#0F766E]' : 'text-slate-400'}`}>
-                {item.count}
-              </div>
-            </button>
-          ))}
-        </div>
+              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+            </div>
+          </button>
+        ))}
       </div>
 
       {/* Main Workspace Area */}
       <div className="space-y-6 min-w-0">
-        <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm min-w-0">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end min-w-0">
+        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm min-w-0">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end min-w-0">
             <div className="flex-1 min-w-0">
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Search Registry</label>
+              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Security Filter</label>
               <div className="relative min-w-0">
-                <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 shrink-0" />
+                <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 shrink-0" />
                 <input
                   type="text"
-                  placeholder="Name, ID, or Exit Type..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all min-w-0"
+                  placeholder="SEARCH BY ASSET NAME, IDENTIFIER OR PROTOCOL TYPE..."
+                  className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white focus:outline-none transition-all min-w-0"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                 />
               </div>
             </div>
-            <Button label="FILTER" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200 shrink-0 justify-center w-full md:w-auto" />
+            <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
+               REFINE PROTOCOL
+            </button>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md min-w-0">
-          <div className="bg-[#0F766E] px-6 py-3 text-white min-w-0">
-            <div className="flex items-center justify-between min-w-0">
-              <h2 className="text-sm font-bold uppercase tracking-wider truncate">Exit Registry</h2>
-              <HiArrowPathRoundedSquare className="h-4 w-4 opacity-50 shrink-0" />
-            </div>
+        <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+          <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
+            <h2 className="text-sm font-semibold uppercase tracking-wider truncate">Offboarding Registry</h2>
+            <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Clearance Status: Admin</div>
           </div>
-          <Table columns={columns} data={filtered} pageSize={8} />
+          <Table columns={columns} data={filtered} pageSize={10} className="rounded-none" />
         </div>
       </div>
 
-      {/* Review Exit Modal */}
-      <Modal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} title="EXIT MANAGEMENT – ADMIN VIEW" size="xl">
+      {/* Review Exit Modal — Audit System */}
+      <Modal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} title="LIFECYCLE TERMINATION AUDIT" size="xl">
         <div className="animate-in fade-in duration-500 space-y-6">
-          {/* Tabs Navigation */}
-          <div className="flex flex-wrap items-center gap-1 border-b border-slate-100 bg-slate-50/50 -mx-6 px-6">
+          {/* Tabs Navigation — Minimalist */}
+          <div className="flex flex-wrap items-center border-b border-slate-200 bg-slate-50 -mx-6 px-6">
              {tabs.map((tab) => (
                 <button
                    key={tab.id}
                    onClick={() => setActiveTab(tab.id)}
-                   className={`flex items-center gap-2 px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all border-b-2 ${
+                   className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] transition-all border-b-2 ${
                       activeTab === tab.id 
                       ? 'border-[#0F766E] text-[#0F766E] bg-white' 
                       : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-100'
@@ -225,139 +214,150 @@ export default function ExitManagement() {
              ))}
           </div>
 
-          {activeTab === 'Summary' && (
-             <div className="grid gap-8 lg:grid-cols-2">
-                <div className="space-y-1">
-                   <div className="grid grid-cols-2 gap-x-12 gap-y-4 rounded-2xl border border-slate-100 p-6 bg-slate-50/30">
-                      {[
-                        { label: 'Employee Name', value: selectedExit?.name },
-                        { label: 'Employee ID', value: selectedExit?.id },
-                        { label: 'Department', value: selectedExit?.dept },
-                        { label: 'Manager', value: selectedExit?.manager },
-                        { label: 'Exit Type', value: selectedExit?.type },
-                        { label: 'Notice Period', value: selectedExit?.notice },
-                        { label: 'Job Title', value: selectedExit?.title },
-                        { label: 'Join Date', value: selectedExit?.joinDate },
-                        { label: 'Last working day', value: selectedExit?.lwd },
-                        { label: 'Exit Status', value: selectedExit?.status }
-                      ].map(item => (
-                         <div key={item.label}>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
-                            <p className="text-sm font-bold text-slate-700">{item.value}</p>
-                         </div>
-                      ))}
-                   </div>
-                </div>
-                <div className="space-y-4">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Remarks</p>
-                   <textarea 
-                      className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none min-h-[200px]"
-                      placeholder="Enter exit notes or administrative comments..."
-                   />
-                </div>
-             </div>
-          )}
-
-          {activeTab === 'Asset Return' && (
-             <div className="space-y-6">
-                <div className="overflow-hidden rounded-2xl border border-slate-200">
-                   <table className="w-full text-left text-sm">
-                      <thead className="bg-[#0F766E] text-white">
-                         <tr>
-                            {['Asset Type', 'Asset ID', 'Serial No.', 'Issued Date', 'Return Date', 'Condition', 'Status'].map(h => (
-                               <th key={h} className="px-4 py-3 font-bold uppercase text-[10px] tracking-wider">{h}</th>
-                            ))}
-                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
+          <div className="min-h-[450px]">
+             {activeTab === 'Summary' && (
+                <div className="grid gap-10 lg:grid-cols-2 p-2">
+                   <div className="space-y-6">
+                      <h4 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest border-l-4 border-[#0F766E] pl-3 mb-6">Asset & Governance Context</h4>
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-6 rounded-none border border-slate-100 p-6 bg-slate-50/50">
                          {[
-                           { type: 'Laptop', id: 'LP-902', serial: 'SN-00129', issued: '01/01/2022', return: '-', condition: 'Good', status: 'Pending' },
-                           { type: 'Mobile', id: 'MB-102', serial: 'IMEI-8821', issued: '01/01/2022', return: '20/12/2025', condition: 'Good', status: 'Returned' },
-                           { type: 'Access keys/card', id: 'AC-50', serial: 'RFID-11', issued: '01/01/2022', return: '-', condition: '-', status: 'Pending' }
-                         ].map((asset, i) => (
-                            <tr key={i} className="hover:bg-slate-50 transition-colors">
-                               <td className="px-4 py-4 font-bold text-slate-700">{asset.type}</td>
-                               <td className="px-4 py-4">{asset.id}</td>
-                               <td className="px-4 py-4 text-xs font-mono">{asset.serial}</td>
-                               <td className="px-4 py-4">{asset.issued}</td>
-                               <td className="px-4 py-4">{asset.return}</td>
-                               <td className="px-4 py-4">
-                                  <select className="bg-transparent border-none focus:ring-0 text-xs text-slate-900 font-bold">
-                                     <option>Good</option>
-                                     <option>Damaged</option>
-                                     <option>Lost</option>
-                                  </select>
-                               </td>
-                               <td className="px-4 py-4">
-                                  <Badge label={asset.status} color={asset.status === 'Returned' ? 'green' : 'orange'} />
-                               </td>
-                            </tr>
-                         ))}
-                      </tbody>
-                   </table>
-                </div>
-                <div className="rounded-2xl border border-slate-100 p-4 bg-slate-50/50">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Asset Recovery Notes</p>
-                   <textarea className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none" rows={2} />
-                </div>
-             </div>
-          )}
-
-          {activeTab === 'Checklist' && (
-             <div className="grid gap-6 md:grid-cols-2">
-                {['IT Clearance', 'Finance Clearance', 'HR Clearance', 'Manager Clearance'].map(title => (
-                   <div key={title} className="rounded-2xl border border-slate-200 p-6 space-y-4 shadow-sm bg-white">
-                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">{title}</h4>
-                      <div className="space-y-3">
-                         {['System access revoked', 'Email archived', 'Hardware verified'].map((item, i) => (
-                            <label key={i} className="flex items-center gap-3 cursor-pointer group">
-                               <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]" />
-                               <span className="text-xs text-slate-600 group-hover:text-slate-900">{item}</span>
-                            </label>
+                           { label: 'Asset Name', value: selectedExit?.name },
+                           { label: 'Asset ID', value: selectedExit?.id },
+                           { label: 'Operational Dept', value: selectedExit?.dept },
+                           { label: 'Governance Lead', value: selectedExit?.manager },
+                           { label: 'Protocol Type', value: selectedExit?.type },
+                           { label: 'Notice Period', value: selectedExit?.notice },
+                           { label: 'Designation', value: selectedExit?.title },
+                           { label: 'Inception Date', value: selectedExit?.joinDate },
+                           { label: 'Termination Date', value: selectedExit?.lwd },
+                           { label: 'Audit Status', value: selectedExit?.status }
+                         ].map(item => (
+                            <div key={item.label}>
+                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p>
+                               <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{item.value}</p>
+                            </div>
                          ))}
                       </div>
                    </div>
-                ))}
-             </div>
-          )}
+                   <div className="space-y-6">
+                      <h4 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest border-l-4 border-[#0F766E] pl-3 mb-6">Administrative Remarks</h4>
+                      <textarea 
+                         className="w-full rounded-none border border-slate-200 bg-white p-5 text-sm font-medium text-slate-800 focus:border-[#0F766E] outline-none min-h-[280px] shadow-sm transition-all"
+                         placeholder="ENTER DETAILED ADMINISTRATIVE REMARKS..."
+                      />
+                   </div>
+                </div>
+             )}
 
-          <div className="pt-6 border-t border-slate-100 flex justify-center gap-4">
-             <Button label="SAVE UPDATES" variant="primary" className="px-12 shadow-lg shadow-emerald-900/20" />
-             <Button label="APPROVE EXIT" variant="secondary" className="bg-emerald-600 hover:bg-emerald-700" icon={HiCheckBadge} />
-             <Button label="CANCEL" variant="ghost" onClick={() => setReviewModalOpen(false)} />
+             {activeTab === 'Asset Return' && (
+                <div className="space-y-8 p-2">
+                   <div className="overflow-hidden rounded-none border border-slate-200 shadow-sm">
+                      <table className="w-full text-left">
+                         <thead className="bg-slate-900 text-white">
+                            <tr>
+                               {['Classification', 'Identifier', 'Serial Vector', 'Provision Date', 'Recovery Date', 'Condition', 'Audit'].map(h => (
+                                  <th key={h} className="px-5 py-4 font-black uppercase text-[9px] tracking-[0.2em]">{h}</th>
+                                ))}
+                            </tr>
+                         </thead>
+                         <tbody className="divide-y divide-slate-100 bg-white">
+                            {[
+                              { type: 'Laptop Hardware', id: 'LP-902', serial: 'SN-00129', issued: '01/01/2022', return: '-', condition: 'Optimal', status: 'Pending' },
+                              { type: 'Mobile Unit', id: 'MB-102', serial: 'IMEI-8821', issued: '01/01/2022', return: '20/12/2025', condition: 'Optimal', status: 'Recovered' },
+                              { type: 'Access Protocol', id: 'AC-50', serial: 'RFID-11', issued: '01/01/2022', return: '-', condition: '-', status: 'Pending' }
+                            ].map((asset, i) => (
+                               <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                  <td className="px-5 py-4 text-[11px] font-black text-slate-900 uppercase">{asset.type}</td>
+                                  <td className="px-5 py-4 text-[11px] font-bold text-slate-500">{asset.id}</td>
+                                  <td className="px-5 py-4 text-[10px] font-mono text-slate-400">{asset.serial}</td>
+                                  <td className="px-5 py-4 text-[10px] font-bold text-slate-500">{asset.issued}</td>
+                                  <td className="px-5 py-4 text-[10px] font-bold text-slate-500">{asset.return}</td>
+                                  <td className="px-5 py-4">
+                                     <select className="bg-transparent border-none focus:ring-0 text-[10px] text-slate-900 font-black uppercase cursor-pointer">
+                                        <option>OPTIMAL</option>
+                                        <option>DEGRADED</option>
+                                        <option>LOSS</option>
+                                     </select>
+                                  </td>
+                                  <td className="px-5 py-4">
+                                     <Badge label={asset.status.toUpperCase()} color={asset.status === 'Recovered' ? 'green' : 'orange'} className="rounded-none text-[8px] font-black tracking-widest" />
+                                  </td>
+                               </tr>
+                            ))}
+                         </tbody>
+                      </table>
+                   </div>
+                </div>
+             )}
+
+             {activeTab === 'Checklist' && (
+                <div className="grid gap-8 md:grid-cols-2 p-2">
+                   {['Infrastructure Clearance', 'Fiscal Clearance', 'Governance Clearance', 'Operational Clearance'].map(title => (
+                      <div key={title} className="rounded-none border border-slate-200 p-6 space-y-6 bg-white shadow-sm hover:border-[#0F766E]/30 transition-all">
+                         <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">{title}</h4>
+                         <div className="space-y-4">
+                            {['System access revocation', 'Email archival protocols', 'Hardware verification audit'].map((item, i) => (
+                               <label key={i} className="flex items-center justify-between p-3 border border-slate-50 bg-slate-50/30 cursor-pointer group transition-all hover:bg-white hover:border-[#0F766E]/20">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight group-hover:text-slate-900">{item}</span>
+                                  <input type="checkbox" className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-0 focus:ring-offset-0" />
+                               </label>
+                            ))}
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             )}
+          </div>
+
+          <div className="pt-8 border-t border-slate-100 flex justify-end gap-4">
+             <button onClick={() => setReviewModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors">
+                CANCEL
+             </button>
+             <button className="h-12 px-10 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10">
+                COMMIT AUDIT UPDATES
+             </button>
+             <button className="h-12 px-10 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all">
+                EXECUTE FINAL CLEARANCE
+             </button>
           </div>
         </div>
       </Modal>
 
       {/* Initiation Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Initiate Exit Workflow" size="lg">
-         <form className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-               <div className="col-span-2">
-                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Select Employee</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none">
-                     <option value="" disabled hidden>Search employee to initiate exit...</option>
-                     {employees.map(e => <option key={e.id}>{e.name} ({e.empId})</option>)}
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="GOVERNANCE TERMINATION INITIALIZATION" size="lg">
+         <form className="space-y-8 p-2">
+            <div className="space-y-6">
+               <div>
+                  <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Selection</label>
+                  <select className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer">
+                     <option value="" disabled hidden>SEARCH DIRECTORY FOR ASSET...</option>
+                     {employees.map(e => <option key={e.id}>{e.name} — {e.empId}</option>)}
                   </select>
                </div>
-               <div>
-                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Exit Type</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none">
-                     <option>Resignation</option>
-                     <option>Contract End</option>
-                     <option>Termination</option>
-                     <option>Retirement</option>
-                  </select>
-               </div>
-               <div>
-                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Last Working Day</label>
-                  <input type="date" className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none" />
+               <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                     <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Protocol Type</label>
+                     <select className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer">
+                        <option>RESIGNATION</option>
+                        <option>CONTRACT TERMINATION</option>
+                        <option>REDUNDANCY</option>
+                        <option>RETIREMENT</option>
+                     </select>
+                  </div>
+                  <div>
+                     <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Termination Date</label>
+                     <input type="date" className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black focus:border-[#0F766E] outline-none transition-all" />
+                  </div>
                </div>
             </div>
             
-            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-               <Button type="button" label="Cancel" variant="ghost" onClick={() => setModalOpen(false)} />
-               <Button label="Start Exit Process" variant="primary" className="px-8 shadow-lg shadow-emerald-900/20" icon={HiUserMinus} />
+            <div className="pt-8 border-t border-slate-100 flex justify-end gap-4">
+               <button type="button" onClick={() => setModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors">
+                  CANCEL
+               </button>
+               <button type="submit" className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10">
+                  INITIALIZE PROTOCOL
+               </button>
             </div>
          </form>
       </Modal>

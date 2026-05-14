@@ -125,207 +125,198 @@ export default function Expenses() {
   ]
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight">Expense Management</h1>
-            <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
-              Streamline reimbursement workflows, track corporate spend, and manage multi-level approvals with digital receipt capture.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-             <button 
-              onClick={() => setModalOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95 shrink-0"
-            >
-              <HiPlus className="h-4 w-4 shrink-0" /> New Claim
-            </button>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar — Standardized */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Expense Management</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Finance</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Disbursement Registry</span>
           </div>
         </div>
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
-        <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-black/5" />
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setModalOpen(true)}
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
+          >
+            <HiPlus className="h-4 w-4" /> New Claim
+          </button>
+        </div>
       </div>
 
-      {/* Status Filters Horizontal Toolbar */}
-      <div className="space-y-3 min-w-0">
-        <div className="flex items-center justify-between min-w-0">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Status Overview & Filters</p>
-          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shrink-0">Active Spend</span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 min-w-0">
-          {[
-            { label: 'All', count: expenseClaims.length, icon: HiReceiptPercent, color: 'slate' },
-            { label: 'Pending', count: stats.pending, icon: HiClock, color: 'orange' },
-            { label: 'Approved', count: stats.approved, icon: HiCheckBadge, color: 'emerald' },
-            { label: 'Rejected', count: stats.rejected, icon: HiXCircle, color: 'red' },
-            { label: 'Paid', count: stats.paid, icon: HiBanknotes, color: 'blue' }
-          ].map((item) => (
-            <button
-              key={item.label}
-              onClick={() => setActiveStatus(item.label)}
-              className={`group flex items-center justify-between gap-2 rounded-2xl border p-4 transition-all min-w-0 ${
-                activeStatus === item.label 
-                ? 'border-[#0F766E] bg-emerald-50/50 shadow-md ring-1 ring-[#0F766E]' 
-                : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600 group-hover:scale-110 transition-transform`}>
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div className="text-left min-w-0">
-                  <div className="text-sm font-bold text-slate-700 truncate">{item.label}</div>
-                  <div className="text-[10px] text-slate-400 font-medium tracking-tight truncate">Claims</div>
-                </div>
+      {/* Metrics Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 min-w-0">
+        {[
+          { label: 'TOTAL CLAIMS', count: expenseClaims.length, icon: HiReceiptPercent, bgColor: 'bg-[#0F172A]', status: 'All' },
+          { label: 'PENDING REVIEW', count: stats.pending, icon: HiClock, bgColor: 'bg-[#F59E0B]', status: 'Pending' },
+          { label: 'APPROVED', count: stats.approved, icon: HiCheckBadge, bgColor: 'bg-[#10B981]', status: 'Approved' },
+          { label: 'DECLINED', count: stats.rejected, icon: HiXCircle, bgColor: 'bg-[#EF4444]', status: 'Rejected' },
+          { label: 'DISBURSED', count: stats.paid, icon: HiBanknotes, bgColor: 'bg-[#3B82F6]', status: 'Paid' }
+        ].map((card, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveStatus(card.status)}
+            className={`flex items-center gap-3.5 rounded-none border p-4 shadow-sm min-w-0 transition-all ${
+              activeStatus === card.status ? 'border-[#0F766E] bg-emerald-50/30' : 'border-slate-200 bg-white hover:border-slate-300'
+            }`}
+          >
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+              <card.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1 text-left">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate leading-none">
+                {card.label}
               </div>
-              <div className={`text-lg font-black shrink-0 ${activeStatus === item.label ? 'text-[#0F766E]' : 'text-slate-400'}`}>
-                {item.count}
-              </div>
-            </button>
-          ))}
-        </div>
+              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+            </div>
+          </button>
+        ))}
       </div>
 
       {/* Main Workspace Area */}
       <div className="space-y-6 min-w-0">
-        <div className="group relative rounded-2xl border border-slate-200 bg-white/50 p-6 backdrop-blur-xl shadow-sm transition-all hover:shadow-md min-w-0">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end min-w-0">
+        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm min-w-0">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end min-w-0">
             <div className="flex-1 min-w-0">
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Search Registry</label>
+              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Search Registry</label>
               <div className="relative min-w-0">
-                <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 shrink-0" />
+                <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 shrink-0" />
                 <input
                   type="text"
-                  placeholder="Name, ID, or Expense Type..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 focus:outline-none transition-all min-w-0"
+                  placeholder="ENTER EMPLOYEE IDENTIFIER..."
+                  className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                 />
               </div>
             </div>
-            <div className="w-full md:w-48 shrink-0">
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Expense Type</label>
-              <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm focus:border-[#0F766E] focus:outline-none appearance-none transition-all">
-                <option>All Types</option>
-                {EXPENSE_TYPES.map(t => <option key={t}>{t}</option>)}
+            <div className="w-full md:w-64 shrink-0">
+              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Disbursement Type</label>
+              <select className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer">
+                <option>ALL CLASSIFICATIONS</option>
+                {EXPENSE_TYPES.map(t => <option key={t}>{t.toUpperCase()}</option>)}
               </select>
             </div>
-            <Button label="Filters" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] shrink-0 w-full md:w-auto justify-center" />
+            <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
+               REFINE
+            </button>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md min-w-0">
-          <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 min-w-0">
-            <div className="flex items-center justify-between min-w-0">
-              <div className="text-sm font-bold text-slate-700 uppercase tracking-wider truncate">Claims registry ({filtered.length})</div>
-              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Digital Ledger</div>
-            </div>
+        <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+          <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+            <h2 className="text-sm font-semibold text-white uppercase tracking-wider truncate">Claims Registry ({filtered.length})</h2>
+            <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Digital Ledger</div>
           </div>
-          <Table columns={columns} data={filtered} pageSize={8} />
+          <Table columns={columns} data={filtered} pageSize={10} className="rounded-none" />
         </div>
       </div>
 
       {/* Review Claim Modal */}
-      <Modal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} title="Review Expense Claim" size="xl">
+      <Modal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} title="Audit Claim Details" size="xl">
         <div className="animate-in fade-in duration-500 grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0F766E]/10 text-[#0F766E]">
-                <HiCurrencyDollar className="h-6 w-6" />
+          <div className="lg:col-span-2 space-y-8">
+            <div className="flex items-center gap-6 border-b border-slate-100 pb-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-none bg-slate-900 text-white shadow-lg">
+                <HiCurrencyDollar className="h-8 w-8" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-slate-900">{selectedClaim?.employee}</h3>
-                <p className="text-sm text-slate-500">ID: {selectedClaim?.empId || 'EMP-102'} • Operations Manager</p>
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{selectedClaim?.employee}</h3>
+                <p className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest mt-1">ID: {selectedClaim?.empId || 'EMP-102'} • OPERATIONS SPECIALIST</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Expense Type</p>
-                <p className="font-bold text-slate-700">{selectedClaim?.category}</p>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Expense Classification</p>
+                <p className="font-bold text-slate-900 uppercase text-xs tracking-wider">{selectedClaim?.category}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</p>
-                <p className="text-lg font-black text-[#0F766E]">£{selectedClaim?.amount.toLocaleString()}</p>
+              <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Disbursement Amount</p>
+                <p className="text-2xl font-black text-[#0F766E]">£{selectedClaim?.amount.toLocaleString()}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction Date</p>
-                <p className="font-bold text-slate-700">{selectedClaim?.submitted}</p>
+              <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Submission Date</p>
+                <p className="font-bold text-slate-900 uppercase text-xs tracking-wider">{selectedClaim?.submitted}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Method</p>
-                <p className="font-bold text-slate-700">Bank Transfer</p>
+              <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Disbursement Method</p>
+                <p className="font-bold text-slate-900 uppercase text-xs tracking-wider">ELECTRONIC TRANSFER</p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description / Reason</p>
-              <div className="rounded-xl bg-slate-50 p-4 border border-slate-100 text-sm text-slate-600 leading-relaxed">
+            <div className="space-y-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Business Rationale</p>
+              <div className="rounded-none bg-slate-50 p-6 border border-slate-200 text-sm text-slate-600 leading-relaxed font-medium">
                 {selectedClaim?.description || 'Client entertainment during the Q3 quarterly review session in London. Includes travel and dinner expenses for the executive team.'}
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-100 flex gap-3">
+            <div className="pt-8 border-t border-slate-100 flex gap-4">
               {isHR && selectedClaim?.status === 'Pending' && (
                 <>
-                  <Button label="Reject Claim" variant="ghost" className="flex-1 text-red-600 hover:bg-red-50" icon={HiXCircle} />
-                  <Button label="Approve Claim" variant="primary" className="flex-1 shadow-lg shadow-emerald-900/20" icon={HiDocumentCheck} />
+                  <button className="flex-1 h-12 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors">
+                     DECLINE CLAIM
+                  </button>
+                  <button className="flex-1 h-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all">
+                     APPROVE DISBURSEMENT
+                  </button>
                 </>
               )}
               {isHR && selectedClaim?.status === 'Approved' && (
-                <Button label="Process Payment" variant="primary" className="flex-1 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-900/20" icon={HiBanknotes} />
+                <button className="flex-1 h-12 rounded-none bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all">
+                   EXECUTE PAYMENT
+                </button>
               )}
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between">
-                <span>Attachments</span>
+          <div className="space-y-8">
+            <div className="rounded-none border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center justify-between border-b border-slate-200 pb-3">
+                <span>Verification Assets</span>
                 <HiPaperClip className="h-4 w-4" />
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {[
                   { name: 'Receipt_INV_902.pdf', size: '1.2 MB', type: 'Invoice' },
                   { name: 'Train_Ticket.jpg', size: '450 KB', type: 'Ticket' }
                 ].map((file, i) => (
-                  <div key={i} className="group flex items-center justify-between rounded-xl bg-white p-3 border border-slate-100 shadow-sm transition-all hover:border-[#0F766E]/30">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                        <HiReceiptPercent className="h-4 w-4" />
+                  <div key={i} className="group flex items-center justify-between rounded-none bg-white p-4 border border-slate-200 shadow-sm hover:border-[#0F766E] transition-all cursor-pointer">
+                    <div className="flex items-center gap-4 overflow-hidden">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-slate-900 text-white">
+                        <HiReceiptPercent className="h-5 w-5" />
                       </div>
                       <div className="overflow-hidden">
-                        <div className="truncate text-xs font-bold text-slate-700">{file.name}</div>
-                        <div className="text-[10px] text-slate-400 uppercase font-black tracking-widest">{file.type} • {file.size}</div>
+                        <div className="truncate text-[11px] font-black text-slate-900 uppercase">{file.name}</div>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">{file.type} • {file.size}</div>
                       </div>
                     </div>
-                    <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-[#0F766E] transition-all">
-                      <HiArrowDownTray className="h-4 w-4" />
-                    </button>
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-[10px] text-center text-slate-400 italic">Click to preview or download assets</p>
+              <p className="mt-6 text-[10px] text-center text-slate-400 font-black uppercase tracking-widest">SECURE ASSET REPOSITORY</p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Workflow Status</h3>
-              <div className="space-y-4">
+            <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-3">Audit Trail</h3>
+              <div className="space-y-6">
                 {[
                   { label: 'Claim Submitted', date: 'Oct 12', completed: true },
                   { label: 'Manager Approved', date: 'Oct 14', completed: true },
                   { label: 'Finance Review', date: 'Pending', completed: false }
                 ].map((step, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className={`h-4 w-4 rounded-full border-2 ${step.completed ? 'bg-[#0F766E] border-[#0F766E]' : 'border-slate-200'}`} />
-                      {i < 2 && <div className="h-8 w-0.5 bg-slate-100" />}
+                  <div key={i} className="flex gap-4">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className={`h-3 w-3 rounded-none ${step.completed ? 'bg-[#0F766E]' : 'bg-slate-200'}`} />
+                      {i < 2 && <div className="h-8 w-px bg-slate-100" />}
                     </div>
                     <div>
-                      <div className={`text-xs font-bold ${step.completed ? 'text-slate-700' : 'text-slate-400'}`}>{step.label}</div>
-                      <div className="text-[10px] text-slate-400">{step.date}</div>
+                      <div className={`text-[10px] font-black uppercase tracking-widest ${step.completed ? 'text-slate-900' : 'text-slate-300'}`}>{step.label}</div>
+                      <div className="text-[9px] font-bold text-slate-400 uppercase mt-1">{step.date}</div>
                     </div>
                   </div>
                 ))}
@@ -336,70 +327,74 @@ export default function Expenses() {
       </Modal>
 
       {/* New Claim Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Submit Expense Claim" size="lg">
-        <form onSubmit={(e) => { e.preventDefault(); setModalOpen(false); }} className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Provision New Disbursement" size="lg">
+        <form onSubmit={(e) => { e.preventDefault(); setModalOpen(false); }} className="space-y-8">
+          <div className="grid gap-6 md:grid-cols-2">
             <div className="w-full">
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Expense Category</label>
+              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Expense Classification</label>
               <select 
                 name="type"
                 value={formData.type}
                 onChange={handleFormChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm focus:border-[#0F766E] focus:outline-none appearance-none transition-all"
+                className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 px-4 text-[11px] font-black uppercase focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer"
                 required
               >
-                <option value="" disabled hidden>Select Category</option>
-                {EXPENSE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                <option value="" disabled hidden>SELECT CATEGORY</option>
+                {EXPENSE_TYPES.map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}
               </select>
             </div>
             <div className="w-full">
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date of Expense</label>
+              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Transaction Date</label>
               <input 
                 type="date" 
                 name="date"
                 value={formData.date}
                 onChange={handleFormChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
+                className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 px-4 text-[11px] font-black focus:border-[#0F766E] focus:bg-white outline-none transition-all"
                 required
               />
             </div>
             <div className="col-span-2">
-              <Input 
-                label="Claim Amount (£)" 
+              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Total Disbursement (£)</label>
+              <input 
                 name="amount"
                 type="number"
                 placeholder="0.00"
                 value={formData.amount}
                 onChange={handleFormChange}
+                className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 px-4 text-[11px] font-black focus:border-[#0F766E] focus:bg-white outline-none transition-all"
                 required
               />
             </div>
             <div className="col-span-2">
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description / Business Reason</label>
+              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Business Rationale</label>
               <textarea 
                 name="description"
                 value={formData.description}
                 onChange={handleFormChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 focus:outline-none transition-all"
-                rows={3}
-                placeholder="Provide context for the expense..."
+                className="w-full rounded-none border border-slate-200 bg-slate-50/50 px-4 py-4 text-sm font-medium focus:border-[#0F766E] focus:bg-white outline-none transition-all"
+                rows={4}
+                placeholder="ENTER DETAILED RATIONALE..."
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Receipt Uploads</p>
-            <FileUpload 
-              label="Attachments" 
-              helpText="Upload invoices or tickets (PDF, JPG, PNG)"
-              multiple 
-              accept=".pdf,.jpg,.png"
-            />
+          <div className="space-y-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Verification Assets</p>
+            <div className="rounded-none border-2 border-dashed border-slate-200 bg-slate-50/30 p-8 flex flex-col items-center justify-center group hover:border-[#0F766E] transition-all cursor-pointer">
+               <HiPaperClip className="h-8 w-8 text-slate-300 group-hover:text-[#0F766E] transition-colors" />
+               <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">DRAG ASSETS OR CLICK TO UPLOAD</p>
+               <p className="mt-1 text-[9px] font-bold text-slate-300 uppercase tracking-tight">PDF, JPG, PNG (MAX 10MB)</p>
+            </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setModalOpen(false)} />
-            <Button type="submit" label="Submit for Approval" variant="primary" className="px-8 shadow-lg shadow-emerald-900/20" />
+          <div className="pt-6 border-t border-slate-100 flex justify-end gap-4">
+            <button type="button" onClick={() => setModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
+               CANCEL
+            </button>
+            <button type="submit" className="h-12 px-10 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all">
+               SUBMIT DISBURSEMENT
+            </button>
           </div>
         </form>
       </Modal>

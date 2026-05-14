@@ -87,22 +87,22 @@ export default function DocumentSettings() {
 
   if (loading && list.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
-        Loading document settings…
+      <div className="rounded-none border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
+        Synchronizing document catalog…
       </div>
     )
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {error && list.length === 0 ? (
-        <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-none border border-red-100 bg-red-50 p-4 text-sm text-red-700 font-medium">
           {error}
         </div>
       ) : null}
 
-      <SectionCard title="Required Documents List">
-        <div className="grid grid-cols-2 gap-3">
+      <SectionCard title="Required Documentation Catalog">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {list.map((doc) => {
             const selected = doc.id === selectedDocId
             return (
@@ -110,99 +110,109 @@ export default function DocumentSettings() {
                 key={doc.id}
                 type="button"
                 onClick={() => selectDoc(doc.id)}
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors ${
+                className={`flex flex-col gap-2 rounded-none border p-3 text-left transition-all ${
                   selected
-                    ? 'border-indigo-400 bg-indigo-50 ring-2 ring-indigo-200'
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                    ? 'border-[#0F766E] bg-emerald-50/50 ring-1 ring-[#0F766E]'
+                    : 'border-slate-100 bg-slate-50/30 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
-                <span className="flex-1 text-sm text-gray-800">{doc.name}</span>
-                <Badge label={doc.isRequired ? 'Required' : 'Optional'} color="indigo" />
+                <span className={`text-sm font-bold ${selected ? 'text-[#0F766E]' : 'text-slate-800'}`}>{doc.name}</span>
+                <div className="flex items-center gap-2">
+                   <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 border ${
+                      doc.isRequired ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'
+                   }`}>
+                      {doc.isRequired ? 'Mandatory' : 'Optional'}
+                   </span>
+                </div>
               </button>
             )
           })}
 
           {showAdd ? (
-            <div className="col-span-2 rounded-lg border border-dashed border-gray-300 bg-white p-3">
-              <form onSubmit={handleAddSubmit} className="flex flex-wrap items-end gap-3">
-                <div className="min-w-[200px] flex-1">
-                  <label htmlFor="new-doc-name" className="mb-1 block text-xs font-medium text-gray-500">
-                    Name
+            <div className="col-span-full rounded-none border border-dashed border-[#0F766E] bg-emerald-50/20 p-4 animate-in slide-in-from-top-2 duration-300">
+              <form onSubmit={handleAddSubmit} className="flex flex-col sm:flex-row items-end gap-3">
+                <div className="flex-1 w-full">
+                  <label htmlFor="new-doc-name" className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    New Classification Name
                   </label>
                   <TextInput
                     id="new-doc-name"
-                    placeholder="Document type name"
+                    placeholder="e.g. Health Certificate"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     disabled={saving}
+                    className="h-10 rounded-none border-slate-200 bg-white"
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={saving || newName.trim().length < 2}
-                  className="h-8 rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={() => {
-                    setShowAdd(false)
-                    setNewName('')
-                  }}
-                  className="h-8 rounded-lg border border-gray-200 px-4 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                >
-                  Cancel
-                </button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                   <button
+                     type="submit"
+                     disabled={saving || newName.trim().length < 2}
+                     className="flex-1 sm:flex-none h-10 rounded-none bg-[#0F766E] px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] disabled:opacity-40 transition-colors"
+                   >
+                     Initialize
+                   </button>
+                   <button
+                     type="button"
+                     disabled={saving}
+                     onClick={() => {
+                       setShowAdd(false)
+                       setNewName('')
+                     }}
+                     className="flex-1 sm:flex-none h-10 rounded-none border border-slate-200 bg-white px-6 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors"
+                   >
+                     Cancel
+                   </button>
+                </div>
               </form>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setShowAdd(true)}
-              className="col-span-2 rounded-lg border-2 border-dashed border-gray-200 py-2.5 text-sm text-gray-500 transition-colors hover:border-indigo-300 hover:text-indigo-600"
+              className="col-span-full rounded-none border-2 border-dashed border-slate-200 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 transition-all hover:border-[#0F766E] hover:text-[#0F766E] hover:bg-slate-50"
             >
-              + Add Document Type
+              + Register New Document Type
             </button>
           )}
         </div>
       </SectionCard>
 
-      <SectionCard title="Document catalog overview">
+      <SectionCard title="Global Governance Overview">
         {list.length === 0 ? (
-          <p className="text-sm text-gray-500">No document types configured yet.</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">No document classifications configured.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-[760px] w-full border-collapse text-left text-sm text-gray-800">
+          <div className="overflow-x-auto -mx-5 sm:mx-0">
+            <table className="w-full border-collapse text-left text-[11px] font-bold uppercase tracking-wide">
               <thead>
-                <tr className="border-b border-gray-200 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  <th className="py-2 pr-4">Name</th>
-                  <th className="py-2 pr-4">Mandatory</th>
-                  <th className="py-2 pr-4">Who uploads</th>
-                  <th className="py-2 pr-4">Expiry</th>
-                  <th className="py-2 pr-4">HR approval</th>
-                  <th className="py-2">Visibility</th>
+                <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-400">
+                  <th className="py-3 px-4">Identifier</th>
+                  <th className="py-3 px-4">Mandatory</th>
+                  <th className="py-3 px-4">Custodian</th>
+                  <th className="py-3 px-4">Expiry Cycle</th>
+                  <th className="py-3 px-4">Verification</th>
+                  <th className="py-3 px-4">Visibility</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-slate-700">
                 {list.map((doc) => (
-                  <tr key={doc.id} className="border-b border-gray-100 last:border-0">
-                    <td className="py-2.5 pr-4 font-medium text-gray-900">{doc.name}</td>
-                    <td className="py-2.5 pr-4">
-                      <Badge
-                        label={doc.mandatoryOrOptional || (doc.isRequired ? 'Mandatory' : 'Optional')}
-                        color={doc.mandatoryOrOptional === 'Optional' || doc.isRequired === false ? 'gray' : 'indigo'}
-                      />
+                  <tr key={doc.id} className="border-b border-slate-50 hover:bg-slate-50/30 transition-colors">
+                    <td className="py-3 px-4 font-black text-slate-900">{doc.name}</td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-0.5 border ${
+                         (doc.mandatoryOrOptional === 'Mandatory' || doc.isRequired) ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'
+                      }`}>
+                         {doc.mandatoryOrOptional || (doc.isRequired ? 'Mandatory' : 'Optional')}
+                      </span>
                     </td>
-                    <td className="py-2.5 pr-4 text-gray-700">{doc.whoMustUpload || '—'}</td>
-                    <td className="py-2.5 pr-4 text-gray-700">
+                    <td className="py-3 px-4 text-slate-500">{doc.whoMustUpload || '—'}</td>
+                    <td className="py-3 px-4 text-slate-500 font-mono">
                       {doc.expiryTracking
-                        ? `Yes (${doc.reminderBeforeExpiryDays ?? 30}d reminder)`
-                        : 'No'}
+                        ? `ON (${doc.reminderBeforeExpiryDays ?? 30}D)`
+                        : 'OFF'}
                     </td>
-                    <td className="py-2.5 pr-4 text-gray-700">{doc.hrApprovalRequired ? 'Yes' : 'No'}</td>
-                    <td className="py-2.5 text-gray-700">{doc.visibility || '—'}</td>
+                    <td className="py-3 px-4 text-slate-500">{doc.hrApprovalRequired ? 'REQUIRED' : 'NONE'}</td>
+                    <td className="py-3 px-4 text-slate-500">{doc.visibility || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -212,88 +222,97 @@ export default function DocumentSettings() {
       </SectionCard>
 
       {selectedDoc && form ? (
-        <SectionCard title={`Per-Document Settings (${selectedDoc.name})`}>
-          <FieldRow label="Mandatory or Optional">
-            <SelectInput
-              options={MANDATORY_OPTS}
-              value={form.mandatoryOrOptional}
-              onChange={(e) => patchField({ mandatoryOrOptional: e.target.value })}
-              disabled={saving}
-            />
-          </FieldRow>
-          <FieldRow label="Who Must Upload">
-            <SelectInput
-              options={WHO_OPTS}
-              value={form.whoMustUpload}
-              onChange={(e) => patchField({ whoMustUpload: e.target.value })}
-              disabled={saving}
-            />
-          </FieldRow>
-          <FieldRow label="Expiry Tracking">
-            <Toggle
-              checked={form.expiryTracking}
-              onChange={(v) => patchField({ expiryTracking: v })}
-              disabled={saving}
-            />
-          </FieldRow>
-          {form.expiryTracking ? (
-            <FieldRow label="Reminder Before Expiry (days)">
-              <TextInput
-                type="number"
-                min={1}
-                max={365}
-                value={form.reminderBeforeExpiryDays}
-                onChange={(e) =>
-                  patchField({
-                    reminderBeforeExpiryDays: parseInt(e.target.value, 10) || 1,
-                  })
-                }
+        <SectionCard title={`Audit Configuration: ${selectedDoc.name}`}>
+          <div className="divide-y divide-slate-50">
+            <FieldRow label="Compliance Mode">
+              <SelectInput
+                options={MANDATORY_OPTS}
+                value={form.mandatoryOrOptional}
+                onChange={(e) => patchField({ mandatoryOrOptional: e.target.value })}
                 disabled={saving}
               />
             </FieldRow>
-          ) : null}
-          <FieldRow label="HR Approval Required">
-            <Toggle
-              checked={form.hrApprovalRequired}
-              onChange={(v) => patchField({ hrApprovalRequired: v })}
-              disabled={saving}
-            />
-          </FieldRow>
-          <FieldRow label="Visibility">
-            <SelectInput
-              options={VIS_OPTS}
-              value={form.visibility}
-              onChange={(e) => patchField({ visibility: e.target.value })}
-              disabled={saving}
-            />
-          </FieldRow>
+            <FieldRow label="Filing Responsibility">
+              <SelectInput
+                options={WHO_OPTS}
+                value={form.whoMustUpload}
+                onChange={(e) => patchField({ whoMustUpload: e.target.value })}
+                disabled={saving}
+              />
+            </FieldRow>
+            <FieldRow label="Track Expiration">
+              <div className="flex h-10 items-center">
+                <Toggle
+                  checked={form.expiryTracking}
+                  onChange={(v) => patchField({ expiryTracking: v })}
+                  disabled={saving}
+                />
+              </div>
+            </FieldRow>
+            {form.expiryTracking ? (
+              <FieldRow label="Advanced Notice (Days)">
+                <TextInput
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={form.reminderBeforeExpiryDays}
+                  onChange={(e) =>
+                    patchField({
+                      reminderBeforeExpiryDays: parseInt(e.target.value, 10) || 1,
+                    })
+                  }
+                  disabled={saving}
+                />
+              </FieldRow>
+            ) : null}
+            <FieldRow label="Mandatory Verification">
+              <div className="flex h-10 items-center">
+                <Toggle
+                  checked={form.hrApprovalRequired}
+                  onChange={(v) => patchField({ hrApprovalRequired: v })}
+                  disabled={saving}
+                />
+              </div>
+            </FieldRow>
+            <FieldRow label="Identity Visibility">
+              <SelectInput
+                options={VIS_OPTS}
+                value={form.visibility}
+                onChange={(e) => patchField({ visibility: e.target.value })}
+                disabled={saving}
+              />
+            </FieldRow>
+          </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-gray-50 pt-5">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6">
             <button
               type="button"
               disabled={saving}
               onClick={() => handleDelete()}
-              className="h-9 rounded-lg border border-red-200 bg-white px-4 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
+              className="w-full sm:w-auto h-10 rounded-none border border-red-200 bg-white px-6 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors shadow-xs"
             >
-              Delete Document Type
+              Purge Document Type
             </button>
             <button
               type="button"
               disabled={saving}
               onClick={() => handleSave()}
-              className="h-9 rounded-lg bg-indigo-600 px-5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
+              className="w-full sm:w-auto h-10 rounded-none bg-[#0F766E] px-8 text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] disabled:opacity-40 transition-all shadow-md"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'Syncing...' : 'Commit Changes'}
             </button>
           </div>
         </SectionCard>
       ) : (
         !loading && list.length > 0 ? (
-          <p className="text-center text-sm text-gray-400">
-            Select a document type above to edit its settings.
-          </p>
+          <div className="flex flex-col items-center justify-center py-10 bg-slate-50/50 border border-dashed border-slate-200">
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+               Select a Document classification to edit parameters
+             </p>
+          </div>
         ) : null
       )}
     </div>
   )
 }
+

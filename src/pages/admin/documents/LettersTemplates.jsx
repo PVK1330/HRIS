@@ -17,8 +17,6 @@ import {
   HiArrowDownTray,
 } from 'react-icons/hi2'
 import { Badge } from '../../../components/ui/Badge.jsx'
-import { Button } from '../../../components/ui/Button.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import api from '../../../services/api.js'
@@ -77,31 +75,31 @@ function insertAtCursor(ref, tag, currentValue, setter) {
 function TagPicker({ open, onClose, tags, bodyRef, bodyValue, setter }) {
   if (!open) return null
   return (
-    <div className="absolute bottom-full right-0 mb-2 w-72 rounded-2xl border border-slate-200 bg-white shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-      <div className="bg-[#0F766E] px-4 py-2.5 flex items-center justify-between">
-        <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-          <HiCodeBracket className="h-3.5 w-3.5" /> Dynamic Tags
+    <div className="absolute bottom-full right-0 mb-2 w-80 rounded-none border border-slate-200 bg-white shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-slate-900 px-4 py-3 flex items-center justify-between border-b border-slate-800">
+        <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+          <HiCodeBracket className="h-4 w-4" /> DYNAMIC_ASSET_TAGS
         </span>
-        <button type="button" onClick={onClose} className="text-white/60 hover:text-white transition-colors">
+        <button type="button" onClick={onClose} className="text-white/40 hover:text-white transition-colors">
           <HiXMark className="h-4 w-4" />
         </button>
       </div>
-      <div className="p-2 max-h-72 overflow-y-auto custom-scrollbar">
+      <div className="p-1 max-h-80 overflow-y-auto custom-scrollbar bg-slate-50">
         {tags.length === 0 && (
-          <p className="text-center text-xs text-slate-400 py-4">No tags available</p>
+          <p className="text-center text-[10px] font-black text-slate-400 uppercase py-6">EMPTY_REGISTRY</p>
         )}
         {tags.map(p => (
           <button
             key={p.tag}
             type="button"
             onClick={() => { insertAtCursor(bodyRef, p.tag, bodyValue, setter); onClose() }}
-            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-50 transition-colors group flex items-start gap-2"
+            className="w-full text-left px-4 py-3 border border-transparent hover:border-emerald-500/30 hover:bg-white transition-all group flex items-start gap-3 mb-1 last:mb-0"
           >
             <div className="flex-1 min-w-0">
-              <code className="text-[11px] font-bold text-emerald-700 group-hover:text-emerald-800 break-all">{p.tag}</code>
-              <p className="text-[10px] text-slate-400 mt-0.5 truncate">{p.description || p.desc}</p>
+              <code className="text-[11px] font-black text-emerald-700 group-hover:text-emerald-900 break-all tracking-tight">{p.tag}</code>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{p.description || p.desc}</p>
             </div>
-            {p.isSystem && <HiLockClosed className="h-3 w-3 text-slate-300 shrink-0 mt-0.5" />}
+            {p.isSystem && <HiLockClosed className="h-3 w-3 text-slate-300 shrink-0 mt-1" />}
           </button>
         ))}
       </div>
@@ -398,41 +396,36 @@ export default function LettersTemplates() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-1.5">
-          <Button
-            label="Use"
-            variant="primary"
-            size="sm"
-            icon={HiEnvelope}
-            className="bg-[#0F766E] border-none"
+          <button
             onClick={() => {
               setSelectedTemplate(row)
               setDispatchEmployeeId('')
               setEmpSearch('')
               setSendModalOpen(true)
             }}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={HiArrowDownTray}
-            className="text-slate-400 hover:text-blue-600"
+            className="h-8 px-4 rounded-none bg-[#0F766E] text-[9px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all flex items-center gap-1.5 shadow-sm"
+          >
+            <HiEnvelope className="h-3.5 w-3.5" /> USE
+          </button>
+          <button
             title="Download"
             onClick={() => downloadTemplate(row)}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={HiPencilSquare}
-            className="text-slate-400 hover:text-emerald-600"
+            className="h-8 w-8 rounded-none border border-slate-200 bg-white text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all flex items-center justify-center"
+          >
+            <HiArrowDownTray className="h-3.5 w-3.5" />
+          </button>
+          <button
             onClick={() => openEdit(row)}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={HiTrash}
-            className="text-slate-400 hover:text-red-600"
+            className="h-8 w-8 rounded-none border border-slate-200 bg-white text-slate-400 hover:text-emerald-600 hover:border-emerald-200 transition-all flex items-center justify-center"
+          >
+            <HiPencilSquare className="h-3.5 w-3.5" />
+          </button>
+          <button
             onClick={() => handleDelete(row)}
-          />
+            className="h-8 w-8 rounded-none border border-slate-200 bg-white text-slate-400 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center"
+          >
+            <HiTrash className="h-3.5 w-3.5" />
+          </button>
         </div>
       ),
     },
@@ -457,427 +450,420 @@ export default function LettersTemplates() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight uppercase">LETTERS & TEMPLATES</h1>
-            <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
-              Standardize HR communications with dynamic templates. Create, automate, and track every letter sent to your workforce.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button className="flex items-center gap-2 rounded-xl bg-white/10 px-6 py-2.5 text-sm font-bold text-white border border-white/20 transition-all hover:bg-white/20 hover:scale-105 active:scale-95">
-              <HiUsers className="h-4 w-4 shrink-0" /> Bulk Dispatch
-            </button>
-            <button
-              onClick={() => { setForm(EMPTY_FORM); setModalOpen(true) }}
-              className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95"
-            >
-              <HiPlus className="h-4 w-4 shrink-0" /> New Template
-            </button>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar — Standardized */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Letters & Templates</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Documentation</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600 uppercase font-black tracking-widest text-[10px]">Template Governance</span>
           </div>
         </div>
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
+        <div className="flex items-center gap-2 shrink-0">
+          <button className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+            <HiUsers className="h-4 w-4 shrink-0" /> Bulk Dispatch
+          </button>
+          <button
+            onClick={() => { setForm(EMPTY_FORM); setModalOpen(true) }}
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#0c6b64] shadow-lg shadow-emerald-900/10"
+          >
+            <HiPlus className="h-4 w-4 shrink-0" /> New Template
+          </button>
+        </div>
       </div>
 
-      {/* Library Navigation Horizontal Toolbar */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Library Navigation Overview</p>
-          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">Active Vault</span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { id: 'Templates', label: 'Template Library',   count: kpis.templates,           icon: HiDocumentText, color: 'emerald' },
-            { id: 'History',   label: 'Dispatch History',   count: kpis.generatedThisMonth,  icon: HiClock,        color: 'blue'    },
-            { id: 'Pending',   label: 'Pending Signature',  count: kpis.pendingSignatures,   icon: HiCheckBadge,   color: 'orange'  },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`group flex items-center justify-between gap-2 rounded-2xl border p-4 transition-all min-w-0 ${
-                activeTab === item.id
-                  ? 'border-[#0F766E] bg-emerald-50/50 shadow-md ring-1 ring-[#0F766E]'
-                  : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600`}>
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div className="text-left min-w-0">
-                  <div className="text-sm font-bold text-slate-700 truncate">{item.label}</div>
-                  <div className="text-[10px] text-slate-400 font-medium tracking-tight truncate">Active Vault</div>
-                </div>
+      {/* Metrics Cards */}
+      <div className="grid gap-4 sm:grid-cols-3 min-w-0">
+        {[
+          { id: 'Templates', label: 'GOVERNANCE TEMPLATES', count: kpis.templates, icon: HiDocumentText, bgColor: 'bg-slate-900' },
+          { id: 'History', label: 'TRANSMISSION LOGS', count: kpis.generatedThisMonth, icon: HiClock, bgColor: 'bg-[#3B82F6]' },
+          { id: 'Pending', label: 'PENDING VERIFICATION', count: kpis.pendingSignatures, icon: HiCheckBadge, bgColor: 'bg-[#F59E0B]' },
+        ].map((card, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveTab(card.id)}
+            className={`flex items-center gap-3.5 rounded-none border p-4 shadow-sm min-w-0 transition-all ${
+              activeTab === card.id ? 'border-[#0F766E] bg-emerald-50/30' : 'border-slate-200 bg-white hover:border-slate-300'
+            }`}
+          >
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+              <card.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1 text-left">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate leading-none">
+                {card.label}
               </div>
-              <div className={`text-lg font-black shrink-0 ${activeTab === item.id ? 'text-[#0F766E]' : 'text-slate-400'}`}>
-                {item.count}
-              </div>
-            </button>
-          ))}
-        </div>
+              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+            </div>
+          </button>
+        ))}
       </div>
 
       {/* Workspace Grid */}
       <div className="grid gap-6 lg:grid-cols-4">
-        {/* Left Column: Dynamic Tags */}
+        {/* Left Column: Dynamic Tags — Standardized */}
         <div className="space-y-4 min-w-0">
-          <div className="rounded-2xl bg-slate-50 p-5 border border-slate-200 min-w-0">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <HiCodeBracket className="h-4 w-4 shrink-0" /> Dynamic Tags
+          <div className="rounded-none bg-white p-5 border border-slate-200 shadow-sm min-w-0">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                <HiCodeBracket className="h-4 w-4 shrink-0" /> ASSET_TAGS
               </h3>
               <button
                 onClick={openCreateTag}
-                className="flex items-center gap-1 text-[10px] font-black text-[#0F766E] hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-colors shrink-0"
+                className="flex items-center gap-1.5 text-[9px] font-black text-[#0F766E] hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-none border border-emerald-100 transition-all uppercase tracking-widest shrink-0"
               >
-                <HiPlus className="h-3 w-3" /> Add
+                <HiPlus className="h-3 w-3" /> ADD_TAG
               </button>
             </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+            <div className="space-y-1.5 max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
               {tags.length === 0 && (
-                <p className="text-[10px] text-slate-400 italic text-center py-2">No tags yet</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center py-8">EMPTY_REGISTRY</p>
               )}
               {tags.map(t => (
-                <div key={t.id} className="group flex items-start gap-2 rounded-xl p-2 hover:bg-white transition-colors border border-transparent hover:border-slate-200 min-w-0">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <code className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded truncate max-w-[140px] block">{t.tag}</code>
+                <div key={t.id} className="group flex flex-col gap-1 rounded-none p-3 hover:bg-slate-50 transition-all border border-slate-50 hover:border-slate-200 min-w-0">
+                  <div className="flex items-center justify-between min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <code className="text-[10px] font-black text-emerald-700 uppercase tracking-tight truncate max-w-[140px]">{t.tag}</code>
                       {t.isSystem && <HiLockClosed className="h-3 w-3 text-slate-300 shrink-0" title="System tag" />}
                     </div>
-                    <span className="text-[10px] text-slate-400 font-medium italic truncate block mt-0.5">{t.description}</span>
+                    {!t.isSystem && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <button onClick={() => openEditTag(t)} className="p-1 rounded-none hover:bg-white border border-transparent hover:border-slate-200 text-slate-400 hover:text-[#0F766E] transition-all">
+                          <HiPencilSquare className="h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => handleDeleteTag(t)} className="p-1 rounded-none hover:bg-white border border-transparent hover:border-slate-200 text-slate-400 hover:text-red-500 transition-all">
+                          <HiTrash className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  {!t.isSystem && (
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <button onClick={() => openEditTag(t)} className="p-1 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors">
-                        <HiPencilSquare className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={() => handleDeleteTag(t)} className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
-                        <HiTrash className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate block">{t.description}</span>
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-[10px] text-slate-400 italic text-center border-t border-slate-200 pt-3 truncate">
-              {tags.filter(t => !t.isSystem).length} custom · {tags.filter(t => t.isSystem).length} system
-            </p>
+            <div className="mt-6 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] text-center border-t border-slate-100 pt-4 truncate">
+              {tags.filter(t => !t.isSystem).length} CUSTOM_EXT · {tags.filter(t => t.isSystem).length} SYS_CORE
+            </div>
           </div>
         </div>
 
         {/* Main Workspace */}
         <div className="lg:col-span-3 space-y-6 min-w-0">
-          <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm min-w-0">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm min-w-0">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end">
               <div className="flex-1 min-w-0">
-                <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Vault</label>
+                <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Filter</label>
                 <div className="relative">
-                  <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search templates or categories..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all"
+                    placeholder="SEARCH TEMPLATES, CATEGORIES OR PROTOCOLS..."
+                    className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white focus:outline-none transition-all"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                   />
                 </div>
               </div>
-              <Button label="FILTERS" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200 shrink-0" />
+              <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
+                ADVANCED_FILTERS
+              </button>
             </div>
           </div>
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+            <div className="rounded-none border border-red-100 bg-red-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-700">{error}</div>
           )}
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md min-w-0">
-            <div className="bg-[#0F766E] px-6 py-3 text-white flex items-center justify-between min-w-0">
-              <h2 className="text-sm font-bold uppercase tracking-wider truncate">
-                {activeTab === 'History' ? 'Dispatch Registry' : 'Template Library'}
+          <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+            <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
+              <h2 className="text-sm font-semibold uppercase tracking-wider truncate">
+                {activeTab === 'History' ? 'Transmission Registry' : 'Template Vault'}
               </h2>
-              <HiDocumentText className="h-4 w-4 opacity-50 shrink-0" />
+              <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Level: Document Admin</div>
             </div>
             {loading ? (
-              <div className="flex items-center justify-center py-16 text-slate-400 text-sm">Loading…</div>
+              <div className="flex items-center justify-center py-20 text-slate-400 text-[10px] font-black uppercase tracking-widest">SYNCHRONIZING_DATA...</div>
             ) : activeTab === 'History' ? (
-              <Table columns={historyColumns} data={history} pageSize={10} />
+              <Table columns={historyColumns} data={history} pageSize={10} className="rounded-none" />
             ) : (
-              <Table columns={templateColumns} data={filteredTemplates} pageSize={10} />
+              <Table columns={templateColumns} data={filteredTemplates} pageSize={10} className="rounded-none" />
             )}
           </div>
         </div>
       </div>
 
       {/* ── Create Template Modal ─────────────────────────────────────────── */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Create Document Template" size="xl">
-        <form onSubmit={handleCreate} className="animate-in fade-in duration-500 space-y-5">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="GOVERNANCE_TEMPLATE_PROVISION" size="xl">
+        <form onSubmit={handleCreate} className="animate-in fade-in duration-500 space-y-6 p-2">
           {/* Row 1: Name */}
-          <Input
-            label="Template Name"
-            placeholder="e.g. Standard Offer Letter 2026"
-            required
-            value={form.name}
-            onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
-          />
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Protocol Identifier</label>
+            <input
+              type="text"
+              placeholder="e.g. STANDARD_OFFER_PROTOCOL_2026"
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
+              required
+              value={form.name}
+              onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
+            />
+          </div>
 
           {/* Row 2: Type / Category / Status */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Class</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
                 value={form.type}
                 onChange={(e) => setForm(f => ({ ...f, type: e.target.value }))}
               >
-                {TYPES.map(t => <option key={t}>{t}</option>)}
+                {TYPES.map(t => <option key={t}>{t.toUpperCase()}</option>)}
               </select>
             </div>
-            <div>
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Operational Dept</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
                 value={form.category}
                 onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))}
               >
-                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                {CATEGORIES.map(c => <option key={c}>{c.toUpperCase()}</option>)}
               </select>
             </div>
-            <div>
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Governance Status</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
                 value={form.status}
                 onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}
               >
-                <option>Active</option>
-                <option>Draft</option>
+                <option>ACTIVE</option>
+                <option>DRAFT</option>
               </select>
             </div>
           </div>
 
           {/* Row 3: Description */}
-          <div>
-            <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Administrative Brief</label>
             <input
               type="text"
-              placeholder="Brief description of this template..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-colors"
+              placeholder="ENTER PROTOCOL DESCRIPTION..."
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
               value={form.description}
               onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
             />
           </div>
 
           {/* Row 4: Body */}
-          <div>
-            <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Letter Body (HTML/Markdown Supported)</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Protocol Payload (HTML/MD)</label>
             <div className="relative">
               <textarea
                 ref={createBodyRef}
-                className="w-full rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none min-h-[280px] font-serif leading-relaxed"
-                placeholder="Start drafting your template here. Use {{tags}} for dynamic fields..."
+                className="w-full rounded-none border border-slate-200 bg-slate-50/30 p-6 text-[13px] font-mono leading-relaxed text-slate-800 focus:border-[#0F766E] focus:bg-white outline-none min-h-[350px] transition-all"
+                placeholder="START PROTOCOL DRAFTING. USE {{TAGS}} FOR DYNAMIC INJECTION..."
                 value={form.body}
                 onChange={(e) => setForm(f => ({ ...f, body: e.target.value }))}
               />
-              <div className="absolute right-4 bottom-4">
-                <div className="relative">
-                  <Button
-                    label="Insert Tag"
-                    variant="ghost"
-                    size="sm"
-                    icon={HiCodeBracket}
-                    className="bg-slate-50 border border-slate-100"
-                    type="button"
-                    onClick={() => setTagPickerOpen(o => !o)}
-                  />
-                  <TagPicker
-                    open={tagPickerOpen}
-                    onClose={() => setTagPickerOpen(false)}
-                    tags={tags}
-                    bodyRef={createBodyRef}
-                    bodyValue={form.body}
-                    setter={setForm}
-                  />
-                </div>
+              <div className="absolute right-6 bottom-6 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTagPickerOpen(o => !o)}
+                  className="h-10 px-4 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all flex items-center gap-2"
+                >
+                  <HiCodeBracket className="h-4 w-4" /> INJECT_TAG
+                </button>
+                <TagPicker
+                  open={tagPickerOpen}
+                  onClose={() => setTagPickerOpen(false)}
+                  tags={tags}
+                  bodyRef={createBodyRef}
+                  bodyValue={form.body}
+                  setter={setForm}
+                />
               </div>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setModalOpen(false)} />
-            <Button
+          <div className="pt-8 border-t border-slate-100 flex justify-end gap-4">
+            <button type="button" onClick={() => setModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors">
+               CANCEL
+            </button>
+            <button
               type="submit"
-              label={submitting ? 'Saving…' : 'Save Template'}
-              variant="primary"
-              className="bg-[#0F766E] px-8 shadow-lg shadow-emerald-900/20"
-              icon={HiPlus}
               disabled={submitting}
-            />
+              className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10 disabled:opacity-40"
+            >
+              {submitting ? 'PROCESSING...' : 'COMMIT TEMPLATE'}
+            </button>
           </div>
         </form>
       </Modal>
 
       {/* ── Edit Template Modal ───────────────────────────────────────────── */}
-      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Edit Document Template" size="xl">
-        <form onSubmit={handleUpdate} className="animate-in fade-in duration-500 space-y-5">
-          <Input
-            label="Template Name"
-            placeholder="e.g. Standard Offer Letter 2026"
-            required
-            value={editForm.name}
-            onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
-          />
+      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="GOVERNANCE_TEMPLATE_MODIFICATION" size="xl">
+        <form onSubmit={handleUpdate} className="animate-in fade-in duration-500 space-y-6 p-2">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Protocol Identifier</label>
+            <input
+              type="text"
+              placeholder="PROTOCOL NAME"
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
+              required
+              value={editForm.name}
+              onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
+            />
+          </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Class</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
                 value={editForm.type}
                 onChange={(e) => setEditForm(f => ({ ...f, type: e.target.value }))}
               >
-                {TYPES.map(t => <option key={t}>{t}</option>)}
+                {TYPES.map(t => <option key={t}>{t.toUpperCase()}</option>)}
               </select>
             </div>
-            <div>
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Operational Dept</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
                 value={editForm.category}
                 onChange={(e) => setEditForm(f => ({ ...f, category: e.target.value }))}
               >
-                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                {CATEGORIES.map(c => <option key={c}>{c.toUpperCase()}</option>)}
               </select>
             </div>
-            <div>
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Governance Status</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
                 value={editForm.status}
                 onChange={(e) => setEditForm(f => ({ ...f, status: e.target.value }))}
               >
-                <option>Active</option>
-                <option>Draft</option>
+                <option>ACTIVE</option>
+                <option>DRAFT</option>
               </select>
             </div>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Administrative Brief</label>
             <input
               type="text"
-              placeholder="Brief description of this template..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-colors"
+              placeholder="DESCRIPTION"
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
               value={editForm.description}
               onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
             />
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Letter Body</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Protocol Payload</label>
             <div className="relative">
               <textarea
                 ref={editBodyRef}
-                className="w-full rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none min-h-[280px] font-serif leading-relaxed"
-                placeholder="Template body..."
+                className="w-full rounded-none border border-slate-200 bg-slate-50/30 p-6 text-[13px] font-mono leading-relaxed text-slate-800 focus:border-[#0F766E] focus:bg-white outline-none min-h-[350px] transition-all"
+                placeholder="TEMPLATE BODY..."
                 value={editForm.body}
                 onChange={(e) => setEditForm(f => ({ ...f, body: e.target.value }))}
               />
-              <div className="absolute right-4 bottom-4">
-                <div className="relative">
-                  <Button
-                    label="Insert Tag"
-                    variant="ghost"
-                    size="sm"
-                    icon={HiCodeBracket}
-                    className="bg-slate-50 border border-slate-100"
-                    type="button"
-                    onClick={() => setEditTagPickerOpen(o => !o)}
-                  />
-                  <TagPicker
-                    open={editTagPickerOpen}
-                    onClose={() => setEditTagPickerOpen(false)}
-                    tags={tags}
-                    bodyRef={editBodyRef}
-                    bodyValue={editForm.body}
-                    setter={setEditForm}
-                  />
-                </div>
+              <div className="absolute right-6 bottom-6 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditTagPickerOpen(o => !o)}
+                  className="h-10 px-4 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all flex items-center gap-2"
+                >
+                  <HiCodeBracket className="h-4 w-4" /> INJECT_TAG
+                </button>
+                <TagPicker
+                  open={editTagPickerOpen}
+                  onClose={() => setEditTagPickerOpen(false)}
+                  tags={tags}
+                  bodyRef={editBodyRef}
+                  bodyValue={editForm.body}
+                  setter={setEditForm}
+                />
               </div>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setEditModalOpen(false)} />
-            <Button
+          <div className="pt-8 border-t border-slate-100 flex justify-end gap-4">
+            <button type="button" onClick={() => setEditModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors">
+               CANCEL
+            </button>
+            <button
               type="submit"
-              label={submitting ? 'Saving…' : 'Save Changes'}
-              variant="primary"
-              className="bg-[#0F766E] px-8 shadow-lg shadow-emerald-900/20"
-              icon={HiPencilSquare}
               disabled={submitting}
-            />
+              className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10 disabled:opacity-40"
+            >
+              {submitting ? 'SYNCHRONIZING...' : 'UPDATE PROTOCOL'}
+            </button>
           </div>
         </form>
       </Modal>
 
       {/* ── Dispatch / Use Template Modal ────────────────────────────────── */}
-      <Modal isOpen={sendModalOpen} onClose={() => { setSendModalOpen(false); setDispatchEmployeeId(''); setEmpSearch('') }} title="Use Template" size="xl">
-        <div className="animate-in fade-in duration-500">
+      <Modal isOpen={sendModalOpen} onClose={() => { setSendModalOpen(false); setDispatchEmployeeId(''); setEmpSearch('') }} title="PROTOCOL_TRANSMISSION_INTERFACE" size="xl">
+        <div className="animate-in fade-in duration-500 p-2">
           {/* Two-column layout */}
-          <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex flex-col lg:flex-row gap-8">
 
             {/* ── Left: Config panel ── */}
-            <div className="lg:w-72 shrink-0 space-y-5">
+            <div className="lg:w-80 shrink-0 space-y-6">
               {/* Template info */}
-              <div className="rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-4 text-white">
-                <p className="text-[10px] font-black text-emerald-200/70 uppercase tracking-widest mb-1">Template</p>
-                <p className="font-bold text-base leading-tight">{selectedTemplate?.name}</p>
-                <div className="flex items-center gap-2 mt-2">
+              <div className="rounded-none bg-slate-900 p-5 text-white border-l-4 border-[#0F766E]">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">ACTIVE_PROTOCOL</p>
+                <p className="font-black text-sm uppercase tracking-tight leading-tight">{selectedTemplate?.name}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-3">
                   {selectedTemplate?.type && (
-                    <span className="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded-full">{selectedTemplate.type}</span>
+                    <span className="text-[8px] font-black bg-[#0F766E] px-2 py-0.5 rounded-none uppercase tracking-widest">{selectedTemplate.type.toUpperCase()}</span>
                   )}
                   {selectedTemplate?.category && (
-                    <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded-full">{selectedTemplate.category}</span>
+                    <span className="text-[8px] font-black bg-slate-800 px-2 py-0.5 rounded-none uppercase tracking-widest border border-slate-700">{selectedTemplate.category.toUpperCase()}</span>
                   )}
                 </div>
               </div>
 
               {/* Employee search + select */}
-              <div>
-                <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Select Recipient <span className="text-red-400">*</span>
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  TARGET_RECIPIENT <span className="text-red-500">*</span>
                 </label>
-                <div className="relative mb-2">
-                  <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <div className="relative">
+                  <HiMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search employee..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-3 text-sm font-medium focus:border-[#0F766E] focus:outline-none transition-colors"
+                    placeholder="SEARCH_DIRECTORY..."
+                    className="w-full rounded-none border border-slate-200 bg-white h-12 pl-12 pr-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
                     value={empSearch}
                     onChange={e => setEmpSearch(e.target.value)}
                   />
                 </div>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar pr-1 bg-slate-50 border border-slate-100 p-1">
                   {empListLoading ? (
-                    <div className="flex items-center justify-center py-6">
-                      <div className="h-4 w-4 rounded-full border-2 border-[#0F766E] border-t-transparent animate-spin" />
+                    <div className="flex items-center justify-center py-10">
+                      <div className="h-5 w-5 rounded-none border-2 border-[#0F766E] border-t-transparent animate-spin" />
                     </div>
                   ) : empListError ? (
-                    <div className="text-center py-4 space-y-2">
-                      <p className="text-xs text-red-500 font-medium">{empListError}</p>
+                    <div className="text-center py-6 space-y-3">
+                      <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">{empListError}</p>
                       <button
                         type="button"
                         onClick={() => { empListFetched.current = false; fetchEmpList() }}
-                        className="text-[10px] font-black text-[#0F766E] hover:underline"
+                        className="text-[9px] font-black text-[#0F766E] hover:underline uppercase tracking-widest"
                       >
-                        Retry
+                        RETRY_SYNC
                       </button>
                     </div>
                   ) : empList.length === 0 ? (
-                    <p className="text-center text-xs text-slate-400 py-4">No employees found</p>
+                    <p className="text-center text-[10px] font-black text-slate-400 uppercase py-10 tracking-widest">EMPTY_DIRECTORY</p>
                   ) : (
                     empList
                       .filter(e => {
@@ -892,19 +878,19 @@ export default function LettersTemplates() {
                           key={e.id}
                           type="button"
                           onClick={() => setDispatchEmployeeId(String(e.id))}
-                          className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all ${
+                          className={`w-full text-left px-3 py-3 border transition-all rounded-none ${
                             String(dispatchEmployeeId) === String(e.id)
-                              ? 'border-[#0F766E] bg-emerald-50 ring-1 ring-[#0F766E]'
-                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                              ? 'border-[#0F766E] bg-emerald-50'
+                              : 'border-transparent bg-transparent hover:bg-white hover:border-slate-200'
                           }`}
                         >
-                          <div className="flex items-center gap-2.5">
-                            <div className="h-7 w-7 rounded-full bg-[#0F766E]/10 flex items-center justify-center text-[10px] font-black text-[#0F766E] shrink-0">
-                              {(e.full_name || '?').charAt(0)}
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-none bg-slate-900 flex items-center justify-center text-[10px] font-black text-white shrink-0">
+                              {(e.full_name || '?').charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs font-bold text-slate-800 truncate">{e.full_name}</p>
-                              <p className="text-[10px] text-slate-400 font-medium">{e.emp_id} · {e.department}</p>
+                              <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight truncate">{e.full_name}</p>
+                              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{e.emp_id} · {e.department}</p>
                             </div>
                           </div>
                         </button>
@@ -914,7 +900,7 @@ export default function LettersTemplates() {
               </div>
 
               {/* Actions */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
+              <div className="space-y-3 pt-6 border-t border-slate-100">
                 {dispatchEmployeeId && (
                   <button
                     type="button"
@@ -930,55 +916,59 @@ export default function LettersTemplates() {
                       a.click()
                       URL.revokeObjectURL(url)
                     }}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white h-11 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors"
                   >
-                    <HiArrowDownTray className="h-4 w-4" /> Download Preview
+                    <HiArrowDownTray className="h-4 w-4" /> EXPORT_PREVIEW
                   </button>
                 )}
-                <Button
-                  label={submitting ? 'Dispatching…' : 'Dispatch via Email'}
-                  variant="primary"
-                  className="w-full bg-[#0F766E] shadow-lg shadow-emerald-900/20 justify-center"
-                  icon={HiEnvelope}
+                <button
+                   type="button"
                   onClick={handleDispatch}
                   disabled={submitting || !dispatchEmployeeId}
-                />
-                <Button
-                  label="Cancel"
-                  variant="ghost"
-                  className="w-full justify-center"
+                  className="w-full h-11 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10 flex items-center justify-center gap-2 disabled:opacity-40"
+                >
+                  <HiEnvelope className="h-4 w-4" /> {submitting ? 'TRANSMITTING...' : 'EXECUTE_DISPATCH'}
+                </button>
+                <button
+                   type="button"
                   onClick={() => { setSendModalOpen(false); setDispatchEmployeeId(''); setEmpSearch('') }}
-                />
+                  className="w-full h-11 rounded-none border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  ABORT_INTERFACE
+                </button>
               </div>
             </div>
 
             {/* ── Right: Live letter preview ── */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  {dispatchEmployeeId ? 'Live Preview — tags filled in' : 'Letter Preview'}
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                  {dispatchEmployeeId ? 'LIVE_PROTOCOL_PREVIEW' : 'STATIC_TEMPLATE_VIEW'}
                 </p>
                 <button
                   type="button"
                   onClick={() => { setSendModalOpen(false); openEdit(selectedTemplate) }}
-                  className="flex items-center gap-1.5 text-[10px] font-black text-[#0F766E] hover:text-emerald-800 transition-colors"
+                  className="flex items-center gap-1.5 text-[10px] font-black text-[#0F766E] hover:text-emerald-800 transition-colors uppercase tracking-widest"
                 >
-                  <HiPencilSquare className="h-3.5 w-3.5" /> Edit Template
+                  <HiPencilSquare className="h-3.5 w-3.5" /> EDIT_SOURCE
                 </button>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white min-h-[420px] overflow-hidden shadow-sm">
+              <div className="rounded-none border border-slate-200 bg-white min-h-[550px] overflow-hidden shadow-sm flex flex-col">
                 {/* Letter paper header */}
-                <div className="border-b border-slate-100 px-8 py-4 flex items-center justify-between bg-slate-50/50">
-                  <div className="h-6 w-20 bg-slate-200 rounded animate-none" />
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+                <div className="border-b border-slate-100 px-10 py-6 flex items-center justify-between bg-slate-50/50">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 bg-[#0F766E] rounded-none flex items-center justify-center text-white font-black text-xs">H</div>
+                    <div className="h-4 w-24 bg-slate-200 rounded-none" />
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                    {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'LONG', year: 'numeric' }).toUpperCase()}
                   </p>
                 </div>
 
                 {selectedTemplate?.body ? (
-                  <div className="px-8 py-6">
-                    <pre className="text-sm text-slate-700 font-serif leading-relaxed whitespace-pre-wrap break-words">
+                  <div className="px-12 py-10 flex-1 bg-white">
+                    <pre className="text-[13px] text-slate-800 font-mono leading-relaxed whitespace-pre-wrap break-words">
                       {dispatchEmployeeId
                         ? renderBody(selectedTemplate.body, empList.find(e => String(e.id) === String(dispatchEmployeeId)))
                         : selectedTemplate.body
@@ -986,24 +976,30 @@ export default function LettersTemplates() {
                     </pre>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-                    <HiDocumentText className="h-12 w-12 mb-3 opacity-30" />
-                    <p className="text-sm font-medium">No body content in this template</p>
+                  <div className="flex flex-col items-center justify-center flex-1 text-slate-300 py-20">
+                    <HiDocumentText className="h-16 w-16 mb-4 opacity-10" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em]">NULL_PAYLOAD</p>
                     <button
                       type="button"
                       onClick={() => { setSendModalOpen(false); openEdit(selectedTemplate) }}
-                      className="mt-3 text-xs font-bold text-[#0F766E] hover:underline"
+                      className="mt-6 text-[10px] font-black text-[#0F766E] hover:underline uppercase tracking-widest"
                     >
-                      Add content →
+                      INITIALIZE_CONTENT →
                     </button>
                   </div>
                 )}
+                
+                {/* Letter paper footer */}
+                <div className="border-t border-slate-50 px-10 py-6 bg-slate-50/30">
+                   <div className="h-px w-32 bg-slate-200 mb-2" />
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">AUTHORIZED_SIGNATORY</p>
+                </div>
               </div>
 
               {/* Tag legend */}
               {!dispatchEmployeeId && selectedTemplate?.body && (
-                <p className="mt-2 text-[10px] text-slate-400 italic text-center">
-                  Select a recipient above to see tags replaced with real data
+                <p className="mt-4 text-[10px] font-black text-[#0F766E] uppercase tracking-widest text-center animate-pulse">
+                  &gt;&gt; SELECT RECIPIENT TO INJECT LIVE ASSET DATA
                 </p>
               )}
             </div>
@@ -1015,65 +1011,67 @@ export default function LettersTemplates() {
       <Modal
         isOpen={tagManagerOpen}
         onClose={() => setTagManagerOpen(false)}
-        title={editingTag ? 'Edit Tag' : 'Create Dynamic Tag'}
+        title={editingTag ? 'TAG_MODIFICATION' : 'NEW_ASSET_TAG'}
         size="sm"
       >
-        <form onSubmit={handleSaveTag} className="animate-in fade-in duration-300 space-y-5 pt-2">
-          <div>
-            <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-              Tag Key <span className="text-red-400">*</span>
+        <form onSubmit={handleSaveTag} className="animate-in fade-in duration-300 space-y-6 pt-2">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              PROTOCOL_KEY <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden focus-within:border-[#0F766E] transition-colors">
-              <span className="px-3 text-sm font-bold text-slate-400 select-none border-r border-slate-200 bg-slate-100 py-2.5">{'{{'}</span>
+            <div className="flex items-center rounded-none border border-slate-200 bg-white overflow-hidden focus-within:border-[#0F766E] transition-all h-12">
+              <span className="px-4 text-[11px] font-black text-slate-400 select-none border-r border-slate-100 bg-slate-50 h-full flex items-center">{'{{'}</span>
               <input
                 type="text"
                 required
-                placeholder="my_custom_field"
-                className="flex-1 bg-transparent px-3 py-2.5 text-sm font-mono text-slate-900 focus:outline-none"
+                placeholder="custom_key"
+                className="flex-1 bg-transparent px-4 text-[11px] font-black text-slate-900 focus:outline-none uppercase tracking-widest"
                 value={tagForm.tag}
                 onChange={e => setTagForm(f => ({ ...f, tag: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))}
               />
-              <span className="px-3 text-sm font-bold text-slate-400 select-none border-l border-slate-200 bg-slate-100 py-2.5">{'}}'}</span>
+              <span className="px-4 text-[11px] font-black text-slate-400 select-none border-l border-slate-100 bg-slate-50 h-full flex items-center">{'}}'}</span>
             </div>
-            <p className="mt-1 text-[10px] text-slate-400 ml-1">Lowercase letters, digits and underscores only</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight ml-1">LOWERCASE_ALPHANUMERIC_ONLY</p>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">DESCRIPTION</label>
             <input
               type="text"
-              placeholder="e.g. Employee's full legal name"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-colors"
+              placeholder="E.G. EMPLOYEE_LEGAL_IDENTITY"
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
               value={tagForm.description}
               onChange={e => setTagForm(f => ({ ...f, description: e.target.value }))}
             />
           </div>
 
           {tagError && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{tagError}</div>
+            <div className="rounded-none border border-red-100 bg-red-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-700">{tagError}</div>
           )}
 
           {/* Preview */}
           {tagForm.tag && (
-            <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3 flex items-center gap-3">
-              <HiCodeBracket className="h-4 w-4 text-emerald-600 shrink-0" />
+            <div className="rounded-none bg-slate-900 border-l-4 border-emerald-500 p-4 flex items-center gap-4">
+              <HiCodeBracket className="h-5 w-5 text-emerald-500 shrink-0" />
               <div>
-                <code className="text-sm font-bold text-emerald-700">{`{{${tagForm.tag}}}`}</code>
-                {tagForm.description && <p className="text-[11px] text-emerald-600/70 mt-0.5">{tagForm.description}</p>}
+                <code className="text-[11px] font-black text-emerald-400 tracking-widest">{`{{${tagForm.tag}}}`}</code>
+                {tagForm.description && <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">{tagForm.description}</p>}
               </div>
             </div>
           )}
 
-          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setTagManagerOpen(false)} />
-            <Button
+          <div className="pt-6 border-t border-slate-100 flex justify-end gap-4">
+            <button type="button" onClick={() => setTagManagerOpen(false)} className="h-11 px-6 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">
+               ABORT
+            </button>
+            <button
               type="submit"
-              label={tagSubmitting ? 'Saving…' : editingTag ? 'Update Tag' : 'Create Tag'}
-              variant="primary"
-              className="bg-[#0F766E] shadow-lg shadow-emerald-900/20"
-              icon={editingTag ? HiPencilSquare : HiPlus}
               disabled={tagSubmitting || !tagForm.tag.trim()}
-            />
+              className="h-11 px-10 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all flex items-center gap-2 disabled:opacity-40"
+            >
+              {editingTag ? <HiPencilSquare className="h-4 w-4" /> : <HiPlus className="h-4 w-4" />}
+              {tagSubmitting ? 'SAVING...' : editingTag ? 'UPDATE_TAG' : 'PROVISION_TAG'}
+            </button>
           </div>
         </form>
       </Modal>

@@ -399,8 +399,8 @@ export default function DesignationsManagement() {
               onClick={card.onClickFilter}
               title={`Filter by ${card.label}`}
               className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${isActiveFilter
-                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
+                ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                : 'border-slate-200 bg-white hover:border-slate-300'
                 }`}
             >
               <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>

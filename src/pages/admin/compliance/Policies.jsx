@@ -314,114 +314,131 @@ export default function Policies() {
   ]
 
   return (
-    <div className="min-h-[600px]">
-      {(activeView === 'dashboard' || activeView === 'categories') && (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20 mb-8">
-          <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="font-display text-3xl font-bold tracking-tight">Compliance & Policies</h1>
-              <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
-                Maintain organizational standards, manage versioning, and track employee acknowledgements across all corporate directives.
-              </p>
-              
-              <div className="mt-6 flex items-center gap-2 rounded-xl bg-white/10 p-1 backdrop-blur-md w-fit border border-white/5">
-                {[
-                  { id: 'dashboard', label: 'Dashboard', icon: HiDocumentText },
-                  { id: 'categories', label: 'Categories', icon: HiFolderPlus }
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveView(tab.id)}
-                    className={`flex items-center gap-2 px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg ${
-                      activeView === tab.id ? 'bg-white text-emerald-900 shadow-lg scale-105' : 'text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <tab.icon className="h-3.5 w-3.5" />
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {isHR && (
-              <div className="flex flex-wrap gap-3">
-                <button 
-                  onClick={() => {
-                    setEditingCategory(null)
-                    setNewCategoryName('')
-                    setModalOpen(true)
-                  }}
-                  className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 border border-white/10"
-                >
-                  <HiFolderPlus className="h-4 w-4" /> Add Category
-                </button>
-                <button 
-                  onClick={() => {
-                    setFormData(initialFormData)
-                    setActiveView('editor')
-                  }}
-                  className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95"
-                >
-                  <HiPlus className="h-4 w-4" /> New Policy
-                </button>
-              </div>
-            )}
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar — Standardized */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Governance & Compliance</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Compliance</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Policy Registry</span>
           </div>
-          <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
-          <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-black/5" />
         </div>
-      )}
+        {isHR && (
+          <div className="flex items-center gap-2 shrink-0">
+            <button 
+              onClick={() => {
+                setEditingCategory(null)
+                setNewCategoryName('')
+                setModalOpen(true)
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm"
+            >
+              <HiFolderPlus className="h-4 w-4" /> Add Category
+            </button>
+            <button 
+              onClick={() => {
+                setFormData(initialFormData)
+                setActiveView('editor')
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
+            >
+              <HiPlus className="h-4 w-4" /> New Policy
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Internal Tabs Navigation */}
+      <div className="flex items-center border-b border-slate-200 overflow-x-auto no-scrollbar">
+        {[
+          { id: 'dashboard', label: 'DASHBOARD', icon: HiDocumentText },
+          { id: 'categories', label: 'CATEGORIES', icon: HiFolderPlus }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveView(tab.id)}
+            className={`flex shrink-0 items-center gap-3 px-8 pb-4 text-[11px] font-black uppercase tracking-widest transition-all relative ${
+              activeView === tab.id ? 'text-[#0F766E]' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+            {activeView === tab.id && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#0F766E] animate-in fade-in duration-300" />
+            )}
+          </button>
+        ))}
+      </div>
       
       <div className="relative">
         {loading && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-2xl">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#0F766E] border-t-transparent" />
           </div>
         )}
         
         {activeView === 'dashboard' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid gap-6 sm:grid-cols-3">
-              <StatCard title="Total Policies" value={policies.length} subtitle={`Across ${new Set(policies.map(p => p.category)).size} categories`} color="blue" icon={HiDocumentText} />
-              <StatCard title="Total Acknowledgements" value={policies.reduce((acc, p) => acc + (p.ackCount || 0), 0)} subtitle="Total employee signatures" color="green" icon={HiShieldCheck} />
-              <StatCard title="Draft Documents" value={policies.filter(p => p.status === 'Draft').length} subtitle="Pending publication" color="orange" icon={HiBellAlert} />
+          <div className="space-y-6 animate-in fade-in duration-500">
+            {/* KPI Metrics Cards Grid */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
+              {[
+                { label: 'TOTAL POLICIES', count: policies.length, bgColor: 'bg-[#0F172A]', icon: HiDocumentText },
+                { label: 'ACKNOWLEDGEMENTS', count: policies.reduce((acc, p) => acc + (p.ackCount || 0), 0), bgColor: 'bg-[#10B981]', icon: HiShieldCheck },
+                { label: 'DRAFT DIRECTIVES', count: policies.filter(p => p.status === 'Draft').length, bgColor: 'bg-[#F59E0B]', icon: HiBellAlert }
+              ].map((card, idx) => (
+                <div key={idx} className="flex items-center gap-3.5 rounded-none border border-slate-200 bg-white p-4 shadow-sm min-w-0">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                    <card.icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate leading-none">
+                      {card.label}
+                    </div>
+                    <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="space-y-6">
-              <div className="group relative rounded-2xl border border-slate-200 bg-white/50 p-6 backdrop-blur-xl shadow-sm transition-all hover:shadow-md">
-                <div className="flex flex-col gap-4 md:flex-row md:items-end">
+              {/* Search & Filters */}
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex flex-col gap-6 md:flex-row md:items-end">
                   <div className="flex-1">
-                    <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Registry</label>
+                    <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Registry</label>
                     <div className="relative">
-                      <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Policy name, category or ID..."
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 focus:outline-none transition-all"
+                        placeholder="ENTER POLICY IDENTIFIER..."
+                        className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all"
                         value={q}
                         onChange={(e) => setQ(e.target.value)}
                       />
                     </div>
                   </div>
-                  <div className="w-full md:w-48">
-                    <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category Filter</label>
-                    <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm focus:border-[#0F766E] focus:outline-none appearance-none transition-all">
-                      <option>All Categories</option>
-                      {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  <div className="w-full md:w-64">
+                    <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Classification</label>
+                    <select className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer">
+                      <option>ALL CATEGORIES</option>
+                      {categories.map(c => <option key={c.id} value={c.name}>{c.name.toUpperCase()}</option>)}
                     </select>
                   </div>
-                  <Button label="Filters" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px]" />
+                  <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
+                     REFINE
+                  </button>
                 </div>
               </div>
 
               {filtered.length > 0 ? (
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md animate-in fade-in zoom-in-95 duration-500">
-                  <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-bold text-slate-700 uppercase tracking-wider">Policy Registry</div>
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Master Records</div>
-                    </div>
+                <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+                  <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+                    <h2 className="text-sm font-semibold text-white uppercase tracking-wider">Policy Registry</h2>
+                    <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em]">Master Repository</div>
                   </div>
-                  <Table columns={columns} data={filtered} pageSize={5} />
+                  <Table columns={columns} data={filtered} pageSize={10} className="rounded-none" />
                 </div>
               ) : !loading && (
                 <EmptyState
@@ -442,63 +459,62 @@ export default function Policies() {
 
         {activeView === 'categories' && (
           <div className="animate-in fade-in duration-500 space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-white/50 p-6 backdrop-blur-xl shadow-sm">
+            <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Category Taxonomy</h3>
-                  <p className="text-xs text-slate-500 mt-1 text-balance">Organize your policies into logical departments or functional areas for better employee accessibility.</p>
+                  <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest border-l-4 border-[#0F766E] pl-3">Category Taxonomy</h3>
+                  <p className="text-xs text-slate-500 mt-2 font-medium">ORGANIZE POLICIES INTO FUNCTIONAL DOMAINS FOR SYSTEMIC ACCESSIBILITY.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                   <div className="text-right hidden sm:block">
-                     <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Active Groups</div>
-                     <div className="text-lg font-bold text-[#0F766E]">{categories.length}</div>
+                <div className="flex items-center gap-6">
+                   <div className="text-right">
+                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Domains</div>
+                     <div className="text-2xl font-black text-slate-900">{categories.length}</div>
                    </div>
-                   <Badge label="Operational" color="emerald" variant="outline" />
                 </div>
               </div>
             </div>
 
             {categories.length > 0 ? (
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+              <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
                 <Table 
                   columns={[
                     { 
                       key: 'name', 
-                      label: 'Category Name',
+                      label: 'Functional Domain',
                       render: (v) => (
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                            <HiDocumentText className="h-5 w-5" />
+                          <div className="flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-600 border border-slate-200">
+                            <HiDocumentText className="h-4 w-4" />
                           </div>
-                          <span className="font-semibold text-slate-700">{v}</span>
+                          <span className="font-black text-slate-900 uppercase text-[11px] tracking-tight">{v}</span>
                         </div>
                       )
                     },
                     { 
                       key: 'id', 
-                      label: 'System ID',
-                      render: (v) => <code className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">CAT-{v}</code>
+                      label: 'System Identifier',
+                      render: (v) => <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">DOM-{v}</span>
                     },
                     {
                       key: 'actions',
-                      label: 'Actions',
+                      label: 'Governance',
                       render: (_, row) => (
-                        <div className="flex justify-end gap-2">
+                        <div className="flex gap-4">
                           <button 
                             onClick={() => {
                               setEditingCategory(row)
                               setNewCategoryName(row.name)
                               setModalOpen(true)
                             }}
-                            className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
+                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#0F766E]"
                           >
-                            <HiPencilSquare className="h-4 w-4" />
+                            Edit
                           </button>
                           <button 
                             onClick={() => handleDeleteCategory(row.id)}
-                            className="p-2 text-slate-400 hover:text-red-600 transition-colors"
+                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-500"
                           >
-                            <HiTrash className="h-4 w-4" />
+                            Delete
                           </button>
                         </div>
                       )
@@ -506,6 +522,7 @@ export default function Policies() {
                   ]} 
                   data={categories} 
                   pageSize={10} 
+                  className="rounded-none"
                 />
               </div>
             ) : !loading && (
@@ -643,52 +660,53 @@ export default function Policies() {
         )}
 
         {activeView === 'tracking' && (
-          <div className="animate-in slide-in-from-right-10 duration-500 space-y-6">
+          <div className="animate-in fade-in duration-500 space-y-6">
              <div className="flex items-center justify-between border-b border-slate-200 pb-6">
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setActiveView('dashboard')}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-all hover:bg-slate-200"
+                  className="flex h-10 w-10 items-center justify-center rounded-none bg-slate-100 text-slate-600 transition-all hover:bg-slate-200"
                 >
                   <HiChevronRight className="h-5 w-5 rotate-180" />
                 </button>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Acknowledgement Tracking</h2>
-                  <p className="text-sm text-slate-500">{selectedPolicy?.title}</p>
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Acknowledgement Audit</h2>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedPolicy?.title}</p>
                 </div>
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
               <Table 
                 columns={[
                   {
                     key: 'full_name',
-                    label: 'Employee Name',
+                    label: 'Asset Holder',
                     render: (_, row) => (
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 font-bold text-[10px]">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-600 font-black text-[10px] border border-slate-200">
                           {row.full_name?.charAt(0) || '?'}
                         </div>
-                        <div className="font-semibold text-slate-900">{row.full_name}</div>
+                        <div className="font-black text-slate-900 uppercase text-[11px] tracking-tight">{row.full_name}</div>
                       </div>
                     )
                   },
-                  { key: 'emp_id', label: 'Employee ID' },
-                  { key: 'department', label: 'Department' },
+                  { key: 'emp_id', label: 'Employee Identifier', render: (v) => <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{v}</span> },
+                  { key: 'department', label: 'Business Unit', render: (v) => <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{v}</span> },
                   {
                     key: 'status',
-                    label: 'Status',
-                    render: (v) => <Badge label={v} color={v === 'Acknowledged' ? 'green' : 'orange'} variant="outline" />
+                    label: 'Audit Status',
+                    render: (v) => <Badge label={v.toUpperCase()} color={v === 'Acknowledged' ? 'green' : 'orange'} className="rounded-none text-[9px] font-black tracking-widest" />
                   },
                   { 
                     key: 'acknowledged_at', 
-                    label: 'Acknowledged On',
-                    render: (v) => v ? new Date(v).toLocaleString() : '—'
+                    label: 'Timestamp',
+                    render: (v) => v ? <span className="text-[10px] font-bold text-slate-500">{new Date(v).toLocaleString()}</span> : <span className="text-[10px] font-bold text-slate-300 italic">PENDING</span>
                   }
                 ]} 
                 data={trackingData} 
                 pageSize={10} 
+                className="rounded-none"
               />
             </div>
           </div>

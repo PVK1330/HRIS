@@ -109,235 +109,207 @@ export default function Onboarding() {
   ]
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] p-8 text-white shadow-xl shadow-emerald-900/20">
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight">Onboarding Management</h1>
-            <p className="mt-2 text-emerald-100/80 text-sm max-w-md leading-relaxed">
-              Orchestrate the perfect welcome. Track multi-role checklists and monitor new hire integration progress.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button 
-              onClick={() => setModalOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-[#0F766E] shadow-lg transition-all hover:bg-emerald-50 hover:scale-105 active:scale-95 shrink-0"
-            >
-              <HiPlus className="h-4 w-4 shrink-0" /> Initialize Onboarding
-            </button>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar — Standardized */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Onboarding Management</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Human Capital</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600 uppercase font-black tracking-widest text-[10px]">Lifecycle Governance</span>
           </div>
         </div>
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setModalOpen(true)}
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#0c6b64] shadow-lg shadow-emerald-900/10"
+          >
+            <HiPlus className="h-4 w-4" /> Initialize Onboarding
+          </button>
+        </div>
       </div>
 
-      {/* Onboarding Status Horizontal Toolbar */}
-      <div className="space-y-3 min-w-0">
-        <div className="flex items-center justify-between min-w-0">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Onboarding Metrics Overview</p>
-          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shrink-0">Active Pipelines</span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
-          {[
-            { label: 'All', count: stats.newHires, icon: HiUserGroup, color: 'slate' },
-            { label: 'In Progress', count: stats.inProgress, icon: HiClock, color: 'blue' },
-            { label: 'Pending', count: stats.pending, icon: HiXCircle, color: 'orange' },
-            { label: 'Completed', count: stats.completed, icon: HiCheckBadge, color: 'emerald' }
-          ].map((item) => (
-            <button
-              key={item.label}
-              onClick={() => setActiveStatus(item.label)}
-              className={`group flex items-center justify-between gap-2 rounded-2xl border p-4 transition-all min-w-0 ${
-                activeStatus === item.label 
-                ? 'border-[#0F766E] bg-emerald-50/50 shadow-md ring-1 ring-[#0F766E]' 
-                : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-xl bg-${item.color}-50 text-${item.color}-600 group-hover:scale-110 transition-transform`}>
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div className="text-left min-w-0">
-                  <div className="text-sm font-bold text-slate-700 truncate">{item.label === 'All' ? 'New Hires' : item.label}</div>
-                  <div className="text-[10px] text-slate-400 font-medium tracking-tight truncate">Pipelines</div>
-                </div>
+      {/* Metrics Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          { label: 'TOTAL NEW HIRES', count: stats.newHires, icon: HiUserPlus, bgColor: 'bg-slate-900', status: 'All' },
+          { label: 'IN PROGRESS', count: stats.inProgress, icon: HiClock, bgColor: 'bg-[#3B82F6]', status: 'In Progress' },
+          { label: 'GOVERNANCE PENDING', count: stats.pending, icon: HiXCircle, bgColor: 'bg-[#F59E0B]', status: 'Pending' },
+          { label: 'PROTOCOL COMPLETED', count: stats.completed, icon: HiCheckBadge, bgColor: 'bg-[#10B981]', status: 'Completed' }
+        ].map((card, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveStatus(card.status)}
+            className={`flex items-center gap-3.5 rounded-none border p-4 shadow-sm min-w-0 transition-all ${
+              activeStatus === card.status ? 'border-[#0F766E] bg-emerald-50/30' : 'border-slate-200 bg-white hover:border-slate-300'
+            }`}
+          >
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+              <card.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1 text-left">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate leading-none">
+                {card.label}
               </div>
-              <div className={`text-lg font-black shrink-0 ${activeStatus === item.label ? 'text-[#0F766E]' : 'text-slate-400'}`}>
-                {item.count}
-              </div>
-            </button>
-          ))}
-        </div>
+              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+            </div>
+          </button>
+        ))}
       </div>
 
       {/* Main Content Workspace Area */}
       <div className="space-y-6 min-w-0">
-        <div className="group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm min-w-0">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end min-w-0">
+        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm min-w-0">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end min-w-0">
             <div className="flex-1 min-w-0">
-              <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Filter Registry</label>
+              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Talent Filter</label>
               <div className="relative min-w-0">
-                <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 shrink-0" />
+                <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 shrink-0" />
                 <input
                   type="text"
-                  placeholder="Name, ID, DEPT, MANAGER..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all min-w-0"
+                  placeholder="SEARCH BY NAME, IDENTIFIER OR MANAGER..."
+                  className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white focus:outline-none transition-all min-w-0"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                 />
               </div>
             </div>
-            <Button label="FILTER" icon={HiAdjustmentsHorizontal} variant="ghost" className="h-[46px] border border-slate-200 shrink-0 justify-center w-full md:w-auto" />
+            <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
+               REFINE SEARCH
+            </button>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md min-w-0">
-          <div className="bg-[#0F766E] px-6 py-3 text-white min-w-0">
-            <div className="flex items-center justify-between min-w-0">
-              <h2 className="text-sm font-bold uppercase tracking-wider truncate">Onboarding Registry</h2>
-              <HiUserGroup className="h-4 w-4 opacity-50 shrink-0" />
-            </div>
+        <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+          <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
+            <h2 className="text-sm font-semibold uppercase tracking-wider truncate">Lifecycle Registry</h2>
+            <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Security Level: Admin</div>
           </div>
-          <Table columns={columns} data={filtered} pageSize={8} />
+          <Table columns={columns} data={filtered} pageSize={10} className="rounded-none" />
         </div>
       </div>
 
       {/* View Details Modal */}
-      <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} title="ONBOARDING – ADMIN VIEW" size="xl">
-        <div className="animate-in fade-in duration-500 space-y-8">
-          {/* Top Bar Info */}
-          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 -mx-6 px-6 py-4 mb-6">
-             <div className="flex items-center gap-6">
+      <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} title="LIFECYCLE ASSET AUDIT" size="xl">
+        <div className="animate-in fade-in duration-500 space-y-10">
+          {/* Top Bar Info — Standardized Audit Header */}
+          <div className="flex flex-wrap items-center justify-between border-b border-slate-200 bg-slate-50 -mx-6 px-8 py-6 mb-8">
+             <div className="flex flex-wrap items-center gap-12">
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Employee Name</p>
-                   <p className="font-bold text-slate-900">{selectedHire?.name}</p>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Asset Nomenclature</p>
+                   <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedHire?.name}</p>
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Employee ID</p>
-                   <p className="font-bold text-slate-900">{selectedHire?.id}</p>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Asset ID</p>
+                   <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedHire?.id}</p>
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Department</p>
-                   <p className="font-bold text-slate-900">{selectedHire?.dept}</p>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Operational Dept</p>
+                   <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedHire?.dept}</p>
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reporting Manager</p>
-                   <p className="font-bold text-slate-900">{selectedHire?.manager}</p>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Governance Lead</p>
+                   <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedHire?.manager}</p>
                 </div>
              </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 px-2">
-             <div className="space-y-1">
-                <p className="text-xs font-bold text-slate-700">Joining Date:</p>
-                <p className="text-sm text-slate-500">{selectedHire?.joinDate}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 px-2">
+             <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inception Date</p>
+                <p className="text-sm font-bold text-slate-900 uppercase tracking-wider">{selectedHire?.joinDate}</p>
              </div>
-             <div className="space-y-1">
-                <p className="text-xs font-bold text-slate-700">Onboarding status:</p>
-                <Badge label={selectedHire?.status} color={selectedHire?.status === 'Completed' ? 'green' : 'blue'} variant="outline" />
+             <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Status</p>
+                <div className="flex items-center gap-2">
+                   <div className={`h-2 w-2 rounded-none ${selectedHire?.status === 'Completed' ? 'bg-emerald-500' : 'bg-blue-500 animate-pulse'}`} />
+                   <span className="text-sm font-black text-slate-900 uppercase tracking-widest">{selectedHire?.status}</span>
+                </div>
              </div>
           </div>
 
-          {/* Categorized Tasks */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 px-2">
+          {/* Categorized Tasks — High Contrast Audit Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-2">
              {/* HR Tasks */}
-             <div className="space-y-4">
-                <h4 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest">
-                   <HiClipboardDocumentCheck className="h-4 w-4 text-[#0F766E]" /> HR Tasks
+             <div className="space-y-6">
+                <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
+                   <HiClipboardDocumentCheck className="h-5 w-5 text-[#0F766E]" /> Governance Protocols (HR)
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-4">
                    {['Offer letter issued', 'Policy acknowledgement', 'Document verification'].map((task, i) => (
-                      <label key={i} className="flex items-start gap-3 cursor-pointer group">
-                         <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]" defaultChecked={i < 2} />
-                         <span className="text-xs text-slate-600 group-hover:text-slate-900 transition-colors">{task}</span>
+                      <label key={i} className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E]/30 cursor-pointer transition-all">
+                         <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{task}</span>
+                         <input type="checkbox" className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-0 focus:ring-offset-0" defaultChecked={i < 2} />
                       </label>
                    ))}
                 </div>
              </div>
 
              {/* IT Tasks */}
-             <div className="space-y-4">
-                <h4 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest">
-                   <HiCpuChip className="h-4 w-4 text-[#0F766E]" /> IT Tasks
+             <div className="space-y-6">
+                <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
+                   <HiCpuChip className="h-5 w-5 text-[#0F766E]" /> Infrastructure Provisions (IT)
                 </h4>
-                <div className="space-y-3">
-                   {['Email created', 'Laptop issued'].map((task, i) => (
-                      <label key={i} className="flex items-start gap-3 cursor-pointer group">
-                         <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]" defaultChecked={i === 0} />
-                         <span className="text-xs text-slate-600 group-hover:text-slate-900 transition-colors">{task}</span>
-                      </label>
-                   ))}
-                </div>
-             </div>
-
-             {/* Manager Tasks */}
-             <div className="space-y-4">
-                <h4 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest">
-                   <HiBriefcase className="h-4 w-4 text-[#0F766E]" /> Manager Tasks
-                </h4>
-                <div className="space-y-3">
-                   {['Induction session', 'Team introduction'].map((task, i) => (
-                      <label key={i} className="flex items-start gap-3 cursor-pointer group">
-                         <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]" />
-                         <span className="text-xs text-slate-600 group-hover:text-slate-900 transition-colors">{task}</span>
-                      </label>
-                   ))}
-                </div>
-             </div>
-
-             {/* Employee Tasks */}
-             <div className="space-y-4">
-                <h4 className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-widest">
-                   <HiUserCircle className="h-4 w-4 text-[#0F766E]" /> Employee Tasks
-                </h4>
-                <div className="space-y-3">
-                   {['Upload documents', 'Accept policies'].map((task, i) => (
-                      <label key={i} className="flex items-start gap-3 cursor-pointer group">
-                         <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]" defaultChecked={i === 0} />
-                         <span className="text-xs text-slate-600 group-hover:text-slate-900 transition-colors">{task}</span>
+                <div className="space-y-4">
+                   {['Email Account Provisioning', 'Hardware Allocation'].map((task, i) => (
+                      <label key={i} className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E]/30 cursor-pointer transition-all">
+                         <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{task}</span>
+                         <input type="checkbox" className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-0 focus:ring-offset-0" defaultChecked={i === 0} />
                       </label>
                    ))}
                 </div>
              </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-100 flex justify-center gap-4">
-             <Button label="SAVE CHANGES" variant="primary" className="px-10 shadow-lg shadow-emerald-900/20" />
-             <Button label="NOTIFY TEAM" variant="secondary" icon={HiClock} />
-             <Button label="CANCEL" variant="ghost" onClick={() => setViewModalOpen(false)} />
+          <div className="pt-10 border-t border-slate-100 flex justify-end gap-4 px-2">
+             <button onClick={() => setViewModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors">
+                CANCEL
+             </button>
+             <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-[#0F766E] hover:bg-emerald-50 transition-colors">
+                DISPATCH NOTIFICATION
+             </button>
+             <button className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10">
+                COMMIT AUDIT
+             </button>
           </div>
         </div>
-      </Modal>
-
-      {/* Initialize Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Initialize New Onboarding" size="lg">
-         <form className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-               <div className="col-span-2">
-                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Select Employee</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all">
-                     <option value="" disabled hidden>Select from Directory</option>
-                     {employees.map(e => <option key={e.id}>{e.name} ({e.empId})</option>)}
+      </Modal>      {/* Initialize Modal */}
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="GOVERNANCE INITIALIZATION" size="lg">
+         <form className="space-y-8 p-2">
+            <div className="space-y-6">
+               <div>
+                  <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Selection</label>
+                  <select className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer">
+                     <option value="" disabled hidden>SELECT FROM DIRECTORY</option>
+                     {employees.map(e => <option key={e.id}>{e.name} — {e.empId}</option>)}
                   </select>
                </div>
-               <div className="w-full">
-                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Joining Date</label>
-                  <input type="date" className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-4 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all" />
-               </div>
-               <div className="w-full">
-                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Department</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm text-slate-900 font-medium focus:border-[#0F766E] focus:outline-none transition-all">
-                     <option>HR</option>
-                     <option>IT</option>
-                     <option>Engineering</option>
-                     <option>Sales</option>
-                  </select>
+               <div className="grid grid-cols-2 gap-6">
+                  <div className="w-full">
+                     <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Inception Date</label>
+                     <input type="date" className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black focus:border-[#0F766E] focus:bg-white outline-none transition-all" />
+                  </div>
+                  <div className="w-full">
+                     <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Operational Dept</label>
+                     <select className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer">
+                        <option>OPERATIONS</option>
+                        <option>TECHNOLOGY</option>
+                        <option>ENGINEERING</option>
+                        <option>GOVERNANCE</option>
+                     </select>
+                  </div>
                </div>
             </div>
             
-            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-               <Button type="button" label="Cancel" variant="ghost" onClick={() => setModalOpen(false)} />
-               <Button label="Initialize Onboarding" variant="primary" className="px-8 shadow-lg shadow-emerald-900/20" icon={HiPlus} />
+            <div className="pt-8 border-t border-slate-100 flex justify-end gap-4">
+               <button type="button" onClick={() => setModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors">
+                  CANCEL
+               </button>
+               <button type="submit" className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10">
+                  INITIALIZE PROTOCOL
+               </button>
             </div>
          </form>
       </Modal>

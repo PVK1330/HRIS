@@ -4,14 +4,14 @@ import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { 
-  HiBuildingOffice, 
+import {
+  HiBuildingOffice,
   HiChevronDown,
-  HiPencilSquare, 
-  HiTrash, 
+  HiPencilSquare,
+  HiTrash,
   HiXMark,
-  HiPlus, 
-  HiMagnifyingGlass, 
+  HiPlus,
+  HiMagnifyingGlass,
   HiAdjustmentsHorizontal,
   HiBriefcase,
   HiDocumentArrowDown,
@@ -20,12 +20,12 @@ import {
   HiUserCircle,
   HiUser,
 } from 'react-icons/hi2'
-import { 
-  listDepartments, 
+import {
+  listDepartments,
   listDepartmentManagers,
-  createDepartment, 
-  updateDepartment, 
-  deleteDepartment 
+  createDepartment,
+  updateDepartment,
+  deleteDepartment
 } from '../../../services/departmentService'
 import { triggerExport } from '../../../utils/exportHelper'
 import Swal from 'sweetalert2'
@@ -211,13 +211,13 @@ export default function DepartmentManagement() {
       label: 'Department',
       render: (v, row) => (
         <div className="flex items-center gap-3">
-           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
-              <HiBuildingOffice className="h-5 w-5" />
-           </div>
-           <div>
-              <div className="text-sm font-semibold text-slate-900">{v}</div>
-              <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{row.code}</div>
-           </div>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
+            <HiBuildingOffice className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-slate-900">{v}</div>
+            <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{row.code}</div>
+          </div>
         </div>
       )
     },
@@ -240,10 +240,10 @@ export default function DepartmentManagement() {
       label: 'No of Employees',
       render: (v) => (
         <div className="flex items-center gap-3">
-           <div className="flex-1 h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full bg-emerald-500" style={{ width: `${Math.min(v * 4, 100)}%` }} />
-           </div>
-           <span className="text-xs font-bold text-slate-700">{v}</span>
+          <div className="flex-1 h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-full bg-emerald-500" style={{ width: `${Math.min(v * 4, 100)}%` }} />
+          </div>
+          <span className="text-xs font-bold text-slate-700">{v}</span>
         </div>
       )
     },
@@ -255,9 +255,8 @@ export default function DepartmentManagement() {
         return (
           <div className="flex items-center justify-center">
             <span
-              className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${
-                isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-              }`}
+              className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                }`}
             >
               <span
                 className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}`}
@@ -418,11 +417,10 @@ export default function DepartmentManagement() {
               type="button"
               onClick={card.onClickFilter}
               title={`Filter by ${card.label}`}
-              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
-                isActiveFilter
-                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
-              }`}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${isActiveFilter
+                ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
             >
               <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
                 <card.icon className="h-5 w-5" />

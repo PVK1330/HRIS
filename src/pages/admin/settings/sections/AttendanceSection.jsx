@@ -115,25 +115,25 @@ export default function AttendanceSection({ registerToolbar }) {
 
   if (loading && !draft) {
     return (
-      <div className="rounded-xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-500">
-        Loading attendance settings…
+      <div className="rounded-none border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm font-bold uppercase tracking-widest">
+        Syncing Attendance Protocols…
       </div>
     )
   }
 
   if (!draft) {
     return (
-      <div className="rounded-xl border border-red-100 bg-red-50 p-6 text-sm text-red-700">
+      <div className="rounded-none border border-red-100 bg-red-50 p-6 text-sm text-red-700 shadow-sm font-medium">
         {error || 'Could not load attendance settings.'}
       </div>
     )
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {(banner?.type === 'ok' || error) && (
         <div
-          className={`rounded-lg px-4 py-2 text-sm ${
+          className={`rounded-none px-4 py-3 text-[11px] font-bold uppercase tracking-widest ${
             banner?.type === 'ok'
               ? 'border border-emerald-100 bg-emerald-50 text-emerald-800'
               : 'border border-red-100 bg-red-50 text-red-700'
@@ -143,155 +143,183 @@ export default function AttendanceSection({ registerToolbar }) {
         </div>
       )}
 
-      <SectionCard title="A. Work Hours">
-        <FieldRow label="Start Time">
-          <TextInput
-            type="time"
-            value={draft.workHours.startTime}
-            onChange={(e) => updateWorkHours({ startTime: e.target.value })}
-          />
-        </FieldRow>
-        <FieldRow label="End Time">
-          <TextInput
-            type="time"
-            value={draft.workHours.endTime}
-            onChange={(e) => updateWorkHours({ endTime: e.target.value })}
-          />
-        </FieldRow>
-        <FieldRow label="Break Duration">
-          <select
-            value={String(draft.workHours.breakDurationMinutes)}
-            onChange={(e) =>
-              updateWorkHours({ breakDurationMinutes: parseInt(e.target.value, 10) })
-            }
-            className="h-8 w-full max-w-xs rounded-lg border border-gray-200 bg-gray-50 px-2 text-sm text-gray-700 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200"
-          >
-            {BREAK_DURATION_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </FieldRow>
-        <FieldRow label="Total Required Hours" hint="Decimal hours (e.g. 8.5)">
-          <TextInput
-            type="number"
-            step="0.25"
-            min={1}
-            max={24}
-            value={draft.workHours.totalRequiredHours}
-            onChange={(e) =>
-              updateWorkHours({ totalRequiredHours: parseFloat(e.target.value) || 0 })
-            }
-          />
-        </FieldRow>
-        <FieldRow label="Auto-calculate total hours">
-          <Toggle
-            checked={draft.workHours.autoCalculateHours}
-            onChange={(v) => updateWorkHours({ autoCalculateHours: v })}
-          />
-        </FieldRow>
+      <div>
+         <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Time & Attendance Governance</h2>
+         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Operational Shifts & Compliance Rules</p>
+      </div>
+
+      <SectionCard title="A. Core Work Architecture">
+        <div className="divide-y divide-slate-50">
+          <FieldRow label="Operational Start">
+            <TextInput
+              type="time"
+              value={draft.workHours.startTime}
+              onChange={(e) => updateWorkHours({ startTime: e.target.value })}
+              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+            />
+          </FieldRow>
+          <FieldRow label="Operational End">
+            <TextInput
+              type="time"
+              value={draft.workHours.endTime}
+              onChange={(e) => updateWorkHours({ endTime: e.target.value })}
+              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+            />
+          </FieldRow>
+          <FieldRow label="Rest Interval (Minutes)">
+            <select
+              value={String(draft.workHours.breakDurationMinutes)}
+              onChange={(e) =>
+                updateWorkHours({ breakDurationMinutes: parseInt(e.target.value, 10) })
+              }
+              className="h-10 w-full max-w-[200px] rounded-none border border-slate-200 bg-white px-3 text-[11px] font-bold uppercase tracking-widest text-slate-700 focus:border-[#0F766E] focus:outline-none focus:ring-0"
+            >
+              {BREAK_DURATION_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </FieldRow>
+          <FieldRow label="Mandatory Quota (Hours)" hint="Decimal format (e.g. 8.5)">
+            <TextInput
+              type="number"
+              step="0.25"
+              min={1}
+              max={24}
+              value={draft.workHours.totalRequiredHours}
+              onChange={(e) =>
+                updateWorkHours({ totalRequiredHours: parseFloat(e.target.value) || 0 })
+              }
+              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+            />
+          </FieldRow>
+          <FieldRow label="Automated Quota Calculus">
+            <div className="flex h-10 items-center">
+              <Toggle
+                checked={draft.workHours.autoCalculateHours}
+                onChange={(v) => updateWorkHours({ autoCalculateHours: v })}
+              />
+            </div>
+          </FieldRow>
+        </div>
       </SectionCard>
 
-      <SectionCard title="B. Attendance Rules">
-        <FieldRow label="Min. Hours for Present Mark">
-          <TextInput
-            type="number"
-            step="0.25"
-            min={1}
-            max={24}
-            value={draft.attendanceRules.minHoursForPresent}
-            onChange={(e) =>
-              updateAttendanceRules({ minHoursForPresent: parseFloat(e.target.value) || 0 })
-            }
-          />
-        </FieldRow>
-        <FieldRow label="10-Minute Buffer" hint="Grace before late mark">
-          <Toggle
-            checked={draft.attendanceRules.tenMinuteBuffer}
-            onChange={(v) => updateAttendanceRules({ tenMinuteBuffer: v })}
-          />
-        </FieldRow>
-        <FieldRow label="Late Mark Auto-Calculation">
-          <Toggle
-            checked={draft.attendanceRules.lateMarkAutoCalculation}
-            onChange={(v) => updateAttendanceRules({ lateMarkAutoCalculation: v })}
-          />
-        </FieldRow>
-        <FieldRow label="Grace Days Allowed per Month">
-          <TextInput
-            type="number"
-            min={0}
-            max={31}
-            value={draft.attendanceRules.graceDaysPerMonth}
-            onChange={(e) =>
-              updateAttendanceRules({ graceDaysPerMonth: parseInt(e.target.value, 10) || 0 })
-            }
-          />
-        </FieldRow>
-        <FieldRow label="Early Departure Rules">
-          <SelectInput
-            options={EARLY_DEPARTURE_RULES}
-            value={draft.attendanceRules.earlyDepartureRule}
-            onChange={(e) => updateAttendanceRules({ earlyDepartureRule: e.target.value })}
-          />
-        </FieldRow>
+      <SectionCard title="B. Punctuality Protocols">
+        <div className="divide-y divide-slate-50">
+          <FieldRow label="Presence Threshold (Hours)">
+            <TextInput
+              type="number"
+              step="0.25"
+              min={1}
+              max={24}
+              value={draft.attendanceRules.minHoursForPresent}
+              onChange={(e) =>
+                updateAttendanceRules({ minHoursForPresent: parseFloat(e.target.value) || 0 })
+              }
+              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+            />
+          </FieldRow>
+          <FieldRow label="Chronological Grace (10M)" hint="Late mark buffer">
+            <div className="flex h-10 items-center">
+              <Toggle
+                checked={draft.attendanceRules.tenMinuteBuffer}
+                onChange={(v) => updateAttendanceRules({ tenMinuteBuffer: v })}
+              />
+            </div>
+          </FieldRow>
+          <FieldRow label="Automated Punctuality Audit">
+            <div className="flex h-10 items-center">
+              <Toggle
+                checked={draft.attendanceRules.lateMarkAutoCalculation}
+                onChange={(v) => updateAttendanceRules({ lateMarkAutoCalculation: v })}
+              />
+            </div>
+          </FieldRow>
+          <FieldRow label="Monthly Deviation Allowance">
+            <TextInput
+              type="number"
+              min={0}
+              max={31}
+              value={draft.attendanceRules.graceDaysPerMonth}
+              onChange={(e) =>
+                updateAttendanceRules({ graceDaysPerMonth: parseInt(e.target.value, 10) || 0 })
+              }
+              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+            />
+          </FieldRow>
+          <FieldRow label="Early Exit Compliance">
+            <SelectInput
+              options={EARLY_DEPARTURE_RULES}
+              value={draft.attendanceRules.earlyDepartureRule}
+              onChange={(e) => updateAttendanceRules({ earlyDepartureRule: e.target.value })}
+            />
+          </FieldRow>
+        </div>
       </SectionCard>
 
-      <SectionCard title="C. Regularization Settings">
-        <FieldRow label="Who Can Submit Request">
-          <SelectInput
-            options={WHO_CAN_SUBMIT}
-            value={draft.regularizationSettings.whoCanSubmitRequest}
-            onChange={(e) =>
-              updateRegularization({ whoCanSubmitRequest: e.target.value })
-            }
-          />
-        </FieldRow>
-        <FieldRow label="Approver">
-          <SelectInput
-            options={APPROVERS}
-            value={draft.regularizationSettings.approver}
-            onChange={(e) => updateRegularization({ approver: e.target.value })}
-          />
-        </FieldRow>
-        <FieldRow label="Auto-Rejection After (days)">
-          <TextInput
-            type="number"
-            min={1}
-            max={30}
-            value={draft.regularizationSettings.autoRejectionAfterDays}
-            onChange={(e) =>
-              updateRegularization({
-                autoRejectionAfterDays: parseInt(e.target.value, 10) || 1,
-              })
-            }
-          />
-        </FieldRow>
+      <SectionCard title="C. Regularization Pipeline">
+        <div className="divide-y divide-slate-50">
+          <FieldRow label="Originating Authority">
+            <SelectInput
+              options={WHO_CAN_SUBMIT}
+              value={draft.regularizationSettings.whoCanSubmitRequest}
+              onChange={(e) =>
+                updateRegularization({ whoCanSubmitRequest: e.target.value })
+              }
+            />
+          </FieldRow>
+          <FieldRow label="Decision Custodian">
+            <SelectInput
+              options={APPROVERS}
+              value={draft.regularizationSettings.approver}
+              onChange={(e) => updateRegularization({ approver: e.target.value })}
+            />
+          </FieldRow>
+          <FieldRow label="System Purge Interval (Days)" hint="Auto-rejection cycle">
+            <TextInput
+              type="number"
+              min={1}
+              max={30}
+              value={draft.regularizationSettings.autoRejectionAfterDays}
+              onChange={(e) =>
+                updateRegularization({
+                  autoRejectionAfterDays: parseInt(e.target.value, 10) || 1,
+                })
+              }
+              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+            />
+          </FieldRow>
+        </div>
       </SectionCard>
 
-      <SectionCard title="D. Overtime Settings (Optional)">
-        <FieldRow label="Overtime Eligibility">
-          <Toggle
-            checked={draft.overtimeSettings.overtimeEligibility}
-            onChange={(v) => updateOvertime({ overtimeEligibility: v })}
-          />
-        </FieldRow>
-        <FieldRow label="Calculation Rule">
-          <SelectInput
-            options={OVERTIME_CALC_RULES}
-            value={draft.overtimeSettings.calculationRule}
-            onChange={(e) => updateOvertime({ calculationRule: e.target.value })}
-          />
-        </FieldRow>
-        <FieldRow label="Approval Workflow">
-          <SelectInput
-            options={OVERTIME_APPROVAL}
-            value={draft.overtimeSettings.approvalWorkflow}
-            onChange={(e) => updateOvertime({ approvalWorkflow: e.target.value })}
-          />
-        </FieldRow>
+      <SectionCard title="D. Auxiliary Overtime Framework">
+        <div className="divide-y divide-slate-50">
+          <FieldRow label="OT Eligibility Enablement">
+            <div className="flex h-10 items-center">
+              <Toggle
+                checked={draft.overtimeSettings.overtimeEligibility}
+                onChange={(v) => updateOvertime({ overtimeEligibility: v })}
+              />
+            </div>
+          </FieldRow>
+          <FieldRow label="Calculus Algorithm">
+            <SelectInput
+              options={OVERTIME_CALC_RULES}
+              value={draft.overtimeSettings.calculationRule}
+              onChange={(e) => updateOvertime({ calculationRule: e.target.value })}
+            />
+          </FieldRow>
+          <FieldRow label="Authorization Pipeline">
+            <SelectInput
+              options={OVERTIME_APPROVAL}
+              value={draft.overtimeSettings.approvalWorkflow}
+              onChange={(e) => updateOvertime({ approvalWorkflow: e.target.value })}
+            />
+          </FieldRow>
+        </div>
       </SectionCard>
     </div>
   )
 }
+

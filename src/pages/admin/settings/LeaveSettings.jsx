@@ -17,15 +17,6 @@ function daysBadgeText(lt) {
   return '— days'
 }
 
-function FormRow({ label, children }) {
-  return (
-    <div className="flex items-center justify-between border-b border-gray-100 py-4 last:border-b-0">
-      <label className="w-2/5 text-sm text-gray-700">{label}</label>
-      <div className="w-[55%]">{children}</div>
-    </div>
-  )
-}
-
 export default function LeaveSettings({ registerToolbar }) {
   const {
     leaveTypes,
@@ -76,7 +67,7 @@ export default function LeaveSettings({ registerToolbar }) {
 
   if (loading && leaveTypes.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+      <div className="rounded-none border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
         Loading leave settings…
       </div>
     )
@@ -84,24 +75,28 @@ export default function LeaveSettings({ registerToolbar }) {
 
   if (error && leaveTypes.length === 0) {
     return (
-      <div className="rounded-xl border border-red-100 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
+      <div className="rounded-none border border-red-100 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
         {error}
       </div>
     )
   }
 
   return (
-    <div className="min-h-full space-y-6 bg-gray-50 pb-8">
+    <div className="min-h-full space-y-6 bg-slate-50 pb-8 animate-in fade-in duration-500">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Leave Settings</h2>
-        <p className="text-sm text-gray-500">Leave Types &amp; Rules</p>
+        <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Leave Configuration</h2>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Leave Types & Rules</p>
       </div>
 
-      <div className="flex gap-6">
-        {/* Left panel */}
-        <div className="w-72 shrink-0">
-          <div className="flex h-full min-h-[420px] flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="flex-1 overflow-y-auto">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left panel: Leave Types List */}
+        <div className="w-full lg:w-72 shrink-0">
+          <div className="flex h-full min-h-[420px] flex-col rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Leave Catalog</span>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-1 space-y-2">
               {leaveTypes.map((lt) => {
                 const selected = lt.id === selectedId
                 return (
@@ -109,54 +104,54 @@ export default function LeaveSettings({ registerToolbar }) {
                     key={lt.id}
                     type="button"
                     onClick={() => selectLeaveType(lt)}
-                    className={`mb-2 w-full rounded-lg p-4 text-left transition-colors ${
+                    className={`w-full rounded-none p-4 text-left transition-all border ${
                       selected
-                        ? 'border-2 border-gray-900 bg-white'
-                        : 'border border-gray-200 hover:bg-gray-50'
+                        ? 'border-[#0F766E] bg-emerald-50/50 ring-1 ring-[#0F766E]'
+                        : 'border-slate-100 bg-slate-50/30 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
-                    <p className="text-sm font-semibold text-gray-800">{lt.name}</p>
+                    <p className={`text-sm font-bold ${selected ? 'text-[#0F766E]' : 'text-slate-800'}`}>{lt.name}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <span
-                        className={`rounded px-2 py-0.5 text-xs ${
+                        className={`rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-wider border ${
                           lt.paidOrUnpaid === 'Unpaid'
-                            ? 'bg-orange-100 text-orange-700'
-                            : 'bg-green-100 text-green-700'
+                            ? 'border-orange-200 bg-orange-50 text-orange-700'
+                            : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                         }`}
                       >
                         {lt.paidOrUnpaid === 'Unpaid' ? 'Unpaid' : 'Paid'}
                       </span>
-                      <span className="text-xs text-gray-500">{daysBadgeText(lt)}</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{daysBadgeText(lt)}</span>
                     </div>
                   </button>
                 )
               })}
             </div>
 
-            <div className="mt-3 border-t border-gray-100 pt-3">
+            <div className="mt-4 border-t border-slate-100 pt-4">
               {!showCustomInput ? (
                 <button
                   type="button"
                   onClick={() => setShowCustomInput(true)}
-                  className="w-full rounded-lg border border-dashed border-gray-300 py-3 text-center text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50"
+                  className="w-full rounded-none border border-dashed border-slate-300 py-3 text-center text-[11px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-slate-400 hover:text-[#0F766E] hover:bg-slate-50"
                 >
-                  + Custom Type
+                  + Create Custom Type
                 </button>
               ) : (
-                <form onSubmit={submitCustom} className="space-y-2">
+                <form onSubmit={submitCustom} className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                   <input
                     autoFocus
                     type="text"
-                    placeholder="Leave type name..."
+                    placeholder="New type name..."
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
-                    className={selectClass}
+                    className="w-full rounded-none border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]"
                   />
                   <div className="flex gap-2">
                     <button
                       type="submit"
                       disabled={saving || customName.trim().length < 2}
-                      className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+                      className="flex-1 rounded-none bg-[#0F766E] px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-40"
                     >
                       Add
                     </button>
@@ -166,7 +161,7 @@ export default function LeaveSettings({ registerToolbar }) {
                         setShowCustomInput(false)
                         setCustomName('')
                       }}
-                      className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700"
+                      className="flex-1 rounded-none border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50"
                     >
                       Cancel
                     </button>
@@ -177,164 +172,184 @@ export default function LeaveSettings({ registerToolbar }) {
           </div>
         </div>
 
-        {/* Right panel */}
+        {/* Right panel: Details */}
         <div className="min-w-0 flex-1">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden min-h-[500px]">
             {!selectedId ? (
-              <div className="flex min-h-[320px] items-center justify-center text-sm text-gray-500">
-                Select a leave type to configure
+              <div className="flex flex-col items-center justify-center h-[500px] text-slate-400 bg-slate-50/30">
+                <div className="h-12 w-12 rounded-none border-2 border-dashed border-slate-200 flex items-center justify-center mb-4">
+                  <span className="text-2xl">?</span>
+                </div>
+                <p className="text-xs font-bold uppercase tracking-widest">Select a leave type to configure</p>
               </div>
             ) : (
-              <>
-                <div className="mb-6 flex items-start justify-between gap-4">
-                  <h3 className="text-base font-semibold text-gray-900">
-                    {formState.name} — Configuration
-                  </h3>
-                  <span
-                    className={`shrink-0 rounded px-2 py-0.5 text-sm font-medium ${
-                      formState.paidOrUnpaid === 'Unpaid'
-                        ? 'text-orange-500'
-                        : 'text-green-600'
-                    }`}
-                  >
-                    {formState.paidOrUnpaid}
-                  </span>
+              <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                      <div className="h-8 w-1 bg-[#0F766E]" />
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                        {formState.name} Settings
+                      </h3>
+                   </div>
+                   <span
+                     className={`rounded-none border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${
+                       formState.paidOrUnpaid === 'Unpaid'
+                         ? 'border-orange-200 bg-orange-50 text-orange-600'
+                         : 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                     }`}
+                   >
+                     {formState.paidOrUnpaid}
+                   </span>
                 </div>
 
-                <div className="border-t border-gray-100 pt-2">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    Leave Type Details
-                  </p>
+                <div className="p-6 space-y-6">
+                  <div className="grid gap-x-12 gap-y-6 md:grid-cols-1">
+                    <FormRow label="Module Identifier">
+                      <input
+                        type="text"
+                        value={formState.name ?? ''}
+                        onChange={(e) => updateField('name', e.target.value)}
+                        disabled={!selectedType?.isCustom}
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                      />
+                    </FormRow>
 
-                  <FormRow label="Leave Type Name">
-                    <input
-                      type="text"
-                      value={formState.name ?? ''}
-                      onChange={(e) => updateField('name', e.target.value)}
-                      disabled={!selectedType?.isCustom}
-                      className={`${selectClass} ${!selectedType?.isCustom ? 'cursor-not-allowed bg-gray-50' : ''}`}
-                    />
-                  </FormRow>
+                    <FormRow label="Financial Classification">
+                      <select
+                        value={formState.paidOrUnpaid ?? 'Paid'}
+                        onChange={(e) => updateField('paidOrUnpaid', e.target.value)}
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E] cursor-pointer"
+                      >
+                        {PAID_UNPAID.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </FormRow>
 
-                  <FormRow label="Paid or Unpaid">
-                    <select
-                      value={formState.paidOrUnpaid ?? 'Paid'}
-                      onChange={(e) => updateField('paidOrUnpaid', e.target.value)}
-                      className={selectClass}
-                    >
-                      {PAID_UNPAID.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </FormRow>
+                    <FormRow label="Annual Quota (Days)">
+                      {formState.entitlementLabel ? (
+                        <div className="w-full rounded-none border border-slate-100 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-500 italic">
+                          {formState.entitlementLabel}
+                        </div>
+                      ) : (
+                        <input
+                          type="number"
+                          min={0}
+                          value={formState.annualEntitlementDays ?? 0}
+                          onChange={(e) =>
+                            updateField('annualEntitlementDays', Number(e.target.value))
+                          }
+                          className="w-full rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]"
+                        />
+                      )}
+                    </FormRow>
 
-                  <FormRow label="Annual Entitlement (days)">
-                    {formState.entitlementLabel ? (
-                      <p className="text-sm text-gray-800">{formState.entitlementLabel}</p>
-                    ) : (
+                    <FormRow label="Accrual Model">
+                      <select
+                        value={formState.accrual ?? 'Monthly'}
+                        onChange={(e) => updateField('accrual', e.target.value)}
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E] cursor-pointer"
+                      >
+                        {ACCRUAL.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </FormRow>
+
+                    <FormRow label="Rollover Ceiling (Days)">
                       <input
                         type="number"
                         min={0}
-                        value={formState.annualEntitlementDays ?? 0}
+                        value={formState.maxCarryForwardDays ?? 0}
                         onChange={(e) =>
-                          updateField('annualEntitlementDays', Number(e.target.value))
+                          updateField('maxCarryForwardDays', Number(e.target.value))
                         }
-                        className={numberClass}
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]"
                       />
-                    )}
-                  </FormRow>
+                    </FormRow>
 
-                  <FormRow label="Accrual">
-                    <select
-                      value={formState.accrual ?? 'Monthly'}
-                      onChange={(e) => updateField('accrual', e.target.value)}
-                      className={selectClass}
-                    >
-                      {ACCRUAL.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </FormRow>
+                    <FormRow label="Negative Balance (LOP)">
+                      <select
+                        value={formState.lossOfPayRule ?? 'No LOP'}
+                        onChange={(e) => updateField('lossOfPayRule', e.target.value)}
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E] cursor-pointer"
+                      >
+                        {LOP.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </FormRow>
 
-                  <FormRow label="Max Carry Forward (days)">
-                    <input
-                      type="number"
-                      min={0}
-                      value={formState.maxCarryForwardDays ?? 0}
-                      onChange={(e) =>
-                        updateField('maxCarryForwardDays', Number(e.target.value))
-                      }
-                      className={numberClass}
-                    />
-                  </FormRow>
+                    <FormRow label="Evidence Required">
+                      <div className="flex h-10 items-center">
+                        <Toggle
+                          checked={Boolean(formState.documentRequired)}
+                          onChange={(v) => updateField('documentRequired', v)}
+                        />
+                      </div>
+                    </FormRow>
 
-                  <FormRow label="Loss of Pay Rule">
-                    <select
-                      value={formState.lossOfPayRule ?? 'No LOP'}
-                      onChange={(e) => updateField('lossOfPayRule', e.target.value)}
-                      className={selectClass}
-                    >
-                      {LOP.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </FormRow>
+                    <FormRow label="Autonomous Approval">
+                      <div className="flex h-10 items-center">
+                        <Toggle
+                          checked={Boolean(formState.autoApproval)}
+                          onChange={(v) => updateField('autoApproval', v)}
+                        />
+                      </div>
+                    </FormRow>
 
-                  <FormRow label="Document Required">
-                    <Toggle
-                      checked={Boolean(formState.documentRequired)}
-                      onChange={(v) => updateField('documentRequired', v)}
-                    />
-                  </FormRow>
-
-                  <FormRow label="Auto-Approval">
-                    <Toggle
-                      checked={Boolean(formState.autoApproval)}
-                      onChange={(v) => updateField('autoApproval', v)}
-                    />
-                  </FormRow>
-
-                  <FormRow label="Approver">
-                    <select
-                      value={formState.approver ?? 'Manager'}
-                      onChange={(e) => updateField('approver', e.target.value)}
-                      className={selectClass}
-                    >
-                      {approverSelectOpts.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </FormRow>
-                </div>
-
-                {selectedType?.isCustom ? (
-                  <div className="mt-8 border-t border-gray-100 pt-6">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                      Danger zone
-                    </p>
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => deleteSelectedLeaveType()}
-                      className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
-                    >
-                      Delete Leave Type
-                    </button>
+                    <FormRow label="Default Approver Authority">
+                      <select
+                        value={formState.approver ?? 'Manager'}
+                        onChange={(e) => updateField('approver', e.target.value)}
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E] cursor-pointer"
+                      >
+                        {approverSelectOpts.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </FormRow>
                   </div>
-                ) : null}
-              </>
+
+                  {selectedType?.isCustom && (
+                    <div className="mt-12 border-t border-slate-100 pt-8 pb-4">
+                      <div className="rounded-none border border-red-100 bg-red-50/50 p-4">
+                         <h4 className="text-[10px] font-black text-red-700 uppercase tracking-widest mb-1">Critical Action</h4>
+                         <p className="text-xs text-red-600/80 mb-4 font-medium">Removing this leave type will archive it and prevent future applications.</p>
+                         <button
+                           type="button"
+                           disabled={saving}
+                           onClick={() => deleteSelectedLeaveType()}
+                           className="rounded-none border border-red-300 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-all disabled:opacity-40 shadow-xs"
+                         >
+                           Purge Leave Type
+                         </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function FormRow({ label, children }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 py-4 last:border-b-0">
+      <label className="mb-2 sm:mb-0 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+      <div className="w-full sm:w-[50%]">{children}</div>
     </div>
   )
 }
