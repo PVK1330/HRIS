@@ -38,7 +38,6 @@ import { Badge } from '../../../components/ui/Badge.jsx'
 import FileUpload from '../../../components/ui/FileUpload.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
-import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import { employees, performanceKpis } from '../../../data/mockData.js'
@@ -297,6 +296,60 @@ export default function Performance() {
     return competencies.filter(c => c.name.toLowerCase().includes(compSearch.toLowerCase()))
   }, [competencies, compSearch])
 
+  const tabStats = useMemo(() => {
+    const pendingReviews = reviews.filter((r) => r.status === 'Pending').length
+    const completedReviews = reviews.filter((r) => r.status === 'Completed').length
+    return {
+      hub: [
+        { label: 'TOTAL ASSESSMENTS', count: reviews.length, bgColor: 'bg-[#0F172A]', icon: HiClipboardDocumentCheck },
+        { label: 'PENDING REVIEW', count: pendingReviews, bgColor: 'bg-[#F59E0B]', icon: HiClock },
+        { label: 'COMPLETED', count: completedReviews, bgColor: 'bg-[#0F766E]', icon: HiArrowTrendingUp },
+      ],
+      cycles: [
+        { label: 'ACTIVE CYCLES', count: performanceKpis.activeCycles, bgColor: 'bg-[#0F766E]', icon: HiCalendarDays },
+        { label: 'UPCOMING', count: 1, bgColor: 'bg-[#3B82F6]', icon: HiClock },
+        { label: 'COMPLETED', count: 1, bgColor: 'bg-[#0F172A]', icon: HiClipboardDocumentCheck },
+      ],
+      compCycle: [
+        { label: 'COMPETENCIES', count: competencies.length, bgColor: 'bg-[#0F172A]', icon: HiAdjustmentsHorizontal },
+        { label: 'ACTIVE IN CYCLES', count: performanceKpis.activeCycles, bgColor: 'bg-[#0F766E]', icon: HiBriefcase },
+        { label: 'DUE THIS MONTH', count: performanceKpis.dueThisMonth, bgColor: 'bg-[#F59E0B]', icon: HiClock },
+      ],
+    }
+  }, [competencies])
+
+  const renderTabStats = (tabId) => {
+    const cards = tabStats[tabId]
+    if (!cards?.length) return null
+    return (
+      <div
+        key={tabId}
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0 animate-in fade-in slide-in-from-bottom-2 duration-300"
+      >
+        {cards.map((card, idx) => (
+          <div
+            key={idx}
+            className="flex items-center gap-3.5 rounded-none border border-slate-200 bg-white p-4 shadow-sm min-w-0"
+          >
+            <div
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}
+            >
+              <card.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate leading-none">
+                {card.label}
+              </div>
+              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">
+                {card.count}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   const columns = [
     {
       key: 'employee',
@@ -383,7 +436,7 @@ export default function Performance() {
             <span className="text-slate-600">Performance Listing</span>
           </div>
         </div>
-        {isHR && (
+        {/* {isHR && (
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setConfigModalOpen(true)}
@@ -407,27 +460,8 @@ export default function Performance() {
               <HiPlus className="h-4 w-4" /> Add Assessment
             </button>
           </div>
-        )}
+        )} */}
       </div>
-      {/* KPI Metrics Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
-        {[
-          { label: 'ACTIVE CYCLES', count: performanceKpis.activeCycles, bgColor: 'bg-[#0F172A]', icon: HiArrowTrendingUp },
-          { label: 'PENDING REVIEW', count: performanceKpis.dueThisMonth, bgColor: 'bg-[#F59E0B]', icon: HiClock },
-          { label: 'SUCCESS RATE', count: '92.4%', bgColor: 'bg-[#0F766E]', icon: HiClipboardDocumentCheck },
-        ].map((card, idx) => (
-          <div key={idx} className="flex items-center gap-3.5 rounded-none border border-slate-200 bg-white p-4 shadow-sm min-w-0">
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
-              <card.icon className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate leading-none">{card.label}</div>
-              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
 
       {/* Tabs */}
       <div className="space-y-8">
@@ -455,12 +489,23 @@ export default function Performance() {
           ))}
         </div>
 
+        {['hub', 'cycles', 'compCycle'].includes(activeTab) && renderTabStats(activeTab)}
+
         {activeTab === 'hub' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
               {/* Green Table Header */}
               <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
-                <h2 className="text-sm font-semibold text-white"> Empolyee Performance</h2>
+                <h2 className="text-sm font-semibold text-white">Employee Performance</h2>
+                {isHR && (
+                  <button
+                    type="button"
+                    onClick={openAddReview}
+                    className="inline-flex items-center gap-1.5 rounded-none bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20"
+                  >
+                    <HiPlus className="h-3.5 w-3.5" /> Add Assessment
+                  </button>
+                )}
               </div>
 
               {/* Filter Bar */}
@@ -889,22 +934,6 @@ export default function Performance() {
                 labelClassName="mb-1 block text-sm font-medium text-slate-800"
               />
 
-              <Input
-                label="Audit Protocol"
-                name="reviewType"
-                type="select"
-                value={formData.reviewType}
-                onChange={handleFormChange}
-                required
-                placeholder="Select review type"
-                options={[
-                  { label: 'Self Assessment', value: 'Self' },
-                  { label: 'Performance Audit', value: 'Manager' },
-                  { label: '360° Synthesis', value: '360 Degree' },
-                ]}
-                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
-                labelClassName="mb-1 block text-sm font-medium text-slate-800"
-              />
             </div>
 
             {/* Ratings */}
