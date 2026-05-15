@@ -962,7 +962,7 @@ export default function LettersTemplates() {
                     <div className="h-4 w-24 bg-slate-200 rounded-none" />
                   </div>
                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                    {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'LONG', year: 'numeric' }).toUpperCase()}
+                    {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()}
                   </p>
                 </div>
 

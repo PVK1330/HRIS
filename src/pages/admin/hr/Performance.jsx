@@ -1,12 +1,12 @@
 import { useMemo, useState, useEffect } from 'react'
-import { 
-  HiChartBar, 
-  HiClipboardDocumentCheck, 
-  HiUserGroup, 
-  HiClock, 
-  HiIdentification, 
-  HiArrowTrendingUp, 
-  HiPlus, 
+import {
+  HiChartBar,
+  HiClipboardDocumentCheck,
+  HiUserGroup,
+  HiClock,
+  HiIdentification,
+  HiArrowTrendingUp,
+  HiPlus,
   HiMagnifyingGlass,
   HiAdjustmentsHorizontal,
   HiCalendarDays,
@@ -17,16 +17,16 @@ import {
   HiOutlineStar,
   HiXMark
 } from 'react-icons/hi2'
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Cell, 
-  PieChart, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  PieChart,
   Pie,
   LineChart,
   Line,
@@ -36,6 +36,7 @@ import {
 } from 'recharts'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import FileUpload from '../../../components/ui/FileUpload.jsx'
+import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
@@ -107,10 +108,10 @@ const analyticsData = {
 function StarRating({ label, value, onChange }) {
   return (
     <div className="w-full">
-      <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+      <label className="mb-1 block text-sm font-medium text-slate-800">
         {label}
       </label>
-      <div className="flex gap-1.5 p-1">
+      <div className="flex gap-1.5">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
@@ -119,9 +120,9 @@ function StarRating({ label, value, onChange }) {
             className="transition-transform active:scale-125"
           >
             {star <= value ? (
-              <HiStar className="h-6 w-6 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]" />
+              <HiStar className="h-5 w-5 text-amber-400" />
             ) : (
-              <HiOutlineStar className="h-6 w-6 text-slate-300 hover:text-amber-200" />
+              <HiOutlineStar className="h-5 w-5 text-slate-300 hover:text-amber-200" />
             )}
           </button>
         ))}
@@ -136,34 +137,34 @@ function SearchableEmployeeSelect({ value, onChange }) {
 
   const filtered = useMemo(() => {
     if (!search) return employees.slice(0, 5)
-    return employees.filter(e => 
-      e.name.toLowerCase().includes(search.toLowerCase()) || 
+    return employees.filter(e =>
+      e.name.toLowerCase().includes(search.toLowerCase()) ||
       e.empId.toLowerCase().includes(search.toLowerCase())
     ).slice(0, 8)
   }, [search])
 
   return (
     <div className="relative">
-      <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-        Select Employee
+      <label className="mb-1 block text-sm font-medium text-slate-800">
+        Employee
       </label>
-      <div 
+      <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full cursor-pointer items-center justify-between rounded-none border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm transition-all focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]"
+        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-300 bg-white h-10 px-3 text-sm transition-all focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/20"
       >
         <span className={value ? 'text-slate-900 font-medium' : 'text-slate-400'}>
-          {value ? employees.find(e => e.id === value)?.name : 'Search by name or ID...'}
+          {value ? employees.find(e => e.id === value)?.name : 'Select employee...'}
         </span>
         <HiMagnifyingGlass className="h-4 w-4 text-slate-400" />
       </div>
 
       {isOpen && (
-        <div className="absolute z-[100] mt-2 w-full animate-in fade-in slide-in-from-top-2 rounded-none border border-slate-200 bg-white p-2 shadow-2xl backdrop-blur-xl">
+        <div className="absolute z-[100] mt-1 w-full animate-in fade-in slide-in-from-top-2 rounded-lg border border-slate-200 bg-white p-2 shadow-2xl">
           <input
             autoFocus
             type="text"
             placeholder="Type to filter..."
-            className="mb-2 w-full rounded-none border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:border-[#0F766E]"
+            className="mb-2 w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:border-[#0F766E]"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -172,23 +173,23 @@ function SearchableEmployeeSelect({ value, onChange }) {
               <button
                 key={e.id}
                 type="button"
-                className="flex w-full items-center gap-3 rounded-none px-3 py-2 text-left text-sm transition-colors hover:bg-emerald-50"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-emerald-50"
                 onClick={() => {
                   onChange(e.id)
                   setIsOpen(false)
                 }}
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E]/10 text-[#0F766E] font-bold text-[10px]">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] font-bold text-[10px]">
                   {e.name.charAt(0)}
                 </div>
                 <div>
-                  <div className="font-bold text-slate-900">{e.name}</div>
-                  <div className="text-[10px] text-slate-400 font-black tracking-widest uppercase">{e.empId}</div>
+                  <div className="text-sm font-semibold text-slate-900">{e.name}</div>
+                  <div className="text-xs text-slate-400 font-medium uppercase">{e.empId}</div>
                 </div>
               </button>
             ))}
             {filtered.length === 0 && (
-              <div className="p-4 text-center text-xs text-slate-400 italic">No talent found</div>
+              <div className="p-4 text-center text-xs text-slate-400 italic">No employee found</div>
             )}
           </div>
         </div>
@@ -202,10 +203,10 @@ function Toggle({ checked, onChange }) {
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-none border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${checked ? 'bg-[#0F766E]' : 'bg-slate-200'}`}
+      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 ${checked ? 'bg-[#0F766E]' : 'bg-slate-200'}`}
     >
       <span
-        className={`pointer-events-none inline-block h-4 w-4 transform rounded-none bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'}`}
+        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'}`}
       />
     </button>
   )
@@ -227,9 +228,19 @@ export default function Performance() {
   const [activeTab, setActiveTab] = useState('hub')
   const [modalOpen, setModalOpen] = useState(false)
   const [configModalOpen, setConfigModalOpen] = useState(false)
+  const [compModalOpen, setCompModalOpen] = useState(false)
   const [formData, setFormData] = useState(initialFormData)
   const [configData, setConfigData] = useState(initialConfigData)
   const [files, setFiles] = useState({})
+  const [competencies, setCompetencies] = useState([
+    { id: 1, name: 'Communication Skills', createdAt: '2026-01-10' },
+    { id: 2, name: 'Problem Solving', createdAt: '2026-01-15' },
+    { id: 3, name: 'Leadership', createdAt: '2026-02-01' },
+    { id: 4, name: 'Teamwork & Collaboration', createdAt: '2026-02-10' },
+    { id: 5, name: 'Adaptability', createdAt: '2026-03-05' },
+  ])
+  const [compForm, setCompForm] = useState({ competencyName: '' })
+  const [compSearch, setCompSearch] = useState('')
 
   const isHR = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin'
 
@@ -270,68 +281,92 @@ export default function Performance() {
     setModalOpen(true)
   }
 
+  const handleAddCompetency = (e) => {
+    e.preventDefault()
+    if (!compForm.competencyName.trim()) return
+    setCompetencies(prev => [
+      ...prev,
+      { id: Date.now(), name: compForm.competencyName.trim(), createdAt: new Date().toISOString().split('T')[0] }
+    ])
+    setCompForm({ competencyName: '' })
+    setCompModalOpen(false)
+  }
+
+  const filteredComps = useMemo(() => {
+    if (!compSearch.trim()) return competencies
+    return competencies.filter(c => c.name.toLowerCase().includes(compSearch.toLowerCase()))
+  }, [competencies, compSearch])
+
   const columns = [
     {
       key: 'employee',
-      label: 'Talent Asset',
+      label: 'Employee',
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-600 font-black text-[10px] border border-slate-200">
-            {row.employee.charAt(0)}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
+            <HiIdentification className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <div className="font-black text-slate-900 uppercase text-[11px] tracking-tight truncate">{row.employee}</div>
-            <div className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">{row.empId}</div>
+            <div className="text-sm font-semibold text-slate-900 truncate">{row.employee}</div>
+            <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{row.empId}</div>
           </div>
         </div>
       ),
     },
-    { 
-      key: 'cycle', 
-      label: 'Cycle Identifier',
-      render: (v) => <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">{v}</span>
+    {
+      key: 'cycle',
+      label: 'Cycle',
+      render: (v) => <span className="text-sm font-medium text-slate-600">{v}</span>
     },
     {
       key: 'rating',
       label: 'Performance Band',
       render: (v) => (
         <Badge
-          label={v.toUpperCase()}
+          label={v}
           color={v === 'Outstanding' || v === 'Exceeds' ? 'green' : v === 'Meets' ? 'blue' : 'orange'}
-          className="rounded-none text-[9px] font-black tracking-widest"
+          className="rounded-none"
         />
       ),
     },
-    { 
-      key: 'manager', 
-      label: 'Governance Lead',
-      render: (v) => <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{v}</span>
+    {
+      key: 'manager',
+      label: 'Performance Lead',
+      render: (v) => <span className="text-sm font-medium text-slate-600">{v}</span>
     },
     {
       key: 'status',
-      label: 'System Status',
-      render: (v) => (
-        <div className="flex items-center gap-1.5">
-           <div className={`h-1.5 w-1.5 rounded-none ${v === 'Completed' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
-           <span className={`text-[10px] font-black uppercase tracking-widest ${v === 'Completed' ? 'text-emerald-700' : 'text-amber-700'}`}>{v}</span>
-        </div>
-      )
+      label: 'Status',
+      render: (v) => {
+        const isCompleted = v === 'Completed'
+        return (
+          <div className="flex items-center justify-center">
+            <span className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${isCompleted ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              {v}
+            </span>
+          </div>
+        )
+      }
     },
     {
       key: 'actions',
-      label: 'Execution',
+      label: 'Actions',
       render: (_, row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            setFormData({ ...initialFormData, employeeId: row.employeeId })
-            setModalOpen(true)
-          }}
-          className="text-[10px] font-black uppercase tracking-widest text-[#0F766E] hover:underline"
-        >
-          View Dossier
-        </button>
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setFormData({ ...initialFormData, employeeId: row.employeeId })
+              setModalOpen(true)
+            }}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600"
+            aria-label="View assessment"
+          >
+            <HiClipboardDocumentCheck className="h-4 w-4" />
+          </button>
+        </div>
       ),
     },
   ]
@@ -339,82 +374,76 @@ export default function Performance() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Top Title Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between min-w-0 border-b border-slate-100 pb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">Performance Intelligence</h1>
-          <p className="mt-1 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Assessment Governance & Talent Optimization</p>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Performance Management</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>HR Operations</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Performance Listing</span>
+          </div>
         </div>
         {isHR && (
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setConfigModalOpen(true)}
               type="button"
-              className="h-10 inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-6 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-50"
+              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm"
             >
-              <HiCalendarDays className="h-4 w-4" /> Cycle Parameters
+              <HiPlus className="h-4 w-4" /> Competency Ratings
+            </button>
+            <button
+              onClick={() => setConfigModalOpen(true)}
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm"
+            >
+              <HiPlus className="h-4 w-4" /> Performance Cycle
             </button>
             <button
               onClick={openAddReview}
               type="button"
-              className="h-10 inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-8 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#0c6b64] shadow-lg shadow-emerald-900/10"
+              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
             >
-              <HiPlus className="h-4 w-4" /> Initialize Assessment
+              <HiPlus className="h-4 w-4" /> Add Assessment
             </button>
           </div>
         )}
       </div>
-
-      {/* Metrics Cards */}
-      <div className="grid gap-4 sm:grid-cols-3 min-w-0">
+      {/* KPI Metrics Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
         {[
-          {
-            label: 'Active Governance Cycles',
-            count: performanceKpis.activeCycles,
-            color: 'text-slate-900',
-            borderColor: 'border-slate-200',
-            icon: HiArrowTrendingUp,
-          },
-          {
-            label: 'Assessments Pending Audit',
-            count: performanceKpis.dueThisMonth,
-            color: 'text-amber-600',
-            borderColor: 'border-amber-100',
-            icon: HiClock,
-          },
-          {
-            label: 'Success Quotient',
-            count: '92.4%',
-            color: 'text-emerald-600',
-            borderColor: 'border-emerald-100',
-            icon: HiClipboardDocumentCheck,
-          }
+          { label: 'ACTIVE CYCLES', count: performanceKpis.activeCycles, bgColor: 'bg-[#0F172A]', icon: HiArrowTrendingUp },
+          { label: 'PENDING REVIEW', count: performanceKpis.dueThisMonth, bgColor: 'bg-[#F59E0B]', icon: HiClock },
+          { label: 'SUCCESS RATE', count: '92.4%', bgColor: 'bg-[#0F766E]', icon: HiClipboardDocumentCheck },
         ].map((card, idx) => (
-          <div key={idx} className={`flex flex-col gap-4 rounded-none border bg-white p-5 shadow-sm min-w-0 ${card.borderColor}`}>
-            <div className="flex items-center justify-between">
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate">
-                {card.label}
-              </div>
-              <card.icon className={`h-4 w-4 ${card.color} opacity-30`} />
+          <div key={idx} className="flex items-center gap-3.5 rounded-none border border-slate-200 bg-white p-4 shadow-sm min-w-0">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+              <card.icon className="h-5 w-5" />
             </div>
-            <div className={`text-3xl font-black tracking-tight leading-none ${card.color}`}>{card.count}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate leading-none">{card.label}</div>
+              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+            </div>
           </div>
         ))}
       </div>
+
 
       {/* Tabs */}
       <div className="space-y-8">
         <div className="flex items-center border-b border-slate-200 overflow-x-auto no-scrollbar">
           {[
-            { id: 'hub', label: 'Performance Hub', icon: HiBriefcase },
-            { id: 'cycles', label: 'Governance Cycles', icon: HiCalendarDays },
-            { id: 'analytics', label: 'Intelligence Reports', icon: HiChartBar }
+            { id: 'hub', label: 'Employee Performance', icon: HiBriefcase },
+            { id: 'cycles', label: 'Performance Cycle', icon: HiCalendarDays },
+            { id: 'compCycle', label: 'Competency Ratings', icon: HiAdjustmentsHorizontal },
+            { id: 'analytics', label: 'Performance Reports', icon: HiChartBar }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex shrink-0 items-center gap-3 px-8 pb-4 text-[11px] font-black uppercase tracking-widest transition-all relative ${activeTab === tab.id
-                  ? 'text-[#0F766E]'
-                  : 'text-slate-400 hover:text-slate-600'
+                ? 'text-[#0F766E]'
+                : 'text-slate-400 hover:text-slate-600'
                 }`}
             >
               <tab.icon className="h-4 w-4" />
@@ -428,134 +457,241 @@ export default function Performance() {
 
         {activeTab === 'hub' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            {/* Filters */}
-            <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex flex-col gap-6 md:flex-row md:items-end">
-                <div className="flex-1">
-                  <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Talent Search</label>
-                  <div className="relative">
-                    <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Enter Name, ID or Reviewer..."
-                      className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white focus:outline-none transition-all"
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="w-full md:w-64">
-                  <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lifecycle Status</label>
-                  <select className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white focus:outline-none appearance-none transition-all cursor-pointer">
-                    <option>All Classifications</option>
-                    <option>Assessment Completed</option>
-                    <option>Governance Pending</option>
-                  </select>
-                </div>
-                <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
-                   Refine Results
-                </button>
-              </div>
-            </div>
-
             <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 flex items-center justify-between">
-                <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Active Talent Dossiers ({filtered.length})</div>
-                <div className="flex gap-4">
-                   <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-none bg-emerald-500" />
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Completed</span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-none bg-amber-500" />
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Pending</span>
-                   </div>
+              {/* Green Table Header */}
+              <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+                <h2 className="text-sm font-semibold text-white"> Empolyee Performance</h2>
+              </div>
+
+              {/* Filter Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+                <div className="relative min-w-[250px] flex-1 max-w-md">
+                  <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search employee, ID or manager..."
+                    className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs font-medium text-slate-500">{filtered.length} records shown</p>
+                  {q && (
+                    <button
+                      type="button"
+                      onClick={() => setQ('')}
+                      className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
+                    >
+                      Reset Filters
+                    </button>
+                  )}
                 </div>
               </div>
-              <Table columns={columns} data={filtered} pageSize={10} className="rounded-none" />
+
+              <Table columns={columns} data={filtered} pageSize={10} square />
             </div>
           </div>
         )}
 
         {activeTab === 'cycles' && (
-          <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="lg:col-span-2 space-y-6">
-              {[
-                { title: 'Q1 2026 STRATEGIC AUDIT', period: 'JAN 01 - MAR 31, 2026', status: 'ACTIVE', progress: 85, color: 'emerald' },
-                { title: 'H1 2026 PERFORMANCE APPRAISAL', period: 'JAN 01 - JUN 30, 2026', status: 'UPCOMING', progress: 0, color: 'blue' },
-                { title: 'ANNUAL 2025 RETROSPECTIVE', period: 'JAN 01 - DEC 31, 2025', status: 'COMPLETED', progress: 100, color: 'slate' }
-              ].map((cycle, i) => (
-                <div key={i} className="rounded-none border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-slate-300">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-5">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-none bg-slate-100 border border-slate-200 text-slate-600">
-                        <HiCalendarDays className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{cycle.title}</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{cycle.period}</p>
-                      </div>
-                    </div>
-                    <Badge 
-                      label={cycle.status} 
-                      color={cycle.status === 'ACTIVE' ? 'green' : cycle.status === 'UPCOMING' ? 'blue' : 'gray'} 
-                      className="rounded-none text-[9px] font-black tracking-widest"
-                    />
-                  </div>
-                  <div className="mt-8">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Completion Index</span>
-                      <span className="text-[11px] font-black text-slate-900">{cycle.progress}%</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-none bg-slate-100 overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-1000 ${cycle.status === 'ACTIVE' ? 'bg-emerald-500' : cycle.status === 'UPCOMING' ? 'bg-blue-500' : 'bg-slate-500'}`} 
-                        style={{ width: `${cycle.progress}%` }} 
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-8 flex gap-3">
-                    <button className="flex-1 h-10 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
-                      Protocol Management
-                    </button>
-                    <button className="flex-1 h-10 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-colors">
-                      Extract Intelligence
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-6">
-              <div className="rounded-none bg-[#0F766E] p-8 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-none bg-white/10 rotate-45" />
-                <HiDocumentText className="h-12 w-12 text-emerald-200/40 relative z-10" />
-                <h3 className="mt-6 text-xl font-black uppercase tracking-tight relative z-10">Governance Setup</h3>
-                <p className="mt-3 text-[11px] font-bold text-emerald-50/70 leading-relaxed uppercase tracking-widest relative z-10">
-                  Establish performance windows, define rating bands, and automate system notification triggers.
-                </p>
-                <button 
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+              {/* Green Header */}
+              <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+                <h2 className="text-sm font-semibold text-white">Performance Cycles</h2>
+                <button
                   onClick={() => setConfigModalOpen(true)}
-                  className="mt-8 w-full h-12 rounded-none bg-white text-[10px] font-black uppercase tracking-widest text-[#0F766E] transition-all hover:bg-emerald-50 relative z-10"
+                  className="inline-flex items-center gap-1.5 rounded-none bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20"
                 >
-                  Launch New Governance Cycle
+                  <HiPlus className="h-3.5 w-3.5" /> New Cycle
                 </button>
               </div>
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-3">Operational Velocity</h3>
-                <div className="space-y-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Mean Cycle Time</span>
-                    <span className="text-[11px] font-black text-slate-900">14.2 DAYS</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Protocol Response</span>
-                    <span className="text-[11px] font-black text-slate-900 text-emerald-600">94.2%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Strategic Alignment</span>
-                    <span className="text-[11px] font-black text-slate-900">88.0%</span>
-                  </div>
+
+              {/* Filter Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+                <div className="relative min-w-[250px] flex-1 max-w-md">
+                  <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search cycles..."
+                    className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+                  />
                 </div>
+                <p className="text-xs font-medium text-slate-500">3 records shown</p>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="px-5 py-3 text-xs font-semibold text-slate-500">Cycle Name</th>
+                      <th className="px-5 py-3 text-xs font-semibold text-slate-500">Period</th>
+                      <th className="px-5 py-3 text-xs font-semibold text-slate-500">Status</th>
+                      <th className="px-5 py-3 text-xs font-semibold text-slate-500">Completion</th>
+                      <th className="px-5 py-3 text-xs font-semibold text-slate-500 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {[
+                      { title: 'Q1 2026 Strategic Audit', period: 'Jan 01 – Mar 31, 2026', status: 'ACTIVE', progress: 85 },
+                      { title: 'H1 2026 Performance Appraisal', period: 'Jan 01 – Jun 30, 2026', status: 'UPCOMING', progress: 0 },
+                      { title: 'Annual 2025 Retrospective', period: 'Jan 01 – Dec 31, 2025', status: 'COMPLETED', progress: 100 },
+                    ].map((cycle, i) => (
+                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
+                              <HiCalendarDays className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <div className="text-sm font-semibold text-slate-900">{cycle.title}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-sm font-medium text-slate-600">{cycle.period}</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${cycle.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                            cycle.status === 'UPCOMING' ? 'bg-blue-100 text-blue-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${cycle.status === 'ACTIVE' ? 'bg-emerald-500' :
+                              cycle.status === 'UPCOMING' ? 'bg-blue-500' :
+                                'bg-slate-400'
+                              }`} />
+                            {cycle.status}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 w-48">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                              <div
+                                className={`h-full transition-all duration-1000 ${cycle.status === 'ACTIVE' ? 'bg-emerald-500' :
+                                  cycle.status === 'UPCOMING' ? 'bg-blue-500' :
+                                    'bg-slate-400'
+                                  }`}
+                                style={{ width: `${cycle.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-bold text-slate-700 w-8 text-right">{cycle.progress}%</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <button className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 shadow-sm">
+                              Manage
+                            </button>
+                            <button className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none bg-slate-900 px-3 text-xs font-medium text-white transition hover:bg-black shadow-sm">
+                              Export
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'compCycle' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+              {/* Green Header */}
+              <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+                <h2 className="text-sm font-semibold text-white">Competency Registry</h2>
+                {isHR && (
+                  <button
+                    onClick={() => { setCompForm({ competencyName: '' }); setCompModalOpen(true) }}
+                    className="inline-flex items-center gap-1.5 rounded-none bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20"
+                  >
+                    <HiPlus className="h-3.5 w-3.5" /> Add Competency
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+                <div className="relative min-w-[250px] flex-1 max-w-md">
+                  <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={compSearch}
+                    onChange={(e) => setCompSearch(e.target.value)}
+                    placeholder="Search competencies..."
+                    className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs font-medium text-slate-500">{filteredComps.length} records shown</p>
+                  {compSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setCompSearch('')}
+                      className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:bg-slate-50"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="px-5 py-3 text-xs font-semibold text-slate-500">#</th>
+                      <th className="px-5 py-3 text-xs font-semibold text-slate-500">Competency Name</th>
+                      <th className="px-5 py-3 text-xs font-semibold text-slate-500">Created Date</th>
+                      {isHR && <th className="px-5 py-3 text-xs font-semibold text-slate-500 text-center">Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredComps.map((comp, i) => (
+                      <tr key={comp.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-5 py-4">
+                          <span className="text-xs font-bold text-slate-400">{String(i + 1).padStart(2, '0')}</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E]">
+                              <HiAdjustmentsHorizontal className="h-4 w-4" />
+                            </div>
+                            <span className="text-sm font-semibold text-slate-900">{comp.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-sm font-medium text-slate-500">{comp.createdAt}</span>
+                        </td>
+                        {isHR && (
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-center">
+                              <button
+                                onClick={() => setCompetencies(prev => prev.filter(c => c.id !== comp.id))}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-50 text-red-500 transition hover:bg-red-100"
+                                aria-label="Delete"
+                              >
+                                <HiXMark className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                    {filteredComps.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-5 py-12 text-center text-sm font-medium text-slate-400">
+                          No competencies found. Add one to get started.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -577,7 +713,7 @@ export default function Performance() {
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900, textAnchor: 'middle' }} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{ borderRadius: '0px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }}
                         cursor={{ fill: '#f8fafc' }}
                       />
@@ -632,179 +768,205 @@ export default function Performance() {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
-               <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                  <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-50 pb-4">
-                    <HiClock className="h-4 w-4 text-[#0F766E]" /> Attendance Velocity
-                  </h3>
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={analyticsData.attendance}>
-                        <defs>
-                          <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#0F766E" stopOpacity={0.15}/>
-                            <stop offset="95%" stopColor="#0F766E" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
-                        <YAxis domain={[80, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
-                        <Tooltip contentStyle={{ borderRadius: '0px', border: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '900' }} />
-                        <Area type="monotone" dataKey="rate" stroke="#0F766E" strokeWidth={2} fillOpacity={1} fill="url(#colorRate)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-               </div>
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-50 pb-4">
+                  <HiClock className="h-4 w-4 text-[#0F766E]" /> Attendance Velocity
+                </h3>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={analyticsData.attendance}>
+                      <defs>
+                        <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0F766E" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#0F766E" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
+                      <YAxis domain={[80, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
+                      <Tooltip contentStyle={{ borderRadius: '0px', border: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '900' }} />
+                      <Area type="monotone" dataKey="rate" stroke="#0F766E" strokeWidth={2} fillOpacity={1} fill="url(#colorRate)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-               <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                  <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-50 pb-4 text-red-600">
-                    <HiArrowTrendingUp className="h-4 w-4" /> Systemic Attrition Risk
-                  </h3>
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={analyticsData.attrition}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
-                        <Tooltip contentStyle={{ borderRadius: '0px', border: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '900' }} />
-                        <Line type="step" dataKey="rate" stroke="#EF4444" strokeWidth={2} dot={{ fill: '#EF4444', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-               </div>
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-50 pb-4 text-red-600">
+                  <HiArrowTrendingUp className="h-4 w-4" /> Systemic Attrition Risk
+                </h3>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={analyticsData.attrition}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
+                      <Tooltip contentStyle={{ borderRadius: '0px', border: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '900' }} />
+                      <Line type="step" dataKey="rate" stroke="#EF4444" strokeWidth={2} dot={{ fill: '#EF4444', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             </div>
 
             <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-               <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">
-                 <HiClipboardDocumentCheck className="h-4 w-4 text-[#0F766E]" /> Compliance Quota Report
-               </h3>
-               <div className="grid gap-6 md:grid-cols-4">
-                 {[
-                   { label: 'Visa Authentication', value: 95, color: 'bg-emerald-500' },
-                   { label: 'Insurance Verification', value: 82, color: 'bg-amber-500' },
-                   { label: 'Contract Integrity', value: 100, color: 'bg-[#0F766E]' },
-                   { label: 'KYC Documentation', value: 98, color: 'bg-teal-500' }
-                 ].map((item, i) => (
-                   <div key={i} className="rounded-none border border-slate-100 p-5 bg-slate-50/30">
-                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">{item.label}</div>
-                     <div className="flex items-end justify-between gap-4">
-                       <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{item.value}%</div>
-                       <div className="flex-1 h-1.5 bg-slate-200 rounded-none overflow-hidden mb-1">
-                         <div className={`h-full ${item.color}`} style={{ width: `${item.value}%` }} />
-                       </div>
-                     </div>
-                   </div>
-                 ))}
-               </div>
+              <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">
+                <HiClipboardDocumentCheck className="h-4 w-4 text-[#0F766E]" /> Compliance Quota Report
+              </h3>
+              <div className="grid gap-6 md:grid-cols-4">
+                {[
+                  { label: 'Visa Authentication', value: 95, color: 'bg-emerald-500' },
+                  { label: 'Insurance Verification', value: 82, color: 'bg-amber-500' },
+                  { label: 'Contract Integrity', value: 100, color: 'bg-[#0F766E]' },
+                  { label: 'KYC Documentation', value: 98, color: 'bg-teal-500' }
+                ].map((item, i) => (
+                  <div key={i} className="rounded-none border border-slate-100 p-5 bg-slate-50/30">
+                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">{item.label}</div>
+                    <div className="flex items-end justify-between gap-4">
+                      <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{item.value}%</div>
+                      <div className="flex-1 h-1.5 bg-slate-200 rounded-none overflow-hidden mb-1">
+                        <div className={`h-full ${item.color}`} style={{ width: `${item.value}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
       </div>
 
       {/* Assessment Modal */}
-      <Modal 
-        isOpen={modalOpen} 
-        onClose={handleCloseModal} 
-        title="PROTOCOL_DOSSIER_INITIALIZATION" 
+      {/* ── Performance Review Modal ───────────────────────────────────── */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={handleCloseModal}
         size="xl"
-      >
-        <form onSubmit={(e) => { e.preventDefault(); handleCloseModal(); }} className="space-y-12 p-2">
-          <div className="grid gap-10 md:grid-cols-2">
-            <div className="space-y-8">
-              <h4 className="text-[10px] font-black text-[#0F766E] uppercase tracking-[0.2em] border-l-4 border-[#0F766E] pl-4">IDENTITY_GOVERNANCE_CONTEXT</h4>
-              <div className="space-y-6">
-                <SearchableEmployeeSelect 
-                  value={formData.employeeId} 
-                  onChange={(id) => handleRatingChange('employeeId', id)} 
-                />
-                
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">GOVERNANCE_CYCLE</label>
-                    <select
-                      name="reviewPeriod"
-                      value={formData.reviewPeriod}
-                      onChange={handleFormChange}
-                      className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:outline-none appearance-none cursor-pointer transition-all"
-                      required
-                    >
-                      <option value="" disabled hidden>SELECT_CYCLE</option>
-                      <option value="Q1 2026">Q1 2026</option>
-                      <option value="Q2 2026">Q2 2026</option>
-                      <option value="H1 2026">H1 2026</option>
-                      <option value="ANNUAL 2025">ANNUAL 2025</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">AUDIT_PROTOCOL</label>
-                    <select
-                      name="reviewType"
-                      value={formData.reviewType}
-                      onChange={handleFormChange}
-                      className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:outline-none appearance-none cursor-pointer transition-all"
-                      required
-                    >
-                      <option value="" disabled hidden>SELECT_TYPE</option>
-                      <option value="Self">SELF-ASSESSMENT</option>
-                      <option value="Manager">GOVERNANCE AUDIT</option>
-                      <option value="360 Degree">360° SYNTHESIS</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-8">
-              <h4 className="text-[10px] font-black text-[#0F766E] uppercase tracking-[0.2em] border-l-4 border-[#0F766E] pl-4">COMPETENCY_VECTOR_RATINGS</h4>
-              <div className="grid grid-cols-2 gap-y-8 gap-x-8">
-                <StarRating label="WORK_QUALITY" value={formData.workQuality} onChange={(v) => handleRatingChange('workQuality', v)} />
-                <StarRating label="PRODUCTIVITY" value={formData.productivity} onChange={(v) => handleRatingChange('productivity', v)} />
-                <StarRating label="COMMUNICATION" value={formData.communication} onChange={(v) => handleRatingChange('communication', v)} />
-                <StarRating label="COLLABORATION" value={formData.teamwork} onChange={(v) => handleRatingChange('teamwork', v)} />
-                <StarRating label="STEWARDSHIP" value={formData.leadership} onChange={(v) => handleRatingChange('leadership', v)} />
-                <StarRating label="CORE_INDEX" value={formData.overallRating} onChange={(v) => handleRatingChange('overallRating', v)} />
-              </div>
-            </div>
+        showClose
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
+              Performance Review
+            </h2>
+            <p className="text-xs font-medium text-slate-500">
+              Configure employee assessment details, ratings, and strategic feedback.
+            </p>
           </div>
+        }
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            handleCloseModal()
+          }}
+          className="pt-2"
+        >
+          <div className="space-y-4">
+            {/* Employee + Review Info */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <SearchableEmployeeSelect
+                  value={formData.employeeId}
+                  onChange={(id) => handleRatingChange('employeeId', id)}
+                />
+              </div>
 
-          <div className="space-y-8">
-            <h4 className="text-[10px] font-black text-[#0F766E] uppercase tracking-[0.2em] border-l-4 border-[#0F766E] pl-4">STRATEGIC_INTELLIGENCE_FEEDBACK</h4>
-            <div className="grid gap-8 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">KEY_VALUE_CONTRIBUTIONS</label>
+              <Input
+                label="Performance Cycle"
+                name="reviewPeriod"
+                type="select"
+                value={formData.reviewPeriod}
+                onChange={handleFormChange}
+                required
+                placeholder="Select review cycle"
+                options={[
+                  { label: 'Q1 2026', value: 'Q1 2026' },
+                  { label: 'Q2 2026', value: 'Q2 2026' },
+                  { label: 'H1 2026', value: 'H1 2026' },
+                  { label: 'Annual 2025', value: 'ANNUAL 2025' },
+                ]}
+                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              />
+
+              <Input
+                label="Audit Protocol"
+                name="reviewType"
+                type="select"
+                value={formData.reviewType}
+                onChange={handleFormChange}
+                required
+                placeholder="Select review type"
+                options={[
+                  { label: 'Self Assessment', value: 'Self' },
+                  { label: 'Performance Audit', value: 'Manager' },
+                  { label: '360° Synthesis', value: '360 Degree' },
+                ]}
+                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              />
+            </div>
+
+            {/* Ratings */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+              <p className="text-xs font-medium text-slate-500 mb-4">Competency Ratings — rate each area from 1 to 5 stars</p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <StarRating label="Work Quality" value={formData.workQuality} onChange={(v) => handleRatingChange('workQuality', v)} />
+                <StarRating label="Productivity" value={formData.productivity} onChange={(v) => handleRatingChange('productivity', v)} />
+                <StarRating label="Communication" value={formData.communication} onChange={(v) => handleRatingChange('communication', v)} />
+                <StarRating label="Collaboration" value={formData.teamwork} onChange={(v) => handleRatingChange('teamwork', v)} />
+                <StarRating label="Leadership" value={formData.leadership} onChange={(v) => handleRatingChange('leadership', v)} />
+                <StarRating label="Overall Rating" value={formData.overallRating} onChange={(v) => handleRatingChange('overallRating', v)} />
+              </div>
+            </div>
+
+            {/* Feedback */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-800">
+                  Key Contributions
+                </label>
+
                 <textarea
                   name="strengths"
                   value={formData.strengths}
                   onChange={handleFormChange}
-                  className="w-full rounded-none border border-slate-200 bg-white p-5 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:outline-none transition-all min-h-[140px] placeholder:text-slate-200"
-                  placeholder="IDENTIFY CORE OPERATIONAL STRENGTHS..."
+                  placeholder="Describe employee strengths and achievements"
+                  className="min-h-[120px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 transition-all"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">STRATEGIC_GROWTH_OBJECTIVES</label>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-800">
+                  Growth Objectives
+                </label>
+
                 <textarea
                   name="goalsNextPeriod"
                   value={formData.goalsNextPeriod}
                   onChange={handleFormChange}
-                  className="w-full rounded-none border border-slate-200 bg-white p-5 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:outline-none transition-all min-h-[140px] placeholder:text-slate-200"
-                  placeholder="DEFINE MEASURABLE KPIS FOR NEXT GOVERNANCE CYCLE..."
+                  placeholder="Define goals and KPIs for the next review cycle"
+                  className="min-h-[120px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 transition-all"
                 />
               </div>
             </div>
           </div>
 
-          <div className="pt-10 border-t border-slate-100 flex justify-end gap-6">
-            <button 
-              type="button" 
+          {/* Footer */}
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-6">
+            <button
+              type="button"
               onClick={handleCloseModal}
-              className="h-12 px-10 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+              className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              ABORT_ENTRY
+              Cancel
             </button>
-            <button 
-              type="submit" 
-              className="h-12 px-16 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all shadow-2xl shadow-slate-900/20"
+
+            <button
+              type="submit"
+              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors"
             >
-              COMMIT_ASSESSMENT_DOSSIER
+              Save Assessment
             </button>
           </div>
         </form>
@@ -814,76 +976,119 @@ export default function Performance() {
       <Modal
         isOpen={configModalOpen}
         onClose={handleCloseConfigModal}
-        title="GOVERNANCE CYCLE CONFIGURATION"
+        title="Performance Cycle"
         size="lg"
         className="rounded-none"
       >
-        <form onSubmit={(e) => { e.preventDefault(); handleCloseConfigModal(); }} className="space-y-8 p-2">
-           <div className="space-y-5">
+        <form onSubmit={(e) => { e.preventDefault(); handleCloseConfigModal(); }} className="pt-2">
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">Cycle Name</label>
+              <input
+                type="text"
+                name="cycleName"
+                value={configData.cycleName}
+                onChange={handleConfigChange}
+                className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
+                placeholder="e.g. Q3 2026 Performance Review"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Cycle Nomenclature</label>
-                <input
-                  type="text"
-                  name="cycleName"
-                  value={configData.cycleName}
-                  onChange={handleConfigChange}
-                  className="w-full rounded-none border border-slate-200 bg-white h-11 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:outline-none"
-                  placeholder="e.g. Q3 2026 STRATEGIC AUDIT"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Window Inception</label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={configData.startDate}
-                    onChange={handleConfigChange}
-                    className="w-full rounded-none border border-slate-200 bg-white h-11 px-4 text-[11px] font-bold uppercase focus:border-[#0F766E] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Window Termination</label>
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={configData.endDate}
-                    onChange={handleConfigChange}
-                    className="w-full rounded-none border border-slate-200 bg-white h-11 px-4 text-[11px] font-bold uppercase focus:border-[#0F766E] focus:outline-none"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hard Commitment Deadline</label>
+                <label className="mb-1 block text-sm font-medium text-slate-800">Start Date</label>
                 <input
                   type="date"
-                  name="deadline"
-                  value={configData.deadline}
+                  name="startDate"
+                  value={configData.startDate}
                   onChange={handleConfigChange}
-                  className="w-full rounded-none border border-slate-200 bg-white h-11 px-4 text-[11px] font-bold uppercase focus:border-[#0F766E] focus:outline-none"
+                  className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
                 />
               </div>
-              <div className="flex items-center gap-3 py-4 border-y border-slate-50">
-                 <Toggle
-                    checked={configData.autoReminders}
-                    onChange={(v) => setConfigData(p => ({ ...p, autoReminders: v }))}
-                 />
-                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Enable Automated Compliance Reminders</span>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-800">End Date</label>
+                <input
+                  type="date"
+                  name="endDate"
+                  value={configData.endDate}
+                  onChange={handleConfigChange}
+                  className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
+                />
               </div>
-           </div>
-           <div className="pt-4 flex justify-end gap-4">
-            <button 
-              type="button" 
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">Submission Deadline</label>
+              <input
+                type="date"
+                name="deadline"
+                value={configData.deadline}
+                onChange={handleConfigChange}
+                className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
+              />
+            </div>
+            <div className="flex items-center gap-3 py-3 border-y border-slate-100">
+              <Toggle
+                checked={configData.autoReminders}
+                onChange={(v) => setConfigData(p => ({ ...p, autoReminders: v }))}
+              />
+              <span className="text-sm font-medium text-slate-700">Enable automated reminder notifications</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-100">
+            <button
+              type="button"
               onClick={handleCloseConfigModal}
-              className="h-11 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors"
+              className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
-              className="h-11 px-10 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all"
+            <button
+              type="submit"
+              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors"
             >
-              Initialize Governance Window
+              Save Cycle
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── Add Competency Modal ─────────────────────────────────────────── */}
+      <Modal
+        isOpen={compModalOpen}
+        onClose={() => { setCompModalOpen(false); setCompForm({ competencyName: '' }) }}
+        size="sm"
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Add Competency</h2>
+            <p className="text-xs font-medium text-slate-500">Enter a new competency to add to the registry.</p>
+          </div>
+        }
+      >
+        <form onSubmit={handleAddCompetency} className="pt-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-800">Competency Name</label>
+            <input
+              type="text"
+              autoFocus
+              required
+              value={compForm.competencyName}
+              onChange={(e) => setCompForm({ competencyName: e.target.value })}
+              placeholder="e.g. Problem Solving"
+              className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20"
+            />
+          </div>
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
+            <button
+              type="button"
+              onClick={() => { setCompModalOpen(false); setCompForm({ competencyName: '' }) }}
+              className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors"
+            >
+              Add Competency
             </button>
           </div>
         </form>
