@@ -177,11 +177,6 @@ const adminNavGroups = [
         key: "payroll-management",
         permission: "view_payroll",
         featureCode: "payroll",
-        children: [
-          { label: "Employee Salary", path: "/admin/payroll" },
-          { label: "Payslip View", path: "/admin/payroll/payslip" },
-          { label: "Payroll Settings", path: "/admin/payroll/payroll-settings" },
-        ]
       },
       /*
             {

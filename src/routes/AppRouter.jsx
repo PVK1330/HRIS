@@ -37,8 +37,6 @@ import AssetManagement from "../pages/admin/assets/AssetManagement.jsx";
 import Reports from "../pages/admin/reports/Reports.jsx";
 import AnnouncementsPage from "../pages/admin/Announcements.jsx";
 import Payroll from "../pages/admin/finance/Payroll.jsx";
-import Payslip from "../pages/admin/finance/Payslip.jsx";
-import PayrollSettings from "../pages/admin/finance/PayrollSettings.jsx";
 
 import PlatformDashboard from "../pages/superadmin/platform/Dashboard.jsx";
 import TenantManagement from "../pages/superadmin/tenants/TenantManagement.jsx";
@@ -332,26 +330,6 @@ export const router = createBrowserRouter([
                 moduleKey={["billing-invoicing", "payroll-management"]}
               >
                 <Payroll />
-              </AdminModuleGate>
-            ),
-          },
-          {
-            path: "payroll/payslip",
-            element: (
-              <AdminModuleGate
-                moduleKey={["billing-invoicing", "payroll-management"]}
-              >
-                <Payslip />
-              </AdminModuleGate>
-            ),
-          },
-          {
-            path: "payroll/payroll-settings",
-            element: (
-              <AdminModuleGate
-                moduleKey={["billing-invoicing", "payroll-management"]}
-              >
-                <PayrollSettings />
               </AdminModuleGate>
             ),
           },

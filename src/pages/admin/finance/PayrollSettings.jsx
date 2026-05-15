@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   HiHome, 
-  HiChevronRight, 
   HiArrowUpTray, 
   HiChevronDown,
   HiMagnifyingGlass,
@@ -19,6 +18,7 @@ import {
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
 import { Table } from '../../../components/ui/Table.jsx';
+import { Input } from '../../../components/ui/Input.jsx';
 
 const additionsData = [
   { id: 1, name: 'Leave Balance Amount', category: 'Monthly Remuneration', amount: '$5' },
@@ -74,8 +74,8 @@ export default function PayrollSettings() {
       label: <div className="text-right">Actions</div>,
       render: () => (
         <div className="flex justify-end gap-1">
-          <button className="p-2 text-slate-400 hover:text-[#0F766E] hover:bg-emerald-50 rounded-none transition-all"><HiPencilSquare className="h-4 w-4" /></button>
-          <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-none transition-all"><HiTrash className="h-4 w-4" /></button>
+          <button className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56]"><HiPencilSquare className="h-4 w-4" /></button>
+          <button className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600"><HiTrash className="h-4 w-4" /></button>
         </div>
       )
     }
@@ -188,91 +188,116 @@ export default function PayrollSettings() {
           </div>
         </div>
 
-        {/* Table Section */}
         <div className="relative">
-          <Table columns={columns} data={data} square className="rounded-none border-0" />
-          
-          <div className="border-t border-slate-100 p-4 flex items-center justify-between text-[11px] font-medium text-slate-400">
-            <div>Showing 1 - {data.length} of {data.length} entries</div>
-            <div className="flex items-center gap-1">
-              <button className="p-1.5 rounded-none border border-slate-200 hover:bg-slate-50 transition-colors"><HiChevronRight className="h-4 w-4 rotate-180" /></button>
-              <button className="h-8 w-8 rounded-none bg-[#0F766E] text-white flex items-center justify-center shadow-lg shadow-[#0F766E]/20">1</button>
-              <button className="p-1.5 rounded-none border border-slate-200 hover:bg-slate-50 transition-colors"><HiChevronRight className="h-4 w-4" /></button>
-            </div>
-          </div>
-
-          {/* Settings Gear */}
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10">
-            <button className="flex h-10 w-10 items-center justify-center rounded-none bg-[#0F766E] text-white shadow-lg shadow-[#0F766E]/20 transition-all">
-              <HiCog6Tooth className="h-6 w-6 animate-spin-slow" />
-            </button>
-          </div>
+          <Table 
+            columns={columns} 
+            data={data} 
+            square 
+            pageSize={rowsPerPage}
+            className="rounded-none border-0" 
+          />
         </div>
       </div>
 
-      {/* Modals - Standardized */}
+      {/* Modals - Standardized Theme Match */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={`Add ${activeTab.slice(0, -1)}`}
         size="md"
-        square
+        showClose
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Add {activeTab.slice(0, -1)}</h2>
+            <p className="text-xs font-medium text-slate-500">
+               Configure {activeTab.toLowerCase()} settings and system parameters below.
+            </p>
+          </div>
+        }
       >
-        <form className="p-4 space-y-6" onSubmit={(e) => e.preventDefault()}>
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Name / Title</label>
-            <input type="text" placeholder="Enter identifier" className="h-10 w-full rounded-none border border-slate-200 bg-white px-4 text-sm font-bold text-slate-900 focus:border-[#0F766E] outline-none" />
-          </div>
+        <form className="pt-2" onSubmit={(e) => e.preventDefault()}>
+          <div className="space-y-4">
+            <Input
+              label="Name / Title"
+              placeholder="Enter identifier"
+              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              required
+            />
 
-          {activeTab === 'Additions' && (
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Category Name</label>
-              <select className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-4 text-sm font-bold text-slate-900 focus:border-[#0F766E] outline-none">
-                <option>Monthly Remuneration</option>
-                <option>Additional Remuneration</option>
-              </select>
-            </div>
-          )}
-
-          {activeTab === 'Overtime' && (
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Rate Type</label>
-              <select className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-4 text-sm font-bold text-slate-900 focus:border-[#0F766E] outline-none">
-                <option>Select Type</option>
-                <option>Hourly</option>
-                <option>Fixed</option>
-              </select>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-6 items-end">
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">{activeTab === 'Overtime' ? 'Rate Value' : 'Monetary Amount'}</label>
-              <input type="text" placeholder="0.00" className="h-10 w-full rounded-none border border-slate-200 bg-white px-4 text-sm font-bold text-slate-900 focus:border-[#0F766E] outline-none" />
-            </div>
-            {activeTab !== 'Overtime' && (
-              <div className="flex flex-col items-center gap-2 pb-1 border border-slate-100 bg-slate-50/50 p-2 rounded-none">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Unit Calc</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-none peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-none after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0F766E]"></div>
-                </label>
-              </div>
+            {activeTab === 'Additions' && (
+              <Input
+                label="Category Name"
+                type="select"
+                options={[
+                  { label: 'Monthly Remuneration', value: 'Monthly Remuneration' },
+                  { label: 'Additional Remuneration', value: 'Additional Remuneration' },
+                ]}
+                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              />
             )}
+
+            {activeTab === 'Overtime' && (
+              <Input
+                label="Rate Type"
+                type="select"
+                options={[
+                  { label: 'Hourly', value: 'Hourly' },
+                  { label: 'Fixed', value: 'Fixed' },
+                ]}
+                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              />
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label={activeTab === 'Overtime' ? 'Rate Value' : 'Monetary Amount'}
+                placeholder="0.00"
+                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+                required
+              />
+              {activeTab !== 'Overtime' && (
+                <div className="flex flex-col justify-center gap-2 pb-1 border border-slate-100 bg-slate-50/50 p-2 rounded-lg">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Unit Calculation</span>
+                  <div className="flex justify-center">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" className="sr-only peer" />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0F766E]"></div>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2">
+              <label className="mb-2 block text-sm font-medium text-slate-800">Assignee Policy</label>
+              <div className="flex flex-wrap gap-4">
+                {['No Assignee', 'All Employees', 'Select Employee'].map((opt, i) => (
+                  <label key={opt} className="flex items-center gap-2 cursor-pointer group">
+                    <input type="radio" name="assignee" defaultChecked={i === 0} className="h-4 w-4 border-slate-300 text-[#0F766E] focus:ring-[#0F766E]" />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-900 transition-colors">{opt}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 pt-2">
-            {['No Assignee', 'All Employees', 'Select Employee'].map((opt, i) => (
-              <label key={opt} className="flex items-center gap-2 cursor-pointer group">
-                <input type="radio" name="assignee" defaultChecked={i === 0} className="h-4 w-4 border-slate-300 text-[#0F766E] focus:ring-[#0F766E]" />
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-900 transition-colors">{opt}</span>
-              </label>
-            ))}
-          </div>
-
-          <div className="pt-6 border-t border-slate-100 flex items-center justify-end gap-3">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-2 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors rounded-none">Discard</button>
-            <button type="submit" className="px-10 py-2 text-sm font-semibold text-white bg-[#1C242E] hover:bg-black transition-colors rounded-none shadow-sm">Commit Item</button>
+          <div className="flex items-center justify-end gap-3 pt-6 mt-8 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="h-10 rounded-md bg-[#0F766E] px-8 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors shadow-sm"
+            >
+              Commit Item
+            </button>
           </div>
         </form>
       </Modal>
