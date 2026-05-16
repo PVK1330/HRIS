@@ -41,6 +41,14 @@ const reviews = employees.slice(0, 8).map((e, idx) => ({
   rating: idx % 3 === 0 ? 'Exceeds' : idx % 3 === 1 ? 'Meets' : 'Developing',
   manager: e.manager,
   due: '2026-04-30',
+  status: idx % 2 === 0 ? 'Completed' : 'Pending',
+  workQuality: idx % 5 === 0 ? 5 : idx % 5 === 1 ? 4 : idx % 5 === 2 ? 3 : idx % 5 === 3 ? 4 : 5,
+  productivity: idx % 5 === 0 ? 4 : idx % 5 === 1 ? 5 : idx % 5 === 2 ? 4 : idx % 5 === 3 ? 3 : 4,
+  communication: idx % 5 === 0 ? 4 : idx % 5 === 1 ? 4 : idx % 5 === 2 ? 5 : idx % 5 === 3 ? 4 : 5,
+  leadership: idx % 5 === 0 ? 5 : idx % 5 === 1 ? 3 : idx % 5 === 2 ? 4 : idx % 5 === 3 ? 4 : 3,
+  overallRating: idx % 5 === 0 ? 5 : idx % 5 === 1 ? 4 : idx % 5 === 2 ? 4 : idx % 5 === 3 ? 3 : 4,
+  strengths: `${e.name} demonstrates strong ${['technical', 'leadership', 'communication', 'problem-solving'][idx % 4]} skills with excellent attention to detail. Shows great initiative in team projects and consistently delivers high-quality work.`,
+  goalsNextPeriod: `Focus on developing ${['advanced technical skills', 'team leadership capabilities', 'cross-functional collaboration', 'strategic planning'][idx % 4]}. Target to complete at least 2 professional development courses and mentor junior team members.`,
 }))
 
 function RatingSelect({ id, label, name, value, onChange }) {
@@ -64,6 +72,10 @@ function RatingSelect({ id, label, name, value, onChange }) {
 export default function Performance() {
   const [q, setQ] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const [selectedReview, setSelectedReview] = useState(null)
+  const [configModalOpen, setConfigModalOpen] = useState(false)
+  const [compModalOpen, setCompModalOpen] = useState(false)
   const [formData, setFormData] = useState(initialFormData)
   const [files, setFiles] = useState({})
 
@@ -89,7 +101,13 @@ export default function Performance() {
 
   const handleCloseModal = () => {
     setModalOpen(false)
-    resetModal()
+    setFormData(initialFormData)
+    setFiles({})
+  }
+
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false)
+    setSelectedReview(null)
   }
 
   const openAddReview = () => {
@@ -128,15 +146,20 @@ export default function Performance() {
       key: 'actions',
       label: 'Actions',
       render: (_, row) => (
-        <Button
-          label="Open review"
-          variant="danger"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            openReviewFromRow(row)
-          }}
-        />
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setSelectedReview(row)
+              setDetailModalOpen(true)
+            }}
+            className="inline-flex w-full h-8 items-center justify-center border border-gray-200 bg-[#0F766E] rounded-xl text-white transition-colors text-sm"
+            aria-label="View assessment"
+          >
+            view details
+          </button>
+        </div>
       ),
     },
   ]
@@ -502,6 +525,130 @@ export default function Performance() {
             <Button type="submit" label="Save" variant="primary" />
           </div>
         </form>
+      </Modal>
+
+      {/* ── Performance Details View Modal ──────────────────────────────── */}
+      <Modal
+        isOpen={detailModalOpen}
+        onClose={handleCloseDetailModal}
+        size="lg"
+        showClose
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
+              Performance Review Details
+            </h2>
+            <p className="text-xs font-medium text-slate-500">
+              Employee performance assessment information
+            </p>
+          </div>
+        }
+      >
+        {selectedReview && (
+          <div className="space-y-6 pt-2">
+            {/* Employee & Manager Info */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+                <p className="text-xs font-medium text-slate-500 mb-2">Employee Name</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-[#0F766E] font-bold text-sm">
+                    {selectedReview.employee.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">{selectedReview.employee}</div>
+                    <div className="text-xs font-medium text-slate-400 uppercase">{selectedReview.empId}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+                <p className="text-xs font-medium text-slate-500 mb-2">Performance Lead/Manager</p>
+                <div className="text-sm font-semibold text-slate-900">{selectedReview.manager}</div>
+              </div>
+            </div>
+
+            {/* Review Period & Cycle */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+                <p className="text-xs font-medium text-slate-500 mb-2">Review Cycle</p>
+                <div className="text-sm font-semibold text-slate-900">{selectedReview.cycle}</div>
+              </div>
+
+              <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+                <p className="text-xs font-medium text-slate-500 mb-2">Performance Band</p>
+                <Badge
+                  label={selectedReview.rating}
+                  color={selectedReview.rating === 'Outstanding' || selectedReview.rating === 'Exceeds' ? 'green' : selectedReview.rating === 'Meets' ? 'blue' : 'orange'}
+                  className="rounded-md"
+                />
+              </div>
+
+              <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+                <p className="text-xs font-medium text-slate-500 mb-2">Status</p>
+                <div className="flex items-center">
+                  <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ${selectedReview.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${selectedReview.status === 'Completed' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    {selectedReview.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Competency Ratings */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+              <p className="text-xs font-bold text-slate-600 mb-4 uppercase tracking-wide">Competency Ratings</p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {[
+                  { label: 'Work Quality', key: 'workQuality' },
+                  { label: 'Productivity', key: 'productivity' },
+                  { label: 'Communication', key: 'communication' },
+                  { label: 'Leadership', key: 'leadership' },
+                  { label: 'Overall Rating', key: 'overallRating' },
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center justify-between rounded-md border border-slate-100 bg-white p-3">
+                    <span className="text-sm font-medium text-slate-700">{item.label}</span>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <HiStar
+                          key={star}
+                          className={`h-4 w-4 ${star <= (selectedReview[item.key] || 0) ? 'text-amber-400' : 'text-slate-200'}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Comments Section */}
+            <div className="space-y-4">
+              <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+                <p className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">Key Contributions</p>
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {selectedReview.strengths || 'No contributions documented.'}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
+                <p className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">Growth Objectives</p>
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {selectedReview.goalsNextPeriod || 'No growth objectives documented.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-6">
+              <button
+                type="button"
+                onClick={handleCloseDetailModal}
+                className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-medium text-white hover:bg-[#0d5c56] transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )
