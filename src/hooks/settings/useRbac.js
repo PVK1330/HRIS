@@ -1,6 +1,15 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { adminSettingsService } from '../../services/adminSettingsService.js'
+
+function roleScope(role) {
+  const s = role?.data_scope || role?.dataScope || 'SELF'
+  return String(s).toUpperCase()
+}
+
+function isOrgAdminRole(role) {
+  return Boolean(role?.is_system && String(role?.name || '').trim() === 'Organization Admin')
+}
 
 export default function useRbac() {
   const [roles, setRoles] = useState([])
@@ -9,20 +18,46 @@ export default function useRbac() {
   const selectedRoleIdRef = useRef(selectedRoleId)
   const [currentPermissionIds, setCurrentPermissionIds] = useState([])
   const originalPermissionIds = useRef([])
+  const [currentScope, setCurrentScope] = useState('SELF')
+  const originalScope = useRef('SELF')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [creating, setCreating] = useState(false)
 
   const selectedRole = roles.find((r) => r.id === selectedRoleId) || null
+  const scopeLocked = isOrgAdminRole(selectedRole)
 
   useEffect(() => {
     selectedRoleIdRef.current = selectedRoleId
   }, [selectedRoleId])
 
-  const isDirty =
+  const permissionsDirty =
     JSON.stringify([...currentPermissionIds].sort()) !==
     JSON.stringify([...originalPermissionIds.current].sort())
+
+  const scopeDirty = currentScope !== originalScope.current
+  const isDirty = permissionsDirty || scopeDirty
+
+  const applyRoleSelection = (role) => {
+    if (!role) {
+      setSelectedRoleId(null)
+      selectedRoleIdRef.current = null
+      setCurrentPermissionIds([])
+      originalPermissionIds.current = []
+      setCurrentScope('SELF')
+      originalScope.current = 'SELF'
+      return
+    }
+    const ids = (role.permissions || []).map((p) => p.id)
+    const scope = roleScope(role)
+    setSelectedRoleId(role.id)
+    selectedRoleIdRef.current = role.id
+    setCurrentPermissionIds(ids)
+    originalPermissionIds.current = ids
+    setCurrentScope(scope)
+    originalScope.current = scope
+  }
 
   const fetchAll = async () => {
     try {
@@ -37,18 +72,11 @@ export default function useRbac() {
 
       const sid = selectedRoleIdRef.current
       const stillExists = sid != null && fetchedRoles.some((r) => r.id === sid)
-
       let nextRole = stillExists ? fetchedRoles.find((r) => r.id === sid) : null
       if (!nextRole && fetchedRoles.length > 0) {
         nextRole = fetchedRoles[0]
       }
-
-      const nextIds = nextRole ? (nextRole.permissions || []).map((p) => p.id) : []
-      const nextSelId = nextRole ? nextRole.id : null
-      selectedRoleIdRef.current = nextSelId
-      setSelectedRoleId(nextSelId)
-      setCurrentPermissionIds(nextIds)
-      originalPermissionIds.current = nextIds
+      applyRoleSelection(nextRole)
     } catch {
       toast.error('Failed to load roles')
     } finally {
@@ -58,7 +86,7 @@ export default function useRbac() {
 
   useEffect(() => {
     fetchAll()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial mount load only per spec
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial mount
   }, [])
 
   const selectRole = (role) => {
@@ -68,11 +96,12 @@ export default function useRbac() {
       )
       if (!confirmed) return
     }
-    setSelectedRoleId(role.id)
-    selectedRoleIdRef.current = role.id
-    const ids = (role.permissions || []).map((p) => p.id)
-    setCurrentPermissionIds(ids)
-    originalPermissionIds.current = ids
+    applyRoleSelection(role)
+  }
+
+  const setScope = (scope) => {
+    if (scopeLocked) return
+    setCurrentScope(String(scope).toUpperCase())
   }
 
   const togglePermission = (permissionId) => {
@@ -103,14 +132,16 @@ export default function useRbac() {
       await adminSettingsService.updateRolePermissions(
         selectedRoleId,
         currentPermissionIds,
+        currentScope,
       )
-      originalPermissionIds.current = currentPermissionIds
+      originalPermissionIds.current = [...currentPermissionIds]
+      originalScope.current = currentScope
       await fetchAll()
-      toast.success('Permissions saved successfully')
+      toast.success('Role configuration saved')
     } catch (err) {
       const msg =
         err?.response?.data?.message || err?.data?.message || err?.message
-      toast.error(msg || 'Failed to save permissions')
+      toast.error(msg || 'Failed to save role')
     } finally {
       setSaving(false)
     }
@@ -118,19 +149,25 @@ export default function useRbac() {
 
   const discardChanges = () => {
     setCurrentPermissionIds([...originalPermissionIds.current])
+    setCurrentScope(originalScope.current)
   }
 
-  const createRole = async ({ name, description }) => {
+  const createRole = async ({ name, description, scope = 'SELF' }) => {
     try {
       setCreating(true)
-      const res = await adminSettingsService.createRole({ name, description })
+      const res = await adminSettingsService.createRole({
+        name,
+        description,
+        scope,
+      })
       await fetchAll()
       const newRole = res.data.data
       if (newRole) {
-        setSelectedRoleId(newRole.id)
-        selectedRoleIdRef.current = newRole.id
-        setCurrentPermissionIds([])
-        originalPermissionIds.current = []
+        applyRoleSelection({
+          ...newRole,
+          permissions: [],
+          data_scope: scope,
+        })
       }
       toast.success('Role created')
       return true
@@ -161,18 +198,26 @@ export default function useRbac() {
     }
   }
 
+  const enabledCount = currentPermissionIds.length
+
   return {
     roles,
     availablePermissions,
     selectedRoleId,
     selectedRole,
     currentPermissionIds,
+    currentScope,
+    scopeLocked,
     loading,
     saving,
     deleting,
     creating,
     isDirty,
+    permissionsDirty,
+    scopeDirty,
+    enabledCount,
     selectRole,
+    setScope,
     togglePermission,
     isPermissionEnabled,
     isPermissionAvailable,
@@ -181,4 +226,64 @@ export default function useRbac() {
     createRole,
     deleteRole: deleteRoleById,
   }
+}
+
+export function groupPermissions(permissions) {
+  const groups = new Map()
+  const order = [
+    'Core',
+    'Employee',
+    'Attendance',
+    'Leave',
+    'Documents',
+    'Visa',
+    'Performance',
+    'Payroll',
+    'Organization',
+    'Communication',
+    'Other',
+  ]
+
+  const labelForKey = (key) => {
+    const k = String(key || '').toLowerCase()
+    if (k === 'dashboard' || k === 'system-settings') return 'Core'
+    if (k.startsWith('employee') || k.includes('employee')) return 'Employee'
+    if (k.startsWith('attendance') || k.includes('time-tracking')) return 'Attendance'
+    if (k.startsWith('leave')) return 'Leave'
+    if (k.startsWith('document')) return 'Documents'
+    if (k.startsWith('visa')) return 'Visa'
+    if (k.startsWith('performance') || k.includes('training')) return 'Performance'
+    if (k.startsWith('payroll') || k.includes('billing')) return 'Payroll'
+    if (
+      k.includes('department') ||
+      k.includes('designation') ||
+      k === 'policies'
+    ) {
+      return 'Organization'
+    }
+    if (k.includes('message') || k.includes('announcement')) return 'Communication'
+    if (k.includes('.')) return k.split('.')[0].charAt(0).toUpperCase() + k.split('.')[0].slice(1)
+    return 'Other'
+  }
+
+  for (const p of permissions) {
+    const group = labelForKey(p.key)
+    if (!groups.has(group)) groups.set(group, [])
+    groups.get(group).push(p)
+  }
+
+  const sorted = [...groups.entries()].sort((a, b) => {
+    const ia = order.indexOf(a[0])
+    const ib = order.indexOf(b[0])
+    if (ia === -1 && ib === -1) return a[0].localeCompare(b[0])
+    if (ia === -1) return 1
+    if (ib === -1) return -1
+    return ia - ib
+  })
+
+  return sorted
+}
+
+export function useGroupedPermissions(gridPermissions) {
+  return useMemo(() => groupPermissions(gridPermissions), [gridPermissions])
 }

@@ -1,27 +1,44 @@
 import { Link } from 'react-router-dom'
 import { useMemo, useState } from 'react'
-import { HiArrowPath, HiTrash } from 'react-icons/hi2'
 import {
-  FieldRow,
-  SectionCard,
-  Toggle,
-  Badge,
-  TextInput,
-} from './components/ui'
-import useRbac from '../../../hooks/settings/useRbac'
+  HiArrowPath,
+  HiBuildingOffice2,
+  HiCheck,
+  HiGlobeAlt,
+  HiMagnifyingGlass,
+  HiShieldCheck,
+  HiTrash,
+  HiUser,
+  HiUserGroup,
+} from 'react-icons/hi2'
+import { TextInput } from './components/ui'
+import useRbac, { useGroupedPermissions } from '../../../hooks/settings/useRbac'
+import { DATA_SCOPES, scopeShortLabel } from '../../../constants/dataScopes'
+
+const SCOPE_ICONS = {
+  user: HiUser,
+  team: HiUserGroup,
+  building: HiBuildingOffice2,
+  globe: HiGlobeAlt,
+}
 
 export default function RolesPermissions() {
   const {
     roles,
     availablePermissions,
-    selectedRoleId,
     selectedRole,
+    selectedRoleId,
     loading,
     saving,
     deleting,
     creating,
     isDirty,
+    scopeDirty,
+    scopeLocked,
+    currentScope,
+    enabledCount,
     selectRole,
+    setScope,
     togglePermission,
     isPermissionEnabled,
     isPermissionAvailable,
@@ -34,6 +51,8 @@ export default function RolesPermissions() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newRoleName, setNewRoleName] = useState('')
   const [newRoleDescription, setNewRoleDescription] = useState('')
+  const [newRoleScope, setNewRoleScope] = useState('SELF')
+  const [permSearch, setPermSearch] = useState('')
 
   const gridPermissions = useMemo(() => {
     if (!selectedRole) return []
@@ -51,6 +70,17 @@ export default function RolesPermissions() {
     })
   }, [availablePermissions, selectedRole])
 
+  const filteredPermissions = useMemo(() => {
+    const q = permSearch.trim().toLowerCase()
+    if (!q) return gridPermissions
+    return gridPermissions.filter((p) => {
+      const label = (p.name || p.label || p.key || '').toLowerCase()
+      return label.includes(q) || String(p.key || '').toLowerCase().includes(q)
+    })
+  }, [gridPermissions, permSearch])
+
+  const groupedPermissions = useGroupedPermissions(filteredPermissions)
+
   const hasLockedPermissions = gridPermissions.some(
     (p) => !isPermissionAvailable(p),
   )
@@ -60,47 +90,49 @@ export default function RolesPermissions() {
     const ok = await createRole({
       name: newRoleName.trim(),
       description: newRoleDescription.trim(),
+      scope: newRoleScope,
     })
     if (ok) {
       setNewRoleName('')
       setNewRoleDescription('')
+      setNewRoleScope('SELF')
       setShowCreateForm(false)
     }
   }
 
   if (loading && roles.length === 0) {
     return (
-      <div className="rounded-none border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm font-bold uppercase tracking-widest">
-        Initializing Authorization Subsystem…
+      <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-slate-200 bg-white">
+        <HiArrowPath className="h-8 w-8 animate-spin text-[#0F766E]" />
+        <span className="ml-3 text-sm font-medium text-slate-500">Loading roles…</span>
       </div>
     )
   }
 
   return (
-    <div className="font-sans text-slate-900 animate-in fade-in duration-500">
-      <header className="flex shrink-0 flex-col gap-4 border-b border-slate-200 bg-white px-6 py-6 sm:flex-row sm:items-center sm:justify-between rounded-none">
-        <div className="flex items-center gap-4">
-           <div className="h-10 w-1 bg-[#0F766E]" />
-           <div>
-              <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                Roles & Governance
-              </h1>
-              <p className="mt-1 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                Access control and module authorization
-              </p>
-           </div>
+    <div className="animate-in fade-in font-sans text-slate-900 duration-300">
+      <header className="mb-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#0F766E]/10 text-[#0F766E]">
+            <HiShieldCheck className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">
+              Roles & permissions
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Control who can open each module and which employee records they can see.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             disabled={!isDirty || saving}
             onClick={() => {
-              if (
-                window.confirm('Discard unsaved permission changes for this role?')
-              )
-                discardChanges()
+              if (window.confirm('Discard unsaved changes?')) discardChanges()
             }}
-            className="h-10 rounded-none border border-slate-200 bg-white px-6 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
           >
             Discard
           </button>
@@ -108,258 +140,362 @@ export default function RolesPermissions() {
             type="button"
             disabled={!isDirty || saving || selectedRoleId == null}
             onClick={() => saveRolePermissions()}
-            className="flex h-10 items-center gap-2 rounded-none bg-[#0F766E] px-6 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#0c6b64] disabled:cursor-not-allowed disabled:opacity-40 shadow-md"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#0F766E] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#0c6b64] disabled:opacity-40"
           >
             {saving ? (
               <>
-                <HiArrowPath className="h-4 w-4 shrink-0 animate-spin" />
-                Syncing…
+                <HiArrowPath className="h-4 w-4 animate-spin" />
+                Saving…
               </>
             ) : (
-              'Save Configuration'
+              'Save changes'
             )}
           </button>
         </div>
       </header>
 
-      <div className="flex flex-col lg:flex-row gap-6 mt-6">
-        {/* Left Sidebar: Roles Selection */}
-        <div className="w-full lg:w-64 shrink-0 space-y-1 rounded-none border border-slate-200 bg-white px-2 py-4 shadow-sm h-fit">
-          <div className="px-3 mb-4">
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Authority Roles</span>
-          </div>
-          
-          <div className="space-y-1">
-            {roles.map((role) => {
-              const selected = selectedRoleId === role.id
-              const count =
-                typeof role.permissions?.length === 'number'
-                  ? role.permissions.length
-                  : (role.permissions || []).length
-              return (
-                <div
-                  key={role.id}
-                  className="px-1"
-                >
-                  <button
-                    type="button"
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <aside className="w-full shrink-0 lg:w-72">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Roles
+              </p>
+            </div>
+            <div className="max-h-[420px] overflow-y-auto p-2 custom-scrollbar">
+              {roles.map((role) => {
+                const selected = selectedRoleId === role.id
+                const count = (role.permissions || []).length
+                const scope = role.data_scope || role.dataScope || 'SELF'
+                return (
+                  <div
+                    key={role.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => selectRole(role)}
-                    className={`group relative flex w-full flex-col rounded-none px-3 py-2.5 text-left transition-all border ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        selectRole(role)
+                      }
+                    }}
+                    className={`mb-1 flex w-full cursor-pointer flex-col rounded-lg border px-3 py-2.5 text-left transition-all ${
                       selected
-                        ? 'border-[#0F766E] bg-emerald-50/50 ring-1 ring-[#0F766E]'
-                        : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-100'
+                        ? 'border-[#0F766E] bg-emerald-50/60 ring-1 ring-[#0F766E]/30'
+                        : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="flex items-center justify-between w-full">
-                       <span className={`truncate text-sm font-bold ${selected ? 'text-[#0F766E]' : 'text-slate-800'}`}>{role.name}</span>
-                       {!role.is_system && (
-                          <button
-                            type="button"
-                            title="Delete role"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              deleteRole(role.id)
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 transition-all"
-                            disabled={deleting}
-                          >
-                            <HiTrash className="h-3.5 w-3.5" />
-                          </button>
-                       )}
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`truncate text-sm font-semibold ${selected ? 'text-[#0F766E]' : 'text-slate-800'}`}
+                      >
+                        {role.name}
+                      </span>
+                      {!role.is_system && (
+                        <button
+                          type="button"
+                          title="Delete role"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteRole(role.id)
+                          }}
+                          className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          disabled={deleting}
+                        >
+                          <HiTrash className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
-                    <div className="mt-1 flex items-center gap-2">
-                       <span className={`text-[9px] font-bold uppercase tracking-tight ${selected ? 'text-emerald-600/80' : 'text-slate-400'}`}>
-                          {count} Active Modules
-                       </span>
-                       {role.is_system && (
-                          <span className="text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 px-1.5 py-0.5 border border-slate-200">System</span>
-                       )}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-600">
+                        {scopeShortLabel(scope)}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {count} module{count === 1 ? '' : 's'}
+                      </span>
+                      {role.is_system && (
+                        <span className="rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
+                          System
+                        </span>
+                      )}
                     </div>
-                  </button>
-                </div>
-              )
-            })}
-          </div>
+                  </div>
+                )
+              })}
+            </div>
 
-          <div className="px-1 mt-6 pt-4 border-t border-slate-100">
-            {showCreateForm ? (
-              <form
-                onSubmit={handleSubmitNewRole}
-                className="rounded-none border border-emerald-100 bg-emerald-50/20 p-3 animate-in slide-in-from-top-2 duration-300"
-              >
-                <p className="mb-2 text-[10px] font-black text-[#0F766E] uppercase tracking-widest">
-                  Initialize New Role
-                </p>
-                <TextInput
-                  placeholder="e.g. Finance Auditor"
-                  value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)}
-                  disabled={creating}
-                  className="mb-2 max-w-none h-9 text-xs font-bold"
-                />
-                <TextInput
-                  type="textarea"
-                  placeholder="Objective (optional)"
-                  value={newRoleDescription}
-                  onChange={(e) => setNewRoleDescription(e.target.value)}
-                  disabled={creating}
-                  className="mb-3 max-w-none text-xs font-medium"
-                  rows={2}
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateForm(false)
-                      setNewRoleName('')
-                      setNewRoleDescription('')
-                    }}
-                    className="flex-1 rounded-none border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50"
+            <div className="border-t border-slate-100 p-3">
+              {showCreateForm ? (
+                <form
+                  onSubmit={handleSubmitNewRole}
+                  className="space-y-3 rounded-lg border border-emerald-100 bg-emerald-50/40 p-3"
+                >
+                  <p className="text-xs font-semibold text-[#0F766E]">New role</p>
+                  <TextInput
+                    placeholder="Role name"
+                    value={newRoleName}
+                    onChange={(e) => setNewRoleName(e.target.value)}
                     disabled={creating}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={creating || newRoleName.trim().length < 2}
-                    className="flex-1 items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] disabled:opacity-40"
-                  >
-                    {creating ? '...' : 'Create'}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowCreateForm(true)}
-                className="w-full rounded-none border-2 border-dashed border-slate-200 px-3 py-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 transition-all hover:border-[#0F766E] hover:text-[#0F766E] hover:bg-slate-50"
-              >
-                + Register New Role
-              </button>
-            )}
+                    className="max-w-none text-sm"
+                  />
+                  <TextInput
+                    type="textarea"
+                    placeholder="Description (optional)"
+                    value={newRoleDescription}
+                    onChange={(e) => setNewRoleDescription(e.target.value)}
+                    disabled={creating}
+                    className="max-w-none text-sm"
+                    rows={2}
+                  />
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-600">
+                      Default data access
+                    </label>
+                    <select
+                      value={newRoleScope}
+                      onChange={(e) => setNewRoleScope(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      disabled={creating}
+                    >
+                      {DATA_SCOPES.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateForm(false)}
+                      className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-600"
+                      disabled={creating}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={creating || newRoleName.trim().length < 2}
+                      className="flex-1 rounded-lg bg-[#0F766E] py-2 text-xs font-semibold text-white disabled:opacity-40"
+                    >
+                      {creating ? 'Creating…' : 'Create'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(true)}
+                  className="w-full rounded-lg border-2 border-dashed border-slate-200 py-2.5 text-sm font-semibold text-slate-500 hover:border-[#0F766E] hover:text-[#0F766E]"
+                >
+                  + Add role
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Right Content: Permissions Grid */}
-        <div className="min-w-0 flex-1">
+          <p className="mt-3 text-xs text-slate-500">
+            Assign roles to employees under{' '}
+            <Link to="/admin/employee-directory" className="font-semibold text-[#0F766E] hover:underline">
+              Employee directory
+            </Link>
+            . Data access follows the role — not set per employee.
+          </p>
+        </aside>
+
+        <main className="min-w-0 flex-1">
           {!selectedRole ? (
-            <div className="rounded-none border border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center h-[500px] text-slate-400">
-               <div className="h-12 w-12 rounded-none border-2 border-dashed border-slate-200 flex items-center justify-center mb-4">
-                  <span className="text-2xl font-black">!</span>
-               </div>
-               <p className="text-[11px] font-black uppercase tracking-[0.2em]">Select an authority role to configure permissions</p>
+            <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 text-slate-400">
+              <HiShieldCheck className="mb-3 h-10 w-10 opacity-40" />
+              <p className="text-sm font-medium">Select a role to configure</p>
             </div>
           ) : (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                   <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">
-                     AUTHORIZED MODULES: <span className="text-[#0F766E]">{selectedRole.name}</span>
-                   </h2>
+            <div className="space-y-6">
+              <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">{selectedRole.name}</h2>
+                    {selectedRole.description && (
+                      <p className="mt-1 text-sm text-slate-500">{selectedRole.description}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {scopeDirty && (
+                      <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-800">
+                        Scope changed
+                      </span>
+                    )}
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">
+                      {enabledCount} modules enabled
+                    </span>
+                  </div>
                 </div>
-                {selectedRole.is_system && (
-                   <span className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1">Immutable System Role</span>
-                )}
               </div>
 
-              {hasLockedPermissions && (
-                <div className="flex items-center gap-3 rounded-none border border-amber-200 bg-amber-50 p-4">
-                  <div className="h-8 w-1 bg-amber-400 shrink-0" />
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-amber-900">
-                    Infrastructure Limitation: Some modules require a plan upgrade for activation.
-                  </span>
+              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+                  <h3 className="text-sm font-bold text-slate-900">Data access scope</h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Limits which employee records this role can view in directory, profiles, visa, documents, and related lists.
+                  </p>
                 </div>
-              )}
+                <div className="grid gap-3 p-4 sm:grid-cols-2">
+                  {DATA_SCOPES.map((opt) => {
+                    const Icon = SCOPE_ICONS[opt.icon] || HiUser
+                    const active = currentScope === opt.value
+                    const disabled = scopeLocked && opt.value !== 'ALL'
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={scopeLocked ? opt.value !== 'ALL' : false}
+                        onClick={() => setScope(opt.value)}
+                        className={`relative flex flex-col rounded-xl border-2 p-4 text-left transition-all ${
+                          active || (scopeLocked && opt.value === 'ALL')
+                            ? 'border-[#0F766E] bg-emerald-50/50 ring-2 ring-[#0F766E]/20'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                        } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+                      >
+                        {(active || (scopeLocked && opt.value === 'ALL')) && (
+                          <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#0F766E] text-white">
+                            <HiCheck className="h-3.5 w-3.5" />
+                          </span>
+                        )}
+                        <Icon
+                          className={`mb-2 h-6 w-6 ${active ? 'text-[#0F766E]' : 'text-slate-400'}`}
+                        />
+                        <span className="text-sm font-bold text-slate-900">{opt.label}</span>
+                        <span className="mt-1 text-xs leading-relaxed text-slate-500">
+                          {opt.description}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+                {scopeLocked && (
+                  <p className="border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs text-slate-600">
+                    Organization Admin is locked to <strong>All employees</strong> for full tenant access.
+                  </p>
+                )}
+              </section>
 
-              <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-3">
-                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Access Matrix</span>
+              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Module permissions</h3>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      Toggle which menus and API actions this role can use.
+                    </p>
+                  </div>
+                  <div className="relative w-full sm:max-w-xs">
+                    <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="search"
+                      placeholder="Search permissions…"
+                      value={permSearch}
+                      onChange={(e) => setPermSearch(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20"
+                    />
+                  </div>
                 </div>
-                
-                <div className="divide-y divide-slate-50">
-                  {gridPermissions.length === 0 ? (
-                    <div className="p-10 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
-                      No authorization parameters available for this role.
-                    </div>
+
+                {hasLockedPermissions && (
+                  <div className="mx-4 mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                    Some modules are disabled on your subscription plan. Upgrade features in superadmin to enable them.
+                  </div>
+                )}
+
+                <div className="divide-y divide-slate-100">
+                  {groupedPermissions.length === 0 ? (
+                    <p className="p-8 text-center text-sm text-slate-400">
+                      No permissions match your search.
+                    </p>
                   ) : (
-                    gridPermissions.map((permission) => {
-                      const available = isPermissionAvailable(permission)
-                      const locked = !available
-                      const dashGuard =
-                        selectedRole?.is_system && permission.key === 'dashboard'
-                      const label =
-                        permission.name ||
-                        permission.label ||
-                        permission.key ||
-                        'System Capability'
+                    groupedPermissions.map(([groupName, perms]) => (
+                      <div key={groupName} className="p-4">
+                        <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
+                          {groupName}
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {perms.map((permission) => {
+                            const available = isPermissionAvailable(permission)
+                            const locked = !available
+                            const dashGuard =
+                              selectedRole?.is_system && permission.key === 'dashboard'
+                            const enabled = isPermissionEnabled(permission.id)
+                            const label =
+                              permission.name ||
+                              permission.label ||
+                              permission.key ||
+                              'Permission'
 
-                      const hint = locked
-                        ? 'Inactive in current infrastructure plan'
-                        : undefined
-
-                      return (
-                        <div key={permission.id} className="px-5 transition-colors hover:bg-slate-50/30">
-                          <FieldRow label={label} hint={hint}>
-                            <div className="flex h-12 items-center">
-                              <span
-                                title={
-                                  locked
-                                    ? 'Subscription requirement'
-                                    : dashGuard &&
-                                        isPermissionEnabled(permission.id)
-                                      ? 'Essential system module'
-                                      : undefined
-                                }
+                            return (
+                              <label
+                                key={permission.id}
+                                className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
+                                  enabled
+                                    ? 'border-emerald-200 bg-emerald-50/40'
+                                    : 'border-slate-100 bg-white hover:bg-slate-50'
+                                } ${locked ? 'cursor-not-allowed opacity-60' : ''}`}
                               >
-                                <Toggle
-                                  checked={isPermissionEnabled(permission.id)}
-                                  disabled={
-                                    locked ||
-                                    (dashGuard && isPermissionEnabled(permission.id))
-                                  }
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-slate-800">
+                                    {label}
+                                  </p>
+                                  {permission.key && (
+                                    <p className="truncate font-mono text-[10px] text-slate-400">
+                                      {permission.key}
+                                    </p>
+                                  )}
+                                </div>
+                                <input
+                                  type="checkbox"
+                                  checked={enabled}
+                                  disabled={locked || (dashGuard && enabled)}
                                   onChange={() => {
-                                    if (locked) return
-                                    togglePermission(permission.id)
+                                    if (!locked) togglePermission(permission.id)
                                   }}
+                                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
                                 />
-                              </span>
-                            </div>
-                          </FieldRow>
+                              </label>
+                            )
+                          })}
                         </div>
-                      )
-                    })
+                      </div>
+                    ))
                   )}
                 </div>
-              </div>
+              </section>
 
-              {selectedRole && !selectedRole.is_system && (
-                <div className="mt-8 border-t border-slate-100 pt-8 pb-4">
-                  <div className="rounded-none border border-red-100 bg-red-50/50 p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
-                    <div className="text-center sm:text-left">
-                       <h4 className="text-[10px] font-black text-red-700 uppercase tracking-widest mb-1">Authorization Purge</h4>
-                       <p className="text-xs text-red-600/80 font-medium">Permanently remove this role and all associated access tokens from the tenant ecosystem.</p>
+              {!selectedRole.is_system && (
+                <section className="rounded-xl border border-red-100 bg-red-50/50 p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-red-800">Delete role</h4>
+                      <p className="mt-1 text-xs text-red-700/90">
+                        Removes this role and its permission assignments. Employees using this role must be reassigned first.
+                      </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => deleteRole(selectedRole.id)}
                       disabled={deleting}
-                      className="shrink-0 inline-flex items-center gap-3 rounded-none border border-red-300 bg-white px-6 py-3 text-[10px] font-black uppercase tracking-widest text-red-600 transition-all hover:bg-red-50 disabled:opacity-40 shadow-xs"
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-40"
                     >
                       {deleting ? (
                         <HiArrowPath className="h-4 w-4 animate-spin" />
                       ) : (
                         <HiTrash className="h-4 w-4" />
                       )}
-                      Purge Role Instance
+                      Delete role
                     </button>
                   </div>
-                </div>
+                </section>
               )}
             </div>
           )}
-        </div>
+        </main>
       </div>
     </div>
   )
 }
-

@@ -17,12 +17,13 @@ import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import {
   getEmployeeStats, getFilterOptions, listEmployees,
-  getEmployee, createEmployee, updateEmployee, deleteEmployee,
+  getEmployee, createEmployee, updateEmployee, deleteEmployee, getNextEmployeeId,
 } from '../../../services/employeeService.js'
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
 import { listDesignations } from '../../../services/designationService.js'
 import { triggerExport } from '../../../utils/exportHelper.js'
+import { todayIsoDate, formatEmpIdDisplay } from '../../../utils/employeeId.js'
 
 const selectClass = 'mt-1.5 w-full rounded-md border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all focus:border-[#0F766E]'
 const textareaClass = 'w-full min-h-[100px] rounded-md border border-slate-200 bg-slate-50/50 p-4 text-sm font-bold text-slate-900 outline-none transition-all shadow-inner focus:border-[#0F766E]'
@@ -38,14 +39,6 @@ function statusColor(status) {
   if (status === 'Notice Period') return 'orange'
   if (status === 'On Leave') return 'yellow'
   return 'gray'
-}
-
-function displayEmpId(raw) {
-  if (raw == null || raw === '') return '—'
-  const s = String(raw).trim()
-  if (/^emp[-_\s]?/i.test(s)) return s.replace(/^emp[-_\s]*/i, 'Emp-')
-  const tail = s.replace(/^EMP[-_]?/i, '').replace(/^emp[-_]?/i, '')
-  return tail ? `Emp-${tail}` : `Emp-${s}`
 }
 
 function formatJoinDateDisplay(value) {
@@ -269,6 +262,7 @@ export default function EmployeeDirectory() {
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState({ total: 0, active: 0, onLeave: 0, probation: 0 })
   const [submitting, setSubmitting] = useState(false)
+  const [empIdLoading, setEmpIdLoading] = useState(false)
   const [filterOptions, setFilterOptions] = useState({
     departments: [], jobTitles: [], workLocations: [], workModes: [], statuses: [],
   })
@@ -506,17 +500,41 @@ export default function EmployeeDirectory() {
     setProfileImagePreview(profileObjectUrlRef.current)
   }
 
-  const openAddModal = () => {
+  const fillNextEmployeeId = async (records = employeeList) => {
+    setEmpIdLoading(true)
+    try {
+      const nextId = await getNextEmployeeId(records)
+      setFormData((prev) => ({ ...prev, employeeId: String(nextId) }))
+      return nextId
+    } catch {
+      toast.error('Could not assign the next employee ID.')
+      return null
+    } finally {
+      setEmpIdLoading(false)
+    }
+  }
+
+  const openAddModal = async () => {
     setEditMode(false)
     setEditingEmployeeId(null)
-    setFormData(initialFormData)
     setFormTab('basic')
     profileFileRef.current = null
     revokeProfilePreview()
     setShowPassword(false)
     setShowConfirmPassword(false)
+    setFormData({
+      ...initialFormData,
+      joinDate: todayIsoDate(),
+    })
     setModalOpen(true)
+    await fillNextEmployeeId(employeeList)
   }
+
+  useEffect(() => {
+    if (!modalOpen || editMode || formData.employeeId || empIdLoading) return
+    fillNextEmployeeId(employeeList)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen, editMode])
 
   const handleCloseModal = () => {
     setModalOpen(false)
@@ -577,8 +595,21 @@ export default function EmployeeDirectory() {
 
     const resolvedPortalPassword = pwd || portalPwExtra
 
+    let empId = String(formData.employeeId || '').trim()
+    if (!empId && !editMode) {
+      empId = String((await getNextEmployeeId(employeeList)) || '')
+      if (empId) {
+        setFormData((prev) => ({ ...prev, employeeId: empId }))
+      }
+    }
+    if (!empId && !editMode) {
+      toast.error('Employee ID could not be assigned. Please try again.')
+      setFormTab('basic')
+      return
+    }
+
     const payload = {
-      empId: formData.employeeId,
+      empId,
       username: String(formData.username || '').trim() || null,
       fullName,
       firstName: formData.firstName || null,
@@ -870,7 +901,7 @@ export default function EmployeeDirectory() {
       key: 'empId',
       label: colLabel('Emp ID'),
       render: (_v, row) => (
-        <span className="text-sm font-semibold text-slate-900">{displayEmpId(row.empId)}</span>
+        <span className="text-sm font-semibold text-slate-900">{formatEmpIdDisplay(row.empId)}</span>
       ),
     },
     {
@@ -1151,7 +1182,9 @@ export default function EmployeeDirectory() {
             </h2>
             <p className="text-xs font-medium text-slate-500">
               Employee ID :{' '}
-              <span className="text-slate-800">{formData.employeeId || '—'}</span>
+              <span className="text-slate-800">
+                {empIdLoading ? 'Assigning…' : (formData.employeeId || '—')}
+              </span>
             </p>
           </div>
         }
@@ -1250,12 +1283,16 @@ export default function EmployeeDirectory() {
                   <input
                     id="emp-id"
                     name="employeeId"
-                    value={formData.employeeId}
-                    onChange={handleFormChange}
-                    placeholder="e.g. EMP-001"
-                    className={basicFieldClass}
+                    value={empIdLoading ? '' : formData.employeeId}
+                    readOnly
+                    placeholder={empIdLoading ? 'Assigning next ID…' : 'e.g. EMP-1'}
+                    className={`${basicFieldClass} cursor-not-allowed bg-slate-100 text-slate-600`}
+                    aria-readonly="true"
                     required
                   />
+                  {!editMode && (
+                    <p className="mt-1 text-xs text-slate-500">Assigned automatically (EMP-1, EMP-2, …).</p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="emp-join" className="mb-1 block text-sm font-medium text-slate-800">
@@ -2022,7 +2059,7 @@ export default function EmployeeDirectory() {
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-slate-900">{selectedEmployee.name}</h2>
-                  <p className="text-sm text-slate-500 mt-0.5">{displayEmpId(selectedEmployee.empId)} · {selectedEmployee.jobTitle || '—'}</p>
+                  <p className="text-sm text-slate-500 mt-0.5">{formatEmpIdDisplay(selectedEmployee.empId)} · {selectedEmployee.jobTitle || '—'}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-800">
                       <span className="h-1.5 w-1.5 rounded-full bg-green-500" />{selectedEmployee.status || '—'}
@@ -2069,7 +2106,7 @@ export default function EmployeeDirectory() {
                   content: (
                     <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                       {[
-                        ['Employee ID', displayEmpId(selectedEmployee.empId)],
+                        ['Employee ID', formatEmpIdDisplay(selectedEmployee.empId)],
                         ['Full Name', selectedEmployee.name],
                         ['Work Email', selectedEmployee.email],
                         ['Phone', formatPhoneDisplay(selectedEmployee.phone)],

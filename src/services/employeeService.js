@@ -1,4 +1,5 @@
 import api from './api.js'
+import { computeNextEmpIdFromRecords, formatEmpId, parseEmpIdSequence } from '../utils/employeeId.js'
 
 /**
  * Employee Directory Service
@@ -21,6 +22,29 @@ export const getEmployeeStats = async () => {
 export const getFilterOptions = async () => {
   const { data } = await api.get('/employees/filters')
   return data.data
+}
+
+/**
+ * GET /api/v1/employees/next-emp-id
+ * Next sequential employee ID (1, 2, 3, …).
+ */
+export const getNextEmployeeId = async (localRecords = []) => {
+  try {
+    const { data } = await api.get('/employees/next-emp-id')
+    const payload = data?.data ?? data
+    const next =
+      payload?.nextEmpId ??
+      payload?.next_emp_id ??
+      payload?.nextId
+    if (next != null && String(next).trim() !== '') {
+      const raw = String(next).trim()
+      const seq = parseEmpIdSequence(raw)
+      return seq > 0 ? formatEmpId(seq) : raw
+    }
+  } catch (err) {
+    console.warn('getNextEmployeeId: API failed, using local fallback', err)
+  }
+  return computeNextEmpIdFromRecords(localRecords)
 }
 
 /**

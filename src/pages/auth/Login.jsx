@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button.jsx'
 import { Input } from '../../components/ui/Input.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import axios from 'axios'
+import { parseTenantSlugFromHostname } from '../../utils/tenantSlug.js'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -40,7 +41,11 @@ export default function Login() {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState(null)
+  const tenantSlugFromHost =
+    typeof window !== 'undefined' ? parseTenantSlugFromHostname(window.location.hostname) : null
+
   const [organizationId, setOrganizationId] = useState(() => {
+    if (tenantSlugFromHost) return ''
     try {
       return typeof window !== 'undefined' ? (window.localStorage.getItem(LAST_TENANT_ID_KEY) || '') : ''
     } catch {
@@ -70,9 +75,15 @@ export default function Login() {
       const endpoint = isSuperAdmin ? '/superadmin/login' : '/auth/login'
 
       const body = { email, password }
-      if (!isSuperAdmin && organizationId.trim()) {
-        const tid = parseInt(organizationId.trim(), 10)
-        if (Number.isInteger(tid) && tid > 0) body.tenantId = tid
+      if (!isSuperAdmin) {
+        const slug =
+          tenantSlugFromHost || parseTenantSlugFromHostname(window.location.hostname)
+        if (slug) {
+          body.tenantSlug = slug
+        } else if (organizationId.trim()) {
+          const tid = parseInt(organizationId.trim(), 10)
+          if (Number.isInteger(tid) && tid > 0) body.tenantId = tid
+        }
       }
 
       const response = await axios.post(`${API_URL}/api/v1${endpoint}`, body)
@@ -282,18 +293,24 @@ export default function Login() {
                     </div>
                   </div>
 
-                  {activeTab === 'admin' ? (
+                  {activeTab === 'admin' && !tenantSlugFromHost ? (
                     <Input
                       label="Organization ID"
                       labelClassName={labelUpper}
                       name="organizationId"
                       type="text"
-                      placeholder="e.g. 12"
-                      helpText="Use your tenant ID when signing in as an employee. Organization admins signing in with the company email may leave this blank."
+                      placeholder="e.g. 4"
+                      helpText="Required for employee portal login on localhost. Org admins using the company email on the main URL can leave this blank."
                       value={organizationId}
                       onChange={(e) => setOrganizationId(e.target.value)}
                       disabled={loading}
                     />
+                  ) : null}
+                  {activeTab === 'admin' && tenantSlugFromHost ? (
+                    <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                      Signing in to organization workspace:{' '}
+                      <span className="font-semibold">{tenantSlugFromHost}</span>
+                    </p>
                   ) : null}
 
                   <div>

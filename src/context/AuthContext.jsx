@@ -9,6 +9,10 @@ import {
   useState,
 } from "react";
 import api from "../services/api";
+import {
+  hasModuleAccess,
+  resolvePlanFeatureKey,
+} from "../constants/permissions.js";
 
 const STORAGE_KEY = "hris_auth_user";
 
@@ -124,10 +128,10 @@ const TENANT_FEATURE_CODE_TO_MODULE_KEYS = {
   shift_management: ["shift-management"],
   overtime_management: ["overtime-management"],
   training_development: ["training-development"],
-  department: ["departments"],
-  departments: ["departments"],
-  designation: ["designations"],
-  designations: ["designations"],
+  department: ["departments", "designations"],
+  departments: ["departments", "designations"],
+  designation: ["departments", "designations"],
+  designations: ["departments", "designations"],
   projects: [],
   task_management: [],
   messages: ["messages"],
@@ -136,8 +140,8 @@ const TENANT_FEATURE_CODE_TO_MODULE_KEYS = {
   visa: ["visa-nationality"],
   visa_nationality: ["visa-nationality"],
   visa_and_nationality: ["visa-nationality"],
-  settings: [],
-  system_settings: [],
+  settings: ["system-settings"],
+  system_settings: ["system-settings"],
 };
 
 function moduleKeysForTenantFeatureCodes(tenantFeatures) {
@@ -174,7 +178,11 @@ function computePlanModuleKeysForTenantUser(userRole, tenantFeatures) {
   const enabledRows = list.filter((f) => f?.is_enabled !== false);
   if (enabledRows.length === 0) return new Set();
 
-  return moduleKeysForTenantFeatureCodes(list);
+  const keys = moduleKeysForTenantFeatureCodes(list);
+  if (userRole === "admin") {
+    keys.add("system-settings");
+  }
+  return keys;
 }
 
 const DEFAULT_MOCK_ALLOWED_MODULES = [
@@ -340,32 +348,21 @@ export function AuthProvider({ children }) {
 
   const hasModule = useCallback(
     (key) => {
-      if (key === "dashboard") return true;
-
-      const privilegedPanelAccess = [
-        "admin",
-        "hr_admin",
-        "hr_executive",
-        "manager",
-      ].includes(user?.role);
-      if (key === "system-settings" && privilegedPanelAccess) return true;
-
-      if (user?.role === "employee") {
-        if (!allowedModules.includes(key)) return false;
-        if (planModuleKeys === null) return true;
-        if (planModuleKeys instanceof Set) return planModuleKeys.has(key);
+      if (!hasModuleAccess(allowedModules, key, user?.role)) {
         return false;
       }
-
-      if (allowedModules.includes(key)) return true;
-
-      if (user?.role === "admin") {
-        if (planModuleKeys === null) return true;
-        if (planModuleKeys instanceof Set && planModuleKeys.has(key))
-          return true;
+      /* Tenant admin always needs the settings shell (not tied to a subscription feature row) */
+      if (key === "system-settings" && user?.role === "admin") {
+        return true;
       }
-
-      return false;
+      if (
+        (user?.role === "employee" || user?.role === "admin") &&
+        planModuleKeys instanceof Set
+      ) {
+        const planKey = resolvePlanFeatureKey(key);
+        return planModuleKeys.has(planKey) || planModuleKeys.has(key);
+      }
+      return true;
     },
     [allowedModules, planModuleKeys, user?.role],
   );
@@ -419,14 +416,14 @@ export function AuthProvider({ children }) {
 
   const refreshAccessProfile = useCallback(async () => {
     const current = userRef.current;
-    if (!current || current.role !== "admin") return;
+    if (!current || !["admin", "employee"].includes(current.role)) return;
     try {
       const response = await api.get("/auth/access-profile");
       const data = response?.data?.data;
       if (!data) return;
 
       setUser((prev) => {
-        if (!prev || prev.role !== "admin") return prev;
+        if (!prev || !["admin", "employee"].includes(prev.role)) return prev;
         const next = {
           ...prev,
           plan_details: data.plan_details || [],
@@ -447,7 +444,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   const adminSessionKey =
-    user?.role === "admin" ? `${user.email ?? ""}:${user.id ?? ""}` : null;
+    user?.role === "admin" || user?.role === "employee"
+      ? `${user.email ?? ""}:${user.id ?? ""}:${user.role}`
+      : null;
 
   const userId = user?.id;
   const userRole = user?.role;

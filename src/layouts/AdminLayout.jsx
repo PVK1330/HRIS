@@ -222,7 +222,7 @@ const adminNavGroups = [
         label: "Employee Grid",
         icon: HiUsers,
         path: "/admin/employee-grid",
-        key: "employee-grid",
+        key: "employee-directory",
         permission: "view_employees",
         featureCode: "employee_directory",
       },
@@ -246,9 +246,9 @@ const adminNavGroups = [
         label: "Designations",
         icon: HiIdentification,
         path: "/admin/designations",
-        key: "designations",
+        key: "departments",
         permission: "edit_settings",
-        featureCode: "designations",
+        featureCode: "department",
       },
       {
         label: "Messages",
@@ -322,10 +322,10 @@ const FEATURE_PATH_MAP = {
   onboarding_exit: ["/admin/onboarding", "/admin/exit-management"],
   onboarding: ["/admin/onboarding"],
   exit_management: ["/admin/exit-management"],
-  department: ["/admin/departments"],
-  departments: ["/admin/departments"],
-  designation: ["/admin/designations"],
-  designations: ["/admin/designations"],
+  department: ["/admin/departments", "/admin/designations"],
+  departments: ["/admin/departments", "/admin/designations"],
+  designation: ["/admin/departments", "/admin/designations"],
+  designations: ["/admin/departments", "/admin/designations"],
   message_center: ["/admin/messages"],
   messages: ["/admin/messages"],
   reports_analytics: ["/admin/reports"],
@@ -352,8 +352,7 @@ function normalizeFeatureCode(code) {
 }
 
 export default function AdminLayout() {
-  const { user, logout, hasPermission, hasFeatureAccess, switchRole } =
-    useAuth();
+  const { user, logout, hasModule, hasFeatureAccess, switchRole } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
@@ -380,11 +379,13 @@ export default function AdminLayout() {
       .map((group) => ({
         ...group,
         items: group.items.filter((item) => {
-          // Real tenant admin (role === 'admin') from API login:
-          // If the tenant has features assigned, filter by those features.
-          // If no features are assigned yet (new tenant / not configured), show everything.
-          if (user?.role === "admin") {
-            /* Dashboard + system settings are core tenant shell; always visible even if missing from subscription feature rows */
+          const moduleKey = item.key;
+
+          if (moduleKey && moduleKey !== "dashboard" && !hasModule(moduleKey)) {
+            return false;
+          }
+
+          if (user?.role === "admin" || user?.role === "employee") {
             const alwaysShowPaths = ["/admin/dashboard", "/admin/settings"];
             if (
               hasAssignedFeatures &&
@@ -407,67 +408,15 @@ export default function AdminLayout() {
             return true;
           }
 
-          // Mock / non-tenant roles: apply featureCode + permission checks
-          if (item.featureCode && !hasFeatureAccess(item.featureCode))
+          if (item.featureCode && !hasFeatureAccess(item.featureCode)) {
             return false;
-          if (!item.permission) return true;
-          if (item.path === "/admin/dashboard") return true;
+          }
 
-          if (
-            item.permission === "view_employees" &&
-            (user.role === "hr_admin" ||
-              user.role === "hr_executive" ||
-              user.role === "manager")
-          )
-            return true;
-          if (item.permission === "view_attendance") return true;
-          if (item.permission === "view_leave") return true;
-          if (
-            item.permission === "view_documents" &&
-            (user.role === "hr_admin" ||
-              user.role === "hr_executive" ||
-              user.role === "employee")
-          )
-            return true;
-          if (
-            item.permission === "view_visa" &&
-            (user.role === "hr_admin" || user.role === "hr_executive")
-          )
-            return true;
-          if (
-            item.permission === "view_assets" &&
-            (user.role === "hr_admin" ||
-              user.role === "hr_executive" ||
-              user.role === "employee")
-          )
-            return true;
-          if (item.permission === "view_performance") return true;
-          if (item.permission === "view_policies") return true;
-          if (item.permission === "view_expenses") return true;
-          if (
-            item.permission === "view_onboarding" &&
-            (user.role === "hr_admin" || user.role === "hr_executive")
-          )
-            return true;
-          if (
-            item.permission === "view_exit" &&
-            (user.role === "hr_admin" || user.role === "hr_executive")
-          )
-            return true;
-          if (item.permission === "view_letters" && user.role === "hr_admin")
-            return true;
-          if (item.permission === "view_announcements") return true;
-          if (item.permission === "view_messages") return true;
-          if (item.permission === "view_payroll" && user.role === "hr_admin")
-            return true;
-          if (item.permission === "edit_settings" && user.role === "hr_admin")
-            return true;
-
-          return hasPermission(item.permission);
+          return true;
         }),
       }))
       .filter((group) => group.items.length > 0);
-  }, [user, hasPermission, hasFeatureAccess]);
+  }, [user, hasModule, hasFeatureAccess]);
 
   const breadcrumb = useMemo(() => {
     const parts = location.pathname.split("/").filter(Boolean);

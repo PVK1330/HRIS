@@ -158,6 +158,9 @@ export const adminSettingsService = {
   createRole: (data) => adminClient.post('/rbac/roles', data),
   updateRole: (id, data) => adminClient.put(`/rbac/roles/${id}`, data),
   deleteRole: (id) => adminClient.delete(`/rbac/roles/${id}`),
-  updateRolePermissions: (roleId, permissionIds) =>
-    adminClient.put(`/rbac/roles/${roleId}/permissions`, { permissionIds }),
+  updateRolePermissions: (roleId, permissionIds, scope) =>
+    adminClient.put(`/rbac/roles/${roleId}/permissions`, {
+      permissionIds,
+      ...(scope != null ? { scope } : {}),
+    }),
 }

@@ -13,6 +13,7 @@ export function Input({
   className = '',
   suffix,
   inputClassName = '',
+  readOnly = false,
 }) {
   const baseInput =
     'w-full rounded-lg border text-sm transition-shadow focus:outline-none focus:ring-2'
@@ -63,6 +64,7 @@ export function Input({
             placeholder={placeholder}
             value={value}
             onChange={onChange}
+            readOnly={readOnly}
             className={`${baseInput} ${borderClass} py-2 pl-3 pr-10 ${inputClassName}`}
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600">
@@ -77,7 +79,8 @@ export function Input({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          className={`${baseInput} ${borderClass} box-border px-3 py-2 leading-normal ${inputClassName}`}
+          readOnly={readOnly}
+          className={`${baseInput} ${borderClass} box-border px-3 py-2 leading-normal ${inputClassName}${readOnly ? ' cursor-not-allowed bg-slate-100 text-slate-600' : ''}`}
         />
       )}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}

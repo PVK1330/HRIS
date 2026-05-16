@@ -278,7 +278,7 @@ export const router = createBrowserRouter([
           {
             path: "designations",
             element: (
-              <AdminModuleGate moduleKey={["designations", "departments", "system-settings"]}>
+              <AdminModuleGate moduleKey="departments">
                 <DesignationsManagement />
               </AdminModuleGate>
             ),

@@ -9,8 +9,9 @@ import {
 } from 'react-icons/hi2'
 import Swal from 'sweetalert2'
 import { Input } from '../../../components/ui/Input.jsx'
-import { getEmployeeStats, getFilterOptions, listEmployees, createEmployee } from '../../../services/employeeService.js'
+import { getEmployeeStats, getFilterOptions, listEmployees, createEmployee, getNextEmployeeId } from '../../../services/employeeService.js'
 import { listDesignations } from '../../../services/designationService.js'
+import { todayIsoDate } from '../../../utils/employeeId.js'
 
 const cardProgressColors = ['bg-purple-500', 'bg-yellow-500', 'bg-red-500', 'bg-emerald-500']
 
@@ -52,6 +53,7 @@ export default function EmployeeGrid() {
   const [modalOpen, setModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('basic')
   const [formData, setFormData] = useState(initialFormData)
+  const [empIdLoading, setEmpIdLoading] = useState(false)
 
   const fetchData = async () => {
     setLoading(true)
@@ -129,8 +131,16 @@ export default function EmployeeGrid() {
     }
 
     const fullName = `${formData.firstName} ${formData.lastName}`.trim()
+    let empId = String(formData.employeeId || '').trim()
+    if (!empId) {
+      empId = String((await getNextEmployeeId(employees)) || '')
+    }
+    if (!empId) {
+      Swal.fire('Validation', 'Employee ID could not be assigned. Please try again.', 'warning')
+      return
+    }
     const payload = {
-      empId: formData.employeeId,
+      empId,
       fullName,
       jobTitle: formData.designation || 'Employee',
       department: formData.department,
@@ -172,7 +182,19 @@ export default function EmployeeGrid() {
             </button>
             <button
               type="button"
-              onClick={() => setModalOpen(true)}
+              onClick={async () => {
+                setFormData({ ...initialFormData, joiningDate: todayIsoDate() })
+                setModalOpen(true)
+                setEmpIdLoading(true)
+                try {
+                  const nextId = await getNextEmployeeId(employees)
+                  setFormData({ ...initialFormData, joiningDate: todayIsoDate(), employeeId: String(nextId) })
+                } catch {
+                  Swal.fire('Error', 'Could not assign the next employee ID.', 'error')
+                } finally {
+                  setEmpIdLoading(false)
+                }
+              }}
               className="inline-flex items-center gap-2 rounded-none bg-[#F97316] px-4 py-2 text-sm font-semibold text-white hover:bg-[#ea670f]"
             >
               <HiPlus className="h-4 w-4" />
@@ -328,7 +350,14 @@ export default function EmployeeGrid() {
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       <Input label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} required />
                       <Input label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} required />
-                      <Input label="Employee ID" name="employeeId" value={formData.employeeId} onChange={handleChange} required />
+                      <Input
+                        label="Employee ID"
+                        name="employeeId"
+                        value={empIdLoading ? '' : formData.employeeId}
+                        readOnly
+                        required
+                        placeholder={empIdLoading ? 'Assigning next ID…' : undefined}
+                      />
                       <Input label="Joining Date" name="joiningDate" type="date" value={formData.joiningDate} onChange={handleChange} required />
                       <Input label="Username" name="username" value={formData.username} onChange={handleChange} />
                       <Input label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
