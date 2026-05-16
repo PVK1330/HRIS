@@ -7,6 +7,9 @@ import { Input } from '../../../components/ui/Input.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Toggle } from '../../../components/ui/Toggle.jsx'
+import PlanPaymentStep from './PlanPaymentStep.jsx'
+import settingsService from '../../../services/settingsService.js'
+import { createStripeCheckoutSession } from '../../../services/billingService.js'
 import {
   HiCheck,
   HiClock,
@@ -62,16 +65,86 @@ export default function TenantManagement() {
   const fetchPlans = async () => {
     try {
       const response = await api.get('/superadmin/plans/active')
-      setPlans(response.data.data)
-      
-      // Update initial form states if plans are loaded
-      if (response.data.data.length > 0) {
-        setNewForm(prev => ({ ...prev, plan: response.data.data[0].id }))
-        setEditForm(prev => ({ ...prev, plan: response.data.data[0].id }))
+      const list = response.data.data || []
+      setPlans(list)
+      if (list.length > 0) {
+        setNewForm((prev) => ({ ...prev, plan: String(list[0].id) }))
+        setEditForm((prev) => ({ ...prev, plan: list[0].plan_name }))
       }
     } catch (error) {
       console.error('Failed to fetch plans:', error)
     }
+  }
+
+  const fetchEnabledGateways = async () => {
+    try {
+      const res = await settingsService.getEnabledPaymentGateways()
+      const list = Array.isArray(res?.data) ? res.data : []
+      setPaymentGateways(list)
+      if (list.length > 0) {
+        setNewForm((prev) => ({
+          ...prev,
+          paymentGateway: prev.paymentGateway === 'manual' ? list[0].slug : prev.paymentGateway,
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch payment gateways:', error)
+      setPaymentGateways([])
+    }
+  }
+
+  const fetchPlatformBillingContext = async () => {
+    try {
+      const currencyRes = await settingsService.getCurrency()
+      setPlatformCurrency(currencyRes?.data?.defaultCurrency || 'AED')
+    } catch {
+      setPlatformCurrency('AED')
+    }
+  }
+
+  const openPaymentTab = () => {
+    const tab = window.open('about:blank', '_blank', 'noopener,noreferrer')
+    if (!tab) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Popup blocked',
+        text: 'Allow popups for this site so Stripe Checkout can open in a new tab.',
+        confirmButtonColor: '#4f46e5',
+      })
+      return null
+    }
+    try {
+      tab.document.write(
+        '<!DOCTYPE html><html><head><title>Stripe Checkout</title></head><body style="font-family:system-ui,sans-serif;padding:2rem;color:#334155"><p><strong>Opening Stripe Checkout…</strong></p><p>Leave this tab open.</p></body></html>',
+      )
+      tab.document.close()
+    } catch {
+      /* ignore */
+    }
+    return tab
+  }
+
+  const openNewOrgModal = () => {
+    setAddOrgTab('details')
+    setShowNewModal(true)
+    fetchEnabledGateways()
+    fetchPlatformBillingContext()
+  }
+
+  const resetNewOrgForm = () => {
+    const defaultPlan = plans[0]?.id ? String(plans[0].id) : ''
+    setNewForm({
+      name: '',
+      adminName: '',
+      adminEmail: '',
+      adminPassword: '',
+      plan: defaultPlan,
+      billingCycle: 'monthly',
+      paymentGateway: paymentGateways[0]?.slug || 'manual',
+      paymentCollection: 'trial',
+      paymentReference: '',
+    })
+    setAddOrgTab('details')
   }
 
   const fetchTenants = async (page = 0) => {
@@ -137,7 +210,21 @@ export default function TenantManagement() {
   // Form States
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' })
   const [editForm, setEditForm] = useState({ name: '', adminEmail: '', plan: '', billingCycle: 'Monthly', maxUsers: 50, status: 'Active' })
-  const [newForm, setNewForm] = useState({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: '', billingCycle: 'Monthly' })
+  const [addOrgTab, setAddOrgTab] = useState('details')
+  const [paymentGateways, setPaymentGateways] = useState([])
+  const [platformCurrency, setPlatformCurrency] = useState('AED')
+  const [stripeCheckoutLoading, setStripeCheckoutLoading] = useState(false)
+  const [newForm, setNewForm] = useState({
+    name: '',
+    adminName: '',
+    adminEmail: '',
+    adminPassword: '',
+    plan: '',
+    billingCycle: 'monthly',
+    paymentGateway: 'manual',
+    paymentCollection: 'trial',
+    paymentReference: '',
+  })
   const [errors, setErrors] = useState({})
 
   const filteredOrganizations = organizations; // Now filtered on the server
@@ -285,39 +372,157 @@ export default function TenantManagement() {
     }
   }
 
-  const handleCreateOrganization = async () => {
+  const validateNewOrgForm = () => {
     if (!newForm.name || !newForm.adminEmail || !newForm.adminName || !newForm.adminPassword) {
       Swal.fire({
         icon: 'warning',
         title: 'Incomplete Form',
-        text: 'Please fill all required fields to provision the organization.',
-        confirmButtonColor: '#4f46e5'
+        text: 'Please fill all required fields on the Organization tab.',
+        confirmButtonColor: '#4f46e5',
       })
-      return
+      setAddOrgTab('details')
+      return false
+    }
+    if (!newForm.plan) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Select a plan',
+        text: 'Choose a subscription plan on the Plan & payment tab.',
+        confirmButtonColor: '#4f46e5',
+      })
+      setAddOrgTab('subscription')
+      return false
+    }
+    return true
+  }
+
+  const buildCreateOrgPayload = () => ({
+    name: newForm.name,
+    adminEmail: newForm.adminEmail,
+    adminName: newForm.adminName,
+    adminPassword: newForm.adminPassword,
+    plan_id: String(newForm.plan),
+    billing_cycle: newForm.billingCycle,
+    payment_gateway: newForm.paymentGateway,
+    payment_collection: newForm.paymentCollection,
+    payment_reference: newForm.paymentReference || undefined,
+  })
+
+  const openStripeCheckoutUrl = async (tenant, checkoutTab) => {
+    const plan = plans.find((p) => String(p.id) === String(newForm.plan))
+    const amount =
+      newForm.billingCycle === 'annual'
+        ? Number(plan?.annual_price)
+        : Number(plan?.monthly_price)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      checkoutTab?.close?.()
+      Swal.fire({
+        icon: 'info',
+        title: 'No payment required',
+        text: 'This plan has no charge — Stripe Checkout is not needed.',
+        confirmButtonColor: '#4f46e5',
+      })
+      return false
+    }
+
+    const session = await createStripeCheckoutSession({
+      tenantId: tenant.id,
+      paymentId: tenant.paymentId,
+      planId: tenant.planId || Number(newForm.plan),
+      billingCycle: newForm.billingCycle,
+      customerEmail: newForm.adminEmail,
+    })
+
+    if (!session?.url) {
+      checkoutTab?.close?.()
+      throw new Error('Stripe did not return a checkout URL')
+    }
+
+    if (checkoutTab && !checkoutTab.closed) {
+      checkoutTab.location.href = session.url
+      checkoutTab.focus()
+    } else {
+      const tab = window.open(session.url, '_blank', 'noopener,noreferrer')
+      if (!tab) {
+        Swal.fire({
+          icon: 'info',
+          title: 'Open Stripe Checkout',
+          html: `<a href="${session.url}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-bold underline">Click here to pay in Stripe</a>`,
+          confirmButtonColor: '#4f46e5',
+        })
+      } else {
+        tab.focus()
+      }
+    }
+    return true
+  }
+
+  const provisionOrganization = async ({ openStripe = false, checkoutTab = null } = {}) => {
+    if (!validateNewOrgForm()) {
+      checkoutTab?.close?.()
+      return null
     }
 
     try {
-      setIsLoading(true);
-      await api.post('/tenants/create', {
-        name: newForm.name,
-        adminEmail: newForm.adminEmail,
-        adminName: newForm.adminName,
-        adminPassword: newForm.adminPassword,
-        plan_id: String(newForm.plan),
-      });
-      setShowNewModal(false);
-      setNewForm({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' });
-      fetchTenants(); // Refresh list
+      if (openStripe) setStripeCheckoutLoading(true)
+      else setIsLoading(true)
+
+      const res = await api.post('/tenants/create', buildCreateOrgPayload())
+      const tenant = res.data?.data?.tenant
+      if (!tenant?.id) throw new Error('Tenant was created but the response was invalid')
+
+      if (openStripe && newForm.paymentGateway === 'stripe') {
+        await openStripeCheckoutUrl(tenant, checkoutTab)
+      } else {
+        checkoutTab?.close?.()
+      }
+
+      setShowNewModal(false)
+      resetNewOrgForm()
+      fetchTenants()
+
+      if (openStripe && newForm.paymentGateway === 'stripe') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Organization created',
+          text: 'Complete payment in the Stripe tab. The organization is provisioned.',
+          timer: 2800,
+          showConfirmButton: false,
+        })
+      } else {
+        Swal.fire({
+          icon: 'success',
+          title: 'Organization created',
+          text: 'Tenant provisioned with subscription and payment record.',
+          timer: 2200,
+          showConfirmButton: false,
+        })
+      }
+
+      return tenant
     } catch (error) {
+      checkoutTab?.close?.()
       Swal.fire({
         icon: 'error',
-        title: 'Provisioning Failed',
-        text: error.response?.data?.message || 'Failed to create organization',
-        confirmButtonColor: '#ef4444'
+        title: openStripe ? 'Stripe checkout failed' : 'Provisioning Failed',
+        text: error.response?.data?.message || error.message || 'Failed to create organization',
+        confirmButtonColor: '#ef4444',
       })
+      return null
     } finally {
       setIsLoading(false)
+      setStripeCheckoutLoading(false)
     }
+  }
+
+  const handlePaymentGatewayChange = (slug) => {
+    setNewForm((prev) => ({ ...prev, paymentGateway: slug }))
+  }
+
+  const handleCreateOrganization = async () => {
+    const openStripe = newForm.paymentGateway === 'stripe'
+    const checkoutTab = openStripe ? openPaymentTab() : null
+    await provisionOrganization({ openStripe, checkoutTab })
   }
 
   const handleAction = (type, org) => {
@@ -429,7 +634,7 @@ export default function TenantManagement() {
         </div>
         <div className="flex gap-2">
           <Button label="Export CSV" variant="ghost" size="sm" icon={HiArrowDownTray} onClick={handleExport} className="text-slate-500 font-bold" />
-          <Button label="Add Organization" variant="primary" size="sm" icon={HiPlus} onClick={() => setShowNewModal(true)} />
+          <Button label="Add Organization" variant="primary" size="sm" icon={HiPlus} onClick={openNewOrgModal} />
         </div>
       </div>
 
@@ -513,30 +718,87 @@ export default function TenantManagement() {
       {/* New Organization Modal */}
       <Modal
         isOpen={showNewModal}
-        onClose={() => setShowNewModal(false)}
+        onClose={() => { setShowNewModal(false); resetNewOrgForm() }}
         title="Add Organization"
-        description="Fill in the details below to create a new organization account."
+        description="Organization details, subscription plan, and payment collection."
         icon={HiPlus}
-        size="lg"
+        size="xl"
       >
-        <div className="space-y-8 p-2">
-          <div className="grid grid-cols-2 gap-6">
-            <Input label="Organization Name *" placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
-            <Input label="Root Admin Name *" placeholder="e.g. John Doe" value={newForm.adminName} onChange={(e) => setNewForm({ ...newForm, adminName: e.target.value })} />
-            <Input label="Root Admin Email *" type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
-            <Input label="Root Admin Password *" type="password" placeholder="••••••••" value={newForm.adminPassword} onChange={(e) => setNewForm({ ...newForm, adminPassword: e.target.value })} />
-            <div>
-              <label className="mb-2 block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Subscription Tier</label>
-              <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer" value={newForm.plan} onChange={(e) => setNewForm({ ...newForm, plan: e.target.value })}>
-                {plans.map(plan => (
-                  <option key={plan.id} value={plan.id.toString()}>{plan.plan_name}</option>
-                ))}
-              </select>
-            </div>
+        <div className="space-y-6 p-2">
+          <div className="flex gap-1 border-b border-slate-200">
+            <button
+              type="button"
+              onClick={() => setAddOrgTab('details')}
+              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                addOrgTab === 'details'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Organization
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddOrgTab('subscription')}
+              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                addOrgTab === 'subscription'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Plan & payment
+            </button>
           </div>
-          <div className="flex gap-4 justify-end pt-6 border-t border-slate-100">
-            <Button label="Cancel" variant="ghost" className="font-bold text-slate-400" onClick={() => setShowNewModal(false)} />
-            <Button label="Save" variant="primary" onClick={handleCreateOrganization} />
+
+          {addOrgTab === 'details' ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <Input label="Organization Name *" placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
+              <Input label="Root Admin Name *" placeholder="e.g. John Doe" value={newForm.adminName} onChange={(e) => setNewForm({ ...newForm, adminName: e.target.value })} />
+              <Input label="Root Admin Email *" type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
+              <Input label="Root Admin Password *" type="password" placeholder="••••••••" value={newForm.adminPassword} onChange={(e) => setNewForm({ ...newForm, adminPassword: e.target.value })} />
+            </div>
+          ) : (
+            <PlanPaymentStep
+              plans={plans}
+              selectedPlanId={newForm.plan}
+              onSelectPlan={(id) => setNewForm((prev) => ({ ...prev, plan: id }))}
+              billingCycle={newForm.billingCycle}
+              onBillingCycleChange={(v) => setNewForm((prev) => ({ ...prev, billingCycle: v }))}
+              paymentGateways={paymentGateways}
+              paymentGateway={newForm.paymentGateway}
+              onPaymentGatewayChange={handlePaymentGatewayChange}
+              stripeCheckoutLoading={stripeCheckoutLoading}
+              currencyCode={platformCurrency}
+              paymentCollection={newForm.paymentCollection}
+              onPaymentCollectionChange={(v) => setNewForm((prev) => ({ ...prev, paymentCollection: v }))}
+              paymentReference={newForm.paymentReference}
+              onPaymentReferenceChange={(v) => setNewForm((prev) => ({ ...prev, paymentReference: v }))}
+            />
+          )}
+
+          <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-6">
+            <Button label="Cancel" variant="ghost" className="font-bold text-slate-400" onClick={() => { setShowNewModal(false); resetNewOrgForm() }} />
+            {addOrgTab === 'subscription' ? (
+              <Button label="Back" variant="ghost" className="font-bold text-slate-600" onClick={() => setAddOrgTab('details')} />
+            ) : (
+              <Button label="Next: Plan & payment" variant="ghost" className="font-bold text-indigo-600" onClick={() => setAddOrgTab('subscription')} />
+            )}
+            {addOrgTab === 'subscription' && (
+              <Button
+                label={
+                  isLoading || stripeCheckoutLoading
+                    ? stripeCheckoutLoading
+                      ? 'Opening Stripe…'
+                      : 'Creating…'
+                    : newForm.paymentGateway === 'stripe'
+                      ? 'Create & pay with Stripe'
+                      : 'Create organization'
+                }
+                variant="primary"
+                onClick={handleCreateOrganization}
+                disabled={isLoading || stripeCheckoutLoading}
+              />
+            )}
           </div>
         </div>
       </Modal>
