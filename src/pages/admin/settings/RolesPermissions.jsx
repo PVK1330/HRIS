@@ -30,6 +30,7 @@ export default function RolesPermissions() {
     selectedRoleId,
     loading,
     saving,
+    savingPermissionId,
     deleting,
     creating,
     isDirty,
@@ -123,6 +124,10 @@ export default function RolesPermissions() {
             <p className="mt-1 text-sm text-slate-500">
               Control who can open each module and which employee records they can see.
             </p>
+            <p className="mt-2 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+              <strong>Organization Admin</strong> controls your own admin menu when you are logged in as tenant admin.
+              Other roles apply only to portal users with that role on their employee profile — then they must sign in again (or wait a few minutes).
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -138,7 +143,7 @@ export default function RolesPermissions() {
           </button>
           <button
             type="button"
-            disabled={!isDirty || saving || selectedRoleId == null}
+            disabled={!scopeDirty || saving || savingPermissionId != null || selectedRoleId == null}
             onClick={() => saveRolePermissions()}
             className="inline-flex items-center gap-2 rounded-lg bg-[#0F766E] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#0c6b64] disabled:opacity-40"
           >
@@ -147,6 +152,8 @@ export default function RolesPermissions() {
                 <HiArrowPath className="h-4 w-4 animate-spin" />
                 Saving…
               </>
+            ) : scopeDirty ? (
+              'Save scope'
             ) : (
               'Save changes'
             )}
@@ -384,7 +391,7 @@ export default function RolesPermissions() {
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">Module permissions</h3>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      Toggle which menus and API actions this role can use.
+                      Changes save immediately when you check or uncheck a module.
                     </p>
                   </div>
                   <div className="relative w-full sm:max-w-xs">
@@ -423,6 +430,7 @@ export default function RolesPermissions() {
                             const dashGuard =
                               selectedRole?.is_system && permission.key === 'dashboard'
                             const enabled = isPermissionEnabled(permission.id)
+                            const permSaving = savingPermissionId === permission.id
                             const label =
                               permission.name ||
                               permission.label ||
@@ -451,11 +459,18 @@ export default function RolesPermissions() {
                                 <input
                                   type="checkbox"
                                   checked={enabled}
-                                  disabled={locked || (dashGuard && enabled)}
+                                  disabled={
+                                    locked ||
+                                    (dashGuard && enabled) ||
+                                    permSaving ||
+                                    saving
+                                  }
                                   onChange={() => {
-                                    if (!locked) togglePermission(permission.id)
+                                    if (!locked && !permSaving) {
+                                      togglePermission(permission.id)
+                                    }
                                   }}
-                                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E] disabled:opacity-50"
                                 />
                               </label>
                             )

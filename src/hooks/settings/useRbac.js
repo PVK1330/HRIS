@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { adminSettingsService } from '../../services/adminSettingsService.js'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 function roleScope(role) {
   const s = role?.data_scope || role?.dataScope || 'SELF'
@@ -12,6 +13,7 @@ function isOrgAdminRole(role) {
 }
 
 export default function useRbac() {
+  const { user, refreshAccessProfile } = useAuth()
   const [roles, setRoles] = useState([])
   const [availablePermissions, setAvailablePermissions] = useState([])
   const [selectedRoleId, setSelectedRoleId] = useState(null)
@@ -22,6 +24,7 @@ export default function useRbac() {
   const originalScope = useRef('SELF')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [savingPermissionId, setSavingPermissionId] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [creating, setCreating] = useState(false)
 
@@ -104,20 +107,71 @@ export default function useRbac() {
     setCurrentScope(String(scope).toUpperCase())
   }
 
-  const togglePermission = (permissionId) => {
-    setCurrentPermissionIds((prev) => {
-      const removing = prev.includes(permissionId)
-      if (removing) {
-        const perm =
-          availablePermissions.find((p) => p.id === permissionId) ||
-          (selectedRole?.permissions || []).find((p) => p.id === permissionId)
-        if (selectedRole?.is_system && perm?.key === 'dashboard') {
-          return prev
-        }
-        return prev.filter((id) => id !== permissionId)
+  const computeNextPermissionIds = (prev, permissionId, role = selectedRole) => {
+    const removing = prev.includes(permissionId)
+    if (removing) {
+      const perm =
+        availablePermissions.find((p) => p.id === permissionId) ||
+        (role?.permissions || []).find((p) => p.id === permissionId)
+      if (role?.is_system && perm?.key === 'dashboard') {
+        return prev
       }
-      return [...prev, permissionId]
-    })
+      return prev.filter((id) => id !== permissionId)
+    }
+    return [...prev, permissionId]
+  }
+
+  const syncRolesAfterPermissionSave = (roleId, permissionIds) => {
+    const idSet = new Set(permissionIds)
+    const permById = new Map()
+    for (const p of availablePermissions) {
+      if (p?.id != null) permById.set(p.id, p)
+    }
+    for (const p of selectedRole?.permissions || []) {
+      if (p?.id != null && !permById.has(p.id)) permById.set(p.id, p)
+    }
+    const nextPerms = [...permById.values()].filter((p) => idSet.has(p.id))
+    setRoles((prev) =>
+      prev.map((r) => (r.id === roleId ? { ...r, permissions: nextPerms } : r)),
+    )
+  }
+
+  const afterPermissionsPersisted = async (role) => {
+    if (user?.role === 'admin' && isOrgAdminRole(role)) {
+      await refreshAccessProfile()
+    }
+  }
+
+  const togglePermission = async (permissionId) => {
+    if (selectedRoleId == null || savingPermissionId != null) return false
+
+    const role = roles.find((r) => r.id === selectedRoleId) || selectedRole
+    const prev = currentPermissionIds
+    const next = computeNextPermissionIds(prev, permissionId, role)
+    if (
+      next.length === prev.length &&
+      next.every((id) => prev.includes(id))
+    ) {
+      return false
+    }
+
+    setCurrentPermissionIds(next)
+    setSavingPermissionId(permissionId)
+    try {
+      await adminSettingsService.updateRolePermissions(selectedRoleId, next)
+      originalPermissionIds.current = [...next]
+      syncRolesAfterPermissionSave(selectedRoleId, next)
+      await afterPermissionsPersisted(role)
+      return true
+    } catch (err) {
+      setCurrentPermissionIds(prev)
+      const msg =
+        err?.response?.data?.message || err?.data?.message || err?.message
+      toast.error(msg || 'Failed to update permission')
+      return false
+    } finally {
+      setSavingPermissionId(null)
+    }
   }
 
   const isPermissionEnabled = (permissionId) =>
@@ -127,17 +181,30 @@ export default function useRbac() {
     availablePermissions.some((p) => p.id === permission.id)
 
   const saveRolePermissions = async () => {
+    if (selectedRoleId == null) return
     try {
       setSaving(true)
+      const payloadScope = scopeDirty ? currentScope : undefined
       await adminSettingsService.updateRolePermissions(
         selectedRoleId,
         currentPermissionIds,
-        currentScope,
+        payloadScope,
       )
       originalPermissionIds.current = [...currentPermissionIds]
-      originalScope.current = currentScope
+      if (scopeDirty) {
+        originalScope.current = currentScope
+      }
+      syncRolesAfterPermissionSave(selectedRoleId, currentPermissionIds)
       await fetchAll()
-      toast.success('Role configuration saved')
+      const savedRole = roles.find((r) => r.id === selectedRoleId) || selectedRole
+      if (scopeDirty) {
+        if (user?.role === 'admin' && isOrgAdminRole(savedRole)) {
+          await refreshAccessProfile()
+        }
+        toast.success('Data scope saved')
+      } else {
+        toast.success('Role configuration saved')
+      }
     } catch (err) {
       const msg =
         err?.response?.data?.message || err?.data?.message || err?.message
@@ -210,6 +277,7 @@ export default function useRbac() {
     scopeLocked,
     loading,
     saving,
+    savingPermissionId,
     deleting,
     creating,
     isDirty,
