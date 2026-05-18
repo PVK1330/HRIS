@@ -93,6 +93,8 @@ export const settingsService = {
   /* -------------------- Payment Gateways -------------------- */
   getPaymentGateways: () =>
     apiV1.get('/payment-gateways').then((r) => r.data),
+  getEnabledPaymentGateways: () =>
+    apiV1.get('/payment-gateways/enabled').then((r) => r.data),
   getPaymentGateway: (slug) =>
     apiV1.get(`/payment-gateways/${encodeURIComponent(slug)}`).then((r) => r.data),
   updatePaymentGateway: (slug, payload) =>
