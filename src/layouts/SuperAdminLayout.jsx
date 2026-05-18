@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import useTenantLogo from "../hooks/useTenantLogo.js";
 import {
   HiBars3,
   HiBell,
@@ -9,12 +10,13 @@ import {
   HiExclamationTriangle,
   HiGlobeAlt,
   HiHome,
+  HiLightBulb,
   HiLockClosed,
-  HiServer,
+  HiServerStack,
   HiShieldCheck,
-  HiSquares2X2,
   HiUserCircle,
   HiUsers,
+  HiWrenchScrewdriver,
 } from "react-icons/hi2";
 import { Sidebar } from "../components/ui/Sidebar.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
@@ -25,92 +27,88 @@ const superNavGroups = [
   {
     groupLabel: 'PLATFORM',
     items: [
-      { 
-        label: 'Dashboard', 
-        icon: HiHome, 
-        path: '/superadmin/dashboard', 
-        roles: ['super_admin', 'support_admin', 'billing_admin'],
-        why: 'Real-time overview of your platform performance and system health.'
+      {
+        label: 'Dashboard',
+        icon: HiHome,
+        path: '/superadmin/dashboard',
+        roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
-      { 
-        label: 'Organizations', 
-        icon: HiDocumentText, 
-        path: '/superadmin/tenants', 
-        roles: ['super_admin', 'support_admin', 'billing_admin'],
-        why: 'Manage all companies using the platform and their individual settings.'
+      {
+        label: 'Organizations',
+        icon: HiDocumentText,
+        path: '/superadmin/tenants',
+        roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
-      { 
-        label: 'Pricing Plans', 
-        icon: HiCurrencyDollar, 
-        path: '/superadmin/subscriptions', 
-        roles: ['super_admin', 'billing_admin'],
-        why: 'Create and manage your subscription tiers and feature limits.'
+
+      {
+        label: 'Global Modules',
+        icon: HiWrenchScrewdriver,
+        path: '/superadmin/modules',
+        roles: ['superadmin'],
       },
-      { 
-        label: 'Billing', 
-        icon: HiCurrencyDollar, 
-        path: '/superadmin/billing', 
-        roles: ['super_admin', 'billing_admin'],
-        why: 'Track all payments, invoices, and revenue from organizations.'
+      {
+        label: 'Subscription Plans',
+        icon: HiCurrencyDollar,
+        path: '/superadmin/subscriptions',
+        roles: ['superadmin', 'billing_admin'],
+      },
+      {
+        label: 'Subscription Features',
+        icon: HiLightBulb,
+        path: '/superadmin/subscription-features',
+        roles: ['superadmin', 'billing_admin'],
+      },
+      {
+        label: 'Billing',
+        icon: HiCurrencyDollar,
+        path: '/superadmin/billing',
+        roles: ['superadmin', 'billing_admin'],
       },
     ],
   },
   {
     groupLabel: 'TEAM & SECURITY',
     items: [
-      { 
-        label: 'Admin Users', 
-        icon: HiUserCircle, 
-        path: '/superadmin/admin-users', 
-        roles: ['super_admin'],
-        why: 'Manage your internal staff who have access to this superadmin panel.'
+      {
+        label: 'Admin Users',
+        icon: HiUserCircle,
+        path: '/superadmin/admin-users',
+        roles: ['superadmin'],
       },
-      { 
-        label: 'Permissions', 
-        icon: HiLockClosed, 
-        path: '/superadmin/permissions', 
-        roles: ['super_admin'],
-        why: 'Define what each admin user can see and do on the platform.'
+      {
+        label: 'Permissions',
+        icon: HiLockClosed,
+        path: '/superadmin/permissions',
+        roles: ['superadmin'],
       },
-      { 
-        label: 'Modules', 
-        icon: HiSquares2X2, 
-        path: '/superadmin/modules', 
-        roles: ['super_admin'],
-        why: 'Enable or disable specific HR features like Payroll or Attendance globally.'
-      },
-      { 
-        label: 'Announcements', 
-        icon: HiDocumentText, 
-        path: '/superadmin/announcements', 
-        roles: ['super_admin'],
-        why: 'Send important updates and maintenance news to all organizations.'
+      {
+        label: 'Announcements',
+        icon: HiDocumentText,
+        path: '/superadmin/announcements',
+        roles: ['superadmin'],
       },
     ],
   },
   {
     groupLabel: 'SYSTEM',
     items: [
-      { 
-        label: 'Audit Logs', 
-        icon: HiShieldCheck, 
-        path: '/superadmin/audit', 
-        roles: ['super_admin', 'support_admin'],
-        why: 'View a detailed history of every action taken by administrators.'
+      {
+        label: 'Audit Logs',
+        icon: HiShieldCheck,
+        path: '/superadmin/audit',
+        roles: ['superadmin', 'support_admin'],
       },
-      { 
-        label: 'Support', 
-        icon: HiExclamationTriangle, 
-        path: '/superadmin/support', 
-        roles: ['super_admin', 'support_admin'],
-        why: 'Manage and resolve help requests from organization admins.'
+      {
+        label: 'Support',
+        icon: HiExclamationTriangle,
+        path: '/superadmin/support',
+        roles: ['superadmin', 'support_admin'],
       },
-      { 
-        label: 'Settings', 
-        icon: HiCog6Tooth, 
-        path: '/superadmin/settings', 
-        roles: ['super_admin'],
-        why: 'Manage global platform settings like emails and security.'
+      {
+        label: 'Settings',
+        icon: HiCog6Tooth,
+        path: '/superadmin/settings',
+        roles: ['superadmin'],
       },
     ],
   },
@@ -124,7 +122,7 @@ function titleCaseSegment(seg) {
 }
 
 const ROLE_DISPLAY = {
-  super_admin: 'Super Admin',
+  superadmin: 'Super Admin',
   support_admin: 'Support Admin',
   billing_admin: 'Billing Admin',
 }
@@ -133,6 +131,7 @@ export default function SuperAdminLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { logoUrl: sidebarLogo, loading: logoLoading } = useTenantLogo()
 
   const filteredNavGroups = useMemo(() => {
     return superNavGroups.map(group => ({
@@ -158,6 +157,9 @@ export default function SuperAdminLayout() {
         onLogout={logout}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
+        logoUrl={sidebarLogo ?? undefined}
+        logoLoading={logoLoading}
+        logoFallbackLabel="HRIS"
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
         <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-border-tertiary bg-background-primary px-3 sm:h-16 sm:px-4">
@@ -209,7 +211,7 @@ export default function SuperAdminLayout() {
           </div>
         </header>
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-background-tertiary p-4 sm:p-6">
-          <div className="mx-auto min-w-0 max-w-[1600px]">
+          <div className="superadmin-ui mx-auto min-w-0 max-w-[1500px]">
             <Outlet />
           </div>
         </main>

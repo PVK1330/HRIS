@@ -1,108 +1,56 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { HiChevronDown } from 'react-icons/hi2'
+import { 
+  HiCog6Tooth,
+  HiGlobeAlt,
+  HiBuildingOffice,
+  HiEnvelope,
+  HiPhoto,
+  HiServer,
+  HiShieldCheck,
+  HiTicket,
+  HiCircleStack,
+  HiQueueList,
+  HiDocumentText,
+  HiCreditCard,
+  HiKey
+} from 'react-icons/hi2'
+import useSettingsMeta from './useSettingsMeta.js'
 
-const TOP_ITEMS = [
-  { label: 'General Settings', to: '/superadmin/settings/general' },
-  { label: 'Domain Settings', disabled: true, tooltip: 'Coming Soon' },
-  { label: 'Account Settings', disabled: true, tooltip: 'Coming Soon' },
-  { label: 'Company Details', to: '/superadmin/settings/company' },
+const FALLBACK_SECTIONS = [
+  { key: 'general', label: 'General', items: [{ label: 'General Settings', to: '/superadmin/settings/general' }] },
 ]
 
-const EMAIL_CHILDREN = [
-  { label: 'Email Templates', to: '/superadmin/settings/email/templates' },
-  { label: 'Email Settings',  to: '/superadmin/settings/email/settings' },
-  { label: 'Email Log',       to: '/superadmin/settings/email/log' },
-  { label: 'SMTP Settings',   to: '/superadmin/settings/email/settings?tab=smtp' },
-]
+const ACTIVE_CLS = 'bg-slate-900 text-white shadow-lg shadow-slate-200'
+const INACTIVE_CLS = 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+const DISABLED_CLS = 'cursor-not-allowed text-slate-300 opacity-60'
 
-const BOTTOM_ITEMS = [
-  { label: 'Currency', disabled: true, tooltip: 'Coming Soon' },
-  { label: 'Logo', to: '/superadmin/settings/logo' },
-  { label: 'Cron Job', disabled: true, tooltip: 'Coming Soon' },
-  { label: 'Free Trial', disabled: true, tooltip: 'Coming Soon' },
-  { label: 'Payment Gateways', disabled: true, tooltip: 'Coming Soon' },
-  { label: 'System', to: '/superadmin/settings/system' },
-  { label: 'reCAPTCHA', disabled: true, tooltip: 'Coming Soon' },
-  { label: 'Updates', disabled: true, tooltip: 'Coming Soon' },
-  { label: 'Debugging', disabled: true, tooltip: 'Coming Soon' },
-]
-
-const ACTIVE_CLS =
-  'border-l-4 border-red-500 bg-red-50 font-medium text-red-600'
-const DISABLED_CLS =
-  'cursor-not-allowed pl-4 text-gray-400 opacity-60'
-const HOVER_CLS = 'pl-4 text-gray-700 hover:bg-gray-50'
-
-function NavItem({ item }) {
-  if (item.disabled) {
-    return (
-      <span
-        title={item.tooltip || 'Coming Soon'}
-        className={`block py-2 pr-3 text-sm ${DISABLED_CLS}`}
-      >
-        {item.label}
-      </span>
-    )
-  }
-  return (
-    <NavLink
-      to={item.to}
-      end={false}
-      className={({ isActive }) =>
-        `block py-2 pr-3 text-sm ${isActive ? ACTIVE_CLS + ' pl-3' : HOVER_CLS}`
-      }
-    >
-      {item.label}
-    </NavLink>
-  )
+function iconFor(label = '') {
+  const n = label.toLowerCase()
+  if (n.includes('domain')) return HiGlobeAlt
+  if (n.includes('company')) return HiBuildingOffice
+  if (n.includes('email template')) return HiDocumentText
+  if (n.includes('email')) return HiEnvelope
+  if (n.includes('smtp')) return HiServer
+  if (n.includes('logo')) return HiPhoto
+  if (n.includes('currency') || n.includes('payment')) return HiCreditCard
+  if (n.includes('trial')) return HiTicket
+  if (n.includes('captcha') || n.includes('security')) return HiShieldCheck
+  if (n.includes('role') || n.includes('permission')) return HiKey
+  if (n.includes('system')) return HiCircleStack
+  if (n.includes('account')) return HiShieldCheck
+  if (n.includes('log')) return HiQueueList
+  return HiCog6Tooth
 }
 
 function SectionLabel({ children }) {
   return (
-    <div className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+    <div className="px-3.5 pb-1.5 pt-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
       {children}
     </div>
   )
 }
 
-function EmailParent() {
-  const location = useLocation()
-  const isInsideEmail = location.pathname.startsWith('/superadmin/settings/email')
-  const [open, setOpen] = useState(isInsideEmail)
-
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`flex w-full items-center justify-between py-2 pl-4 pr-3 text-sm ${
-          isInsideEmail ? 'font-medium text-red-600' : 'text-gray-700 hover:bg-gray-50'
-        }`}
-        aria-expanded={open}
-      >
-        <span>Email</span>
-        <HiChevronDown
-          className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
-          aria-hidden
-        />
-      </button>
-      {open && (
-        <div className="ml-3 border-l border-gray-100">
-          {EMAIL_CHILDREN.map((child) => (
-            <ChildNavItem key={child.label} item={child} />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/**
- * Email children may carry a query string (e.g. `?tab=smtp`) — NavLink's
- * isActive doesn't compare search params, so we compute active state manually
- * from `to` so that highlighting works correctly for the SMTP child.
- */
 function ChildNavItem({ item }) {
   const location = useLocation()
   const [pathOnly, search] = item.to.split('?')
@@ -117,10 +65,10 @@ function ChildNavItem({ item }) {
   return (
     <NavLink
       to={item.to}
-      className={`block py-1.5 pr-3 text-[13px] ${
+      className={`block px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all ${
         isActive
-          ? 'border-l-2 border-red-500 bg-red-50 pl-3 font-medium text-red-600'
-          : 'pl-4 text-gray-600 hover:bg-gray-50'
+          ? 'bg-slate-900 text-white shadow-md'
+          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
       }`}
     >
       {item.label}
@@ -129,27 +77,47 @@ function ChildNavItem({ item }) {
 }
 
 export default function SettingsLayout() {
+  const { meta, loading, error } = useSettingsMeta()
+  const sections = useMemo(
+    () => meta?.navigation?.sections || FALLBACK_SECTIONS,
+    [meta]
+  )
+
   return (
-    <div className="flex min-h-[calc(100vh-7rem)] gap-4">
-      <aside className="hidden w-[220px] shrink-0 self-start overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:block">
-        <nav className="py-2">
-          {TOP_ITEMS.map((item) => (
-            <NavItem key={item.label} item={item} />
-          ))}
-
-          <SectionLabel>Email</SectionLabel>
-          <EmailParent />
-
-          <div className="pt-2">
-            {BOTTOM_ITEMS.map((item) => (
-              <NavItem key={item.label} item={item} />
+    <div className="flex flex-col md:flex-row min-h-[calc(100vh-8rem)] gap-6 items-start px-4 md:px-0">
+      {/* Side Navigation */}
+      <aside className="w-full md:w-[240px] shrink-0 md:sticky md:top-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+          <nav className="space-y-1">
+            {loading && (
+              <div className="space-y-2 p-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-9 animate-pulse rounded-lg bg-slate-100" />
+                ))}
+              </div>
+            )}
+            {!loading && sections.map((section) => (
+              <div key={section.key || section.label}>
+                <SectionLabel>{section.label}</SectionLabel>
+                <div className="space-y-1">
+                  {(section.items || []).map((item) => (
+                    <ChildNavItem key={`${section.key}-${item.label}`} item={item} />
+                  ))}
+                </div>
+              </div>
             ))}
-          </div>
-        </nav>
+            {!!error && (
+              <p className="px-3.5 py-2 text-xs text-red-500">{error}</p>
+            )}
+          </nav>
+        </div>
       </aside>
 
-      <main className="min-w-0 flex-1">
-        <Outlet />
+      {/* Main Content Pane */}
+      <main className="min-w-0 flex-1 w-full">
+        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+          <Outlet />
+        </div>
       </main>
     </div>
   )

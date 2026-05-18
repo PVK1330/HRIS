@@ -1,381 +1,317 @@
 import { useMemo, useState } from 'react'
+import { 
+  HiUserPlus, 
+  HiClipboardDocumentCheck, 
+  HiShieldCheck, 
+  HiClock, 
+  HiMagnifyingGlass,
+  HiAdjustmentsHorizontal,
+  HiCheckBadge,
+  HiXCircle,
+  HiUserGroup,
+  HiCpuChip,
+  HiBriefcase,
+  HiUserCircle,
+  HiPlus,
+  HiEye
+} from 'react-icons/hi2'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
-import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { employees, onboardingKpis, onboardingTasks } from '../../../data/mockData.js'
-
-const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
-
-const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
-
-const initialFormData = {
-  employeeId: '',
-  taskName: '',
-  taskCategory: '',
-  dueDate: '',
-  assignedTo: '',
-  priority: '',
-  description: '',
-}
-
-function statusColor(s) {
-  if (s === 'Done') return 'green'
-  if (s === 'In Progress') return 'blue'
-  if (s === 'Pending') return 'orange'
-  return 'gray'
-}
+import { employees } from '../../../data/mockData.js'
 
 export default function Onboarding() {
-  const [owner, setOwner] = useState('')
+  const [q, setQ] = useState('')
+  const [activeStatus, setActiveStatus] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
-  const [formData, setFormData] = useState(initialFormData)
+  const [viewModalOpen, setViewModalOpen] = useState(false)
+  const [selectedHire, setSelectedHire] = useState(null)
 
-  const ownerOptions = useMemo(() => {
-    const u = [...new Set(onboardingTasks.map((t) => t.owner))].sort()
-    return [{ value: '', label: 'All owners' }, ...u.map((d) => ({ value: d, label: d }))]
-  }, [])
+  const onboardData = [
+    { id: '321', name: 'Ananya', dept: 'HR', joinDate: '10/01/2026', status: 'In Progress', progress: '4/5', manager: 'Sarah Johnson' },
+    { id: '322', name: 'Rahul', dept: 'IT', joinDate: '15/01/2026', status: 'Pending', progress: '1/5', manager: 'Amit Patel' },
+    { id: '323', name: 'Sneha', dept: 'Design', joinDate: '05/01/2026', status: 'Completed', progress: '5/5', manager: 'Michael Brown' },
+    { id: '324', name: 'Vikram', dept: 'Sales', joinDate: '12/01/2026', status: 'In Progress', progress: '2/5', manager: 'Priya Singh' }
+  ]
+
+  const stats = {
+    newHires: 12,
+    inProgress: 8,
+    pending: 3,
+    completed: 25
+  }
 
   const filtered = useMemo(() => {
-    if (!owner) return onboardingTasks
-    return onboardingTasks.filter((t) => t.owner === owner)
-  }, [owner])
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const resetModal = () => {
-    setFormData(initialFormData)
-  }
-
-  const handleCloseModal = () => {
-    setModalOpen(false)
-    resetModal()
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log({ formData })
-    handleCloseModal()
-  }
+    let data = onboardData
+    if (activeStatus !== 'All') {
+      data = data.filter(h => h.status === activeStatus)
+    }
+    if (q) {
+      data = data.filter(h => h.name.toLowerCase().includes(q.toLowerCase()) || h.id.includes(q))
+    }
+    return data
+  }, [q, activeStatus])
 
   const columns = [
-    { key: 'employee', label: 'Employee' },
-    { key: 'task', label: 'Task' },
-    { key: 'due', label: 'Due' },
-    { key: 'owner', label: 'Owner' },
+    {
+      key: 'name',
+      label: 'Employee',
+      render: (_, row) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0F766E]/10 text-[#0F766E] font-bold text-xs">
+            {row.name.charAt(0)}
+          </div>
+          <span className="font-semibold text-slate-900">{row.name}</span>
+        </div>
+      ),
+    },
+    { key: 'id', label: 'ID' },
+    { key: 'dept', label: 'Department' },
+    { key: 'joinDate', label: 'Joining Date' },
     {
       key: 'status',
       label: 'Status',
-      render: (v) => <Badge label={v} color={statusColor(v)} />,
+      render: (v) => <Badge label={v} color={v === 'Completed' ? 'green' : v === 'In Progress' ? 'blue' : 'orange'} variant="outline" />,
+    },
+    {
+      key: 'progress',
+      label: 'Progress',
+      render: (v) => (
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden">
+            <div 
+              className="h-full bg-[#0F766E]" 
+              style={{ width: `${(parseInt(v.split('/')[0]) / parseInt(v.split('/')[1])) * 100}%` }} 
+            />
+          </div>
+          <span className="text-[10px] font-bold text-slate-500">{v}</span>
+        </div>
+      )
     },
     {
       key: 'actions',
-      label: 'Actions',
-      render: () => <Button label="Update" variant="primary" size="sm" />,
+      label: 'Action',
+      render: (_, row) => (
+        <Button 
+          label="View" 
+          variant="ghost" 
+          size="sm" 
+          icon={HiEye} 
+          onClick={() => {
+            setSelectedHire(row)
+            setViewModalOpen(true)
+          }}
+        />
+      ),
     },
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">Onboarding Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Coordinate tasks across HR, IT, and managers.</p>
-        </div>
-        <Button label="Create checklist" variant="primary" onClick={() => setModalOpen(true)} />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="In progress" value={onboardingKpis.inProgress} subtitle="Active tasks" color="blue" />
-        <StatCard title="Starts this month" value={onboardingKpis.startThisMonth} subtitle="New hires" color="green" />
-        <StatCard title="Completed" value={onboardingKpis.completed} subtitle="Last 12 months" color="purple" />
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <Input
-          label="Owner"
-          name="owner"
-          type="select"
-          value={owner}
-          onChange={(e) => setOwner(e.target.value)}
-          options={ownerOptions}
-        />
-      </div>
-
-      <Table columns={columns} data={filtered} pageSize={5} />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Onboarding Checklist</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-600">
-                ✓
-              </div>
-              <span className="text-sm font-medium text-gray-700">Account creation & system access</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-600">
-                ✓
-              </div>
-              <span className="text-sm font-medium text-gray-700">IT equipment setup</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                ○
-              </div>
-              <span className="text-sm font-medium text-gray-700">HR documents collection</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                ○
-              </div>
-              <span className="text-sm font-medium text-gray-700">Policy acknowledgement</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                ○
-              </div>
-              <span className="text-sm font-medium text-gray-700">Manager introduction & team meet</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                ○
-              </div>
-              <span className="text-sm font-medium text-gray-700">Training session completion</span>
-            </div>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar — Standardized */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Onboarding Management</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Human Capital</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600 uppercase font-black tracking-widest text-[10px]">Lifecycle Governance</span>
           </div>
         </div>
-
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Document & Policy Integration</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Employment Contract</div>
-                <div className="text-xs text-gray-500">Required for all new hires</div>
-              </div>
-              <Badge label="Signed" color="green" />
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Code of Conduct</div>
-                <div className="text-xs text-gray-500">Mandatory policy</div>
-              </div>
-              <Badge label="Pending" color="orange" />
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">IT Security Policy</div>
-                <div className="text-xs text-gray-500">System access requirements</div>
-              </div>
-              <Badge label="Pending" color="orange" />
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">Data Privacy Agreement</div>
-                <div className="text-xs text-gray-500">GDPR compliance</div>
-              </div>
-              <Badge label="Not Started" color="gray" />
-            </div>
-          </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setModalOpen(true)}
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#0c6b64] shadow-lg shadow-emerald-900/10"
+          >
+            <HiPlus className="h-4 w-4" /> Initialize Onboarding
+          </button>
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Progress Monitoring</h2>
-        <div className="mt-4 space-y-4">
-          <div>
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-gray-700">John Smith - IT Developer</span>
-              <span className="font-semibold text-gray-900">80% Complete</span>
+      {/* Metrics Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          { label: 'TOTAL NEW HIRES', count: stats.newHires, icon: HiUserPlus, bgColor: 'bg-slate-900', status: 'All' },
+          { label: 'IN PROGRESS', count: stats.inProgress, icon: HiClock, bgColor: 'bg-[#3B82F6]', status: 'In Progress' },
+          { label: 'GOVERNANCE PENDING', count: stats.pending, icon: HiXCircle, bgColor: 'bg-[#F59E0B]', status: 'Pending' },
+          { label: 'PROTOCOL COMPLETED', count: stats.completed, icon: HiCheckBadge, bgColor: 'bg-[#10B981]', status: 'Completed' }
+        ].map((card, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveStatus(card.status)}
+            className={`flex items-center gap-3.5 rounded-none border p-4 shadow-sm min-w-0 transition-all ${
+              activeStatus === card.status ? 'border-[#0F766E] bg-emerald-50/30' : 'border-slate-200 bg-white hover:border-slate-300'
+            }`}
+          >
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+              <card.icon className="h-5 w-5" />
             </div>
-            <div className="h-2 w-full rounded-full bg-gray-200">
-              <div className="h-2 w-[80%] rounded-full bg-green-500" />
+            <div className="min-w-0 flex-1 text-left">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate leading-none">
+                {card.label}
+              </div>
+              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
             </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Main Content Workspace Area */}
+      <div className="space-y-6 min-w-0">
+        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm min-w-0">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end min-w-0">
+            <div className="flex-1 min-w-0">
+              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Talent Filter</label>
+              <div className="relative min-w-0">
+                <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="SEARCH BY NAME, IDENTIFIER OR MANAGER..."
+                  className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white focus:outline-none transition-all min-w-0"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+              </div>
+            </div>
+            <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
+               REFINE SEARCH
+            </button>
           </div>
-          <div>
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-gray-700">Sarah Johnson - HR Specialist</span>
-              <span className="font-semibold text-gray-900">60% Complete</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-gray-200">
-              <div className="h-2 w-[60%] rounded-full bg-blue-500" />
-            </div>
+        </div>
+
+        <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+          <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
+            <h2 className="text-sm font-semibold uppercase tracking-wider truncate">Lifecycle Registry</h2>
+            <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Security Level: Admin</div>
           </div>
-          <div>
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-gray-700">Michael Brown - Finance Analyst</span>
-              <span className="font-semibold text-gray-900">40% Complete</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-gray-200">
-              <div className="h-2 w-[40%] rounded-full bg-orange-500" />
-            </div>
-          </div>
+          <Table columns={columns} data={filtered} pageSize={10} className="rounded-none" />
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Automated Status Updates</h2>
-        <div className="mt-4 space-y-2 text-sm">
-          <div className="flex items-start gap-2 text-gray-600">
-            <span className="text-gray-400">10:30 AM</span>
-            <span>John Smith completed IT equipment setup - Status auto-updated to "In Progress"</span>
+      {/* View Details Modal */}
+      <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} title="LIFECYCLE ASSET AUDIT" size="xl">
+        <div className="animate-in fade-in duration-500 space-y-10">
+          {/* Top Bar Info — Standardized Audit Header */}
+          <div className="flex flex-wrap items-center justify-between border-b border-slate-200 bg-slate-50 -mx-6 px-8 py-6 mb-8">
+             <div className="flex flex-wrap items-center gap-12">
+                <div>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Asset Nomenclature</p>
+                   <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedHire?.name}</p>
+                </div>
+                <div>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Asset ID</p>
+                   <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedHire?.id}</p>
+                </div>
+                <div>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Operational Dept</p>
+                   <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedHire?.dept}</p>
+                </div>
+                <div>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Governance Lead</p>
+                   <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedHire?.manager}</p>
+                </div>
+             </div>
           </div>
-          <div className="flex items-start gap-2 text-gray-600">
-            <span className="text-gray-400">09:45 AM</span>
-            <span>Sarah Johnson submitted HR documents - Notification sent to manager</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 px-2">
+             <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inception Date</p>
+                <p className="text-sm font-bold text-slate-900 uppercase tracking-wider">{selectedHire?.joinDate}</p>
+             </div>
+             <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Status</p>
+                <div className="flex items-center gap-2">
+                   <div className={`h-2 w-2 rounded-none ${selectedHire?.status === 'Completed' ? 'bg-emerald-500' : 'bg-blue-500 animate-pulse'}`} />
+                   <span className="text-sm font-black text-slate-900 uppercase tracking-widest">{selectedHire?.status}</span>
+                </div>
+             </div>
           </div>
-          <div className="flex items-start gap-2 text-gray-600">
-            <span className="text-gray-400">09:15 AM</span>
-            <span>Michael Brown acknowledged Code of Conduct - Task marked complete</span>
+
+          {/* Categorized Tasks — High Contrast Audit Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-2">
+             {/* HR Tasks */}
+             <div className="space-y-6">
+                <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
+                   <HiClipboardDocumentCheck className="h-5 w-5 text-[#0F766E]" /> Governance Protocols (HR)
+                </h4>
+                <div className="space-y-4">
+                   {['Offer letter issued', 'Policy acknowledgement', 'Document verification'].map((task, i) => (
+                      <label key={i} className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E]/30 cursor-pointer transition-all">
+                         <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{task}</span>
+                         <input type="checkbox" className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-0 focus:ring-offset-0" defaultChecked={i < 2} />
+                      </label>
+                   ))}
+                </div>
+             </div>
+
+             {/* IT Tasks */}
+             <div className="space-y-6">
+                <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
+                   <HiCpuChip className="h-5 w-5 text-[#0F766E]" /> Infrastructure Provisions (IT)
+                </h4>
+                <div className="space-y-4">
+                   {['Email Account Provisioning', 'Hardware Allocation'].map((task, i) => (
+                      <label key={i} className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E]/30 cursor-pointer transition-all">
+                         <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{task}</span>
+                         <input type="checkbox" className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-0 focus:ring-offset-0" defaultChecked={i === 0} />
+                      </label>
+                   ))}
+                </div>
+             </div>
           </div>
-          <div className="flex items-start gap-2 text-gray-600">
-            <span className="text-gray-400">08:30 AM</span>
-            <span>System: John Smith onboarding 80% complete - Reminder to complete remaining tasks</span>
+
+          <div className="pt-10 border-t border-slate-100 flex justify-end gap-4 px-2">
+             <button onClick={() => setViewModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors">
+                CANCEL
+             </button>
+             <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-[#0F766E] hover:bg-emerald-50 transition-colors">
+                DISPATCH NOTIFICATION
+             </button>
+             <button className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10">
+                COMMIT AUDIT
+             </button>
           </div>
         </div>
-      </div>
-
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Create Onboarding Checklist" size="lg">
-        <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400 first:mt-0">
-            Task details
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 w-full sm:col-span-1">
-              <label htmlFor="onboard-employee" className="mb-1 block text-sm font-medium text-gray-700">
-                Employee
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="onboard-employee"
-                name="employeeId"
-                value={formData.employeeId}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select employee
-                </option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name} ({e.empId})
-                  </option>
-                ))}
-              </select>
+      </Modal>      {/* Initialize Modal */}
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="GOVERNANCE INITIALIZATION" size="lg">
+         <form className="space-y-8 p-2">
+            <div className="space-y-6">
+               <div>
+                  <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Selection</label>
+                  <select className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer">
+                     <option value="" disabled hidden>SELECT FROM DIRECTORY</option>
+                     {employees.map(e => <option key={e.id}>{e.name} — {e.empId}</option>)}
+                  </select>
+               </div>
+               <div className="grid grid-cols-2 gap-6">
+                  <div className="w-full">
+                     <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Inception Date</label>
+                     <input type="date" className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black focus:border-[#0F766E] focus:bg-white outline-none transition-all" />
+                  </div>
+                  <div className="w-full">
+                     <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Operational Dept</label>
+                     <select className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer">
+                        <option>OPERATIONS</option>
+                        <option>TECHNOLOGY</option>
+                        <option>ENGINEERING</option>
+                        <option>GOVERNANCE</option>
+                     </select>
+                  </div>
+               </div>
             </div>
-            <Input
-              label="Task Name"
-              name="taskName"
-              value={formData.taskName}
-              onChange={handleFormChange}
-              placeholder="e.g. IT Equipment Setup"
-              required
-            />
-            <div className="w-full">
-              <label htmlFor="onboard-category" className="mb-1 block text-sm font-medium text-gray-700">
-                Task Category
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="onboard-category"
-                name="taskCategory"
-                value={formData.taskCategory}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select category
-                </option>
-                <option value="HR">HR</option>
-                <option value="IT">IT</option>
-                <option value="Finance">Finance</option>
-                <option value="Manager">Manager</option>
-                <option value="Admin">Admin</option>
-              </select>
+            
+            <div className="pt-8 border-t border-slate-100 flex justify-end gap-4">
+               <button type="button" onClick={() => setModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors">
+                  CANCEL
+               </button>
+               <button type="submit" className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10">
+                  INITIALIZE PROTOCOL
+               </button>
             </div>
-            <Input
-              label="Due Date"
-              name="dueDate"
-              type="date"
-              value={formData.dueDate}
-              onChange={handleFormChange}
-              required
-            />
-            <div className="w-full">
-              <label htmlFor="onboard-assigned" className="mb-1 block text-sm font-medium text-gray-700">
-                Assigned To
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="onboard-assigned"
-                name="assignedTo"
-                value={formData.assignedTo}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select assignee
-                </option>
-                <option value="HR Team">HR Team</option>
-                <option value="IT Team">IT Team</option>
-                <option value="Manager">Manager</option>
-                <option value="Admin Team">Admin Team</option>
-              </select>
-            </div>
-            <div className="w-full">
-              <label htmlFor="onboard-priority" className="mb-1 block text-sm font-medium text-gray-700">
-                Priority
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="onboard-priority"
-                name="priority"
-                value={formData.priority}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select priority
-                </option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-3 w-full">
-            <label htmlFor="onboard-description" className="mb-1 block text-sm font-medium text-gray-700">
-              Description
-            </label>
-            <textarea
-              id="onboard-description"
-              name="description"
-              value={formData.description}
-              onChange={handleFormChange}
-              className={textareaClass}
-              rows={3}
-              placeholder="Task details and requirements"
-            />
-          </div>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button type="submit" label="Create Task" variant="primary" />
-          </div>
-        </form>
+         </form>
       </Modal>
     </div>
   )

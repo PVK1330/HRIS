@@ -5,6 +5,8 @@ const colorMap = {
   yellow: { border: 'border-l-4 border-yellow-500', value: 'text-yellow-600' },
   purple: { border: 'border-l-4 border-purple-500', value: 'text-purple-600' },
   orange: { border: 'border-l-4 border-orange-500', value: 'text-orange-600' },
+  emerald: { border: 'border-l-4 border-emerald-500', value: 'text-emerald-600' },
+  slate: { border: 'border-l-4 border-slate-900', value: 'text-slate-900' },
 }
 
 export function StatCard({ title, value, subtitle, color = 'blue', icon: Icon }) {
@@ -12,7 +14,7 @@ export function StatCard({ title, value, subtitle, color = 'blue', icon: Icon })
 
   return (
     <div
-      className={`rounded-xl bg-white p-4 shadow-sm ${cfg.border}`}
+      className={`rounded-lg bg-white p-4 shadow-sm ${cfg.border}`}
     >
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{title}</div>
