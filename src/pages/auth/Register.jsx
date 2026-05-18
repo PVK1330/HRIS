@@ -174,7 +174,7 @@ export default function Register() {
                   label="Company Name" 
                   labelClassName={labelUpper}
                   name="companyName"
-                  placeholder="e.g. Acme Corp"
+                  placeholder="Your organization name"
                   value={formData.companyName}
                   onChange={updateForm}
                   className="sm:col-span-2"

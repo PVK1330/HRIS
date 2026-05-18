@@ -102,7 +102,7 @@ export default function CompanyDetails() {
                   type="text"
                   value={state.companyName}
                   onChange={(e) => set({ companyName: e.target.value })}
-                  placeholder="Acme Inc."
+                  placeholder="Registered company name"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-indigo-600 focus:bg-white"
                 />
               </div>

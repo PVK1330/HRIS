@@ -80,8 +80,16 @@ export default function Login() {
           tenantSlugFromHost || parseTenantSlugFromHostname(window.location.hostname)
         if (slug) {
           body.tenantSlug = slug
-        } else if (organizationId.trim()) {
-          const tid = parseInt(organizationId.trim(), 10)
+        } else {
+          let tid = parseInt(String(organizationId || '').trim(), 10)
+          if (!Number.isInteger(tid) || tid <= 0) {
+            try {
+              const stored = localStorage.getItem(LAST_TENANT_ID_KEY)
+              tid = parseInt(String(stored || ''), 10)
+            } catch {
+              /* ignore */
+            }
+          }
           if (Number.isInteger(tid) && tid > 0) body.tenantId = tid
         }
       }
@@ -246,11 +254,15 @@ export default function Login() {
 
                 <div className="space-y-5">
                   <Input
-                    label="Email Address"
+                    label={tenantSlugFromHost && activeTab === 'admin' ? 'Work email or username' : 'Email Address'}
                     labelClassName={labelUpper}
                     name="email"
-                    type="email"
-                    placeholder="admin@company.com"
+                    type={tenantSlugFromHost && activeTab === 'admin' ? 'text' : 'email'}
+                    placeholder={
+                      tenantSlugFromHost && activeTab === 'admin'
+                        ? 'admin@company.com or portal username'
+                        : 'admin@company.com'
+                    }
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -300,7 +312,7 @@ export default function Login() {
                       name="organizationId"
                       type="text"
                       placeholder="e.g. 4"
-                      helpText="Required for employee portal login on localhost. Org admins using the company email on the main URL can leave this blank."
+                      helpText="Required on localhost when not using your company subdomain (e.g. your-org.localhost:5173). Org admins can also sign in on the main URL with their organization email only."
                       value={organizationId}
                       onChange={(e) => setOrganizationId(e.target.value)}
                       disabled={loading}

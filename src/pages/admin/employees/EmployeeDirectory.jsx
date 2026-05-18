@@ -100,6 +100,7 @@ function mapEmployeeFull(e) {
     phone: e.phone_number || '',
     jobTitle: e.job_title,
     department: e.department,
+    departmentId: e.department_id ?? null,
     employmentType: e.employment_type || 'Full-time',
     location: e.work_location || '',
     manager: e.manager_name || e.manager_emp_id || e.reporting_manager || '',
@@ -165,6 +166,7 @@ const initialFormData = {
   confirmPassword: '',
   phoneNumber: '',
   department: '',
+  departmentId: '',
   jobTitle: '',
   about: '',
   /** Personal Information */
@@ -471,7 +473,14 @@ export default function EmployeeDirectory() {
 
   const handleDepartmentChange = (e) => {
     const value = e.target.value
-    setFormData((prev) => ({ ...prev, department: value, jobTitle: '' }))
+    const row = departmentRows.find((d) => String(d.id) === value)
+    const deptLabel = row?.name ?? row?.department_name ?? value
+    setFormData((prev) => ({
+      ...prev,
+      departmentId: value,
+      department: deptLabel,
+      jobTitle: '',
+    }))
   }
 
   const revokeProfilePreview = () => {
@@ -563,7 +572,7 @@ export default function EmployeeDirectory() {
       return
     }
 
-    if (!String(formData.department || '').trim() || !String(formData.jobTitle || '').trim()) {
+    if (!String(formData.departmentId || '').trim() || !String(formData.jobTitle || '').trim()) {
       toast.error('Please select Department and Designation in Basic Information.')
       setFormTab('basic')
       return
@@ -608,6 +617,20 @@ export default function EmployeeDirectory() {
       return
     }
 
+    const selectedDept = departmentRows.find(
+      (d) => String(d.id) === String(formData.departmentId || ''),
+    )
+    const departmentName =
+      selectedDept?.name ??
+      selectedDept?.department_name ??
+      (String(formData.department || '').trim() || null)
+    const departmentId =
+      formData.departmentId !== '' && formData.departmentId != null
+        ? parseInt(String(formData.departmentId), 10)
+        : selectedDept?.id != null
+          ? Number(selectedDept.id)
+          : null
+
     const payload = {
       empId,
       username: String(formData.username || '').trim() || null,
@@ -615,7 +638,8 @@ export default function EmployeeDirectory() {
       firstName: formData.firstName || null,
       lastName: formData.lastName || null,
       jobTitle: formData.jobTitle,
-      department: formData.department,
+      department: departmentName,
+      departmentId,
       employmentType: formData.employmentType,
       workLocation: formData.workLocation || null,
       reportingManagerEmpId: formData.reportingManager || null,
@@ -813,6 +837,22 @@ export default function EmployeeDirectory() {
           confirmPassword: '',
           phoneNumber: f.phone,
           department: f.department,
+          departmentId:
+            f.departmentId != null
+              ? String(f.departmentId)
+              : departmentRows.find(
+                  (d) =>
+                    String(d.name ?? d.department_name ?? '').trim() ===
+                    String(f.department || '').trim(),
+                )?.id != null
+                ? String(
+                    departmentRows.find(
+                      (d) =>
+                        String(d.name ?? d.department_name ?? '').trim() ===
+                        String(f.department || '').trim(),
+                    ).id,
+                  )
+                : '',
           jobTitle: f.jobTitle,
           about: f.bio || '',
           dateOfBirth: f.dateOfBirth,
@@ -1402,7 +1442,7 @@ export default function EmployeeDirectory() {
                   <select
                     id="emp-dept"
                     name="department"
-                    value={formData.department}
+                    value={formData.departmentId}
                     onChange={handleDepartmentChange}
                     className={`${basicFieldClass} mt-0`}
                     required
@@ -1410,7 +1450,7 @@ export default function EmployeeDirectory() {
                     <option value="">Select department</option>
                     {departmentRows.map((d) => {
                       const label = d.name ?? d.department_name ?? String(d.id)
-                      const val = d.name ?? d.department_name ?? String(d.id)
+                      const val = d.id != null ? String(d.id) : (d.name ?? d.department_name ?? '')
                       return (
                         <option key={d.id ?? val} value={val}>{label}</option>
                       )
@@ -1428,7 +1468,7 @@ export default function EmployeeDirectory() {
                     onChange={handleFormChange}
                     className={`${basicFieldClass} mt-0`}
                     required
-                    disabled={!formData.department}
+                    disabled={!formData.departmentId}
                   >
                     <option value="">Select designation</option>
                     {formData.jobTitle &&
