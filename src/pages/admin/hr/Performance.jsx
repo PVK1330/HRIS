@@ -41,25 +41,21 @@ import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import { employees, performanceKpis } from '../../../data/mockData.js'
+import performanceCyclesAPI from '../../../services/performanceCyclesAPI.js'
+import competenciesAPI from '../../../services/competenciesAPI.js'
+import performanceAssessmentAPI from '../../../services/performanceAssessmentAPI.js'
 
 const COLORS = ['#0F766E', '#14B8A6', '#2DD4BF', '#99F6E4', '#F0FDFA']
 
 const initialFormData = {
   employeeId: '',
-  employeeName: '',
   reviewPeriod: '',
-  reviewType: '',
   reviewerName: '',
-  reviewDate: '',
-  workQuality: 0,
-  productivity: 0,
-  communication: 0,
-  teamwork: 0,
-  leadership: 0,
+  competencyRatings: [], // array of { competency, rating }
   overallRating: 0,
   strengths: '',
-  areasToImprove: '',
   goalsNextPeriod: '',
+  status: 'Completed'
 }
 
 const reviews = employees.slice(0, 10).map((e, idx) => ({
@@ -130,17 +126,19 @@ function StarRating({ label, value, onChange }) {
   )
 }
 
-function SearchableEmployeeSelect({ value, onChange }) {
+function SearchableEmployeeSelect({ value, onChange, employees = [] }) {
   const [search, setSearch] = useState('')
   const [isOpen, setIsOpen] = useState(false)
 
   const filtered = useMemo(() => {
     if (!search) return employees.slice(0, 5)
-    return employees.filter(e =>
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.empId.toLowerCase().includes(search.toLowerCase())
-    ).slice(0, 8)
-  }, [search])
+    return employees.filter(e => {
+      const name = String(e.full_name || e.fullName || e.name || '').toLowerCase()
+      const code = String(e.emp_id || e.empId || e.empCode || '').toLowerCase()
+      const term = search.toLowerCase()
+      return name.includes(term) || code.includes(term)
+    }).slice(0, 8)
+  }, [search, employees])
 
   return (
     <div className="relative">
@@ -149,12 +147,17 @@ function SearchableEmployeeSelect({ value, onChange }) {
       </label>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-300 bg-white h-10 px-3 text-sm transition-all focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/20"
+        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-300 bg-white h-10 px-3 text-sm transition-all focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/20 hover:border-slate-400"
       >
-        <span className={value ? 'text-slate-900 font-medium' : 'text-slate-400'}>
-          {value ? employees.find(e => e.id === value)?.name : 'Select employee...'}
+        <span className={value ? 'text-slate-950 font-bold text-sm' : 'text-slate-400 font-medium'}>
+          {value ? (
+            (() => {
+              const emp = employees.find(e => String(e.id) === String(value));
+              return emp ? `${emp.full_name || emp.fullName || emp.name} (${emp.emp_id || emp.empId || emp.empCode || 'N/A'})` : 'Select employee...';
+            })()
+          ) : 'Select employee...'}
         </span>
-        <HiMagnifyingGlass className="h-4 w-4 text-slate-400" />
+        <HiMagnifyingGlass className="h-4 w-4 text-slate-500" />
       </div>
 
       {isOpen && (
@@ -163,30 +166,34 @@ function SearchableEmployeeSelect({ value, onChange }) {
             autoFocus
             type="text"
             placeholder="Type to filter..."
-            className="mb-2 w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:border-[#0F766E]"
+            className="mb-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <div className="max-h-48 overflow-y-auto">
-            {filtered.map((e) => (
-              <button
-                key={e.id}
-                type="button"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-emerald-50"
-                onClick={() => {
-                  onChange(e.id)
-                  setIsOpen(false)
-                }}
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] font-bold text-[10px]">
-                  {e.name.charAt(0)}
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-slate-900">{e.name}</div>
-                  <div className="text-xs text-slate-400 font-medium uppercase">{e.empId}</div>
-                </div>
-              </button>
-            ))}
+            {filtered.map((e) => {
+              const empName = e.full_name || e.fullName || e.name || 'Unknown Employee';
+              const empCode = e.emp_id || e.empId || e.empCode || 'N/A';
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-emerald-50 focus:bg-emerald-50 focus:outline-none"
+                  onClick={() => {
+                    onChange(e.id)
+                    setIsOpen(false)
+                  }}
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-[#0F766E] font-bold text-xs">
+                    {empName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">{empName}</div>
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{empCode}</div>
+                  </div>
+                </button>
+              );
+            })}
             {filtered.length === 0 && (
               <div className="p-4 text-center text-xs text-slate-400 italic">No employee found</div>
             )}
@@ -215,10 +222,8 @@ const initialConfigData = {
   cycleName: '',
   startDate: '',
   endDate: '',
-  deadline: '',
-  assessmentTypes: [],
-  autoReminders: true,
-  ratingScale: '5-star'
+  submissionDeadline: '',
+  automatedReminder: false,
 }
 
 export default function Performance() {
@@ -231,23 +236,399 @@ export default function Performance() {
   const [formData, setFormData] = useState(initialFormData)
   const [configData, setConfigData] = useState(initialConfigData)
   const [files, setFiles] = useState({})
-  const [competencies, setCompetencies] = useState([
-    { id: 1, name: 'Communication Skills', createdAt: '2026-01-10' },
-    { id: 2, name: 'Problem Solving', createdAt: '2026-01-15' },
-    { id: 3, name: 'Leadership', createdAt: '2026-02-01' },
-    { id: 4, name: 'Teamwork & Collaboration', createdAt: '2026-02-10' },
-    { id: 5, name: 'Adaptability', createdAt: '2026-03-05' },
-  ])
+  const [competencies, setCompetencies] = useState([])
   const [compForm, setCompForm] = useState({ competencyName: '' })
   const [compSearch, setCompSearch] = useState('')
+  const [compsLoading, setCompsLoading] = useState(false)
+  const [compsError, setCompsError] = useState(null)
+  const [compsSummary, setCompsSummary] = useState({
+    totalCompetencies: 0,
+    createdThisMonth: 0,
+    recentCompetencies: 0,
+  })
+
+  // Performance Cycles State
+  const [cycles, setCycles] = useState([])
+  const [cyclesSummary, setCyclesSummary] = useState({
+    activeCycles: 0,
+    upcomingCycles: 0,
+    completedCycles: 0,
+  })
+  const [cyclesLoading, setCyclesLoading] = useState(false)
+  const [cyclesError, setCyclesError] = useState(null)
+  const [editingCycleId, setEditingCycleId] = useState(null)
+  const [cycleSearch, setCycleSearch] = useState('')
+
+  // Employee Performance Assessments State
+  const [assessments, setAssessments] = useState([])
+  const [assessmentsSummary, setAssessmentsSummary] = useState({
+    totalAssessments: 0,
+    pendingReviews: 0,
+    completedReviews: 0
+  })
+  const [assessmentsLoading, setAssessmentsLoading] = useState(false)
+  const [editingAssessmentId, setEditingAssessmentId] = useState(null)
+
+  // Dropdown lists
+  const [compDropdownList, setCompDropdownList] = useState([])
+  const [cycleDropdownList, setCycleDropdownList] = useState([])
+  const [employeeDropdownList, setEmployeeDropdownList] = useState([])
 
   const isHR = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin'
 
+  // Fetch performance cycles and summary on component mount
+  useEffect(() => {
+    if (isHR) {
+      fetchCycles()
+      fetchCyclesSummary()
+      fetchCompetencies()
+      fetchCompsSummary()
+      fetchDropdownData()
+      fetchAssessments()
+      fetchAssessmentsSummary()
+    }
+  }, [isHR])
+
+  // Fetch assessments when search q changes
+  useEffect(() => {
+    if (isHR) {
+      fetchAssessments(q)
+    }
+  }, [q, isHR])
+
+  // Fetch competencies when search query changes
+  useEffect(() => {
+    if (isHR) {
+      fetchCompetencies(compSearch)
+    }
+  }, [compSearch, isHR])
+
+  /**
+   * Fetch all performance cycles from API
+   */
+  const fetchCycles = async (search = '') => {
+    try {
+      setCyclesLoading(true)
+      setCyclesError(null)
+      const response = await performanceCyclesAPI.getAllCycles({
+        search,
+        page: 1,
+        limit: 100,
+      })
+      if (response.success && response.data?.cycles) {
+        setCycles(response.data.cycles)
+      }
+    } catch (error) {
+      setCyclesError(error.response?.data?.message || 'Failed to fetch performance cycles')
+      console.error('Error fetching cycles:', error)
+    } finally {
+      setCyclesLoading(false)
+    }
+  }
+
+  /**
+   * Fetch performance cycles summary
+   */
+  const fetchCyclesSummary = async () => {
+    try {
+      const response = await performanceCyclesAPI.getSummary()
+      if (response.success && response.data) {
+        setCyclesSummary(response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching cycles summary:', error)
+    }
+  }
+
+  const fetchDropdownData = async () => {
+    try {
+      const [cyclesRes, compsRes, empsRes] = await Promise.all([
+        performanceAssessmentAPI.getCyclesDropdown(),
+        performanceAssessmentAPI.getCompetenciesDropdown(),
+        performanceAssessmentAPI.getEmployeesDropdown()
+      ])
+      if (cyclesRes.success) setCycleDropdownList(cyclesRes.data)
+      if (compsRes.success) setCompDropdownList(compsRes.data)
+      if (empsRes.success) {
+        const empList = Array.isArray(empsRes.data) ? empsRes.data : (empsRes.data?.employees || [])
+        setEmployeeDropdownList(empList)
+      }
+    } catch (err) {
+      console.error('Error fetching dropdown data:', err)
+    }
+  }
+
+  /**
+   * Fetch employee performance assessments
+   */
+  const fetchAssessments = async (search = '') => {
+    try {
+      setAssessmentsLoading(true)
+      const response = await performanceAssessmentAPI.getAllAssessments({ search })
+      if (response.success && response.data?.assessments) {
+        setAssessments(response.data.assessments)
+      }
+    } catch (error) {
+      console.error('Error fetching assessments:', error)
+    } finally {
+      setAssessmentsLoading(false)
+    }
+  }
+
+  /**
+   * Fetch employee performance summary statistics
+   */
+  const fetchAssessmentsSummary = async () => {
+    try {
+      const response = await performanceAssessmentAPI.getSummary()
+      if (response.success && response.data) {
+        setAssessmentsSummary(response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching assessments summary:', error)
+    }
+  }
+
+  /**
+   * Populate edit modal with selected assessment data
+   */
+  const handleEditAssessment = (assessment) => {
+    setEditingAssessmentId(assessment.id)
+
+    // Format competency ratings from populated objects to simple array
+    const formattedRatings = (assessment.competencyRatings || []).map(cr => ({
+      competency: cr.competency?.id || cr.competency,
+      rating: cr.rating
+    }))
+
+    setFormData({
+      employeeId: assessment.employee?.id || assessment.employee,
+      reviewPeriod: assessment.performanceCycle?.id || assessment.performanceCycle,
+      competencyRatings: formattedRatings,
+      overallRating: assessment.overallRating,
+      strengths: assessment.keyContributions || '',
+      goalsNextPeriod: assessment.growthObjectives || '',
+      reviewerName: assessment.performanceLead || '',
+      status: assessment.status || 'Completed'
+    })
+
+    setModalOpen(true)
+  }
+
+  /**
+   * Handle soft deletion of performance assessment
+   */
+  const handleDeleteAssessment = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this performance assessment?')) return
+    try {
+      const response = await performanceAssessmentAPI.deleteAssessment(id)
+      if (response.success) {
+        await fetchAssessments(q)
+        await fetchAssessmentsSummary()
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to delete assessment')
+    }
+  }
+
+  /**
+   * Handle form submission for creating or updating performance assessment
+   */
+  const handleSubmitAssessment = async (e) => {
+    e.preventDefault()
+
+    if (!formData.employeeId) {
+      alert('Please select an employee')
+      return
+    }
+    if (!formData.reviewPeriod) {
+      alert('Please select a performance cycle')
+      return
+    }
+
+    // Map competency ratings dynamically from list
+    const competencyRatings = compDropdownList.map(comp => {
+      const rObj = formData.competencyRatings?.find(r => r.competency === comp.id)
+      return {
+        competency: comp.id,
+        rating: rObj ? rObj.rating : 1 // default to 1 star if not rated
+      }
+    })
+
+    const payload = {
+      employee: formData.employeeId,
+      performanceCycle: formData.reviewPeriod,
+      competencyRatings,
+      keyContributions: formData.strengths,
+      growthObjectives: formData.goalsNextPeriod,
+      performanceLead: formData.reviewerName,
+      status: formData.status || 'Completed'
+    }
+
+    try {
+      let response
+      if (editingAssessmentId) {
+        response = await performanceAssessmentAPI.updateAssessment(editingAssessmentId, payload)
+      } else {
+        response = await performanceAssessmentAPI.createAssessment(payload)
+      }
+
+      if (response.success) {
+        handleCloseModal()
+        await fetchAssessments(q)
+        await fetchAssessmentsSummary()
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to save assessment')
+      console.error('Error saving assessment:', error)
+    }
+  }
+
+  /**
+   * Fetch all competencies from API
+   */
+  const fetchCompetencies = async (search = '') => {
+    try {
+      setCompsLoading(true)
+      setCompsError(null)
+      const response = await competenciesAPI.getAllCompetencies({ search })
+      if (response.success && response.data) {
+        setCompetencies(response.data)
+      }
+    } catch (error) {
+      setCompsError(error.response?.data?.message || 'Failed to fetch competencies')
+      console.error('Error fetching competencies:', error)
+    } finally {
+      setCompsLoading(false)
+    }
+  }
+
+  /**
+   * Fetch competencies summary from API
+   */
+  const fetchCompsSummary = async () => {
+    try {
+      const response = await competenciesAPI.getSummary()
+      if (response.success && response.data) {
+        setCompsSummary(response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching competencies summary:', error)
+    }
+  }
+
+  /**
+   * Handle competency deletion
+   */
+  const handleDeleteCompetency = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this competency?')) return
+    try {
+      const response = await competenciesAPI.deleteCompetency(id)
+      if (response.success) {
+        await fetchCompetencies(compSearch)
+        await fetchCompsSummary()
+        await fetchDropdownData()
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to delete competency')
+    }
+  }
+
+  /**
+   * Handle create new cycle
+   */
+  const handleCreateCycle = async (e) => {
+    e.preventDefault()
+    try {
+      const cyclePayload = {
+        cycleName: configData.cycleName,
+        startDate: new Date(configData.startDate).toISOString(),
+        endDate: new Date(configData.endDate).toISOString(),
+        submissionDeadline: new Date(configData.submissionDeadline).toISOString(),
+        automatedReminder: configData.automatedReminder,
+      }
+
+      const response = await performanceCyclesAPI.createCycle(cyclePayload)
+      if (response.success) {
+        // Refresh cycles and summary
+        await fetchCycles()
+        await fetchCyclesSummary()
+        await fetchDropdownData()
+        handleCloseConfigModal()
+      }
+    } catch (error) {
+      setCyclesError(error.response?.data?.message || 'Failed to create cycle')
+      console.error('Error creating cycle:', error)
+    }
+  }
+
+  /**
+   * Handle update cycle
+   */
+  const handleUpdateCycle = async (e) => {
+    e.preventDefault()
+    if (!editingCycleId) return
+
+    try {
+      const updatePayload = {
+        cycleName: configData.cycleName,
+        startDate: new Date(configData.startDate).toISOString(),
+        endDate: new Date(configData.endDate).toISOString(),
+        submissionDeadline: new Date(configData.submissionDeadline).toISOString(),
+        automatedReminder: configData.automatedReminder,
+      }
+
+      const response = await performanceCyclesAPI.updateCycle(editingCycleId, updatePayload)
+      if (response.success) {
+        await fetchCycles()
+        await fetchCyclesSummary()
+        await fetchDropdownData()
+        handleCloseConfigModal()
+        setEditingCycleId(null)
+      }
+    } catch (error) {
+      setCyclesError(error.response?.data?.message || 'Failed to update cycle')
+      console.error('Error updating cycle:', error)
+    }
+  }
+
+  /**
+   * Handle delete cycle
+   */
+  const handleDeleteCycle = async (cycleId) => {
+    if (!window.confirm('Are you sure you want to delete this performance cycle?')) return
+
+    try {
+      const response = await performanceCyclesAPI.deleteCycle(cycleId)
+      if (response.success) {
+        await fetchCycles()
+        await fetchCyclesSummary()
+        await fetchDropdownData()
+      }
+    } catch (error) {
+      setCyclesError(error.response?.data?.message || 'Failed to delete cycle')
+      console.error('Error deleting cycle:', error)
+    }
+  }
+
+  /**
+   * Handle edit cycle
+   */
+  const handleEditCycle = (cycle) => {
+    setEditingCycleId(cycle.id)
+    setConfigData({
+      cycleName: cycle.cycle_name,
+      startDate: cycle.start_date.split('T')[0],
+      endDate: cycle.end_date.split('T')[0],
+      submissionDeadline: cycle.submission_deadline.split('T')[0],
+      automatedReminder: cycle.automated_reminder,
+    })
+    setConfigModalOpen(true)
+  }
+
   const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase()
-    if (!query) return reviews
-    return reviews.filter((r) => `${r.employee} ${r.manager} ${r.empId}`.toLowerCase().includes(query))
-  }, [q])
+    return assessments
+  }, [assessments])
 
   const handleFormChange = (e) => {
     const { name, value } = e.target
@@ -267,6 +648,7 @@ export default function Performance() {
   const handleCloseConfigModal = () => {
     setConfigModalOpen(false)
     setConfigData(initialConfigData)
+    setEditingCycleId(null)
   }
 
   const handleConfigChange = (e) => {
@@ -280,43 +662,46 @@ export default function Performance() {
     setModalOpen(true)
   }
 
-  const handleAddCompetency = (e) => {
+  const handleAddCompetency = async (e) => {
     e.preventDefault()
     if (!compForm.competencyName.trim()) return
-    setCompetencies(prev => [
-      ...prev,
-      { id: Date.now(), name: compForm.competencyName.trim(), createdAt: new Date().toISOString().split('T')[0] }
-    ])
-    setCompForm({ competencyName: '' })
-    setCompModalOpen(false)
+    try {
+      const response = await competenciesAPI.createCompetency({
+        competencyName: compForm.competencyName.trim()
+      })
+      if (response.success) {
+        setCompForm({ competencyName: '' })
+        setCompModalOpen(false)
+        await fetchCompetencies(compSearch)
+        await fetchCompsSummary()
+        await fetchDropdownData()
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to add competency')
+    }
   }
 
-  const filteredComps = useMemo(() => {
-    if (!compSearch.trim()) return competencies
-    return competencies.filter(c => c.name.toLowerCase().includes(compSearch.toLowerCase()))
-  }, [competencies, compSearch])
+  const filteredComps = competencies;
 
   const tabStats = useMemo(() => {
-    const pendingReviews = reviews.filter((r) => r.status === 'Pending').length
-    const completedReviews = reviews.filter((r) => r.status === 'Completed').length
     return {
       hub: [
-        { label: 'TOTAL ASSESSMENTS', count: reviews.length, bgColor: 'bg-[#0F172A]', icon: HiClipboardDocumentCheck },
-        { label: 'PENDING REVIEW', count: pendingReviews, bgColor: 'bg-[#F59E0B]', icon: HiClock },
-        { label: 'COMPLETED', count: completedReviews, bgColor: 'bg-[#0F766E]', icon: HiArrowTrendingUp },
+        { label: 'TOTAL ASSESSMENTS', count: assessmentsSummary.totalAssessments, bgColor: 'bg-[#0F172A]', icon: HiClipboardDocumentCheck },
+        { label: 'PENDING REVIEW', count: assessmentsSummary.pendingReviews, bgColor: 'bg-[#F59E0B]', icon: HiClock },
+        { label: 'COMPLETED', count: assessmentsSummary.completedReviews, bgColor: 'bg-[#0F766E]', icon: HiArrowTrendingUp },
       ],
       cycles: [
-        { label: 'ACTIVE CYCLES', count: performanceKpis.activeCycles, bgColor: 'bg-[#0F766E]', icon: HiCalendarDays },
-        { label: 'UPCOMING', count: 1, bgColor: 'bg-[#3B82F6]', icon: HiClock },
-        { label: 'COMPLETED', count: 1, bgColor: 'bg-[#0F172A]', icon: HiClipboardDocumentCheck },
+        { label: 'ACTIVE CYCLES', count: cyclesSummary.activeCycles, bgColor: 'bg-[#0F766E]', icon: HiCalendarDays },
+        { label: 'UPCOMING', count: cyclesSummary.upcomingCycles, bgColor: 'bg-[#3B82F6]', icon: HiClock },
+        { label: 'COMPLETED', count: cyclesSummary.completedCycles, bgColor: 'bg-[#0F172A]', icon: HiClipboardDocumentCheck },
       ],
       compCycle: [
-        { label: 'COMPETENCIES', count: competencies.length, bgColor: 'bg-[#0F172A]', icon: HiAdjustmentsHorizontal },
-        { label: 'ACTIVE IN CYCLES', count: performanceKpis.activeCycles, bgColor: 'bg-[#0F766E]', icon: HiBriefcase },
-        { label: 'DUE THIS MONTH', count: performanceKpis.dueThisMonth, bgColor: 'bg-[#F59E0B]', icon: HiClock },
+        { label: 'COMPETENCIES', count: compsSummary.totalCompetencies, bgColor: 'bg-[#0F172A]', icon: HiAdjustmentsHorizontal },
+        { label: 'ACTIVE IN CYCLES', count: cyclesSummary.activeCycles, bgColor: 'bg-[#0F766E]', icon: HiBriefcase },
+        { label: 'CREATED THIS MONTH', count: compsSummary.createdThisMonth, bgColor: 'bg-[#F59E0B]', icon: HiClock },
       ],
     }
-  }, [competencies])
+  }, [competencies, cyclesSummary, compsSummary, assessmentsSummary])
 
   const renderTabStats = (tabId) => {
     const cards = tabStats[tabId]
@@ -360,43 +745,58 @@ export default function Performance() {
             <HiIdentification className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-slate-900 truncate">{row.employee}</div>
-            <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{row.empId}</div>
+            <div className="text-sm font-semibold text-slate-900 truncate">
+              {row.employee?.fullName || row.employee?.name || 'N/A'}
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+              {row.employee?.empId || row.employee?.empCode || 'N/A'}
+            </div>
           </div>
         </div>
       ),
     },
     {
-      key: 'cycle',
+      key: 'performanceCycle',
       label: 'Cycle',
-      render: (v) => <span className="text-sm font-medium text-slate-600">{v}</span>
+      render: (_, row) => (
+        <span className="text-sm font-medium text-slate-600">
+          {row.performanceCycle?.cycleName || 'N/A'}
+        </span>
+      )
     },
     {
-      key: 'rating',
+      key: 'performanceBand',
       label: 'Performance Band',
-      render: (v) => (
-        <Badge
-          label={v}
-          color={v === 'Outstanding' || v === 'Exceeds' ? 'green' : v === 'Meets' ? 'blue' : 'orange'}
-          className="rounded-none"
-        />
-      ),
+      render: (_, row) => {
+        const v = row.performanceBand || 'Pending'
+        return (
+          <Badge
+            label={v}
+            color={v === 'Outstanding' || v === 'Exceeds' ? 'green' : v === 'Meets' ? 'blue' : 'orange'}
+            className="rounded-none"
+          />
+        )
+      },
     },
     {
-      key: 'manager',
+      key: 'performanceLead',
       label: 'Performance Lead',
-      render: (v) => <span className="text-sm font-medium text-slate-600">{v}</span>
+      render: (_, row) => (
+        <span className="text-sm font-medium text-slate-600">
+          {row.performanceLead || 'N/A'}
+        </span>
+      )
     },
     {
       key: 'status',
       label: 'Status',
-      render: (v) => {
-        const isCompleted = v === 'Completed'
+      render: (_, row) => {
+        const isCompleted = row.status === 'Completed'
         return (
           <div className="flex items-center justify-center">
             <span className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${isCompleted ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              {v}
+              {row.status}
             </span>
           </div>
         )
@@ -411,13 +811,23 @@ export default function Performance() {
             type="button"
             onClick={(e) => {
               e.stopPropagation()
-              setFormData({ ...initialFormData, employeeId: row.employeeId })
-              setModalOpen(true)
+              handleEditAssessment(row)
             }}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600"
-            aria-label="View assessment"
+            className="inline-flex h-8 px-3 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600 text-[10px] font-bold uppercase tracking-wider shadow-sm"
+            aria-label="Edit assessment"
           >
-            <HiClipboardDocumentCheck className="h-4 w-4" />
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDeleteAssessment(row.id)
+            }}
+            className="inline-flex h-8 px-3 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600 text-[10px] font-bold uppercase tracking-wider shadow-sm"
+            aria-label="Delete assessment"
+          >
+            Delete
           </button>
         </div>
       ),
@@ -534,7 +944,14 @@ export default function Performance() {
                 </div>
               </div>
 
-              <Table columns={columns} data={filtered} pageSize={10} square />
+              {assessmentsLoading ? (
+                <div className="flex flex-col items-center justify-center py-16 bg-slate-50/20">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#0F766E]" />
+                  <span className="mt-3 text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Loading assessments...</span>
+                </div>
+              ) : (
+                <Table columns={columns} data={filtered} pageSize={10} square />
+              )}
             </div>
           </div>
         )}
@@ -560,10 +977,12 @@ export default function Performance() {
                   <input
                     type="text"
                     placeholder="Search cycles..."
+                    value={cycleSearch}
+                    onChange={(e) => setCycleSearch(e.target.value)}
                     className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
                   />
                 </div>
-                <p className="text-xs font-medium text-slate-500">3 records shown</p>
+                <p className="text-xs font-medium text-slate-500">{cycles.length} records shown</p>
               </div>
 
               {/* Table */}
@@ -575,67 +994,90 @@ export default function Performance() {
                       <th className="px-5 py-3 text-xs font-semibold text-slate-500">Period</th>
                       <th className="px-5 py-3 text-xs font-semibold text-slate-500">Status</th>
                       <th className="px-5 py-3 text-xs font-semibold text-slate-500">Completion</th>
-                      <th className="px-5 py-3 text-xs font-semibold text-slate-500 text-center">Actions</th>
+                      {isHR && <th className="px-5 py-3 text-xs font-semibold text-slate-500 text-center">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {[
-                      { title: 'Q1 2026 Strategic Audit', period: 'Jan 01 – Mar 31, 2026', status: 'ACTIVE', progress: 85 },
-                      { title: 'H1 2026 Performance Appraisal', period: 'Jan 01 – Jun 30, 2026', status: 'UPCOMING', progress: 0 },
-                      { title: 'Annual 2025 Retrospective', period: 'Jan 01 – Dec 31, 2025', status: 'COMPLETED', progress: 100 },
-                    ].map((cycle, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
-                              <HiCalendarDays className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-slate-900">{cycle.title}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="text-sm font-medium text-slate-600">{cycle.period}</span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${cycle.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
-                            cycle.status === 'UPCOMING' ? 'bg-blue-100 text-blue-700' :
-                              'bg-slate-100 text-slate-600'
-                            }`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${cycle.status === 'ACTIVE' ? 'bg-emerald-500' :
-                              cycle.status === 'UPCOMING' ? 'bg-blue-500' :
-                                'bg-slate-400'
-                              }`} />
-                            {cycle.status}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 w-48">
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                              <div
-                                className={`h-full transition-all duration-1000 ${cycle.status === 'ACTIVE' ? 'bg-emerald-500' :
-                                  cycle.status === 'UPCOMING' ? 'bg-blue-500' :
-                                    'bg-slate-400'
-                                  }`}
-                                style={{ width: `${cycle.progress}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-bold text-slate-700 w-8 text-right">{cycle.progress}%</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
+                    {cyclesLoading ? (
+                      <tr>
+                        <td colSpan={5} className="px-5 py-8 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <button className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 shadow-sm">
-                              Manage
-                            </button>
-                            <button className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none bg-slate-900 px-3 text-xs font-medium text-white transition hover:bg-black shadow-sm">
-                              Export
-                            </button>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#0F766E] border-t-transparent" />
+                            <span className="text-sm text-slate-500">Loading cycles...</span>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : cycles.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-5 py-8 text-center text-sm text-slate-500">
+                          No performance cycles found
+                        </td>
+                      </tr>
+                    ) : (
+                      cycles.map((cycle) => (
+                        <tr key={cycle.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
+                                <HiCalendarDays className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-slate-900">{cycle.cycle_name}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="text-sm font-medium text-slate-600">
+                              {new Date(cycle.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(cycle.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${cycle.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                              cycle.status === 'UPCOMING' ? 'bg-blue-100 text-blue-700' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${cycle.status === 'ACTIVE' ? 'bg-emerald-500' :
+                                cycle.status === 'UPCOMING' ? 'bg-blue-500' :
+                                  'bg-slate-400'
+                                }`} />
+                              {cycle.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 w-48">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-1000 ${cycle.status === 'ACTIVE' ? 'bg-emerald-500' :
+                                    cycle.status === 'UPCOMING' ? 'bg-blue-500' :
+                                      'bg-slate-400'
+                                    }`}
+                                  style={{ width: `${cycle.completion_percentage}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-bold text-slate-700 w-8 text-right">{cycle.completion_percentage}%</span>
+                            </div>
+                          </td>
+                          {isHR && (
+                            <td className="px-5 py-4">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => handleEditCycle(cycle)}
+                                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 shadow-sm"
+                                >
+                                  edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCycle(cycle.id)}
+                                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none bg-red-500 px-3 text-xs font-medium text-white transition hover:bg-red-600 shadow-sm"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -717,7 +1159,7 @@ export default function Performance() {
                           <td className="px-5 py-4">
                             <div className="flex items-center justify-center">
                               <button
-                                onClick={() => setCompetencies(prev => prev.filter(c => c.id !== comp.id))}
+                                onClick={() => handleDeleteCompetency(comp.id)}
                                 className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-50 text-red-500 transition hover:bg-red-100"
                                 aria-label="Delete"
                               >
@@ -900,10 +1342,7 @@ export default function Performance() {
         }
       >
         <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            handleCloseModal()
-          }}
+          onSubmit={handleSubmitAssessment}
           className="pt-2"
         >
           <div className="space-y-4">
@@ -913,6 +1352,7 @@ export default function Performance() {
                 <SearchableEmployeeSelect
                   value={formData.employeeId}
                   onChange={(id) => handleRatingChange('employeeId', id)}
+                  employees={employeeDropdownList}
                 />
               </div>
 
@@ -924,28 +1364,87 @@ export default function Performance() {
                 onChange={handleFormChange}
                 required
                 placeholder="Select review cycle"
-                options={[
-                  { label: 'Q1 2026', value: 'Q1 2026' },
-                  { label: 'Q2 2026', value: 'Q2 2026' },
-                  { label: 'H1 2026', value: 'H1 2026' },
-                  { label: 'Annual 2025', value: 'ANNUAL 2025' },
-                ]}
+                options={cycleDropdownList.map(cycle => ({
+                  label: cycle.cycleName,
+                  value: cycle.id
+                }))}
+                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20 "
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              />
+            </div>
+
+            {/* Performance Lead + Status */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Input
+                label="Performance Lead"
+                name="reviewerName"
+                type="text"
+                value={formData.reviewerName}
+                onChange={handleFormChange}
+                required
+                placeholder="Enter performance lead name"
                 inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
                 labelClassName="mb-1 block text-sm font-medium text-slate-800"
               />
 
+              <Input
+                label="Status"
+                name="status"
+                type="select"
+                value={formData.status}
+                onChange={handleFormChange}
+                required
+                options={[
+                  { label: 'Completed', value: 'Completed' },
+                  { label: 'Pending', value: 'Pending' }
+                ]}
+                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              />
             </div>
 
-            {/* Ratings */}
+            {/* Dynamic Ratings */}
             <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
-              <p className="text-xs font-medium text-slate-500 mb-4">Competency Ratings — rate each area from 1 to 5 stars</p>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <StarRating label="Work Quality" value={formData.workQuality} onChange={(v) => handleRatingChange('workQuality', v)} />
-                <StarRating label="Productivity" value={formData.productivity} onChange={(v) => handleRatingChange('productivity', v)} />
-                <StarRating label="Communication" value={formData.communication} onChange={(v) => handleRatingChange('communication', v)} />
-                <StarRating label="Collaboration" value={formData.teamwork} onChange={(v) => handleRatingChange('teamwork', v)} />
-                <StarRating label="Leadership" value={formData.leadership} onChange={(v) => handleRatingChange('leadership', v)} />
-                <StarRating label="Overall Rating" value={formData.overallRating} onChange={(v) => handleRatingChange('overallRating', v)} />
+              <p className="text-xs font-medium text-slate-500 mb-4 font-bold uppercase tracking-wider">Competency Ratings — rate each area (1 to 5 stars)</p>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {compDropdownList.map((comp) => {
+                  const ratingObj = formData.competencyRatings?.find(r => r.competency === comp.id) || { rating: 0 }
+                  return (
+                    <StarRating
+                      key={comp.id}
+                      label={comp.competencyName}
+                      value={ratingObj.rating}
+                      onChange={(starValue) => {
+                        const currentRatings = [...(formData.competencyRatings || [])]
+                        const index = currentRatings.findIndex(r => r.competency === comp.id)
+                        if (index > -1) {
+                          currentRatings[index].rating = starValue
+                        } else {
+                          currentRatings.push({ competency: comp.id, rating: starValue })
+                        }
+
+                        const total = currentRatings.reduce((sum, r) => sum + r.rating, 0)
+                        const avg = currentRatings.length > 0 ? Math.round((total / currentRatings.length) * 10) / 10 : 0
+
+                        setFormData(prev => ({
+                          ...prev,
+                          competencyRatings: currentRatings,
+                          overallRating: avg
+                        }))
+                      }}
+                    />
+                  )
+                })}
+                {compDropdownList.length === 0 && (
+                  <div className="col-span-2 text-center py-4 text-slate-400 italic text-xs">
+                    No competencies configured. Add competencies in the Competency Registry tab first.
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-200 flex justify-between items-center">
+                <span className="text-sm font-bold text-slate-700">Calculated Overall Rating:</span>
+                <span className="text-lg font-black text-[#0F766E]">{formData.overallRating || 0} / 5.0</span>
               </div>
             </div>
 
@@ -955,7 +1454,6 @@ export default function Performance() {
                 <label className="mb-1 block text-sm font-medium text-slate-800">
                   Key Contributions
                 </label>
-
                 <textarea
                   name="strengths"
                   value={formData.strengths}
@@ -969,7 +1467,6 @@ export default function Performance() {
                 <label className="mb-1 block text-sm font-medium text-slate-800">
                   Growth Objectives
                 </label>
-
                 <textarea
                   name="goalsNextPeriod"
                   value={formData.goalsNextPeriod}
@@ -1005,17 +1502,18 @@ export default function Performance() {
       <Modal
         isOpen={configModalOpen}
         onClose={handleCloseConfigModal}
-        title="Performance Cycle"
+        title={editingCycleId ? "Edit Performance Cycle" : "Create Performance Cycle"}
         size="lg"
         className="rounded-none"
       >
-        <form onSubmit={(e) => { e.preventDefault(); handleCloseConfigModal(); }} className="pt-2">
+        <form onSubmit={editingCycleId ? handleUpdateCycle : handleCreateCycle} className="pt-2">
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-800">Cycle Name</label>
               <input
                 type="text"
                 name="cycleName"
+                required
                 value={configData.cycleName}
                 onChange={handleConfigChange}
                 className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
@@ -1028,6 +1526,7 @@ export default function Performance() {
                 <input
                   type="date"
                   name="startDate"
+                  required
                   value={configData.startDate}
                   onChange={handleConfigChange}
                   className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
@@ -1038,6 +1537,7 @@ export default function Performance() {
                 <input
                   type="date"
                   name="endDate"
+                  required
                   value={configData.endDate}
                   onChange={handleConfigChange}
                   className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
@@ -1048,16 +1548,17 @@ export default function Performance() {
               <label className="mb-1 block text-sm font-medium text-slate-800">Submission Deadline</label>
               <input
                 type="date"
-                name="deadline"
-                value={configData.deadline}
+                name="submissionDeadline"
+                required
+                value={configData.submissionDeadline}
                 onChange={handleConfigChange}
                 className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
               />
             </div>
             <div className="flex items-center gap-3 py-3 border-y border-slate-100">
               <Toggle
-                checked={configData.autoReminders}
-                onChange={(v) => setConfigData(p => ({ ...p, autoReminders: v }))}
+                checked={configData.automatedReminder}
+                onChange={(v) => setConfigData(p => ({ ...p, automatedReminder: v }))}
               />
               <span className="text-sm font-medium text-slate-700">Enable automated reminder notifications</span>
             </div>
@@ -1074,7 +1575,7 @@ export default function Performance() {
               type="submit"
               className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors"
             >
-              Save Cycle
+              {editingCycleId ? 'Update Cycle' : 'Create Cycle'}
             </button>
           </div>
         </form>
