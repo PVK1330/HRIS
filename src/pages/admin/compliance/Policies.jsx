@@ -33,6 +33,8 @@ import { policyService } from '../../../services/policyService.js'
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
 import PolicyPublishSettingsModal from '../../../components/policies/PolicyPublishSettingsModal.jsx'
+import PolicyFormModal from '../../../components/policies/PolicyFormModal.jsx'
+import PolicyViewModal from '../../../components/policies/PolicyViewModal.jsx'
 import {
   POLICY_SECTION_FIELDS,
   EMPTY_POLICY_SECTIONS,
@@ -90,9 +92,18 @@ export default function Policies() {
   const [newAttachment, setNewAttachment] = useState({ name: '', url: '' })
   const [formData, setFormData] = useState(initialFormData)
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [policyModalOpen, setPolicyModalOpen] = useState(false)
+  const [viewModalOpen, setViewModalOpen] = useState(false)
+  const [viewPolicy, setViewPolicy] = useState(null)
+  const [viewLoading, setViewLoading] = useState(false)
+  const [savingPolicy, setSavingPolicy] = useState(false)
   const [publishModalOpen, setPublishModalOpen] = useState(false)
   const [publishSettings, setPublishSettings] = useState({ ...DEFAULT_AUDIENCE_CONFIG })
   const [savingPublish, setSavingPublish] = useState(false)
+
+  const LABEL_CLS = 'mb-1 block text-sm font-medium text-slate-800'
+  const INPUT_CLS = 'h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20'
 
   const isHR = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin'
 
@@ -194,12 +205,54 @@ export default function Policies() {
     if (categoryFilter) {
       list = list.filter((p) => p.category === categoryFilter)
     }
+    if (statusFilter === 'published') {
+      list = list.filter((p) => p.status === 'Published')
+    } else if (statusFilter === 'draft') {
+      list = list.filter((p) => p.status === 'Draft')
+    }
     const query = q.trim().toLowerCase()
     if (query) {
       list = list.filter((p) => `${p.title} ${p.category}`.toLowerCase().includes(query))
     }
     return list
-  }, [q, policies, categoryFilter])
+  }, [q, policies, categoryFilter, statusFilter])
+
+  const openPolicyModal = (row = null) => {
+    setFormData(row ? normalizePolicyForm(row) : { ...initialFormData, sections: { ...EMPTY_POLICY_SECTIONS } })
+    setPolicyModalOpen(true)
+  }
+
+  const closePolicyModal = () => {
+    setPolicyModalOpen(false)
+    setFormData({ ...initialFormData, sections: { ...EMPTY_POLICY_SECTIONS } })
+  }
+
+  const openPolicyView = async (row) => {
+    setViewModalOpen(true)
+    setViewPolicy(null)
+    setViewLoading(true)
+    try {
+      const full = await policyService.getOne(row.id)
+      setViewPolicy(normalizePolicyForm(full))
+    } catch {
+      toast.error('Failed to load policy')
+      setViewModalOpen(false)
+    } finally {
+      setViewLoading(false)
+    }
+  }
+
+  const closePolicyView = () => {
+    setViewModalOpen(false)
+    setViewPolicy(null)
+  }
+
+  const handleEditFromView = () => {
+    if (!viewPolicy) return
+    const policy = viewPolicy
+    closePolicyView()
+    openPolicyModal(policy)
+  }
 
   const handleViewCategory = (cat) => {
     setCategoryFilter(cat.name)
@@ -219,6 +272,7 @@ export default function Policies() {
   }
 
   const handleSave = async (overrideStatus = null, publishConfig = null) => {
+    setSavingPolicy(true)
     try {
       const audienceConfig = publishConfig || formData.audienceConfig || { ...DEFAULT_AUDIENCE_CONFIG }
       const payload = {
@@ -244,10 +298,13 @@ export default function Policies() {
         toast.success('Policy created successfully')
       }
       await fetchData()
+      closePolicyModal()
       setActiveView('dashboard')
     } catch (err) {
       console.error('Save error:', err)
-      toast.error('Failed to save policy directive')
+      toast.error('Failed to save policy')
+    } finally {
+      setSavingPolicy(false)
     }
   }
 
@@ -259,6 +316,11 @@ export default function Policies() {
     } finally {
       setSavingPublish(false)
     }
+  }
+
+  const handlePublishFromModal = () => {
+    setPublishSettings(formData.audienceConfig || { ...DEFAULT_AUDIENCE_CONFIG })
+    setPublishModalOpen(true)
   }
 
   const updateSection = (key, value) => {
@@ -298,77 +360,97 @@ export default function Policies() {
   const columns = [
     {
       key: 'name',
-      label: 'Policy Name',
+      label: 'Policy',
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0F766E]/10 text-[#0F766E]">
-            <HiDocumentText className="h-4 w-4" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
+            <HiDocumentText className="h-5 w-5" />
           </div>
           <div>
-            <div className="font-semibold text-slate-900">{row.title}</div>
-            <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{row.category}</div>
+            <div className="text-sm font-semibold text-slate-900">{row.title}</div>
+            <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{row.category || 'Uncategorized'}</div>
           </div>
         </div>
       ),
     },
-    { 
-      key: 'ackCount', 
-      label: 'Acks',
-      render: (v) => <span className="font-medium text-slate-600">{v || 0}</span>
+    {
+      key: 'audience',
+      label: 'Audience',
+      render: (v) => <span className="text-sm font-medium text-slate-600">{v || 'All employees'}</span>,
     },
-    { 
-      key: 'updated_at', 
-      label: 'Updated',
-      render: (v) => <span className="text-xs text-slate-500">{new Date(v).toLocaleDateString()}</span>
+    {
+      key: 'ackCount',
+      label: 'Acknowledgements',
+      render: (v, row) =>
+        isHR ? (
+          <button
+            type="button"
+            onClick={() => handleOpenTracking(row)}
+            className="text-sm font-bold text-[#0F766E] hover:underline"
+          >
+            {v || 0}
+          </button>
+        ) : (
+          <span className="text-sm font-bold text-slate-700">{v || 0}</span>
+        ),
+    },
+    {
+      key: 'updated_at',
+      label: 'Last updated',
+      render: (v) => (
+        <span className="text-sm font-medium text-slate-600">
+          {v ? new Date(v).toLocaleDateString() : '—'}
+        </span>
+      ),
     },
     {
       key: 'status',
       label: 'Status',
-      render: (v) => <Badge label={v} color={v === 'Published' ? 'green' : 'orange'} variant="outline" />,
-    },
-    {
-      key: 'ack_required',
-      label: 'Ack Required',
-      render: (v) => (
-        <div className="flex items-center gap-1.5">
-          {v ? <HiCheckCircle className="h-4 w-4 text-emerald-500" /> : <HiXCircle className="h-4 w-4 text-slate-300" />}
-          <span className="text-xs font-medium text-slate-600">{v ? 'Yes' : 'No'}</span>
-        </div>
-      )
+      render: (v) => {
+        const published = v === 'Published'
+        return (
+          <div className="flex items-center justify-center">
+            <span
+              className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${
+                published ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${published ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+              {v || 'Draft'}
+            </span>
+          </div>
+        )
+      },
     },
     {
       key: 'actions',
       label: 'Actions',
       render: (_, row) => (
-        <div className="flex gap-1">
-          <Button
-            label="Edit"
-            variant="ghost"
-            size="sm"
-            icon={HiPencilSquare}
-            onClick={() => {
-              setFormData(normalizePolicyForm(row))
-              setActiveView('editor')
-            }}
-          />
-          {isHR && (
-            <Button
-              label="Track"
-              variant="ghost"
-              size="sm"
-              icon={HiUserGroup}
-              onClick={() => handleOpenTracking(row)}
-            />
-          )}
-          {isHR && (
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={HiTrash}
-              className="text-red-500 hover:bg-red-50"
-              onClick={() => handleDelete(row.id)}
-            />
-          )}
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => openPolicyView(row)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56]"
+            aria-label="View policy"
+          >
+            <HiEye className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => openPolicyModal(row)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600"
+            aria-label="Edit policy"
+          >
+            <HiPencilSquare className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDelete(row.id)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600"
+            aria-label="Delete policy"
+          >
+            <HiTrash className="h-4 w-4" />
+          </button>
         </div>
       ),
     },
@@ -379,11 +461,11 @@ export default function Policies() {
       {/* Top Title Bar — Standardized */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Governance & Compliance</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Policy Management</h1>
           <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
             <span>Compliance</span>
             <span className="text-slate-400">&gt;</span>
-            <span className="text-slate-600">Policy Registry</span>
+            <span className="text-slate-600">Policy Listing</span>
           </div>
         </div>
         {isHR && (
@@ -398,14 +480,12 @@ export default function Policies() {
             >
               <HiFolderPlus className="h-4 w-4" /> Add Category
             </button>
-            <button 
-              onClick={() => {
-                setFormData(initialFormData)
-                setActiveView('editor')
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
+            <button
+              type="button"
+              onClick={() => openPolicyModal()}
+              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
             >
-              <HiPlus className="h-4 w-4" /> New Policy
+              <HiPlus className="h-4 w-4" /> Add Policy
             </button>
           </div>
         )}
@@ -443,115 +523,107 @@ export default function Policies() {
         {activeView === 'dashboard' && (
           <div className="space-y-6 animate-in fade-in duration-500">
             {/* KPI Metrics Cards Grid */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
               {[
-                { label: 'TOTAL POLICIES', count: policies.length, bgColor: 'bg-[#0F172A]', icon: HiDocumentText },
-                { label: 'ACKNOWLEDGEMENTS', count: policies.reduce((acc, p) => acc + (p.ackCount || 0), 0), bgColor: 'bg-[#10B981]', icon: HiShieldCheck },
-                { label: 'DRAFT DIRECTIVES', count: policies.filter(p => p.status === 'Draft').length, bgColor: 'bg-[#F59E0B]', icon: HiBellAlert }
-              ].map((card, idx) => (
-                <div key={idx} className="flex items-center gap-3.5 rounded-none border border-slate-200 bg-white p-4 shadow-sm min-w-0">
+                { label: 'TOTAL POLICIES', count: policies.length, bgColor: 'bg-[#0F172A]', icon: HiDocumentText, filterId: 'all', onClick: () => { setStatusFilter('all'); setCategoryFilter('') } },
+                { label: 'PUBLISHED', count: policies.filter((p) => p.status === 'Published').length, bgColor: 'bg-[#10B981]', icon: HiCheckCircle, filterId: 'published', onClick: () => setStatusFilter('published') },
+                { label: 'DRAFTS', count: policies.filter((p) => p.status === 'Draft').length, bgColor: 'bg-[#F59E0B]', icon: HiBellAlert, filterId: 'draft', onClick: () => setStatusFilter('draft') },
+                { label: 'ACKNOWLEDGEMENTS', count: policies.reduce((acc, p) => acc + (p.ackCount || 0), 0), bgColor: 'bg-[#3B82F6]', icon: HiShieldCheck, filterId: null, onClick: () => setStatusFilter('all') },
+              ].map((card, idx) => {
+                const isActive = card.filterId !== null && statusFilter === card.filterId
+                return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={card.onClick}
+                  className={`flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 min-w-0 shadow-sm ${
+                    isActive ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]' : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
                     <card.icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate leading-none">
+                    <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActive ? 'text-[#0F766E]' : 'text-slate-400'}`}>
                       {card.label}
                     </div>
                     <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
                   </div>
-                </div>
-              ))}
+                </button>
+                )
+              })}
             </div>
 
-            <div className="space-y-6">
-              {/* Search & Filters */}
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-6 md:flex-row md:items-end">
-                  <div className="flex-1">
-                    <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Registry</label>
-                    <div className="relative">
-                      <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="ENTER POLICY IDENTIFIER..."
-                        className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all"
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="w-full md:w-64">
-                    <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Classification</label>
-                    <select
-                      className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer"
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
+            <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+                <h2 className="text-sm font-semibold text-white">Policy Listing</h2>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+                <div className="relative min-w-[250px] flex-1 max-w-md">
+                  <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search policy title or category..."
+                    className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]"
+                  >
+                    <option value="">All categories</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs font-medium text-slate-500">{filtered.length} records shown</p>
+                  {(q || categoryFilter || statusFilter !== 'all') && (
+                    <button
+                      type="button"
+                      onClick={() => { setQ(''); setCategoryFilter(''); setStatusFilter('all') }}
+                      className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
                     >
-                      <option value="">ALL CATEGORIES</option>
-                      {categories.map(c => <option key={c.id} value={c.name}>{c.name.toUpperCase()}</option>)}
-                    </select>
-                  </div>
-                  <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
-                     REFINE
-                  </button>
+                      Reset filters
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {filtered.length > 0 ? (
-                <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-                  <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
-                    <h2 className="text-sm font-semibold text-white uppercase tracking-wider">Policy Registry</h2>
-                    <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em]">Master Repository</div>
-                  </div>
-                  <Table columns={columns} data={filtered} pageSize={10} className="rounded-none" />
-                </div>
-              ) : !loading && (
-                <EmptyState
-                  title="No Policies Available"
-                  description="Your policy registry is currently empty. Start by creating a new directive to maintain organizational compliance."
-                  image="/global_no_data.png"
-                  actionLabel={isHR ? "Create Your First Policy" : null}
-                  icon={HiPlus}
-                  onAction={() => {
-                    setFormData(initialFormData)
-                    setActiveView('editor')
-                  }}
-                />
-              )}
+              
             </div>
           </div>
         )}
 
         {activeView === 'categories' && (
           <div className="animate-in fade-in duration-500 space-y-6">
-            <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest border-l-4 border-[#0F766E] pl-3">Category Taxonomy</h3>
-                  <p className="text-xs text-slate-500 mt-2 font-medium">ORGANIZE POLICIES INTO FUNCTIONAL DOMAINS FOR SYSTEMIC ACCESSIBILITY.</p>
-                </div>
-                <div className="flex items-center gap-6">
-                   <div className="text-right">
-                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Domains</div>
-                     <div className="text-2xl font-black text-slate-900">{categories.length}</div>
-                   </div>
-                </div>
-              </div>
-            </div>
+            
 
             {categories.length > 0 ? (
               <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+                  <h2 className="text-sm font-semibold text-white">Category listing</h2>
+                </div>
                 <Table 
                   columns={[
                     { 
                       key: 'name', 
                       label: 'Category',
-                      render: (v) => (
+                      render: (v, row) => (
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-600 border border-slate-200">
                             <HiDocumentText className="h-4 w-4" />
                           </div>
-                          <span className="font-black text-slate-900 uppercase text-[11px] tracking-tight">{v}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleViewCategory(row)}
+                            className="text-sm font-semibold text-slate-900 hover:text-[#0F766E] hover:underline text-left"
+                          >
+                            {v}
+                          </button>
                         </div>
                       )
                     },
@@ -571,31 +643,28 @@ export default function Policies() {
                     },
                     {
                       key: 'actions',
-                      label: '',
+                      label: 'Actions',
                       render: (_, row) => (
-                        <div className="flex gap-3 items-center">
-                          <Button
-                            label="View"
-                            variant="ghost"
-                            size="sm"
-                            icon={HiEye}
-                            onClick={() => handleViewCategory(row)}
-                          />
-                          <button 
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            type="button"
                             onClick={() => {
                               setEditingCategory(row)
                               setNewCategoryName(row.name)
                               setModalOpen(true)
                             }}
-                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#0F766E]"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600"
+                            aria-label="Edit category"
                           >
-                            Edit
+                            <HiPencilSquare className="h-4 w-4" />
                           </button>
-                          <button 
+                          <button
+                            type="button"
                             onClick={() => handleDeleteCategory(row.id)}
-                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-500"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600"
+                            aria-label="Delete category"
                           >
-                            Delete
+                            <HiTrash className="h-4 w-4" />
                           </button>
                         </div>
                       )
@@ -618,143 +687,6 @@ export default function Policies() {
           </div>
         )}
 
-        {activeView === 'editor' && (
-          <div className="animate-in slide-in-from-right-10 duration-500 flex flex-col gap-6">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-6">
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setActiveView('dashboard')}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-all hover:bg-slate-200"
-                >
-                  <HiChevronRight className="h-5 w-5 rotate-180" />
-                </button>
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900">{formData.title || 'New Policy Directive'}</h2>
-                  <p className="text-sm text-slate-500">{formData.category || 'Creating new document'}</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button label="Save Draft" variant="ghost" icon={HiPencilSquare} onClick={() => handleSave('Draft')} />
-                <Button
-                  label="Publish"
-                  variant="primary"
-                  icon={HiShieldCheck}
-                  onClick={() => {
-                    setPublishSettings(formData.audienceConfig || { ...DEFAULT_AUDIENCE_CONFIG })
-                    setPublishModalOpen(true)
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-8 lg:grid-cols-4">
-              <div className="lg:col-span-3 space-y-8">
-                <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:border-[#0F766E]/30">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-[#0F766E]" /> Policy sections
-                  </h3>
-                  <div className="space-y-6">
-                    {POLICY_SECTION_FIELDS.map((field) => (
-                      <div key={field.key} className="space-y-2">
-                        <label className="text-xs font-bold text-slate-700">{field.label}</label>
-                        <textarea
-                          className="w-full min-h-[120px] rounded-xl bg-slate-50/50 p-4 text-slate-700 text-sm focus:ring-2 focus:ring-[#0F766E]/20 focus:outline-none transition-all resize-y border border-slate-100"
-                          placeholder={field.placeholder}
-                          value={formData.sections?.[field.key] || ''}
-                          onChange={(e) => updateSection(field.key, e.target.value)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Document Meta</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Policy Title</label>
-                      <input 
-                        type="text"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 px-3 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
-                        value={formData.title}
-                        onChange={(e) => setFormData({...formData, title: e.target.value})}
-                        placeholder="e.g. Work From Home Policy"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
-                      <select 
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 px-3 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
-                        value={formData.category}
-                        onChange={(e) => setFormData({...formData, category: e.target.value})}
-                      >
-                        <option value="">Select Category</option>
-                        {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Effective Date</label>
-                        <input 
-                          type="date"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 px-3 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
-                          value={formData.effectiveDate || ''}
-                          onChange={(e) => setFormData({...formData, effectiveDate: e.target.value})}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Review Date</label>
-                        <input 
-                          type="date"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 px-3 text-sm focus:border-[#0F766E] focus:outline-none transition-all"
-                          value={formData.reviewDate || ''}
-                          onChange={(e) => setFormData({...formData, reviewDate: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="rounded-2xl bg-slate-900 p-6 text-white shadow-xl relative overflow-hidden group">
-                  <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-500/10 blur-2xl group-hover:bg-emerald-500/20 transition-all" />
-                  <HiArrowDownTray className="h-8 w-8 text-emerald-400/50" />
-                  <h3 className="mt-4 font-bold">Assets & Forms</h3>
-                  <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                    {formData.attachments?.length || 0} supplementary documents attached.
-                  </p>
-                  <button 
-                    onClick={() => setAttachmentModalOpen(true)}
-                    className="mt-6 w-full rounded-xl bg-white/10 py-3 text-xs font-bold text-white transition-all hover:bg-white/20 border border-white/10 flex items-center justify-center gap-2"
-                  >
-                    <HiPlus className="h-3.5 w-3.5" /> Manage Assets
-                  </button>
-
-                  {formData.attachments?.length > 0 && (
-                    <div className="mt-4 space-y-2 border-t border-white/5 pt-4">
-                      {formData.attachments.map((asset, idx) => (
-                        <div key={idx} className="flex items-center justify-between rounded-lg bg-white/5 p-2 text-[10px] hover:bg-white/10 transition-all">
-                          <span className="truncate max-w-[120px] font-medium">{asset.name}</span>
-                          <button 
-                            onClick={() => {
-                              const next = formData.attachments.filter((_, i) => i !== idx)
-                              setFormData({ ...formData, attachments: next })
-                            }}
-                            className="text-white/40 hover:text-red-400 transition-colors"
-                          >
-                            <HiXMark className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {activeView === 'tracking' && (
           <div className="animate-in fade-in duration-500 space-y-6">
              <div className="flex items-center justify-between border-b border-slate-200 pb-6">
@@ -766,13 +698,16 @@ export default function Policies() {
                   <HiChevronRight className="h-5 w-5 rotate-180" />
                 </button>
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Acknowledgement Audit</h2>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedPolicy?.title}</p>
+                  <h2 className="text-2xl font-bold tracking-tight text-slate-900">Acknowledgement tracking</h2>
+                  <p className="text-sm font-medium text-slate-500">{selectedPolicy?.title}</p>
                 </div>
               </div>
             </div>
 
             <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+                <h2 className="text-sm font-semibold text-white">Acknowledgement listing</h2>
+              </div>
               <Table 
                 columns={[
                   {
@@ -810,14 +745,36 @@ export default function Policies() {
                     )
                   }
                 ]} 
-                data={trackingData} 
-                pageSize={10} 
-                className="rounded-none"
+                data={trackingData}
+                pageSize={10}
+                square
               />
             </div>
           </div>
         )}
       </div>
+
+      <PolicyViewModal
+        isOpen={viewModalOpen}
+        onClose={closePolicyView}
+        policy={viewPolicy}
+        loading={viewLoading}
+        onEdit={isHR ? handleEditFromView : undefined}
+      />
+
+      <PolicyFormModal
+        isOpen={policyModalOpen}
+        onClose={closePolicyModal}
+        editMode={!!formData.id}
+        formData={formData}
+        setFormData={setFormData}
+        categories={categories}
+        updateSection={updateSection}
+        onSaveDraft={() => handleSave('Draft')}
+        onPublish={handlePublishFromModal}
+        onManageAttachments={() => setAttachmentModalOpen(true)}
+        saving={savingPolicy || savingPublish}
+      />
 
       <PolicyPublishSettingsModal
         isOpen={publishModalOpen}
@@ -837,18 +794,30 @@ export default function Policies() {
           setEditingCategory(null)
           setNewCategoryName('')
         }} 
-        title={editingCategory ? "Update Category" : "Create Policy Category"} 
         size="md"
+        showClose
+        header={
+          <div className="flex flex-col gap-1 pr-8">
+            <h2 className="text-lg font-bold text-slate-900">
+              {editingCategory ? 'Edit Category' : 'Add New Category'}
+            </h2>
+            <p className="text-xs font-medium text-slate-500">
+              Organize policies into categories for easier browsing and reporting.
+            </p>
+          </div>
+        }
       >
-        <div className="space-y-4">
-          <Input 
-            label="Category Name" 
-            placeholder="e.g., Remote Operations" 
+        <div className="space-y-4 pt-2">
+          <Input
+            label="Category Name"
+            placeholder="e.g. Remote Operations"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
+            inputClassName={INPUT_CLS}
+            labelClassName={LABEL_CLS}
           />
-          <div className="w-full">
-            <label className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Icon Representation</label>
+          <div className="w-full hidden">
+            <label className="mb-1 block text-sm font-medium text-slate-800">Icon</label>
             <div className="grid grid-cols-4 gap-2">
               {[HiDocumentText, HiShieldCheck, HiUserGroup, HiClock].map((Icon, i) => (
                 <button key={i} className="flex h-12 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 transition-all hover:border-[#0F766E] hover:text-[#0F766E]">
@@ -857,9 +826,9 @@ export default function Policies() {
               ))}
             </div>
           </div>
-          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-            <Button label="Cancel" variant="ghost" onClick={() => setModalOpen(false)} />
-            <Button label={editingCategory ? "Save Changes" : "Add Category"} variant="primary" onClick={handleAddCategory} />
+          <div className="flex items-center justify-end gap-3 pt-6 mt-2 border-t border-slate-100">
+            <button type="button" onClick={() => setModalOpen(false)} className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+            <button type="button" onClick={handleAddCategory} className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56]">{editingCategory ? 'Save Changes' : 'Add Category'}</button>
           </div>
         </div>
       </Modal>

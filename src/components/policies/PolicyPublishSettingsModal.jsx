@@ -1,5 +1,4 @@
 import { Modal } from '../ui/Modal.jsx';
-import { Button } from '../ui/Button.jsx';
 
 const AUDIENCE_OPTIONS = [
   { value: 'all', label: 'All employees' },
@@ -26,10 +25,21 @@ export default function PolicyPublishSettingsModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Publish policy — visibility settings" size="lg">
-      <p className="text-sm text-slate-600 mb-6">
-        Choose who can view and acknowledge this policy after it is published.
-      </p>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      showClose
+      header={
+        <div className="flex flex-col gap-1 pr-8">
+          <h2 className="text-lg font-bold text-slate-900">Publish policy</h2>
+          <p className="text-xs font-medium text-slate-500">
+            Choose who can view and acknowledge this policy after it is published.
+          </p>
+        </div>
+      }
+    >
+      <div className="pt-1">
 
       <div className="space-y-3">
         {AUDIENCE_OPTIONS.map((opt) => (
@@ -115,14 +125,23 @@ export default function PolicyPublishSettingsModal({
         </div>
       )}
 
-      <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
-        <Button label="Cancel" variant="ghost" onClick={onClose} />
-        <Button
-          label={saving ? 'Publishing…' : 'Publish policy'}
-          variant="primary"
+      <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-5">
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
           onClick={onConfirm}
           disabled={saving}
-        />
+          className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {saving ? 'Publishing…' : 'Publish policy'}
+        </button>
+      </div>
       </div>
     </Modal>
   );
