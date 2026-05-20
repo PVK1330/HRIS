@@ -54,6 +54,18 @@ const getSummary = async () => {
   return response.data
 }
 
+/** Get assessments for a specific employee */
+const getEmployeeAssessments = async (employeeId) => {
+  const response = await api.get(`${BASE_URL}/employee/${employeeId}`)
+  return response.data
+}
+
+/** Get performance summary for a specific employee */
+const getEmployeePerformanceSummary = async (employeeId) => {
+  const response = await api.get(`${BASE_URL}/performance-summary/${employeeId}`)
+  return response.data
+}
+
 /** Dropdowns */
 const getCyclesDropdown = async () => {
   const response = await api.get('performance-cycles/dropdown')
@@ -77,6 +89,8 @@ export default {
   updateAssessment,
   deleteAssessment,
   getSummary,
+  getEmployeeAssessments,
+  getEmployeePerformanceSummary,
   getCyclesDropdown,
   getCompetenciesDropdown,
   getEmployeesDropdown
