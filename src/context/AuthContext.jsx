@@ -241,6 +241,7 @@ const PERMISSIONS = {
     "view_own_documents",
     "view_own_payslips",
     "submit_expense",
+    "view_expenses",
   ],
   superadmin: ["*"],
   support_admin: [
