@@ -11,6 +11,7 @@ import {
   HiPaperClip,
   HiBanknotes,
   HiPencilSquare,
+  HiTrash,
   HiDocumentArrowDown,
   HiInboxStack,
   HiTableCells,
@@ -86,6 +87,19 @@ const initialCategoryFormData = {
   description: '',
   isActive: true,
 };
+
+function mapCategoryRow(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description ?? '',
+    limitAmount: row.limit_amount,
+    isActive: row.is_active !== false,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
 export default function Expenses() {
   const { user } = useAuth();
@@ -170,25 +184,28 @@ export default function Expenses() {
   }, [loadStats, loadClaims, viewMode]);
 
   const loadCategories = useCallback(async () => {
-    if (viewMode !== 'categories') return;
-    setCategoryLoading(true);
+    const forAdminList = viewMode === 'categories';
+    if (forAdminList) setCategoryLoading(true);
     try {
-      const rows = await expenseCategoryService.listExpenseCategories({});
-      setExpenseCategories(Array.isArray(rows) ? rows : []);
+      const rows = await expenseCategoryService.listExpenseCategories({
+        activeOnly: forAdminList ? false : true,
+      });
+      const mapped = (Array.isArray(rows) ? rows : []).map(mapCategoryRow);
+      setExpenseCategories(mapped);
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to load expense categories');
+      if (forAdminList) {
+        toast.error(err.response?.data?.message || 'Failed to load expense categories');
+      }
       setExpenseCategories([]);
     } finally {
-      setCategoryLoading(false);
+      if (forAdminList) setCategoryLoading(false);
     }
   }, [viewMode]);
 
   useEffect(() => {
-    if (viewMode === 'categories') {
-      loadCategories();
-    }
-  }, [loadCategories, viewMode]);
+    loadCategories();
+  }, [loadCategories]);
 
   useEffect(() => {
     if (!canApprove || isEmployee) return;
@@ -370,18 +387,6 @@ export default function Expenses() {
     }
   };
 
-  const handleToggleCategoryStatus = async (category) => {
-    try {
-      await expenseCategoryService.updateExpenseCategory(category.id, {
-        isActive: !category.isActive,
-      });
-      toast.success(`Category ${category.isActive ? 'disabled' : 'enabled'} successfully`);
-      await loadCategories();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update category status');
-    }
-  };
-
   const handleApprove = async () => {
     if (!selectedClaim?.id) return;
     try {
@@ -446,16 +451,30 @@ export default function Expenses() {
     {
       key: 'isActive',
       label: 'Status',
-      render: (v) => (
-        <Badge label={v ? 'Active' : 'Inactive'} color={v ? 'green' : 'gray'} />
-      ),
+      render: (v) => {
+        const isActive = Boolean(v);
+        return (
+          <div className="flex items-center justify-center">
+            <span
+              className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${
+                isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}`}
+              />
+              {isActive ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'createdAt',
       label: 'Created',
       render: (v) => (
         <span className="text-sm text-slate-600">
-          {v ? new Date(v).toLocaleDateString() : '—'}
+          {v ? new Date(v).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
         </span>
       ),
     },
@@ -463,33 +482,22 @@ export default function Expenses() {
       key: 'actions',
       label: 'Actions',
       render: (_, row) => (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <button
             type="button"
             onClick={() => openEditCategory(row)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white hover:bg-sky-600"
-            aria-label="Edit"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600"
+            aria-label="Edit category"
           >
             <HiPencilSquare className="h-4 w-4" />
           </button>
           <button
             type="button"
-            onClick={() => handleToggleCategoryStatus(row)}
-            className={`inline-flex h-8 items-center justify-center rounded-none px-2 text-xs font-semibold ${
-              row.isActive
-                ? 'bg-gray-500 text-white hover:bg-gray-600'
-                : 'bg-emerald-500 text-white hover:bg-emerald-600'
-            }`}
-          >
-            {row.isActive ? 'Disable' : 'Enable'}
-          </button>
-          <button
-            type="button"
             onClick={() => handleDeleteCategory(row.id, row.name)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white hover:bg-red-600"
-            aria-label="Delete"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600"
+            aria-label="Delete category"
           >
-            <HiXCircle className="h-4 w-4" />
+            <HiTrash className="h-4 w-4" />
           </button>
         </div>
       ),
