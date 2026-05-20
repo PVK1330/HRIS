@@ -36,6 +36,8 @@ const ACTION_TO_LEGACY = {
   'visa.manage': [LEGACY_MODULE_KEYS.VISA],
   'departments.manage': [LEGACY_MODULE_KEYS.DEPARTMENTS, 'designations'],
   'policies.manage': [LEGACY_MODULE_KEYS.POLICIES],
+  'policies.view': [LEGACY_MODULE_KEYS.POLICIES],
+  'policies.acknowledge': [LEGACY_MODULE_KEYS.POLICIES],
   'messages.view': [LEGACY_MODULE_KEYS.MESSAGES],
   'assets.view': [LEGACY_MODULE_KEYS.ASSETS],
 }

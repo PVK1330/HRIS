@@ -30,6 +30,16 @@ export const policyService = {
     return data.data;
   },
 
+  listMine: async () => {
+    const { data } = await api.get('/policies/me');
+    return data.data || [];
+  },
+
+  getMine: async (id) => {
+    const { data } = await api.get(`/policies/me/${id}`);
+    return data.data;
+  },
+
   acknowledge: async (id) => {
     const { data } = await api.post(`/policies/${id}/acknowledge`);
     return data.data;

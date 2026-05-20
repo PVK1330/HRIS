@@ -21,6 +21,7 @@ import Documents from "../pages/admin/documents/Documents.jsx";
 import VisaNationality from "../pages/admin/compliance/VisaNationality.jsx";
 import Performance from "../pages/admin/hr/Performance.jsx";
 import Policies from "../pages/admin/compliance/Policies.jsx";
+import MyPolicies from "../pages/admin/compliance/MyPolicies.jsx";
 import Expenses from "../pages/admin/finance/Expenses.jsx";
 import Onboarding from "../pages/admin/hr/Onboarding.jsx";
 import ExitManagement from "../pages/admin/hr/ExitManagement.jsx";
@@ -192,6 +193,14 @@ export const router = createBrowserRouter([
                 moduleKey={["performance", "training-development"]}
               >
                 <Performance />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "my-policies",
+            element: (
+              <AdminModuleGate moduleKey="policies">
+                <MyPolicies />
               </AdminModuleGate>
             ),
           },

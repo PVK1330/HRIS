@@ -311,7 +311,7 @@ const FEATURE_PATH_MAP = {
   payroll: ["/admin/payroll"],
   expense_management: ["/admin/expenses"],
   expenses: ["/admin/expenses"],
-  policies: ["/admin/policies"],
+  policies: ["/admin/policies", "/admin/my-policies"],
   announcements: ["/admin/announcements"],
   visa_management: ["/admin/visa"],
   visa: ["/admin/visa"],
@@ -378,7 +378,18 @@ export default function AdminLayout() {
     return adminNavGroups
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => {
+        items: group.items
+          .map((item) => {
+            if (item.key === "policies" && user?.role === "employee") {
+              return {
+                ...item,
+                label: "My Policies",
+                path: "/admin/my-policies",
+              };
+            }
+            return item;
+          })
+          .filter((item) => {
           const moduleKey = item.key;
 
           if (moduleKey && moduleKey !== "dashboard" && !hasModule(moduleKey)) {

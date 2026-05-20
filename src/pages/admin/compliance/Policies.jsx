@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { 
   HiDocumentText, 
   HiShieldCheck, 
@@ -31,6 +32,14 @@ import { useAuth } from '../../../context/AuthContext.jsx'
 import { policyService } from '../../../services/policyService.js'
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
+import PolicyPublishSettingsModal from '../../../components/policies/PolicyPublishSettingsModal.jsx'
+import {
+  POLICY_SECTION_FIELDS,
+  EMPTY_POLICY_SECTIONS,
+  DEFAULT_AUDIENCE_CONFIG,
+  audienceLabelFromConfig,
+  normalizePolicyForm,
+} from '../../../constants/policySections.js'
 import { toast } from 'react-hot-toast'
 import { useEffect } from 'react'
 
@@ -48,21 +57,23 @@ const POLICY_CATEGORIES = [
 
 const initialFormData = {
   title: '',
-  category: 'HR Policies',
+  category: '',
   version: '1.0',
   description: '',
   effectiveDate: '',
   reviewDate: '',
   ackRequired: true,
-  audience: 'All Employees',
   status: 'Draft',
-  attachments: []
+  attachments: [],
+  sections: { ...EMPTY_POLICY_SECTIONS },
+  audienceConfig: { ...DEFAULT_AUDIENCE_CONFIG },
 }
 
 import Swal from 'sweetalert2'
 
 export default function Policies() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [activeView, setActiveView] = useState('dashboard')
   const [policies, setPolicies] = useState([])
   const [roles, setRoles] = useState([])
@@ -78,8 +89,18 @@ export default function Policies() {
   const [attachmentModalOpen, setAttachmentModalOpen] = useState(false)
   const [newAttachment, setNewAttachment] = useState({ name: '', url: '' })
   const [formData, setFormData] = useState(initialFormData)
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [publishModalOpen, setPublishModalOpen] = useState(false)
+  const [publishSettings, setPublishSettings] = useState({ ...DEFAULT_AUDIENCE_CONFIG })
+  const [savingPublish, setSavingPublish] = useState(false)
 
   const isHR = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin'
+
+  useEffect(() => {
+    if (user?.role === 'employee') {
+      navigate('/admin/my-policies', { replace: true })
+    }
+  }, [user?.role, navigate])
 
   const fetchData = async () => {
     try {
@@ -91,8 +112,10 @@ export default function Policies() {
         policyService.listCategories()
       ])
       setPolicies(policiesRes)
-      setRoles(rolesRes?.data?.data || [])
-      setDepartments((deptsRes?.departments ?? deptsRes) || [])
+      const roleList = rolesRes?.data?.data ?? rolesRes?.data ?? []
+      setRoles(Array.isArray(roleList) ? roleList : [])
+      const deptList = deptsRes?.departments ?? deptsRes?.records ?? (Array.isArray(deptsRes) ? deptsRes : [])
+      setDepartments(deptList)
       setCategories(catsRes)
     } catch (err) {
       toast.error('Failed to load data')
@@ -167,10 +190,22 @@ export default function Policies() {
   }
 
   const filtered = useMemo(() => {
+    let list = policies
+    if (categoryFilter) {
+      list = list.filter((p) => p.category === categoryFilter)
+    }
     const query = q.trim().toLowerCase()
-    if (!query) return policies
-    return policies.filter((p) => `${p.title} ${p.category}`.toLowerCase().includes(query))
-  }, [q, policies])
+    if (query) {
+      list = list.filter((p) => `${p.title} ${p.category}`.toLowerCase().includes(query))
+    }
+    return list
+  }, [q, policies, categoryFilter])
+
+  const handleViewCategory = (cat) => {
+    setCategoryFilter(cat.name)
+    setQ('')
+    setActiveView('dashboard')
+  }
 
   const handleOpenTracking = async (policy) => {
     try {
@@ -183,17 +218,26 @@ export default function Policies() {
     }
   }
 
-  const handleSave = async (overrideStatus = null) => {
+  const handleSave = async (overrideStatus = null, publishConfig = null) => {
     try {
-      const payload = { 
-        ...formData, 
-        status: overrideStatus || formData.status || 'Draft',
+      const audienceConfig = publishConfig || formData.audienceConfig || { ...DEFAULT_AUDIENCE_CONFIG }
+      const payload = {
+        title: formData.title,
+        category: formData.category,
+        version: formData.version || '1.0',
+        description: formData.description || '',
         effectiveDate: formData.effectiveDate || null,
-        reviewDate: formData.reviewDate || null
+        reviewDate: formData.reviewDate || null,
+        ackRequired: formData.ackRequired ?? true,
+        status: overrideStatus || formData.status || 'Draft',
+        sections: formData.sections || { ...EMPTY_POLICY_SECTIONS },
+        audienceConfig,
+        audience: audienceLabelFromConfig(audienceConfig),
+        attachments: formData.attachments || [],
       }
 
-      if (payload.id) {
-        await policyService.update(payload.id, payload)
+      if (formData.id) {
+        await policyService.update(formData.id, payload)
         toast.success('Policy updated successfully')
       } else {
         await policyService.create(payload)
@@ -205,6 +249,23 @@ export default function Policies() {
       console.error('Save error:', err)
       toast.error('Failed to save policy directive')
     }
+  }
+
+  const confirmPublish = async () => {
+    setSavingPublish(true)
+    try {
+      await handleSave('Published', publishSettings)
+      setPublishModalOpen(false)
+    } finally {
+      setSavingPublish(false)
+    }
+  }
+
+  const updateSection = (key, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      sections: { ...prev.sections, [key]: value },
+    }))
   }
 
   const handleDelete = async (id) => {
@@ -286,7 +347,7 @@ export default function Policies() {
             size="sm"
             icon={HiPencilSquare}
             onClick={() => {
-              setFormData(row)
+              setFormData(normalizePolicyForm(row))
               setActiveView('editor')
             }}
           />
@@ -421,8 +482,12 @@ export default function Policies() {
                   </div>
                   <div className="w-full md:w-64">
                     <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Classification</label>
-                    <select className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer">
-                      <option>ALL CATEGORIES</option>
+                    <select
+                      className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all cursor-pointer"
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                    >
+                      <option value="">ALL CATEGORIES</option>
                       {categories.map(c => <option key={c.id} value={c.name}>{c.name.toUpperCase()}</option>)}
                     </select>
                   </div>
@@ -480,7 +545,7 @@ export default function Policies() {
                   columns={[
                     { 
                       key: 'name', 
-                      label: 'Functional Domain',
+                      label: 'Category',
                       render: (v) => (
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-600 border border-slate-200">
@@ -491,15 +556,31 @@ export default function Policies() {
                       )
                     },
                     { 
-                      key: 'id', 
-                      label: 'System Identifier',
-                      render: (v) => <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">DOM-{v}</span>
+                      key: 'policyCount', 
+                      label: 'No. of Policies',
+                      render: (v) => <span className="text-sm font-bold text-slate-700">{v ?? 0}</span>
+                    },
+                    { 
+                      key: 'lastUpdated', 
+                      label: 'Last Update',
+                      render: (v) => (
+                        <span className="text-xs text-slate-500">
+                          {v ? new Date(v).toLocaleDateString() : '—'}
+                        </span>
+                      )
                     },
                     {
                       key: 'actions',
-                      label: 'Governance',
+                      label: '',
                       render: (_, row) => (
-                        <div className="flex gap-4">
+                        <div className="flex gap-3 items-center">
+                          <Button
+                            label="View"
+                            variant="ghost"
+                            size="sm"
+                            icon={HiEye}
+                            onClick={() => handleViewCategory(row)}
+                          />
                           <button 
                             onClick={() => {
                               setEditingCategory(row)
@@ -554,22 +635,37 @@ export default function Policies() {
               </div>
               <div className="flex gap-2">
                 <Button label="Save Draft" variant="ghost" icon={HiPencilSquare} onClick={() => handleSave('Draft')} />
-                <Button label="Publish" variant="primary" icon={HiShieldCheck} onClick={() => handleSave('Published')} />
+                <Button
+                  label="Publish"
+                  variant="primary"
+                  icon={HiShieldCheck}
+                  onClick={() => {
+                    setPublishSettings(formData.audienceConfig || { ...DEFAULT_AUDIENCE_CONFIG })
+                    setPublishModalOpen(true)
+                  }}
+                />
               </div>
             </div>
 
             <div className="grid gap-8 lg:grid-cols-4">
               <div className="lg:col-span-3 space-y-8">
                 <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:border-[#0F766E]/30">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-[#0F766E]" /> Policy Content & Directives
+                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-[#0F766E]" /> Policy sections
                   </h3>
-                  <textarea 
-                    className="w-full min-h-[500px] rounded-2xl bg-slate-50/50 p-6 text-slate-700 text-base focus:ring-4 focus:ring-emerald-500/10 focus:outline-none transition-all resize-none border border-slate-100"
-                    placeholder="Draft your policy here... Use clear, concise language to define organizational standards."
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  />
+                  <div className="space-y-6">
+                    {POLICY_SECTION_FIELDS.map((field) => (
+                      <div key={field.key} className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700">{field.label}</label>
+                        <textarea
+                          className="w-full min-h-[120px] rounded-xl bg-slate-50/50 p-4 text-slate-700 text-sm focus:ring-2 focus:ring-[#0F766E]/20 focus:outline-none transition-all resize-y border border-slate-100"
+                          placeholder={field.placeholder}
+                          value={formData.sections?.[field.key] || ''}
+                          onChange={(e) => updateSection(field.key, e.target.value)}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -681,27 +777,37 @@ export default function Policies() {
                 columns={[
                   {
                     key: 'full_name',
-                    label: 'Asset Holder',
+                    label: 'Employee Name',
                     render: (_, row) => (
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-600 font-black text-[10px] border border-slate-200">
                           {row.full_name?.charAt(0) || '?'}
                         </div>
-                        <div className="font-black text-slate-900 uppercase text-[11px] tracking-tight">{row.full_name}</div>
+                        <span className="font-semibold text-slate-900 text-sm">{row.full_name}</span>
                       </div>
                     )
                   },
-                  { key: 'emp_id', label: 'Employee Identifier', render: (v) => <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{v}</span> },
-                  { key: 'department', label: 'Business Unit', render: (v) => <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{v}</span> },
+                  { key: 'emp_id', label: 'Employee ID', render: (v) => <span className="text-sm text-slate-600">{v || '—'}</span> },
+                  { key: 'department', label: 'Department', render: (v) => <span className="text-sm text-slate-600">{v || '—'}</span> },
+                  { key: 'job_title', label: 'Job Title', render: (v) => <span className="text-sm text-slate-600">{v || '—'}</span> },
                   {
                     key: 'status',
-                    label: 'Audit Status',
-                    render: (v) => <Badge label={v.toUpperCase()} color={v === 'Acknowledged' ? 'green' : 'orange'} className="rounded-none text-[9px] font-black tracking-widest" />
+                    label: 'Status',
+                    render: (v) => (
+                      <Badge
+                        label={v}
+                        color={v === 'Acknowledged' ? 'green' : v === 'Pending' ? 'orange' : 'gray'}
+                      />
+                    )
                   },
                   { 
                     key: 'acknowledged_at', 
-                    label: 'Timestamp',
-                    render: (v) => v ? <span className="text-[10px] font-bold text-slate-500">{new Date(v).toLocaleString()}</span> : <span className="text-[10px] font-bold text-slate-300 italic">PENDING</span>
+                    label: 'Acknowledged On',
+                    render: (v) => (
+                      <span className="text-sm text-slate-600">
+                        {v ? new Date(v).toLocaleDateString() : '—'}
+                      </span>
+                    )
                   }
                 ]} 
                 data={trackingData} 
@@ -712,6 +818,17 @@ export default function Policies() {
           </div>
         )}
       </div>
+
+      <PolicyPublishSettingsModal
+        isOpen={publishModalOpen}
+        onClose={() => setPublishModalOpen(false)}
+        settings={publishSettings}
+        onChange={setPublishSettings}
+        departments={departments}
+        roles={roles}
+        onConfirm={confirmPublish}
+        saving={savingPublish}
+      />
 
       <Modal 
         isOpen={modalOpen} 
