@@ -13,11 +13,13 @@ import {
   getPerformance, getAssets,
 } from '../../../services/employeeProfileService.js'
 import { listEmployees } from '../../../services/employeeService.js'
+import performanceAssessmentAPI from '../../../services/performanceAssessmentAPI.js'
 import {
   HiUser, HiIdentification, HiBriefcase, HiDocumentText, HiCreditCard,
   HiClock, HiCalendar, HiChartBar, HiArchiveBox, HiEllipsisVertical,
   HiCheckCircle, HiExclamationCircle, HiNoSymbol, HiArrowUpCircle,
   HiBolt, HiPrinter, HiPencilSquare, HiArrowPath,
+  HiStar, HiEye
 } from 'react-icons/hi2'
 
 const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -64,7 +66,9 @@ export default function EmployeeProfile() {
   const [documents, setDocuments] = useState(null)
   /** Tenant document_types rows — drives checklist + per-type upload on Documents tab */
   const [employeeDocTypes, setEmployeeDocTypes] = useState([])
-  const [performance, setPerformance] = useState(null)
+  const [performanceAssessments, setPerformanceAssessments] = useState(null)
+  const [performanceSummary, setPerformanceSummary] = useState(null)
+  const [selectedAssessment, setSelectedAssessment] = useState(null)
   const [assets, setAssets] = useState(null)
 
   const [loadingProfile, setLoadingProfile] = useState(false)
@@ -225,7 +229,7 @@ export default function EmployeeProfile() {
     setProfile(null)
     setAttendance(null); setLeave(null); setDocuments(null)
     setEmployeeDocTypes([])
-    setPerformance(null); setAssets(null)
+    setPerformanceAssessments(null); setPerformanceSummary(null); setAssets(null)
     setActiveTab('overview')
     setLoadingProfile(true)
     getEmployeeProfile(selectedId)
@@ -257,7 +261,14 @@ export default function EmployeeProfile() {
             break
           }
           case 'performance':
-            if (!performance) setPerformance(await getPerformance(selectedId))
+            if (!performanceAssessments) {
+              const [assessmentsData, summaryData] = await Promise.all([
+                performanceAssessmentAPI.getEmployeeAssessments(selectedId),
+                performanceAssessmentAPI.getEmployeePerformanceSummary(selectedId)
+              ])
+              setPerformanceAssessments(assessmentsData?.data || [])
+              setPerformanceSummary(summaryData?.data || null)
+            }
             break
           case 'assets':
             if (!assets) setAssets(await getAssets(selectedId))
@@ -865,71 +876,48 @@ export default function EmployeeProfile() {
   }
 
   const renderPerformance = () => {
-    if (loadingTab && !performance) return <Spinner />
-    const latest = performance?.latest
-    const reviews = performance?.reviews || []
+    if (loadingTab && (!performanceAssessments || !performanceSummary)) return <Spinner />
+    const assessments = performanceAssessments || []
+
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Performance Intel</h2>
-            {latest && <Badge label={latest.review_period} color="blue" className="text-[9px] font-black rounded-none" />}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Performance Summary</h2>
+        </div>
+
+        <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden mt-8">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Assessment History</h3>
           </div>
-          {latest ? (
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="p-6 rounded-none bg-emerald-50 border border-emerald-100 text-center">
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Latest Rating</p>
-                <p className="text-3xl font-black text-emerald-600 mt-2">{latest.overall_rating}</p>
-                <p className="text-[10px] text-emerald-800 font-bold mt-2 bg-white/50 py-1 rounded-none px-4 inline-block uppercase">{latest.review_period}</p>
-              </div>
-              <div className="p-6 rounded-none bg-slate-50 border border-slate-100 space-y-2">
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Skill Ratings</p>
-                {[
-                  ['Work Quality', latest.work_quality],
-                  ['Productivity', latest.productivity],
-                  ['Communication', latest.communication],
-                  ['Teamwork', latest.teamwork],
-                  ['Leadership', latest.leadership],
-                ].map(([label, val]) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <span className="text-[9px] font-black text-slate-500 uppercase">{label}</span>
-                    <div className="flex gap-0.5">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <div key={i} className={`h-2 w-4 rounded-none ${i <= (val || 0) ? 'bg-emerald-500' : 'bg-slate-200'}`} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="p-6 rounded-none bg-slate-50 border border-slate-100">
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Review Date</p>
-                <p className="text-lg font-black text-slate-900">{latest.review_date}</p>
-              </div>
+          {assessments.length === 0 ? (
+            <div className="flex items-center justify-center min-h-[150px]">
+              <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No assessments found</p>
             </div>
           ) : (
-            <div className="flex items-center justify-center min-h-[120px]">
-              <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No completed reviews yet</p>
-            </div>
-          )}
-        </div>
-        {reviews.length > 0 && (
-          <div className="rounded-none border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Historical Performance Audits</h3>
-            </div>
             <Table
               columns={[
-                { key: 'review_period', label: 'CYCLE', render: v => <span className="text-xs font-black text-slate-900">{v}</span> },
-                { key: 'review_type', label: 'TYPE', render: v => <Badge label={v} color="slate" variant="soft" className="font-black text-[9px]" /> },
-                { key: 'overall_rating', label: 'RATING', render: v => <Badge label={v || '—'} color="green" className="font-black" /> },
-                { key: 'reviewer_name', label: 'REVIEWER', render: v => <span className="text-xs font-bold text-slate-500">{v || '—'}</span> },
-                { key: 'status', label: 'STATUS', render: v => <Badge label={v} color={statusColor(v)} variant="soft" className="font-black text-[9px]" /> },
+                { key: 'performanceCycle', label: 'CYCLE', render: v => <span className="text-xs font-black text-slate-900">{v?.cycleName || 'N/A'}</span> },
+                { key: 'performanceLead', label: 'PERFORMANCE LEAD', render: v => <span className="text-xs font-bold text-slate-600">{v || '—'}</span> },
+                { key: 'assessmentDate', label: 'DATE', render: v => <span className="text-xs font-bold text-slate-600">{v ? v.split('T')[0] : '—'}</span> },
+                { key: 'overallRating', label: 'RATING', render: v => <div className="flex items-center gap-1"><HiStar className="w-3 h-3 text-amber-400" /><span className="font-black text-slate-800 text-xs">{v || 0}</span></div> },
+                { key: 'performanceBand', label: 'BAND', render: v => <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{v || '—'}</span> },
+                { key: 'status', label: 'STATUS', render: v => <Badge label={v} color={v === 'Completed' ? 'green' : 'orange'} variant="soft" className="font-black text-[9px] tracking-widest" /> },
+                { key: 'actions', label: 'DETAILS', render: (_, row) => (
+                  <Button 
+                    label="VIEW" 
+                    icon={HiEye}
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-[9px] font-black text-[#0F766E] uppercase"
+                    onClick={() => setSelectedAssessment(row)}
+                  />
+                )}
               ]}
-              data={reviews}
-              pageSize={5}
+              data={assessments}
+              pageSize={10}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     )
   }
@@ -1375,6 +1363,99 @@ export default function EmployeeProfile() {
             </>
           )}
         </form>
+      </Modal>
+
+      {/* Assessment Details Modal */}
+      <Modal
+        isOpen={!!selectedAssessment}
+        onClose={() => setSelectedAssessment(null)}
+        title="Assessment Details"
+        size="lg"
+        className="rounded-none"
+      >
+        {selectedAssessment && (
+          <div className="space-y-6 pt-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Performance Cycle</p>
+                <p className="text-sm font-bold text-slate-900">{selectedAssessment.performanceCycle?.cycleName || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                <Badge 
+                  label={selectedAssessment.status} 
+                  color={selectedAssessment.status === 'Completed' ? 'green' : 'orange'} 
+                  variant="soft" 
+                  className="font-black text-[9px] tracking-widest" 
+                />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Performance Lead</p>
+                <p className="text-sm font-bold text-slate-900">{selectedAssessment.performanceLead || '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Assessment Date</p>
+                <p className="text-sm font-bold text-slate-900">{selectedAssessment.assessmentDate ? selectedAssessment.assessmentDate.split('T')[0] : '—'}</p>
+              </div>
+            </div>
+
+            <div className="rounded-none border border-slate-200 bg-slate-50 p-4">
+              <div className="flex justify-between items-center mb-4 border-b border-slate-200 pb-4">
+                <div>
+                  <span className="text-sm font-bold text-slate-700 uppercase tracking-wider block">Overall Rating</span>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-widest mt-1 block">Performance Ratio: {Math.round(((selectedAssessment.overallRating || 0) / 5) * 100)}%</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <div className="flex items-center gap-1">
+                    <span className="text-lg font-black text-[#0F766E]">{selectedAssessment.overallRating || 0}</span>
+                    <span className="text-xs text-slate-400">/ 5.0</span>
+                  </div>
+                  <div className="w-24 h-1.5 bg-slate-200 mt-2 overflow-hidden rounded-full">
+                    <div className="h-full bg-[#0F766E]" style={{ width: `${Math.round(((selectedAssessment.overallRating || 0) / 5) * 100)}%` }}></div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Competency Ratings</p>
+              <div className="space-y-2">
+                {selectedAssessment.competencyRatings?.length > 0 ? (
+                  selectedAssessment.competencyRatings.map((cr, i) => (
+                    <div key={i} className="flex justify-between items-center">
+                      <span className="text-xs font-semibold text-slate-700">{cr.competencyName || 'Competency'}</span>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <HiStar key={star} className={`h-3.5 w-3.5 ${star <= cr.rating ? 'text-amber-400' : 'text-slate-200'}`} />
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-500 italic">No competency ratings found.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Key Contributions</p>
+                <div className="text-sm text-slate-800 whitespace-pre-wrap rounded-none border border-slate-200 bg-white p-3">
+                  {selectedAssessment.keyContributions || '—'}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Growth Objectives</p>
+                <div className="text-sm text-slate-800 whitespace-pre-wrap rounded-none border border-slate-200 bg-white p-3">
+                  {selectedAssessment.growthObjectives || '—'}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Remarks</p>
+                <div className="text-sm text-slate-800 whitespace-pre-wrap rounded-none border border-slate-200 bg-white p-3">
+                  {selectedAssessment.remarks || '—'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

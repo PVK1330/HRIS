@@ -15,7 +15,9 @@ import {
   HiChevronRight,
   HiStar,
   HiOutlineStar,
-  HiXMark
+  HiXMark,
+  HiPencilSquare,
+  HiTrash
 } from 'react-icons/hi2'
 import {
   BarChart,
@@ -55,6 +57,8 @@ const initialFormData = {
   overallRating: 0,
   strengths: '',
   goalsNextPeriod: '',
+  remarks: '',
+  assessmentDate: new Date().toISOString().split('T')[0],
   status: 'Completed'
 }
 
@@ -408,6 +412,8 @@ export default function Performance() {
       overallRating: assessment.overallRating,
       strengths: assessment.keyContributions || '',
       goalsNextPeriod: assessment.growthObjectives || '',
+      remarks: assessment.remarks || '',
+      assessmentDate: assessment.assessmentDate ? assessment.assessmentDate.split('T')[0] : new Date().toISOString().split('T')[0],
       reviewerName: assessment.performanceLead || '',
       status: assessment.status || 'Completed'
     })
@@ -461,6 +467,8 @@ export default function Performance() {
       competencyRatings,
       keyContributions: formData.strengths,
       growthObjectives: formData.goalsNextPeriod,
+      remarks: formData.remarks,
+      assessmentDate: formData.assessmentDate,
       performanceLead: formData.reviewerName,
       status: formData.status || 'Completed'
     }
@@ -813,10 +821,11 @@ export default function Performance() {
               e.stopPropagation()
               handleEditAssessment(row)
             }}
-            className="inline-flex h-8 px-3 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600 text-[10px] font-bold uppercase tracking-wider shadow-sm"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56] shadow-sm"
             aria-label="Edit assessment"
+            title="Edit"
           >
-            Edit
+            <HiPencilSquare className="h-4 w-4" />
           </button>
           <button
             type="button"
@@ -824,10 +833,11 @@ export default function Performance() {
               e.stopPropagation()
               handleDeleteAssessment(row.id)
             }}
-            className="inline-flex h-8 px-3 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600 text-[10px] font-bold uppercase tracking-wider shadow-sm"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600 shadow-sm"
             aria-label="Delete assessment"
+            title="Delete"
           >
-            Delete
+            <HiTrash className="h-4 w-4" />
           </button>
         </div>
       ),
@@ -1062,15 +1072,19 @@ export default function Performance() {
                               <div className="flex items-center justify-center gap-2">
                                 <button
                                   onClick={() => handleEditCycle(cycle)}
-                                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 shadow-sm"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56] shadow-sm"
+                                  title="Edit"
+                                  aria-label="Edit cycle"
                                 >
-                                  edit
+                                  <HiPencilSquare className="h-4 w-4" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCycle(cycle.id)}
-                                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none bg-red-500 px-3 text-xs font-medium text-white transition hover:bg-red-600 shadow-sm"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600 shadow-sm"
+                                  title="Delete"
+                                  aria-label="Delete cycle"
                                 >
-                                  Delete
+                                  <HiTrash className="h-4 w-4" />
                                 </button>
                               </div>
                             </td>
@@ -1473,6 +1487,32 @@ export default function Performance() {
                   onChange={handleFormChange}
                   placeholder="Define goals and KPIs for the next review cycle"
                   className="min-h-[120px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-800">
+                  Remarks
+                </label>
+                <textarea
+                  name="remarks"
+                  value={formData.remarks}
+                  onChange={handleFormChange}
+                  placeholder="Any additional remarks"
+                  className="min-h-[80px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 transition-all"
+                />
+              </div>
+
+              <div>
+                <Input
+                  label="Assessment Date"
+                  name="assessmentDate"
+                  type="date"
+                  value={formData.assessmentDate}
+                  onChange={handleFormChange}
+                  required
+                  inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-1 block text-sm font-medium text-slate-800"
                 />
               </div>
             </div>
