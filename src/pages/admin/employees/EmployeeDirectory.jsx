@@ -841,17 +841,17 @@ export default function EmployeeDirectory() {
             f.departmentId != null
               ? String(f.departmentId)
               : departmentRows.find(
-                  (d) =>
-                    String(d.name ?? d.department_name ?? '').trim() ===
-                    String(f.department || '').trim(),
-                )?.id != null
+                (d) =>
+                  String(d.name ?? d.department_name ?? '').trim() ===
+                  String(f.department || '').trim(),
+              )?.id != null
                 ? String(
-                    departmentRows.find(
-                      (d) =>
-                        String(d.name ?? d.department_name ?? '').trim() ===
-                        String(f.department || '').trim(),
-                    ).id,
-                  )
+                  departmentRows.find(
+                    (d) =>
+                      String(d.name ?? d.department_name ?? '').trim() ===
+                      String(f.department || '').trim(),
+                  ).id,
+                )
                 : '',
           jobTitle: f.jobTitle,
           about: f.bio || '',
@@ -1108,7 +1108,7 @@ export default function EmployeeDirectory() {
             onClickFilter: () => setStatus('Probation')
           }
         ].map((card, idx) => {
-          const isActiveFilter = 
+          const isActiveFilter =
             (card.label === 'TOTAL EMPLOYEE' && status === '') ||
             (card.label === 'ACTIVE' && status === 'Active') ||
             (card.label === 'INACTIVE' && status === 'Inactive') ||
@@ -1120,11 +1120,10 @@ export default function EmployeeDirectory() {
               type="button"
               onClick={card.onClickFilter}
               title={`Filter by ${card.label}`}
-              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
-                isActiveFilter
-                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
-              }`}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${isActiveFilter
+                ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
             >
               <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
                 <card.icon className="h-5 w-5" />
@@ -2113,18 +2112,11 @@ export default function EmployeeDirectory() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => handleEdit(selectedEmployee)} className="inline-flex items-center gap-1.5 rounded-md bg-[#0F766E] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#0d5c56]">
-                  <HiPencil className="h-3.5 w-3.5" />Edit
-                </button>
-                <button onClick={() => handleDelete(selectedEmployee)} className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
-                  <HiTrash className="h-3.5 w-3.5" />Delete
-                </button>
-              </div>
+
             </div>
 
             {/* Quick stats */}
-            <div className="grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100">
+            {/* <div className="grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100">
               {[
                 { label: 'Join Date', value: formatJoinDateDisplay(selectedEmployee.joinDate) },
                 { label: 'Work Email', value: selectedEmployee.email || '—' },
@@ -2135,84 +2127,95 @@ export default function EmployeeDirectory() {
                   <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{value}</p>
                 </div>
               ))}
+            </div> */}
+
+            {/* Horizontal Tabs */}
+            <div className="-mx-1 flex gap-5 overflow-x-auto border-b border-slate-200 pb-px text-sm font-medium whitespace-nowrap [scrollbar-width:thin] my-4">
+              {[
+                { id: 'basic', label: 'Basic Information' },
+                { id: 'personal', label: 'Personal Information' },
+                { id: 'bank', label: 'Bank Information' },
+                { id: 'family', label: 'Family Information' },
+                { id: 'secondary', label: 'Contact Section' },
+                { id: 'education', label: 'Educational Details' },
+                { id: 'experience', label: 'Experience' },
+              ].map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setViewActiveTab(id)}
+                  className={`shrink-0 border-b-2 pb-2 transition-colors ${viewActiveTab === id ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
-            {/* Accordion */}
-            <div className="divide-y divide-slate-100">
-              {[
-                {
-                  id: 'basic', label: 'Basic Information',
-                  iconBg: 'bg-blue-50', iconColor: 'text-blue-600', icon: <HiBriefcase className="h-4 w-4" />,
-                  content: (
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                      {[
-                        ['Employee ID', formatEmpIdDisplay(selectedEmployee.empId)],
-                        ['Full Name', selectedEmployee.name],
-                        ['Work Email', selectedEmployee.email],
-                        ['Phone', formatPhoneDisplay(selectedEmployee.phone)],
-                        ['Department', selectedEmployee.department],
-                        ['Designation', selectedEmployee.jobTitle],
-                        ['Join Date', formatJoinDateDisplay(selectedEmployee.joinDate)],
-                        ['Portal Role', selectedEmployee.rbacRoleName || selectedEmployee.portalRole],
-                      ].map(([label, val]) => (
-                        <div key={label}>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
-                        </div>
-                      ))}
+            {/* Tab Contents */}
+            <div className="py-4">
+              {viewActiveTab === 'basic' && (
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+                  {[
+                    ['Employee ID', formatEmpIdDisplay(selectedEmployee.empId)],
+                    ['Full Name', selectedEmployee.name],
+                    ['Work Email', selectedEmployee.email],
+                    ['Phone', formatPhoneDisplay(selectedEmployee.phone)],
+                    ['Department', selectedEmployee.department],
+                    ['Designation', selectedEmployee.jobTitle],
+                    ['Join Date', formatJoinDateDisplay(selectedEmployee.joinDate)],
+                    ['Portal Role', selectedEmployee.rbacRoleName || selectedEmployee.portalRole],
+                  ].map(([label, val]) => (
+                    <div key={label}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
                     </div>
-                  ),
-                },
-                {
-                  id: 'personal', label: 'Personal Information',
-                  iconBg: 'bg-teal-50', iconColor: 'text-teal-700', icon: <HiUserCircle className="h-4 w-4" />,
-                  content: (
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                      {[
-                        ['Gender', selectedEmployee.gender],
-                        ['Date of Birth', selectedEmployee.dateOfBirth],
-                        ['Nationality', selectedEmployee.nationality],
-                        ['Marital Status', selectedEmployee.maritalStatus],
-                        ['Religion', selectedEmployee.religion],
-                        ['No. of Children', selectedEmployee.dependents],
-                        ['Personal Email', selectedEmployee.personalEmail],
-                        ['Country of Residence', selectedEmployee.countryOfResidence],
-                        ['Home Address', selectedEmployee.homeAddress],
-                      ].map(([label, val]) => (
-                        <div key={label} className={label === 'Home Address' ? 'col-span-2' : ''}>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
-                        </div>
-                      ))}
+                  ))}
+                </div>
+              )}
+
+              {viewActiveTab === 'personal' && (
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+                  {[
+                    ['Gender', selectedEmployee.gender],
+                    ['Date of Birth', selectedEmployee.dateOfBirth],
+                    ['Nationality', selectedEmployee.nationality],
+                    ['Marital Status', selectedEmployee.maritalStatus],
+                    ['Religion', selectedEmployee.religion],
+                    ['No. of Children', selectedEmployee.dependents],
+                    ['Personal Email', selectedEmployee.personalEmail],
+                    ['Country of Residence', selectedEmployee.countryOfResidence],
+                    ['Home Address', selectedEmployee.homeAddress],
+                  ].map(([label, val]) => (
+                    <div key={label} className={label === 'Home Address' ? 'col-span-2' : ''}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
                     </div>
-                  ),
-                },
-                {
-                  id: 'bank', label: 'Bank Information',
-                  iconBg: 'bg-amber-50', iconColor: 'text-amber-700', icon: <HiBanknotes className="h-4 w-4" />,
-                  content: (
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                      {[
-                        ['Bank Name', selectedEmployee.bankName],
-                        ['Account Number', selectedEmployee.bankAccountNo],
-                        ['IFSC Code', selectedEmployee.ifscCode],
-                        ['Branch Address', selectedEmployee.branchAddress],
-                      ].map(([label, val]) => (
-                        <div key={label}>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
-                        </div>
-                      ))}
+                  ))}
+                </div>
+              )}
+
+              {viewActiveTab === 'bank' && (
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+                  {[
+                    ['Bank Name', selectedEmployee.bankName],
+                    ['Account Number', selectedEmployee.bankAccountNo],
+                    ['IFSC Code', selectedEmployee.ifscCode],
+                    ['Branch Address', selectedEmployee.branchAddress],
+                  ].map(([label, val]) => (
+                    <div key={label}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
                     </div>
-                  ),
-                },
-                {
-                  id: 'family', label: 'Family Information',
-                  iconBg: 'bg-pink-50', iconColor: 'text-pink-700', icon: <HiUserGroup className="h-4 w-4" />,
-                  content: selectedEmployee.familyMembers?.length > 0 ? (
-                    <div className="space-y-2">
+                  ))}
+                </div>
+              )}
+
+              {viewActiveTab === 'family' && (
+                <div className="animate-in fade-in duration-300">
+                  {selectedEmployee.familyMembers?.length > 0 ? (
+                    <div className="space-y-3">
                       {selectedEmployee.familyMembers.map((m, i) => (
-                        <div key={i} className="grid grid-cols-3 gap-4 rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
+                        <div key={i} className="grid grid-cols-3 gap-4 rounded-none bg-slate-50 border border-slate-100 px-4 py-3">
                           {[['Name', m.name], ['Relationship', m.relationship], ['Phone', m.phone]].map(([label, val]) => (
                             <div key={label}>
                               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
@@ -2222,80 +2225,67 @@ export default function EmployeeDirectory() {
                         </div>
                       ))}
                     </div>
-                  ) : <p className="text-sm text-slate-400">No family members added</p>,
-                },
-                {
-                  id: 'secondary', label: 'Contact Section',
-                  iconBg: 'bg-purple-50', iconColor: 'text-purple-700', icon: <HiDevicePhoneMobile className="h-4 w-4" />,
-                  content: (
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                      {[
-                        ['Name', selectedEmployee.secondaryContact?.name],
-                        ['Relationship', selectedEmployee.secondaryContact?.relationship],
-                        ['Phone 1', selectedEmployee.secondaryContact?.phoneNo1],
-                        ['Phone 2', selectedEmployee.secondaryContact?.phoneNo2],
-                      ].map(([label, val]) => (
-                        <div key={label}>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
-                        </div>
-                      ))}
+                  ) : (
+                    <p className="text-sm text-slate-400">No family members added</p>
+                  )}
+                </div>
+              )}
+
+              {viewActiveTab === 'secondary' && (
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+                  {[
+                    ['Name', selectedEmployee.secondaryContact?.name],
+                    ['Relationship', selectedEmployee.secondaryContact?.relationship],
+                    ['Phone 1', selectedEmployee.secondaryContact?.phoneNo1],
+                    ['Phone 2', selectedEmployee.secondaryContact?.phoneNo2],
+                  ].map(([label, val]) => (
+                    <div key={label}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
                     </div>
-                  ),
-                },
-                {
-                  id: 'education', label: 'Educational Details',
-                  iconBg: 'bg-green-50', iconColor: 'text-green-700', icon: <HiAcademicCap className="h-4 w-4" />,
-                  content: selectedEmployee.education?.length > 0 ? (
-                    <div className="space-y-2">
+                  ))}
+                </div>
+              )}
+
+              {viewActiveTab === 'education' && (
+                <div className="animate-in fade-in duration-300">
+                  {selectedEmployee.education?.length > 0 ? (
+                    <div className="space-y-3">
                       {selectedEmployee.education.map((edu, i) => (
-                        <div key={i} className="rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
+                        <div key={i} className="rounded-none bg-slate-50 border border-slate-100 px-4 py-3">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">{edu.course || '—'}</span>
+                            <span className="rounded-none bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-800">{edu.course || '—'}</span>
                             <span className="text-xs text-slate-400">{edu.startDate} – {edu.endDate || 'Present'}</span>
                           </div>
                           <p className="text-sm font-medium text-slate-900">{edu.institutionName || '—'}</p>
                         </div>
                       ))}
                     </div>
-                  ) : <p className="text-sm text-slate-400">No education records</p>,
-                },
-                {
-                  id: 'experience', label: 'Experience',
-                  iconBg: 'bg-slate-100', iconColor: 'text-slate-600', icon: <HiPresentationChartLine className="h-4 w-4" />,
-                  content: selectedEmployee.workExperience?.length > 0 ? (
-                    <div className="space-y-2">
+                  ) : (
+                    <p className="text-sm text-slate-400">No education records</p>
+                  )}
+                </div>
+              )}
+
+              {viewActiveTab === 'experience' && (
+                <div className="animate-in fade-in duration-300">
+                  {selectedEmployee.workExperience?.length > 0 ? (
+                    <div className="space-y-3">
                       {selectedEmployee.workExperience.map((exp, i) => (
-                        <div key={i} className="rounded-md bg-slate-50 border border-slate-100 px-4 py-3">
+                        <div key={i} className="rounded-none bg-slate-50 border border-slate-100 px-4 py-3">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-800">{exp.designation || '—'}</span>
+                            <span className="rounded-none bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-800">{exp.designation || '—'}</span>
                             <span className="text-xs text-slate-400">{exp.startDate} – {exp.endDate || (selectedEmployee.isCurrentlyWorking ? 'Present' : '—')}</span>
                           </div>
                           <p className="text-sm font-medium text-slate-900">{exp.companyName || '—'}</p>
                         </div>
                       ))}
                     </div>
-                  ) : <p className="text-sm text-slate-400">No work experience records</p>,
-                },
-              ].map(({ id, label, iconBg, iconColor, icon, content }) => {
-                const isOpen = viewActiveTab === id
-                return (
-                  <div key={id} className="border-b border-slate-100 last:border-0">
-                    <button
-                      type="button"
-                      onClick={() => setViewActiveTab(isOpen ? '' : id)}
-                      className="flex w-full items-center justify-between px-0 py-3.5 text-left hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`flex h-7 w-7 items-center justify-center rounded-md ${iconBg} ${iconColor}`}>{icon}</div>
-                        <span className="text-sm font-medium text-slate-800">{label}</span>
-                      </div>
-                      <HiChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isOpen && <div className="pb-5 pt-1">{content}</div>}
-                  </div>
-                )
-              })}
+                  ) : (
+                    <p className="text-sm text-slate-400">No work experience records</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </Modal>
