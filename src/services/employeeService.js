@@ -144,3 +144,26 @@ export const updateEmployee = async (id, payload) => {
 export const deleteEmployee = async (id) => {
   await api.delete(`/employees/${id}`)
 }
+
+/**
+ * GET onboarding candidates (employment_status = Onboarding).
+ */
+export const listOnboardingEmployees = async (params = {}) => {
+  return listEmployees({
+    onboardingOnly: true,
+    limit: params.limit ?? 500,
+    page: params.page ?? 1,
+    search: params.search ?? '',
+    sortBy: params.sortBy ?? 'created_at',
+    sortOrder: params.sortOrder ?? 'desc',
+  })
+}
+
+/**
+ * POST /api/v1/employees/:id/complete-onboarding
+ * Activates portal, sets Active, emails work email + random password.
+ */
+export const completeOnboardingActivation = async (id) => {
+  const { data } = await api.post(`/employees/${id}/complete-onboarding`)
+  return data.data
+}

@@ -1604,6 +1604,19 @@ export default function EmployeeDirectory() {
                   </select>
                 </div>
                 <div>
+                  <label htmlFor="date-of-birth" className="mb-1 block text-sm font-medium text-slate-800">
+                    Date of Birth
+                  </label>
+                  <input
+                    id="date-of-birth"
+                    name="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  />
+                </div>
+                <div>
                   <label htmlFor="religion" className="mb-1 block text-sm font-medium text-slate-800">
                     Religion
                   </label>
@@ -1660,6 +1673,47 @@ export default function EmployeeDirectory() {
                     onChange={handleFormChange}
                     placeholder="0"
                     className={basicFieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="personal-email" className="mb-1 block text-sm font-medium text-slate-800">
+                    Personal Email
+                  </label>
+                  <input
+                    id="personal-email"
+                    name="personalEmail"
+                    type="email"
+                    value={formData.personalEmail}
+                    onChange={handleFormChange}
+                    placeholder="name@personal.com"
+                    className={basicFieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="country-of-residence" className="mb-1 block text-sm font-medium text-slate-800">
+                    Country of Residence
+                  </label>
+                  <input
+                    id="country-of-residence"
+                    name="countryOfResidence"
+                    value={formData.countryOfResidence}
+                    onChange={handleFormChange}
+                    placeholder="e.g. UAE, India, UK"
+                    className={basicFieldClass}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="home-address" className="mb-1 block text-sm font-medium text-slate-800">
+                    Home Address
+                  </label>
+                  <textarea
+                    id="home-address"
+                    name="homeAddress"
+                    rows={3}
+                    value={formData.homeAddress}
+                    onChange={handleFormChange}
+                    placeholder="Street, city, postal code"
+                    className={`${basicFieldClass} resize-y min-h-[80px]`}
                   />
                 </div>
                 <div>

@@ -13,6 +13,7 @@ import {
   getPerformance, getAssets,
 } from '../../../services/employeeProfileService.js'
 import { listEmployees } from '../../../services/employeeService.js'
+import { listVisaRecords } from '../../../services/visaRecordService.js'
 import performanceAssessmentAPI from '../../../services/performanceAssessmentAPI.js'
 import {
   HiUser, HiIdentification, HiBriefcase, HiDocumentText, HiCreditCard,
@@ -32,7 +33,7 @@ const DIRECTORY_PROFILE_TABS = [
   { id: 'family', label: 'Family Information', icon: HiUserGroup },
   { id: 'contact', label: 'Contact Section', icon: HiPhone },
   { id: 'education', label: 'Educational Details', icon: HiAcademicCap },
-  { id: 'job', label: 'Job & Organization', icon: HiBriefcase },
+  { id: 'job', label: 'Experience Details', icon: HiBriefcase },
 ]
 
 const OPERATIONAL_TABS = [
@@ -80,6 +81,7 @@ export default function EmployeeProfile() {
   const [performanceSummary, setPerformanceSummary] = useState(null)
   const [selectedAssessment, setSelectedAssessment] = useState(null)
   const [assets, setAssets] = useState(null)
+  const [visaRecords, setVisaRecords] = useState(null)
 
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [loadingTab, setLoadingTab] = useState(false)
@@ -240,6 +242,7 @@ export default function EmployeeProfile() {
     setAttendance(null); setLeave(null); setDocuments(null)
     setEmployeeDocTypes([])
     setPerformanceAssessments(null); setPerformanceSummary(null); setAssets(null)
+    setVisaRecords(null)
     setActiveTab('basic')
     setLoadingProfile(true)
     getEmployeeProfile(selectedId)
@@ -283,6 +286,13 @@ export default function EmployeeProfile() {
           case 'assets':
             if (!assets) setAssets(await getAssets(selectedId))
             break
+          case 'visa': {
+            if (!visaRecords) {
+              const visaData = await listVisaRecords({ employeeId: selectedId, limit: 50, page: 1 })
+              setVisaRecords(visaData?.records ?? [])
+            }
+            break
+          }
           default: break
         }
       } catch (err) { console.error(err) }
@@ -471,22 +481,44 @@ export default function EmployeeProfile() {
     </div>
   )
 
+  const formatRecordDuration = (start, end, usePresent = false) => {
+    const s = start ? String(start).split('T')[0] : ''
+    const e = end ? String(end).split('T')[0] : (usePresent ? 'Present' : '')
+    if (!s && !e) return '—'
+    if (s && e) return `${s} – ${e}`
+    return s || e || '—'
+  }
+
   /** EmployeeDirectory view modal — experience tab */
   const renderExperience = () => (
     <div className="animate-in fade-in duration-300">
       {Array.isArray(emp?.work_experience) && emp.work_experience.length > 0 ? (
         <div className="space-y-3">
           {emp.work_experience.map((wx, i) => (
-            <div key={i} className="rounded-none bg-slate-50 border border-slate-100 px-4 py-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="rounded-none bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-800">
-                  {wx.designation || '—'}
-                </span>
-                <span className="text-xs text-slate-400">
-                  {wx.start_date || wx.startDate || ''} – {wx.end_date || wx.endDate || (emp?.is_currently_working ? 'Present' : '—')}
-                </span>
+            <div
+              key={i}
+              className="grid grid-cols-1 gap-4 rounded-none border border-slate-100 bg-slate-50 px-4 py-3 sm:grid-cols-3 sm:gap-6"
+            >
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Company Name</p>
+                <p className="mt-0.5 text-sm font-medium text-slate-900">
+                  {wx.company_name || wx.companyName || '—'}
+                </p>
               </div>
-              <p className="text-sm font-medium text-slate-900">{wx.company_name || wx.companyName || '—'}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Designation</p>
+                <p className="mt-0.5 text-sm font-medium text-[#0F766E]">{wx.designation || '—'}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Duration</p>
+                <p className="mt-0.5 text-sm font-medium text-slate-600">
+                  {formatRecordDuration(
+                    wx.start_date || wx.startDate,
+                    wx.end_date || wx.endDate,
+                    !wx.end_date && !wx.endDate && emp?.is_currently_working,
+                  )}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -496,56 +528,25 @@ export default function EmployeeProfile() {
     </div>
   )
 
-  const renderJobOrganization = () => (
-    <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-4">
-          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Designation</p><p className="text-sm font-black text-slate-900">{emp?.job_title || '—'}</p></div>
-          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Division / Dept</p><p className="text-sm font-black text-slate-900">{emp?.department || '—'}</p></div>
-          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Location</p><p className="text-sm font-black text-slate-900">{emp?.work_location || '—'}</p></div>
-          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Mode</p><p className="text-sm font-black text-slate-900">{emp?.work_mode || '—'}</p></div>
-        </div>
-        <div className="space-y-4">
-          <div className="p-5 rounded-none border border-emerald-100 bg-emerald-50/20"><p className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest mb-1">Reporting Manager</p><p className="text-sm font-black text-slate-900">{emp?.manager_name || '—'}</p></div>
-          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Employment Type</p><p className="text-sm font-black text-slate-900">{emp?.employment_type || '—'}</p></div>
-          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grade</p><p className="text-sm font-black text-slate-900">{emp?.grade || '—'}</p></div>
-          <div className="p-5 rounded-none border border-slate-100 bg-slate-50/50"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cost Center</p><p className="text-sm font-black text-slate-900">{emp?.cost_center || '—'}</p></div>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-none bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Join Date</p><p className="text-xs font-black text-slate-900">{emp?.join_date || '—'}</p></div>
-        <div className="p-4 rounded-none bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Probation End</p><p className="text-xs font-black text-slate-900">{emp?.probation_end_date || '—'}</p></div>
-        <div className="p-4 rounded-none bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p><Badge label={emp?.employment_status || '—'} color={statusColor(emp?.employment_status)} variant="soft" className="text-[8px] font-black mt-1 rounded-none" /></div>
-        <div className="p-4 rounded-none bg-slate-50 border border-slate-100"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Salary</p><p className="text-xs font-black text-slate-900">{emp?.salary ? `AED ${emp.salary}` : '—'}</p></div>
-      </div>
-    </div>
-  )
-
-  /** Job & Organization tab: employment details + experience (directory experience tab content) */
+  /** Job & Organization tab: prior work experience only (current role is on Basic Information) */
   const renderJob = () => (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      <div>
-        <h3 className="mb-4 text-xs font-black uppercase tracking-wider text-[#0F766E]">Job & Organization</h3>
-        {renderJobOrganization()}
-      </div>
-      <div className="border-t border-slate-200 pt-6">
-        <h3 className="mb-4 text-xs font-black uppercase tracking-wider text-[#0F766E]">Experience</h3>
-        {renderExperience()}
-      </div>
+    <div className="animate-in fade-in duration-300">
+      <h3 className="mb-4 text-xs font-black uppercase tracking-wider text-[#0F766E]">Experience</h3>
+      {renderExperience()}
     </div>
   )
 
   const renderBank = () => (
-    <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+    <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 animate-in fade-in duration-300">
       {[
         ['Bank Name', emp?.bank_name],
         ['Account Number', emp?.bank_account_no],
         ['IFSC Code', emp?.ifsc_code],
         ['Branch Address', emp?.branch_address],
       ].map(([label, val]) => (
-        <div key={label} className={label === 'Branch Address' ? 'col-span-2' : ''}>
+        <div key={label}>
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+          <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val || '—'}</p>
         </div>
       ))}
     </div>
@@ -599,14 +600,26 @@ export default function EmployeeProfile() {
       {Array.isArray(emp?.education) && emp.education.length > 0 ? (
         <div className="space-y-3">
           {emp.education.map((ed, i) => (
-            <div key={i} className="rounded-none border border-slate-100 bg-slate-50 px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="rounded-none bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-800">{ed.course || '—'}</span>
-                <span className="text-xs text-slate-400">
-                  {ed.start_date || ed.startDate || ''} – {ed.end_date || ed.endDate || 'Present'}
-                </span>
+            <div
+              key={i}
+              className="grid grid-cols-1 gap-4 rounded-none border border-slate-100 bg-slate-50 px-4 py-3 sm:grid-cols-3 sm:gap-6"
+            >
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Institution Name</p>
+                <p className="mt-0.5 text-sm font-medium text-slate-900">
+                  {ed.institution_name || ed.institutionName || '—'}
+                </p>
               </div>
-              <p className="text-sm font-medium text-slate-900">{ed.institution_name || ed.institutionName || '—'}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Course</p>
+                <p className="mt-0.5 text-sm font-medium text-[#0F766E]">{ed.course || '—'}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Duration</p>
+                <p className="mt-0.5 text-sm font-medium text-slate-600">
+                  {formatRecordDuration(ed.start_date || ed.startDate, ed.end_date || ed.endDate, !ed.end_date && !ed.endDate)}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -821,35 +834,159 @@ export default function EmployeeProfile() {
     )
   }
 
-  const renderVisa = () => (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="p-6 rounded-none bg-slate-50 border border-slate-100 space-y-4">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Passport Intelligence</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Passport Number</p><p className="text-sm font-black text-slate-900">{emp?.passport_number || '—'}</p></div>
-            <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Nationality</p><p className="text-sm font-black text-slate-900">{emp?.nationality || '—'}</p></div>
-            <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Expiry</p><p className="text-sm font-black text-rose-600">{emp?.passport_expiry || '—'}</p></div>
-          </div>
+  const fmtVisaDate = (v) => {
+    if (!v) return '—'
+    const s = String(v).split('T')[0]
+    return s || '—'
+  }
+
+  const renderVisa = () => {
+    if (loadingTab && visaRecords === null) return <Spinner />
+
+    const records = visaRecords ?? []
+    const hasEmployeeFields =
+      emp?.passport_number ||
+      emp?.visa_type ||
+      emp?.emirates_id_number ||
+      emp?.sponsoring_entity
+
+    if (records.length === 0 && !hasEmployeeFields) {
+      return (
+        <div className="flex min-h-[160px] flex-col items-center justify-center rounded-none border border-dashed border-slate-200 bg-slate-50/50 px-6 text-center">
+          <p className="text-sm font-medium text-slate-600">No visa or nationality records for this employee</p>
+          <p className="mt-2 text-xs text-slate-500">
+            Add records under Compliance → Visa &amp; Nationality, or passport/visa fields on the employee form.
+          </p>
         </div>
-        <div className="p-6 rounded-none bg-emerald-50/30 border border-emerald-100 space-y-4">
-          <h3 className="text-[10px] font-black text-[#0F766E] uppercase tracking-widest">Resident Visa Status</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Visa Type</p><p className="text-sm font-black text-slate-900">{emp?.visa_type || '—'}</p></div>
-            <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Sponsoring Entity</p><p className="text-sm font-black text-slate-900">{emp?.sponsoring_entity || '—'}</p></div>
-            <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Visa Expiry</p><p className="text-sm font-black text-amber-600">{emp?.visa_expiry_date || '—'}</p></div>
+      )
+    }
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        {records.length > 0 ? (
+          <div className="space-y-4">
+            <h3 className="text-xs font-black uppercase tracking-wider text-[#0F766E]">
+              Visa &amp; nationality records ({records.length})
+            </h3>
+            {records.map((vr) => (
+              <div
+                key={vr.id}
+                className="grid gap-6 rounded-none border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-3"
+              >
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Passport</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Number</p>
+                      <p className="font-medium text-slate-900">{vr.passport_number || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Nationality</p>
+                      <p className="font-medium text-slate-900">{vr.nationality || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Issue</p>
+                      <p className="font-medium text-slate-900">{fmtVisaDate(vr.passport_issue_date)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Expiry</p>
+                      <p className="font-medium text-rose-600">{fmtVisaDate(vr.passport_expiry_date)}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Country of issue</p>
+                      <p className="font-medium text-slate-900">{vr.country_of_issue || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#0F766E]">Visa</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Type</p>
+                      <p className="font-medium text-slate-900">{vr.visa_type_display || vr.visa_type_name || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Number</p>
+                      <p className="font-medium text-slate-900">{vr.visa_number || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Expiry</p>
+                      <p className="font-medium text-amber-600">{fmtVisaDate(vr.visa_expiry_date)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Sponsor</p>
+                      <p className="font-medium text-slate-900">{vr.sponsoring_entity || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Emirates ID</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">ID Number</p>
+                      <p className="font-medium text-slate-900">{vr.emirates_id_number || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase text-slate-400">Expiry</p>
+                      <p className="font-medium text-rose-600">{fmtVisaDate(vr.emirates_id_expiry)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-        <div className="p-6 rounded-none bg-slate-50 border border-slate-100 space-y-4">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Emirates ID</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">ID Number</p><p className="text-sm font-black text-slate-900">{emp?.emirates_id_number || '—'}</p></div>
-            <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Expiry</p><p className="text-sm font-black text-rose-600">{emp?.emirates_id_expiry || '—'}</p></div>
+        ) : null}
+
+        {hasEmployeeFields ? (
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="rounded-none border border-slate-100 bg-slate-50 p-5 space-y-3">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee profile (legacy)</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-[9px] font-semibold uppercase text-slate-400">Passport</p>
+                  <p className="font-medium">{emp?.passport_number || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-semibold uppercase text-slate-400">Passport expiry</p>
+                  <p className="font-medium text-rose-600">{fmtVisaDate(emp?.passport_expiry)}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-none border border-emerald-100 bg-emerald-50/30 p-5 space-y-3">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-[#0F766E]">Visa (legacy)</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-[9px] font-semibold uppercase text-slate-400">Type</p>
+                  <p className="font-medium">{emp?.visa_type || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-semibold uppercase text-slate-400">Expiry</p>
+                  <p className="font-medium text-amber-600">{fmtVisaDate(emp?.visa_expiry_date)}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-[9px] font-semibold uppercase text-slate-400">Sponsor</p>
+                  <p className="font-medium">{emp?.sponsoring_entity || '—'}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-none border border-slate-100 bg-slate-50 p-5 space-y-3">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Emirates ID (legacy)</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-[9px] font-semibold uppercase text-slate-400">Number</p>
+                  <p className="font-medium">{emp?.emirates_id_number || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-semibold uppercase text-slate-400">Expiry</p>
+                  <p className="font-medium text-rose-600">{fmtVisaDate(emp?.emirates_id_expiry)}</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
-    </div>
-  )
+    )
+  }
 
   const renderAttendance = () => {
     if (loadingTab && !attendance) return <Spinner />
