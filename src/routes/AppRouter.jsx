@@ -54,6 +54,9 @@ import Permissions from "../pages/superadmin/Permissions.jsx";
 import SuperProfile from "../pages/superadmin/Profile.jsx";
 import Register from "../pages/auth/Register.jsx";
 import ForgotPassword from "../pages/auth/ForgotPassword.jsx";
+import CandidateOffer from "../pages/public/onboarding/CandidateOffer.jsx";
+import CandidateSign from "../pages/public/onboarding/CandidateSign.jsx";
+import CandidateDocuments from "../pages/public/onboarding/CandidateDocuments.jsx";
 
 import SettingsLayout from "../pages/superadmin/settings/SettingsLayout.jsx";
 import GeneralSettings from "../pages/superadmin/settings/GeneralSettings.jsx";
@@ -113,6 +116,9 @@ export const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
       { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "onboarding/offer", element: <CandidateOffer /> },
+      { path: "onboarding/sign", element: <CandidateSign /> },
+      { path: "onboarding/documents", element: <CandidateDocuments /> },
       {
         path: "admin",
         element: (

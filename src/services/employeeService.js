@@ -24,6 +24,14 @@ export const getFilterOptions = async () => {
   return data.data
 }
 
+/** Designations for a department (employee.view — no departments.manage). */
+export const getDesignationsForDepartment = async (departmentName) => {
+  const { data } = await api.get('/employees/designations-for-department', {
+    params: { department: departmentName },
+  })
+  return data.data
+}
+
 /**
  * GET /api/v1/employees/next-emp-id
  * Next sequential employee ID (1, 2, 3, …).
@@ -165,5 +173,51 @@ export const listOnboardingEmployees = async (params = {}) => {
  */
 export const completeOnboardingActivation = async (id) => {
   const { data } = await api.post(`/employees/${id}/complete-onboarding`)
+  return data.data
+}
+
+/** POST — email on onboarding step completed (e.g. step 1 = form submitted). */
+export const notifyOnboardingStep = async (id, step = 1) => {
+  const { data } = await api.post(`/employees/${id}/onboarding/notify-step`, { step })
+  return data.data
+}
+
+/** PATCH — Accepted sends HR shared inbox ID proof + resume attachments. */
+export const updateOnboardingApproval = async (id, { status, rejectionReason }) => {
+  const { data } = await api.patch(`/employees/${id}/onboarding/approval`, {
+    status,
+    rejectionReason,
+  })
+  return data.data
+}
+
+/** POST — offer letter email to candidate personal email (attachment if uploaded). */
+export const sendOnboardingOfferLetter = async (id, payload = {}) => {
+  const { data } = await api.post(`/employees/${id}/onboarding/send-offer-letter`, payload)
+  return data.data
+}
+
+export const getOnboardingChecklist = async (id) => {
+  const { data } = await api.get(`/employees/${id}/onboarding/checklist`)
+  return data.data
+}
+
+export const reviewOnboardingChecklistItem = async (employeeId, itemId, payload) => {
+  const { data } = await api.patch(
+    `/employees/${employeeId}/onboarding/checklist/${itemId}/review`,
+    payload,
+  )
+  return data.data
+}
+
+export const uploadSignedOfferByHr = async (id, file) => {
+  const fd = new FormData()
+  fd.append('file', file)
+  const { data } = await api.post(`/employees/${id}/onboarding/signed-offer`, fd)
+  return data.data
+}
+
+export const completeOnboardingWorkflow = async (id) => {
+  const { data } = await api.post(`/employees/${id}/onboarding/complete`)
   return data.data
 }
