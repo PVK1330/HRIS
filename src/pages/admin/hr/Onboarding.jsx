@@ -136,6 +136,7 @@ export default function Onboarding() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
   const [selectedEmployeeIdForDocs, setSelectedEmployeeIdForDocs] = useState('')
   const [checklistItems, setChecklistItems] = useState([])
+  const [onboardingReviewMeta, setOnboardingReviewMeta] = useState(null)
   const [signedOfferHrFile, setSignedOfferHrFile] = useState(null)
   const [uploadingSignedOffer, setUploadingSignedOffer] = useState(false)
   const fw = (patch) => setWizardForm((prev) => ({ ...prev, ...patch }))
@@ -282,15 +283,43 @@ export default function Onboarding() {
   const loadOnboardingChecklist = useCallback(async (id) => {
     if (!id) {
       setChecklistItems([])
+      setOnboardingReviewMeta(null)
       return
     }
     try {
       const data = await getOnboardingChecklist(Number(id))
       setChecklistItems(data?.checklist || [])
+      setOnboardingReviewMeta(data)
     } catch {
       setChecklistItems([])
+      setOnboardingReviewMeta(null)
     }
   }, [])
+
+  const handleApproveAllUploaded = async () => {
+    if (!selectedEmployeeIdForDocs) return
+    const pending = checklistItems.filter(
+      (item) =>
+        item.is_mandatory &&
+        item.upload_status === 'Uploaded' &&
+        item.hr_review_status !== 'Approved',
+    )
+    if (!pending.length) {
+      toast.error('No uploaded documents waiting for approval.')
+      return
+    }
+    try {
+      for (const item of pending) {
+        await reviewOnboardingChecklistItem(Number(selectedEmployeeIdForDocs), item.id, {
+          hrReviewStatus: 'Approved',
+        })
+      }
+      toast.success(`Approved ${pending.length} document(s).`)
+      await loadOnboardingChecklist(selectedEmployeeIdForDocs)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not approve documents')
+    }
+  }
 
   const openContinueOnboarding = useCallback(
     async (row, initialTab = 'status') => {
@@ -1133,34 +1162,41 @@ export default function Onboarding() {
 
             {selectedEmployeeId && (
               <>
-                {/* Step 2 â€” HR upload signed offer (if candidate signed offline) */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                  <SectionHeader
-                    icon={HiClipboardDocumentCheck}
-                    title="Signed offer letter"
-                    subtitle="Upload if the candidate signed offline (otherwise they sign via email link)"
-                  />
-                  <div className="space-y-4">
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.png"
-                      onChange={(e) => setSignedOfferHrFile(e.target.files?.[0] || null)}
-                      className="w-full text-sm"
-                    />
-                    {signedOfferHrFile && (
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={handleHrUploadSignedOffer}
-                          disabled={uploadingSignedOffer}
-                          className="h-10 px-6 rounded-lg bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-50"
-                        >
-                          {uploadingSignedOffer ? 'Uploadingâ€¦' : 'Save signed offer (Step 2)'}
-                        </button>
-                      </div>
-                    )}
+                {onboardingReviewMeta?.signedOfferOnFile ? (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                    <strong>Step 2 complete.</strong> The candidate digitally signed the offer.
+                    The signed PDF is already saved on this employee record — you do not need to upload a file here.
+                    Go to <strong>Step 3 — Documents</strong> to approve their uploads.
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <SectionHeader
+                      icon={HiClipboardDocumentCheck}
+                      title="Signed offer letter"
+                      subtitle="Only if the candidate signed on paper (not via email link)"
+                    />
+                    <div className="space-y-4">
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.png"
+                        onChange={(e) => setSignedOfferHrFile(e.target.files?.[0] || null)}
+                        className="w-full text-sm"
+                      />
+                      {signedOfferHrFile && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={handleHrUploadSignedOffer}
+                            disabled={uploadingSignedOffer}
+                            className="h-10 px-6 rounded-lg bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-50"
+                          >
+                            {uploadingSignedOffer ? 'Uploading…' : 'Save signed offer (Step 2)'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -1198,10 +1234,32 @@ export default function Onboarding() {
                   />
                   {checklistItems.length === 0 ? (
                     <p className="text-sm text-slate-500">
-                      Checklist not started. Candidate must accept and sign the offer (Steps 1â€“2) first.
+                      Checklist not started. Candidate must accept and sign the offer (Steps 1–2) first.
                     </p>
                   ) : (
                     <>
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 mb-4">
+                        <strong>Candidate side is done</strong> when every row shows Upload: Uploaded.
+                        <strong> HR: Pending</strong> means you still must click <strong>Approve</strong> on each document (or use Approve all below).
+                        Then click <strong>Complete onboarding &amp; activate</strong>.
+                        {onboardingReviewMeta?.progress && (
+                          <p className="mt-2 text-xs">
+                            Progress: {onboardingReviewMeta.progress.approvedCount}/
+                            {onboardingReviewMeta.progress.mandatoryCount} mandatory documents approved
+                            {' · '}
+                            {onboardingReviewMeta.progress.uploadedCount} uploaded
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex justify-end mb-3">
+                        <button
+                          type="button"
+                          onClick={handleApproveAllUploaded}
+                          className="h-9 px-4 text-[10px] font-black uppercase tracking-widest bg-emerald-600 text-white rounded-lg"
+                        >
+                          Approve all uploaded
+                        </button>
+                      </div>
                       <div className="space-y-3">
                         {checklistItems.map((item) => (
                           <div
@@ -1218,6 +1276,15 @@ export default function Onboarding() {
                               )}
                             </div>
                             <div className="flex gap-2 shrink-0">
+                              {item.upload_status === 'Uploaded' && (item.file_url || item.fileUrl) && (
+                                <button
+                                  type="button"
+                                  onClick={() => window.open(item.file_url || item.fileUrl, '_blank')}
+                                  className="h-8 px-3 text-[10px] font-bold uppercase bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-40 rounded"
+                                >
+                                  View
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 disabled={item.upload_status !== 'Uploaded'}
