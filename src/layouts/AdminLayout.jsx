@@ -246,7 +246,7 @@ const adminNavGroups = [
         label: "Designations",
         icon: HiIdentification,
         path: "/admin/designations",
-        key: "departments",
+        key: "designations",
         permission: "edit_settings",
         featureCode: "department",
       },

@@ -1,4 +1,4 @@
-﻿// v2 â€” single-tab unified form with system role
+// v2 ” single-tab unified form with system role
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   HiUserPlus,
@@ -17,6 +17,8 @@ import {
   HiEnvelope,
   HiShieldCheck,
   HiDocumentDuplicate,
+  HiDocumentText,
+  HiDocument,
 } from 'react-icons/hi2'
 import toast from 'react-hot-toast'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -33,6 +35,8 @@ import {
   reviewOnboardingChecklistItem,
   uploadSignedOfferByHr,
   completeOnboardingWorkflow,
+  updateEmployee,
+  getEmployee,
 } from '../../../services/employeeService.js'
 import {
   ONBOARDING_TOTAL_STEPS,
@@ -44,7 +48,7 @@ import { listDepartments } from '../../../services/departmentService.js'
 import { listDesignations } from '../../../services/designationService.js'
 
 function formatJoinDate(value) {
-  if (!value || value === 'â€”') return 'â€”'
+  if (!value || value === '-') return '-'
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return String(value)
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -59,15 +63,15 @@ function mapRow(e) {
     WORKFLOW_STATUS_LABELS.draft
   return {
     id: e.id,
-    empId: e.emp_id || e.empId || 'â€”',
-    name: e.full_name || e.fullName || 'â€”',
+    empId: e.emp_id || e.empId || '-',
+    name: e.full_name || e.fullName || '-',
     email: e.work_email || e.workEmail || e.personal_email || e.personalEmail || '',
-    dept: e.department || 'â€”',
+    dept: e.department || '-',
     joinDate: formatJoinDate(e.join_date || e.joinDate),
     status,
     workflowStatus: workflow,
     progress: `${progressStep}/${ONBOARDING_TOTAL_STEPS}`,
-    manager: e.manager_name || e.managerName || 'â€”',
+    manager: e.manager_name || e.managerName || '-',
   }
 }
 
@@ -139,7 +143,50 @@ export default function Onboarding() {
   const [onboardingReviewMeta, setOnboardingReviewMeta] = useState(null)
   const [signedOfferHrFile, setSignedOfferHrFile] = useState(null)
   const [uploadingSignedOffer, setUploadingSignedOffer] = useState(false)
+  const [rejectItemId, setRejectItemId] = useState(null)
+  const [rejectComment, setRejectComment] = useState("")
+
   const fw = (patch) => setWizardForm((prev) => ({ ...prev, ...patch }))
+
+  const populateFormWithEmp = (emp) => {
+    if (!emp) {
+      setWizardForm(INITIAL_FORM);
+      return;
+    }
+    setWizardForm({
+      empId: emp.emp_id || emp.empId || '',
+      firstName: emp.first_name || emp.firstName || '',
+      lastName: emp.last_name || emp.lastName || '',
+      dateOfBirth: emp.date_of_birth ? String(emp.date_of_birth).split('T')[0] : '',
+      personalEmail: emp.personal_email || emp.personalEmail || '',
+      phoneNumber: emp.phone_number || emp.phoneNumber || '',
+      gender: emp.gender || '',
+      nationality: emp.nationality || '',
+      maritalStatus: emp.marital_status || emp.maritalStatus || '',
+      currentAddress: emp.home_address || emp.homeAddress || '',
+      jobTitle: emp.job_title || emp.jobTitle || '',
+      department: emp.department || '',
+      departmentId: emp.department_id || emp.departmentId || '',
+      employmentType: emp.employment_type || emp.employmentType || 'Full-time',
+      workMode: emp.work_mode || emp.workMode || 'On-site',
+      workLocation: emp.work_location || emp.workLocation || '',
+      reportingManagerEmpId: emp.reporting_manager_emp_id || emp.reportingManagerEmpId || '',
+      rbacRoleId: emp.rbac_role_id || emp.rbacRoleId || '',
+      probationPeriod: emp.probation_period || '6 Months',
+      dateOfOffer: emp.date_of_offer ? String(emp.date_of_offer).split('T')[0] : new Date().toISOString().split('T')[0],
+      offerExpiryDate: emp.offer_expiry_date ? String(emp.offer_expiry_date).split('T')[0] : '',
+      expectedJoiningDate: emp.join_date ? String(emp.join_date).split('T')[0] : '',
+      annualCtc: emp.salary || '',
+      currency: emp.salary_details?.currency || 'AED',
+      payFrequency: emp.salary_details?.payment_frequency || 'Monthly',
+      bonusVariablePay: emp.bonus_variable_pay || '',
+      probationSalary: emp.probation_salary || '',
+      relocationAllowance: emp.relocation_allowance || '',
+      noticePeriod: emp.notice_period || '30 Days',
+      requiredDocuments: ['Passport', 'Emirates ID'],
+      welcomeLetterTemplateId: '',
+    })
+  }
 
   /* â”€â”€â”€ Data loaders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
@@ -234,8 +281,8 @@ export default function Onboarding() {
     const deptLabel = row?.name ?? row?.department_name ?? value
     const numericId =
       row?.id != null &&
-      `${row.id}`.trim() !== '' &&
-      Number.isInteger(Number(row.id))
+        `${row.id}`.trim() !== '' &&
+        Number.isInteger(Number(row.id))
         ? String(row.id)
         : ''
     fw({
@@ -330,6 +377,12 @@ export default function Onboarding() {
       setOnboardingMode(initialTab)
       setModalOpen(true)
       await loadOnboardingChecklist(row.id)
+      try {
+        const emp = await getEmployee(row.id)
+        populateFormWithEmp(emp)
+      } catch (err) {
+        console.warn('Could not load employee details for prepopulation')
+      }
     },
     [loadOnboardingChecklist],
   )
@@ -483,7 +536,7 @@ export default function Onboarding() {
         wizardForm.employmentType === 'Internship' ? 'Intern' : wizardForm.employmentType
 
       const payload = {
-        empId: String(nextId),
+        empId: wizardForm.empId || String(nextId),
         fullName,
         firstName,
         lastName,
@@ -517,8 +570,13 @@ export default function Onboarding() {
         },
       }
 
-      const created = await createEmployee(payload)
-      const empId = created?.id
+      let empId = selectedEmployeeId;
+      if (empId) {
+        await updateEmployee(empId, payload);
+      } else {
+        const created = await createEmployee(payload)
+        empId = created?.id
+      }
 
       if (empId) {
         try {
@@ -530,14 +588,14 @@ export default function Onboarding() {
           })
           toast.success(
             offerMail.message ||
-              'Step 1 complete: offer PDF generated and emailed with Accept / Reject actions.',
+            'Step 1 complete: offer PDF generated and emailed with Accept / Reject actions.',
             { duration: 6000 },
           )
         } catch (offerErr) {
           console.warn('Offer letter email:', offerErr)
           toast.error(
             offerErr.response?.data?.message ||
-              'Employee saved, but offer letter could not be sent.',
+            'Employee saved, but offer letter could not be sent.',
           )
         }
       }
@@ -617,7 +675,7 @@ export default function Onboarding() {
             type="button"
             onClick={() => openContinueOnboarding(row, 'status')}
             className="h-8 w-8 flex items-center justify-center rounded-none border border-slate-200 bg-white text-slate-400 hover:text-[#0F766E] hover:border-slate-300 transition-all shadow-sm"
-            title="Continue onboarding â€” Step 2"
+            title="Continue onboarding — Step 2"
           >
             <HiPencil className="h-4 w-4" />
           </button>
@@ -710,7 +768,7 @@ export default function Onboarding() {
         <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
           <h2 className="text-sm font-semibold uppercase tracking-wider truncate">Onboarding Registry</h2>
           <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">
-            {loading ? 'Loadingâ€¦' : `${filtered.length} records`}
+            {loading ? 'Loading¦' : `${filtered.length} records`}
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
@@ -735,7 +793,7 @@ export default function Onboarding() {
           )}
         </div>
         {loading ? (
-          <p className="px-6 py-12 text-center text-sm text-slate-500">Loading onboarding employeesâ€¦</p>
+          <p className="px-6 py-12 text-center text-sm text-slate-500">Loading onboarding employees¦</p>
         ) : filtered.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <p className="text-sm font-medium text-slate-600">No employees in onboarding.</p>
@@ -755,7 +813,7 @@ export default function Onboarding() {
                 { label: 'Employee', value: selectedHire?.name },
                 { label: 'Employee ID', value: selectedHire?.empId },
                 { label: 'Department', value: selectedHire?.dept },
-                { label: 'Work email', value: selectedHire?.email || 'â€”' },
+                { label: 'Work email', value: selectedHire?.email || '-' },
               ].map(({ label, value }) => (
                 <div key={label}>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
@@ -809,7 +867,7 @@ export default function Onboarding() {
               onClick={handleCompleteActivation}
               className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {activating ? 'Completingâ€¦' : 'Complete onboarding (Step 3)'}
+              {activating ? 'Completing¦' : 'Complete onboarding (Step 3)'}
             </button>
           </div>
         </div>
@@ -834,9 +892,9 @@ export default function Onboarding() {
         {/* Mode switcher tabs */}
         <div className="flex border-b border-slate-200 -mx-6 px-6 mb-6">
           {[
-            { key: 'create', label: 'Step 1 â€” Offer' },
-            { key: 'status', label: 'Step 2 â€” Signed offer' },
-            { key: 'documents', label: 'Step 3 â€” Documents' },
+            { key: 'create', label: 'Step 1 — Offer' },
+            { key: 'status', label: 'Step 2 — Signed offer' },
+            { key: 'documents', label: 'Step 3 — Documents' },
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -856,7 +914,7 @@ export default function Onboarding() {
         {onboardingMode === 'create' ? (
           <form className="p-2" onSubmit={handleCreateAndStartOnboarding}>
             <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1 pb-2">
-              {/* SECTION 1 â€” Candidate Personal Details */}
+              {/* SECTION 1 ” Candidate Personal Details */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                 <SectionHeader icon={HiUser} title="Candidate Information" subtitle="Personal credentials and contact details" />
                 <div className="space-y-5">
@@ -923,7 +981,7 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              {/* SECTION 2 â€” Job Setup, System Role & Offer Details */}
+              {/* SECTION 2 ” Job Setup, System Role & Offer Details */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                 <SectionHeader icon={HiBriefcase} title="Job & Organizational Setup" subtitle="Designation, department, role assignment, and offer details" />
                 <div className="space-y-5">
@@ -955,7 +1013,7 @@ export default function Onboarding() {
                           {!wizardForm.department
                             ? 'Select department first'
                             : loadingDeptDesignations
-                              ? 'Loading designationsâ€¦'
+                              ? 'Loading designations¦'
                               : designationRowsForDept.length
                                 ? 'Select Designation'
                                 : 'No designations for this department'}
@@ -984,10 +1042,10 @@ export default function Onboarding() {
                         </span>
                       </label>
                       <select value={wizardForm.rbacRoleId} onChange={(e) => fw({ rbacRoleId: e.target.value })} className={selectCls}>
-                        <option value="">Select System Roleâ€¦</option>
+                        <option value="">Select System Role¦</option>
                         {tenantRoles.length > 0
                           ? tenantRoles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)
-                          : <option disabled>Loading rolesâ€¦</option>
+                          : <option disabled>Loading roles¦</option>
                         }
                       </select>
                     </div>
@@ -1048,11 +1106,11 @@ export default function Onboarding() {
                       <input type="date" value={wizardForm.offerExpiryDate} onChange={(e) => fw({ offerExpiryDate: e.target.value })} className={inputCls} />
                     </div>
                   </div>
-                  
+
                 </div>
               </div>
 
-              {/* SECTION 3 â€” Compensation & Terms */}
+              {/* SECTION 3 ” Compensation & Terms */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                 <SectionHeader icon={HiBanknotes} title="Compensation & Terms" subtitle="Salary structure, pay frequency, and employment conditions" />
                 <div className="space-y-5">
@@ -1127,7 +1185,7 @@ export default function Onboarding() {
             <div className="pt-5 mt-4 border-t border-slate-200 flex justify-between items-center gap-4">
               <button type="button" onClick={() => { setModalOpen(false); setOnboardingMode('create'); setWizardForm(INITIAL_FORM) }} className="h-11 px-6 rounded-lg border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors shadow-sm">Cancel</button>
               <button type="submit" disabled={initLoading} className="h-11 px-10 rounded-lg bg-[#0F766E] hover:bg-[#0c6b64] shadow-lg shadow-emerald-950/10 text-[10px] font-black uppercase tracking-widest text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                {initLoading ? (<><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Savingâ€¦</>) : 'Submit & send offer (Step 1)'}
+                {initLoading ? (<><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving¦</>) : 'Submit & send offer (Step 1)'}
               </button>
             </div>
           </form>
@@ -1138,18 +1196,24 @@ export default function Onboarding() {
               <SectionHeader icon={HiUser} title="Select Employee" subtitle="Choose a candidate to update onboarding status (Step 2)" />
               <select
                 value={selectedEmployeeId}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const id = e.target.value
                   setSelectedEmployeeId(id)
                   setSelectedEmployeeIdForDocs(id)
                   loadOnboardingChecklist(id)
+                  if (id) {
+                    const emp = await getEmployee(id).catch(() => null)
+                    populateFormWithEmp(emp)
+                  } else {
+                    setWizardForm(INITIAL_FORM)
+                  }
                 }}
                 className="w-full rounded-lg border border-slate-200 bg-white h-12 px-4 text-sm focus:border-[#0F766E] outline-none transition-all"
               >
-                <option value="">Select employeeâ€¦</option>
+                <option value="">Select employee¦</option>
                 {directoryOptions.map((emp) => (
                   <option key={emp.id} value={emp.id}>
-                    {(emp.full_name || emp.fullName) ?? 'Employee'} â€” {emp.emp_id || emp.empId}
+                    {(emp.full_name || emp.fullName) ?? 'Employee'} — {emp.emp_id || emp.empId}
                   </option>
                 ))}
               </select>
@@ -1167,6 +1231,17 @@ export default function Onboarding() {
                     <strong>Step 2 complete.</strong> The candidate digitally signed the offer.
                     The signed PDF is already saved on this employee record — you do not need to upload a file here.
                     Go to <strong>Step 3 — Documents</strong> to approve their uploads.
+                    {onboardingReviewMeta?.signedOfferFileUrl && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => window.open(onboardingReviewMeta.signedOfferFileUrl, '_blank')}
+                          className="h-9 px-4 text-[10px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 transition-colors text-white rounded-lg shadow-sm"
+                        >
+                          View Signed Offer
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
@@ -1215,10 +1290,10 @@ export default function Onboarding() {
                 }}
                 className="w-full rounded-lg border border-slate-200 bg-white h-12 px-4 text-sm focus:border-[#0F766E] outline-none transition-all"
               >
-                <option value="">Select employeeâ€¦</option>
+                <option value="">Select employee¦</option>
                 {directoryOptions.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {(e.full_name || e.fullName) ?? 'Employee'} â€” {e.emp_id || e.empId}
+                    {(e.full_name || e.fullName) ?? 'Employee'} — {e.emp_id || e.empId}
                   </option>
                 ))}
               </select>
@@ -1250,6 +1325,19 @@ export default function Onboarding() {
                             {onboardingReviewMeta.progress.uploadedCount} uploaded
                           </p>
                         )}
+                        {onboardingReviewMeta?.signedOfferFileUrl && (
+                          <div className="mt-3 pt-3 border-t border-amber-200/50">
+                            <p className="text-xs mb-2 text-amber-900 font-medium">Reference Document:</p>
+                            <button
+                              type="button"
+                              onClick={() => window.open(onboardingReviewMeta.signedOfferFileUrl, '_blank')}
+                              className="h-8 px-4 text-[10px] font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-700 transition-colors text-white rounded shadow-sm flex items-center gap-2"
+                            >
+                              <HiDocumentText className="w-3.5 h-3.5" />
+                              View Signed Offer Letter
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <div className="flex justify-end mb-3">
                         <button
@@ -1276,36 +1364,52 @@ export default function Onboarding() {
                               )}
                             </div>
                             <div className="flex gap-2 shrink-0">
-                              {item.upload_status === 'Uploaded' && (item.file_url || item.fileUrl) && (
+                              {item.upload_status === 'Uploaded' && (item.file_url || item.fileUrl) ? (
                                 <button
                                   type="button"
                                   onClick={() => window.open(item.file_url || item.fileUrl, '_blank')}
-                                  className="h-8 px-3 text-[10px] font-bold uppercase bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-40 rounded"
+                                  className="h-8 px-3 text-[10px] font-bold uppercase bg-blue-50 text-blue-700 hover:bg-blue-100 rounded shadow-sm transition-colors border border-blue-200 flex items-center gap-1.5"
                                 >
-                                  View
+                                  <HiDocument className="w-3.5 h-3.5" />
+                                  View Doc
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="h-8 px-3 text-[10px] font-bold uppercase bg-slate-50 text-slate-400 rounded border border-slate-100 flex items-center gap-1.5"
+                                  title="No document uploaded yet"
+                                >
+                                  No Doc
                                 </button>
                               )}
-                              <button
-                                type="button"
-                                disabled={item.upload_status !== 'Uploaded'}
-                                onClick={() => handleReviewChecklistItem(item.id, 'Approved')}
-                                className="h-8 px-3 text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 disabled:opacity-40"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                type="button"
-                                disabled={item.upload_status !== 'Uploaded'}
-                                onClick={() => {
-                                  const comment = window.prompt('Rejection comment (required):')
-                                  if (comment?.trim()) {
-                                    handleReviewChecklistItem(item.id, 'Rejected', comment.trim())
-                                  }
-                                }}
-                                className="h-8 px-3 text-[10px] font-bold uppercase bg-rose-50 text-rose-700 disabled:opacity-40"
-                              >
-                                Reject
-                              </button>
+                              {item.hr_review_status === 'Approved' ? (
+                                <span className="h-8 flex items-center px-3 text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 rounded border border-emerald-200">
+                                  Approved
+                                </span>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={item.upload_status !== 'Uploaded'}
+                                    onClick={() => handleReviewChecklistItem(item.id, 'Approved')}
+                                    className="h-8 px-3 text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 rounded border border-emerald-100 transition-colors"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={item.upload_status !== 'Uploaded'}
+                                    onClick={() => {
+                                      setRejectComment('')
+                                      setRejectItemId(item.id)
+                                    }}
+                                    className="h-8 px-3 text-[10px] font-bold uppercase bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-40 rounded border border-rose-100 transition-colors"
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -1342,6 +1446,56 @@ export default function Onboarding() {
         }
 
       </Modal >
+
+      <Modal
+        isOpen={!!rejectItemId}
+        onClose={() => {
+          setRejectItemId(null)
+          setRejectComment('')
+        }}
+        title="Reject Document"
+        size="md"
+      >
+        <div className="p-4">
+          <p className="text-sm text-slate-500 mb-4">
+            Please provide a reason for rejecting this document. The candidate will see this reason and be asked to re-upload.
+          </p>
+          <textarea
+            className="w-full h-24 rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 mb-4"
+            placeholder="Reason for rejection..."
+            value={rejectComment}
+            onChange={(e) => setRejectComment(e.target.value)}
+          />
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setRejectItemId(null)
+                setRejectComment('')
+              }}
+              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!rejectComment.trim()) {
+                  toast.error('Comment is required for rejection')
+                  return
+                }
+                handleReviewChecklistItem(rejectItemId, 'Rejected', rejectComment.trim())
+                setRejectItemId(null)
+                setRejectComment('')
+              }}
+              className="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-sm"
+            >
+              Confirm Reject
+            </button>
+          </div>
+        </div>
+      </Modal>
+
     </div >
   )
 }

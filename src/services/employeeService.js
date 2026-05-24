@@ -144,6 +144,7 @@ export const updateEmployee = async (id, payload) => {
   return data.data.employee
 }
 
+
 /**
  * DELETE /api/v1/employees/:id
  * Requires role: admin | hr_admin  (soft delete)
