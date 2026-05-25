@@ -39,6 +39,7 @@ import AssetManagement from "../pages/admin/assets/AssetManagement.jsx";
 import Reports from "../pages/admin/reports/Reports.jsx";
 import AnnouncementsPage from "../pages/admin/Announcements.jsx";
 import Payroll from "../pages/admin/finance/Payroll.jsx";
+import ManagerPerformance from "../pages/admin/hr/ManagerPerformance.jsx";
 
 const PlatformDashboard = lazy(() => import("../pages/superadmin/platform/Dashboard.jsx"));
 const TenantManagement = lazy(() => import("../pages/superadmin/tenants/TenantManagement.jsx"));

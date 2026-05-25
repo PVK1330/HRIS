@@ -52,6 +52,12 @@ const updateAssessment = async (id, data) => {
   return response.data
 }
 
+/** Approve assessment (admin) */
+const approveAssessment = async (id) => {
+  const response = await api.patch(`${BASE_URL}/${id}/approve`)
+  return response.data
+}
+
 /** Delete assessment */
 const deleteAssessment = async (id) => {
   const response = await api.delete(`${BASE_URL}/${id}`)
@@ -160,12 +166,19 @@ const getMyAssessments = async () => {
   return response.data
 }
 
+/** Update employee progress for an assessment */
+const updateEmployeeProgress = async (id, data) => {
+  const response = await api.put(`${BASE_URL}/${id}/progress`, data)
+  return response.data
+}
+
 export default {
   createAssessment,
   getAllAssessments,
   createBulkAssessments,
   getAssessmentById,
   updateAssessment,
+  approveAssessment,
   deleteAssessment,
   getSummary,
   getManagerAssignedAssessments,
@@ -179,6 +192,7 @@ export default {
   getEmployeeAssessments,
   getEmployeePerformanceSummary,
   getMyAssessments,
-  getManagerReviews
+  getManagerReviews,
+  updateEmployeeProgress
 }
 

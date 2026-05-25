@@ -103,6 +103,15 @@ export default function EmployeeProfile() {
     expiry_date: '',
   })
 
+  // Employee Progress State
+  const [progressForm, setProgressForm] = useState({
+    employeeStatus: 'Not Started',
+    employeeProgress: '0',
+    employeeComments: '',
+    completionNotes: ''
+  })
+  const [savingProgress, setSavingProgress] = useState(false)
+
   // Print Modal State
   const [printModalOpen, setPrintModalOpen] = useState(false)
   const [selectedPrintTabs, setSelectedPrintTabs] = useState(() => TABS.map(t => t.id))
@@ -316,6 +325,34 @@ export default function EmployeeProfile() {
       }
     }
     setSelectedAssessment(assessment)
+    setProgressForm({
+      employeeStatus: assessment.employeeStatus || 'Not Started',
+      employeeProgress: String(assessment.employeeProgress || '0'),
+      employeeComments: assessment.employeeComments || '',
+      completionNotes: assessment.completionNotes || ''
+    })
+  }
+
+  const handleSaveProgress = async () => {
+    if (!selectedAssessment) return
+    setSavingProgress(true)
+    try {
+      const updated = await performanceAssessmentAPI.updateEmployeeProgress(selectedAssessment.id, progressForm)
+      toast.success('Progress updated successfully')
+      
+      const updatedData = updated?.data || updated // depending on ApiResponse format
+      
+      setPerformanceAssessments(prev => 
+        prev.map(a => a.id === selectedAssessment.id ? { ...a, ...updatedData } : a)
+      )
+      
+      // Close the modal
+      setSelectedAssessment(null)
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to update progress')
+    } finally {
+      setSavingProgress(false)
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -1827,6 +1864,110 @@ export default function EmployeeProfile() {
                 </div>
               </div>
             )}
+
+            {/* Goal & KPI Details Section */}
+            {(selectedAssessment.goalTitle || selectedAssessment.kpiTarget) && (
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <p className="text-sm font-black text-slate-900 uppercase tracking-tight mb-3">Goal & KPI Details</p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Goal Title</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedAssessment.goalTitle || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">KPI Target</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedAssessment.kpiTarget || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Priority</p>
+                    <Badge label={selectedAssessment.priority || 'Normal'} color="blue" variant="soft" className="font-black text-[9px] tracking-widest" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Goal Due Date</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedAssessment.dueDate ? selectedAssessment.dueDate.split('T')[0] : '—'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* My Progress Update Section */}
+            <div className="mt-8 border-t border-slate-200 pt-6">
+              <div className="mb-4">
+                <p className="text-sm font-black text-[#0F766E] uppercase tracking-tight">My Progress Update</p>
+                <p className="text-[11px] text-slate-500 mt-1">Update your progress for this assessment</p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Employee Status</label>
+                  <select
+                    value={progressForm.employeeStatus}
+                    onChange={e => setProgressForm({ ...progressForm, employeeStatus: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-[#0F766E] transition-colors"
+                  >
+                    <option value="Not Started">Not Started</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On Hold">On Hold</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                    Progress Percentage
+                  </label>
+                  <select
+                    value={progressForm.employeeProgress}
+                    onChange={e => setProgressForm({ ...progressForm, employeeProgress: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-[#0F766E] transition-colors"
+                  >
+                    <option value="0">0%</option>
+                    <option value="10 to 30">10 to 30%</option>
+                    <option value="30 to 50">30 to 50%</option>
+                    <option value="50 to 80">50 to 80%</option>
+                    <option value="80 to 100">80 to 100%</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Employee Comments</label>
+                  <textarea
+                    value={progressForm.employeeComments}
+                    onChange={e => setProgressForm({ ...progressForm, employeeComments: e.target.value })}
+                    placeholder="Provide your feedback or comments..."
+                    rows={3}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#0F766E] transition-colors resize-none"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Completion Notes</label>
+                  <textarea
+                    value={progressForm.completionNotes}
+                    onChange={e => setProgressForm({ ...progressForm, completionNotes: e.target.value })}
+                    placeholder="Notes about completion..."
+                    rows={2}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#0F766E] transition-colors resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <Button 
+                  label="CANCEL" 
+                  variant="outline" 
+                  onClick={() => setSelectedAssessment(null)} 
+                  className="text-[10px] font-black tracking-widest"
+                />
+                <Button 
+                  label={savingProgress ? 'SAVING...' : 'SAVE PROGRESS'} 
+                  variant="primary" 
+                  onClick={handleSaveProgress}
+                  disabled={savingProgress}
+                  className="text-[10px] font-black tracking-widest"
+                />
+              </div>
+            </div>
           </div>
         )}
       </Modal>

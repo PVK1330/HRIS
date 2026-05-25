@@ -52,8 +52,22 @@ function AssessmentDetailsModal({ assessment, onClose }) {
               <p className="mt-1 text-sm text-slate-900">{assessment.performanceCycle?.cycleName || assessment.performanceCycleName || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-600">Status</p>
+              <p className="text-xs font-medium text-slate-600">Admin Status</p>
               <p className="mt-1 text-sm text-slate-900">{assessment.status || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-600">Employee Status</p>
+              <div className="mt-1">
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold shadow-sm border
+                  ${assessment.employeeStatus === 'Approved' ? 'bg-green-100 text-green-700 border-green-200' :
+                    assessment.employeeStatus === 'Completed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                    assessment.employeeStatus === 'In Progress' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                    assessment.employeeStatus === 'On Hold' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                      'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                  <span className={`h-2 w-2 rounded-full ${assessment.employeeStatus === 'Approved' ? 'bg-green-500' : assessment.employeeStatus === 'Completed' ? 'bg-emerald-500' : assessment.employeeStatus === 'In Progress' ? 'bg-blue-500' : assessment.employeeStatus === 'On Hold' ? 'bg-orange-500' : 'bg-slate-400'}`} />
+                  {assessment.employeeStatus || 'Not Started'}
+                </span>
+              </div>
             </div>
             <div>
               <p className="text-xs font-medium text-slate-600">Created Date</p>
