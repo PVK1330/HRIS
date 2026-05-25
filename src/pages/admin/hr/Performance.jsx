@@ -11,13 +11,13 @@ import {
   HiAdjustmentsHorizontal,
   HiCalendarDays,
   HiDocumentText,
-  HiBriefcase,
   HiChevronRight,
   HiStar,
   HiOutlineStar,
   HiXMark,
   HiPencilSquare,
-  HiTrash
+  HiTrash,
+  HiBriefcase
 } from 'react-icons/hi2'
 import {
   BarChart,
@@ -47,19 +47,24 @@ import performanceCyclesAPI from '../../../services/performanceCyclesAPI.js'
 import competenciesAPI from '../../../services/competenciesAPI.js'
 import performanceAssessmentAPI from '../../../services/performanceAssessmentAPI.js'
 
+
 const COLORS = ['#0F766E', '#14B8A6', '#2DD4BF', '#99F6E4', '#F0FDFA']
 
 const initialFormData = {
-  employeeId: '',
+  employeeIds: [], // array of employee IDs for bulk assignment
+  departmentId: '', // auto-populated when employee is selected
   reviewPeriod: '',
-  reviewerName: '',
   competencyRatings: [], // array of { competency, rating }
   overallRating: 0,
   strengths: '',
   goalsNextPeriod: '',
   remarks: '',
   assessmentDate: new Date().toISOString().split('T')[0],
-  status: 'Completed'
+  status: 'Completed',
+  goalTitle: '',
+  kpiTarget: '',
+  dueDate: '',
+  priority: 'Medium'
 }
 
 const reviews = employees.slice(0, 10).map((e, idx) => ({
@@ -130,7 +135,7 @@ function StarRating({ label, value, onChange }) {
   )
 }
 
-function SearchableEmployeeSelect({ value, onChange, employees = [] }) {
+function SearchableEmployeeSelect({ value, onChange, employees = [], isMulti = false, disabled = false }) {
   const [search, setSearch] = useState('')
   const [isOpen, setIsOpen] = useState(false)
 
@@ -144,27 +149,59 @@ function SearchableEmployeeSelect({ value, onChange, employees = [] }) {
     }).slice(0, 8)
   }, [search, employees])
 
+  const selectedIds = Array.isArray(value) ? value : (value ? [value] : [])
+
+  const handleSelect = (id) => {
+    if (!isMulti) {
+      onChange([id])
+      setIsOpen(false)
+      return
+    }
+    const newSelected = selectedIds.includes(id)
+      ? selectedIds.filter(i => i !== id)
+      : [...selectedIds, id]
+    onChange(newSelected)
+  }
+
+  const handleRemove = (e, id) => {
+    e.stopPropagation()
+    onChange(selectedIds.filter(i => i !== id))
+  }
+
   return (
     <div className="relative">
       <label className="mb-1 block text-sm font-medium text-slate-800">
-        Employee
+        Employee{isMulti && 's'}
       </label>
       <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-300 bg-white h-10 px-3 text-sm transition-all focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/20 hover:border-slate-400"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`flex w-full min-h-[40px] cursor-pointer items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : 'focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/20 hover:border-slate-400'}`}
       >
-        <span className={value ? 'text-slate-950 font-bold text-sm' : 'text-slate-400 font-medium'}>
-          {value ? (
-            (() => {
-              const emp = employees.find(e => String(e.id) === String(value));
-              return emp ? `${emp.full_name || emp.fullName || emp.name} (${emp.emp_id || emp.empId || emp.empCode || 'N/A'})` : 'Select employee...';
-            })()
-          ) : 'Select employee...'}
-        </span>
-        <HiMagnifyingGlass className="h-4 w-4 text-slate-500" />
+        <div className="flex flex-wrap gap-1.5">
+          {selectedIds.length > 0 ? (
+            selectedIds.map(id => {
+              const emp = employees.find(e => String(e.id) === String(id));
+              const name = emp ? `${emp.full_name || emp.fullName || emp.name} (${emp.emp_id || emp.empId || emp.empCode || 'N/A'})` : 'Unknown';
+              if (!isMulti) return <span key={id} className="text-slate-950 font-bold text-sm my-auto">{name}</span>;
+              return (
+                <span key={id} className="inline-flex items-center gap-1 bg-[#0F766E]/10 text-[#0F766E] px-2 py-0.5 rounded text-xs font-semibold">
+                  {name}
+                  {!disabled && (
+                    <button type="button" onClick={(e) => handleRemove(e, id)} className="hover:text-red-500 transition-colors">
+                      <HiXMark className="h-3 w-3" />
+                    </button>
+                  )}
+                </span>
+              )
+            })
+          ) : (
+            <span className="text-slate-400 font-medium my-auto">Select employee{isMulti ? 's' : ''}...</span>
+          )}
+        </div>
+        {!disabled && <HiMagnifyingGlass className="h-4 w-4 text-slate-500 shrink-0 ml-2" />}
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-[100] mt-1 w-full animate-in fade-in slide-in-from-top-2 rounded-lg border border-slate-200 bg-white p-2 shadow-2xl">
           <input
             autoFocus
@@ -178,23 +215,22 @@ function SearchableEmployeeSelect({ value, onChange, employees = [] }) {
             {filtered.map((e) => {
               const empName = e.full_name || e.fullName || e.name || 'Unknown Employee';
               const empCode = e.emp_id || e.empId || e.empCode || 'N/A';
+              const isSelected = selectedIds.includes(e.id);
               return (
                 <button
                   key={e.id}
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-emerald-50 focus:bg-emerald-50 focus:outline-none"
-                  onClick={() => {
-                    onChange(e.id)
-                    setIsOpen(false)
-                  }}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none ${isSelected ? 'bg-emerald-100/50' : 'hover:bg-emerald-50 focus:bg-emerald-50'}`}
+                  onClick={() => handleSelect(e.id)}
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-[#0F766E] font-bold text-xs">
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${isSelected ? 'bg-[#0F766E] text-white' : 'bg-emerald-50 text-[#0F766E]'} font-bold text-xs`}>
                     {empName.charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <div className="text-sm font-bold text-slate-900">{empName}</div>
                     <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{empCode}</div>
                   </div>
+                  {isSelected && isMulti && <div className="ml-auto text-[#0F766E]"><HiDocumentText className="h-4 w-4" /></div>}
                 </button>
               );
             })}
@@ -406,7 +442,7 @@ export default function Performance() {
     }))
 
     setFormData({
-      employeeId: assessment.employee?.id || assessment.employee,
+      employeeIds: [assessment.employee?.id || assessment.employee],
       reviewPeriod: assessment.performanceCycle?.id || assessment.performanceCycle,
       competencyRatings: formattedRatings,
       overallRating: assessment.overallRating,
@@ -414,8 +450,11 @@ export default function Performance() {
       goalsNextPeriod: assessment.growthObjectives || '',
       remarks: assessment.remarks || '',
       assessmentDate: assessment.assessmentDate ? assessment.assessmentDate.split('T')[0] : new Date().toISOString().split('T')[0],
-      reviewerName: assessment.performanceLead || '',
-      status: assessment.status || 'Completed'
+      status: assessment.status || 'Completed',
+      goalTitle: assessment.goalTitle || '',
+      kpiTarget: assessment.kpiTarget || '',
+      dueDate: assessment.dueDate ? assessment.dueDate.split('T')[0] : '',
+      priority: assessment.priority || 'Medium'
     })
 
     setModalOpen(true)
@@ -443,8 +482,8 @@ export default function Performance() {
   const handleSubmitAssessment = async (e) => {
     e.preventDefault()
 
-    if (!formData.employeeId) {
-      alert('Please select an employee')
+    if (!formData.employeeIds || formData.employeeIds.length === 0) {
+      alert('Please select at least one employee')
       return
     }
     if (!formData.reviewPeriod) {
@@ -452,40 +491,67 @@ export default function Performance() {
       return
     }
 
-    // Map competency ratings dynamically from list
+    // Map competency ratings dynamically from list - ensure all IDs and ratings are numbers
     const competencyRatings = compDropdownList.map(comp => {
-      const rObj = formData.competencyRatings?.find(r => r.competency === comp.id)
+      const rObj = formData.competencyRatings?.find(r => Number(r.competency) === Number(comp.id))
       return {
-        competency: comp.id,
-        rating: rObj ? rObj.rating : 1 // default to 1 star if not rated
+        competency: Number(comp.id), // ensure competency ID is a number
+        rating: rObj ? Number(rObj.rating) : 1 // ensure rating is a number
       }
     })
 
-    const payload = {
-      employee: formData.employeeId,
-      performanceCycle: formData.reviewPeriod,
-      competencyRatings,
-      keyContributions: formData.strengths,
-      growthObjectives: formData.goalsNextPeriod,
-      remarks: formData.remarks,
-      assessmentDate: formData.assessmentDate,
-      performanceLead: formData.reviewerName,
-      status: formData.status || 'Completed'
-    }
-
     try {
-      let response
+      // Ensure all IDs are numbers
+      const employeeId = Number(formData.employeeIds[0])
+      const departmentId = Number(formData.departmentId) || null
+      const managerId = Number(formData.managerId) || null
+      const cycleId = Number(formData.reviewPeriod)
+
       if (editingAssessmentId) {
-        response = await performanceAssessmentAPI.updateAssessment(editingAssessmentId, payload)
+        // Edit single assessment
+        const payload = {
+          employeeId,
+          departmentId,
+          performanceCycleId: cycleId,
+          competencyRatings,
+          keyContributions: formData.strengths,
+          growthObjectives: formData.goalsNextPeriod,
+          remarks: formData.remarks,
+          assessmentDate: formData.assessmentDate,
+          status: formData.status || 'Completed',
+          goalTitle: formData.goalTitle,
+          kpiTarget: formData.kpiTarget,
+          dueDate: formData.dueDate || null,
+          priority: formData.priority
+        }
+        await performanceAssessmentAPI.updateAssessment(editingAssessmentId, payload)
       } else {
-        response = await performanceAssessmentAPI.createAssessment(payload)
+        // Create detailed assessments for each selected employee
+        for (const empIdRaw of formData.employeeIds) {
+          const empId = Number(empIdRaw)
+          const payload = {
+            employeeId: empId,
+            departmentId,
+            performanceCycleId: cycleId,
+            competencyRatings,
+            keyContributions: formData.strengths,
+            growthObjectives: formData.goalsNextPeriod,
+            remarks: formData.remarks,
+            assessmentDate: formData.assessmentDate,
+            status: formData.status || 'Completed',
+            goalTitle: formData.goalTitle,
+            kpiTarget: formData.kpiTarget,
+            dueDate: formData.dueDate || null,
+            priority: formData.priority
+          }
+          
+          await performanceAssessmentAPI.createAssessment(payload)
+        }
       }
 
-      if (response.success) {
-        handleCloseModal()
-        await fetchAssessments(q)
-        await fetchAssessmentsSummary()
-      }
+      handleCloseModal()
+      await fetchAssessments(q)
+      await fetchAssessmentsSummary()
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to save assessment')
       console.error('Error saving assessment:', error)
@@ -647,6 +713,32 @@ export default function Performance() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  /**
+   * Handle employee selection and auto-populate department and manager
+   */
+  const handleEmployeeSelect = (employeeId) => {
+    const selected = employeeDropdownList.find(e => String(e.id) === String(employeeId))
+    if (selected) {
+      const mId = selected.manager_id || selected.managerId || ''
+      const manager = mId ? employeeDropdownList.find(e => String(e.id) === String(mId)) : null;
+      setFormData(prev => ({
+        ...prev,
+        employeeIds: [employeeId],
+        departmentId: selected.department_id || selected.departmentId || '',
+        managerId: mId,
+        reviewerName: manager ? (manager.full_name || manager.name) : ''
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        employeeIds: [employeeId],
+        departmentId: '',
+        managerId: '',
+        reviewerName: ''
+      }))
+    }
+  }
+
   const handleCloseModal = () => {
     setModalOpen(false)
     setFormData(initialFormData)
@@ -695,8 +787,8 @@ export default function Performance() {
     return {
       hub: [
         { label: 'TOTAL ASSESSMENTS', count: assessmentsSummary.totalAssessments, bgColor: 'bg-[#0F172A]', icon: HiClipboardDocumentCheck },
-        { label: 'PENDING REVIEW', count: assessmentsSummary.pendingReviews, bgColor: 'bg-[#F59E0B]', icon: HiClock },
-        { label: 'COMPLETED', count: assessmentsSummary.completedReviews, bgColor: 'bg-[#0F766E]', icon: HiArrowTrendingUp },
+        { label: 'PENDING REVIEW', count: assessmentsSummary.pendingReview, bgColor: 'bg-[#F59E0B]', icon: HiClock },
+        { label: 'COMPLETED', count: assessmentsSummary.completed, bgColor: 'bg-[#0F766E]', icon: HiArrowTrendingUp },
       ],
       cycles: [
         { label: 'ACTIVE CYCLES', count: cyclesSummary.activeCycles, bgColor: 'bg-[#0F766E]', icon: HiCalendarDays },
@@ -743,6 +835,39 @@ export default function Performance() {
     )
   }
 
+  // Helper function to get progress bar color based on rating
+  const getProgressBarColor = (rating) => {
+    if (!rating) return 'rgba(203, 213, 225, 1)'
+    const ratingNum = Number(rating)
+    if (ratingNum >= 4.5) return 'rgba(5, 150, 105, 1)' // emerald-600
+    if (ratingNum >= 4) return 'rgba(37, 99, 235, 1)' // blue-600
+    if (ratingNum >= 3) return 'rgba(217, 119, 6, 1)' // amber-600
+    if (ratingNum >= 2) return 'rgba(234, 88, 12, 1)' // orange-600
+    return 'rgba(220, 38, 38, 1)' // red-600
+  }
+
+  // Helper function to get progress bar CSS class for Tailwind fallback
+  const getProgressBarClass = (rating) => {
+    if (!rating) return 'bg-slate-300'
+    const ratingNum = Number(rating)
+    if (ratingNum >= 4.5) return 'bg-emerald-500'
+    if (ratingNum >= 4) return 'bg-blue-500'
+    if (ratingNum >= 3) return 'bg-amber-500'
+    if (ratingNum >= 2) return 'bg-orange-500'
+    return 'bg-red-500'
+  }
+
+  // Helper function to get rating label
+  const getRatingLabel = (rating) => {
+    if (!rating) return 'Not Rated'
+    const ratingNum = Number(rating)
+    if (ratingNum >= 4.5) return 'Outstanding'
+    if (ratingNum >= 4) return 'Exceeds'
+    if (ratingNum >= 3) return 'Meets'
+    if (ratingNum >= 2) return 'Developing'
+    return 'Unsatisfactory'
+  }
+
   const columns = [
     {
       key: 'employee',
@@ -773,27 +898,36 @@ export default function Performance() {
       )
     },
     {
-      key: 'performanceBand',
-      label: 'Performance Band',
+      key: 'overallRating',
+      label: 'Performance Rating',
       render: (_, row) => {
-        const v = row.performanceBand || 'Pending'
+        const rating = row.overallRating || 0
+        const ratingNum = Number(rating)
+        const percentage = (ratingNum / 5) * 100
+        const barColor = getProgressBarColor(rating)
+        const label = getRatingLabel(rating)
+        
         return (
-          <Badge
-            label={v}
-            color={v === 'Outstanding' || v === 'Exceeds' ? 'green' : v === 'Meets' ? 'blue' : 'orange'}
-            className="rounded-none"
-          />
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1">
+                <div className="relative h-5 w-full overflow-hidden rounded-full bg-slate-200 shadow-md border border-slate-300">
+                  <div
+                    className="h-full transition-all duration-500 ease-out shadow-lg rounded-full"
+                    style={{ 
+                      width: `${percentage}%`,
+                      backgroundColor: barColor,
+                      boxShadow: `0 0 12px ${barColor}, inset 0 0 4px ${barColor}`
+                    }}
+                  />
+                </div>
+              </div>
+              <span className="text-xs font-bold text-slate-700 w-12 text-right tabular-nums">{ratingNum.toFixed(1)}/5</span>
+            </div>
+            <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wide">{label}</span>
+          </div>
         )
-      },
-    },
-    {
-      key: 'performanceLead',
-      label: 'Performance Lead',
-      render: (_, row) => (
-        <span className="text-sm font-medium text-slate-600">
-          {row.performanceLead || 'N/A'}
-        </span>
-      )
+      }
     },
     {
       key: 'status',
@@ -1361,14 +1495,30 @@ export default function Performance() {
         >
           <div className="space-y-4">
             {/* Employee + Review Info */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <SearchableEmployeeSelect
-                  value={formData.employeeId}
-                  onChange={(id) => handleRatingChange('employeeId', id)}
+                  value={formData.employeeIds?.[0] || ''}
+                  onChange={(id) => handleEmployeeSelect(id)}
                   employees={employeeDropdownList}
                 />
               </div>
+
+              <Input
+                label="Department"
+                name="department"
+                type="text"
+                value={(() => {
+                  const empId = formData.employeeIds?.[0]
+                  if (!empId) return ''
+                  const emp = employeeDropdownList.find(e => String(e.id) === String(empId))
+                  return emp?.department || 'N/A'
+                })()}
+                readOnly
+                placeholder="Auto-filled department"
+                inputClassName="h-10 rounded-lg border-slate-300 bg-slate-50 text-slate-500 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              />
 
               <Input
                 label="Performance Cycle"
@@ -1387,20 +1537,8 @@ export default function Performance() {
               />
             </div>
 
-            {/* Performance Lead + Status */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Input
-                label="Performance Lead"
-                name="reviewerName"
-                type="text"
-                value={formData.reviewerName}
-                onChange={handleFormChange}
-                required
-                placeholder="Enter performance lead name"
-                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
-                labelClassName="mb-1 block text-sm font-medium text-slate-800"
-              />
-
+            {/* Status */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
               <Input
                 label="Status"
                 name="status"
@@ -1516,6 +1654,65 @@ export default function Performance() {
                 />
               </div>
             </div>
+
+            {/* Goal & KPI Section */}
+            <div className="rounded-lg border border-slate-200 bg-emerald-50/40 p-4">
+              <p className="text-xs font-medium text-slate-600 mb-4 font-bold uppercase tracking-wider">Goal & KPI Details — Set performance targets and priorities</p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Input
+                  label="Goal Title"
+                  name="goalTitle"
+                  type="text"
+                  value={formData.goalTitle}
+                  onChange={handleFormChange}
+                  placeholder="e.g., Improve customer retention rate"
+                  inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-1 block text-sm font-medium text-slate-800"
+                />
+
+                <Input
+                  label="Priority"
+                  name="priority"
+                  type="select"
+                  value={formData.priority}
+                  onChange={handleFormChange}
+                  options={[
+                    { label: 'Low', value: 'Low' },
+                    { label: 'Medium', value: 'Medium' },
+                    { label: 'High', value: 'High' },
+                    { label: 'Critical', value: 'Critical' }
+                  ]}
+                  inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-1 block text-sm font-medium text-slate-800"
+                />
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-800">
+                    KPI Target
+                  </label>
+                  <textarea
+                    name="kpiTarget"
+                    value={formData.kpiTarget}
+                    onChange={handleFormChange}
+                    placeholder="Define measurable KPI targets (e.g., Increase sales by 15%, Response time under 2 hours)"
+                    className="min-h-[100px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-800">
+                    Goal Due Date
+                  </label>
+                  <input
+                    type="date"
+                    name="dueDate"
+                    value={formData.dueDate}
+                    onChange={handleFormChange}
+                    className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
@@ -1532,7 +1729,7 @@ export default function Performance() {
               type="submit"
               className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors"
             >
-              Save Assessment
+              Create Assessment
             </button>
           </div>
         </form>

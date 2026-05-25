@@ -69,6 +69,7 @@ export default function EmployeeProfile() {
   const [performanceAssessments, setPerformanceAssessments] = useState(null)
   const [performanceSummary, setPerformanceSummary] = useState(null)
   const [selectedAssessment, setSelectedAssessment] = useState(null)
+  const [competencies, setCompetencies] = useState([])
   const [assets, setAssets] = useState(null)
 
   const [loadingProfile, setLoadingProfile] = useState(false)
@@ -262,12 +263,14 @@ export default function EmployeeProfile() {
           }
           case 'performance':
             if (!performanceAssessments) {
-              const [assessmentsData, summaryData] = await Promise.all([
+              const [assessmentsData, summaryData, competenciesData] = await Promise.all([
                 performanceAssessmentAPI.getEmployeeAssessments(selectedId),
-                performanceAssessmentAPI.getEmployeePerformanceSummary(selectedId)
+                performanceAssessmentAPI.getEmployeePerformanceSummary(selectedId),
+                performanceAssessmentAPI.getCompetenciesDropdown().catch(() => ({ data: [] }))
               ])
               setPerformanceAssessments(assessmentsData?.data || [])
               setPerformanceSummary(summaryData?.data || null)
+              setCompetencies(competenciesData?.data || [])
             }
             break
           case 'assets':
@@ -280,6 +283,20 @@ export default function EmployeeProfile() {
     }
     load()
   }, [activeTab, selectedId, profile])
+
+  // ── Handler to open assessment with competencies ─────────────────────────
+  const handleViewAssessment = async (assessment) => {
+    // Ensure competencies are loaded before opening modal
+    if (competencies.length === 0) {
+      try {
+        const competenciesData = await performanceAssessmentAPI.getCompetenciesDropdown().catch(() => ({ data: [] }))
+        setCompetencies(competenciesData?.data || [])
+      } catch (err) {
+        console.error('Error loading competencies:', err)
+      }
+    }
+    setSelectedAssessment(assessment)
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const emp = profile
@@ -909,7 +926,7 @@ export default function EmployeeProfile() {
                     variant="ghost" 
                     size="sm" 
                     className="text-[9px] font-black text-[#0F766E] uppercase"
-                    onClick={() => setSelectedAssessment(row)}
+                    onClick={() => handleViewAssessment(row)}
                   />
                 )}
               ]}
@@ -1365,95 +1382,232 @@ export default function EmployeeProfile() {
         </form>
       </Modal>
 
-      {/* Assessment Details Modal */}
+      {/* Assessment Details Modal - Modern Professional Design */}
       <Modal
         isOpen={!!selectedAssessment}
         onClose={() => setSelectedAssessment(null)}
         title="Assessment Details"
-        size="lg"
+        size="2xl"
         className="rounded-none"
       >
         {selectedAssessment && (
-          <div className="space-y-6 pt-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Performance Cycle</p>
+          <div className="space-y-6 pt-4">
+            {/* Header Section with Basic Info */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-4">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Cycle</p>
                 <p className="text-sm font-bold text-slate-900">{selectedAssessment.performanceCycle?.cycleName || 'N/A'}</p>
               </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+              <div className="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-4">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Status</p>
                 <Badge 
                   label={selectedAssessment.status} 
                   color={selectedAssessment.status === 'Completed' ? 'green' : 'orange'} 
                   variant="soft" 
-                  className="font-black text-[9px] tracking-widest" 
+                  className="font-black text-[9px] tracking-widest inline-block" 
                 />
               </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Performance Lead</p>
-                <p className="text-sm font-bold text-slate-900">{selectedAssessment.performanceLead || '—'}</p>
+              <div className="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-4">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Lead</p>
+                <p className="text-sm font-bold text-slate-900 truncate">{selectedAssessment.performanceLead || '—'}</p>
               </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Assessment Date</p>
+              <div className="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-4">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Date</p>
                 <p className="text-sm font-bold text-slate-900">{selectedAssessment.assessmentDate ? selectedAssessment.assessmentDate.split('T')[0] : '—'}</p>
               </div>
             </div>
 
-            <div className="rounded-none border border-slate-200 bg-slate-50 p-4">
-              <div className="flex justify-between items-center mb-4 border-b border-slate-200 pb-4">
+            {/* Overall Performance Rating with Professional Progress Bar */}
+            <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/30 to-white p-6 shadow-sm">
+              <div className="flex items-start justify-between mb-6">
                 <div>
-                  <span className="text-sm font-bold text-slate-700 uppercase tracking-wider block">Overall Rating</span>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-widest mt-1 block">Performance Ratio: {Math.round(((selectedAssessment.overallRating || 0) / 5) * 100)}%</span>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Overall Performance Rating</p>
+                  <p className="text-2xl font-black text-[#0F766E]">{selectedAssessment.overallRating || 0} <span className="text-base text-slate-400">/ 5.0</span></p>
                 </div>
-                <div className="flex flex-col items-end">
-                  <div className="flex items-center gap-1">
-                    <span className="text-lg font-black text-[#0F766E]">{selectedAssessment.overallRating || 0}</span>
-                    <span className="text-xs text-slate-400">/ 5.0</span>
-                  </div>
-                  <div className="w-24 h-1.5 bg-slate-200 mt-2 overflow-hidden rounded-full">
-                    <div className="h-full bg-[#0F766E]" style={{ width: `${Math.round(((selectedAssessment.overallRating || 0) / 5) * 100)}%` }}></div>
-                  </div>
+                <div className="text-right">
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Performance Ratio</p>
+                  <p className="text-3xl font-black text-[#0F766E]">{Math.round(((selectedAssessment.overallRating || 0) / 5) * 100)}<span className="text-base">%</span></p>
                 </div>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Competency Ratings</p>
+
+              {/* Professional Multi-Segment Progress Bar */}
               <div className="space-y-2">
-                {selectedAssessment.competencyRatings?.length > 0 ? (
-                  selectedAssessment.competencyRatings.map((cr, i) => (
-                    <div key={i} className="flex justify-between items-center">
-                      <span className="text-xs font-semibold text-slate-700">{cr.competencyName || 'Competency'}</span>
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map(star => (
-                          <HiStar key={star} className={`h-3.5 w-3.5 ${star <= cr.rating ? 'text-amber-400' : 'text-slate-200'}`} />
-                        ))}
+                <div className="relative w-full h-8 bg-slate-100 rounded-lg overflow-hidden shadow-inner border border-slate-200">
+                  {/* Background gradient segments */}
+                  <div className="absolute inset-0 flex">
+                    <div className="flex-1 bg-gradient-to-r from-red-100 to-red-50"></div>
+                    <div className="flex-1 bg-gradient-to-r from-yellow-100 to-yellow-50"></div>
+                    <div className="flex-1 bg-gradient-to-r from-blue-100 to-blue-50"></div>
+                    <div className="flex-1 bg-gradient-to-r from-green-100 to-green-50"></div>
+                    <div className="flex-1 bg-gradient-to-r from-emerald-100 to-emerald-50"></div>
+                  </div>
+                  
+                  {/* Filled progress indicator */}
+                  <div 
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#0F766E] to-[#14B8A6] rounded-lg transition-all duration-500 ease-out shadow-lg"
+                    style={{ width: `${Math.round(((selectedAssessment.overallRating || 0) / 5) * 100)}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/10 rounded-lg"></div>
+                  </div>
+
+                  {/* Milestone markers */}
+                  <div className="absolute inset-0 flex pointer-events-none">
+                    {[1, 2, 3, 4, 5].map((marker) => (
+                      <div key={marker} className="flex-1 border-r border-slate-300/40 last:border-r-0 flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-slate-400">{marker}</span>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-slate-500 italic">No competency ratings found.</p>
-                )}
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Rating labels */}
+                <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  <span>Poor</span>
+                  <span>Fair</span>
+                  <span>Good</span>
+                  <span>Very Good</span>
+                  <span>Excellent</span>
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-3 mt-6 pt-6 border-t border-slate-200">
+                <div className="text-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Confidence</p>
+                  <div className="flex justify-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <HiStar key={star} className={`h-4 w-4 ${star <= Math.round(selectedAssessment.overallRating || 0) ? 'text-amber-400' : 'text-slate-200'}`} />
+                    ))}
+                  </div>
+                </div>
+                <div className="text-center border-l border-r border-slate-200">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Competencies Rated</p>
+                  <p className="text-xl font-black text-[#0F766E]">{selectedAssessment.competencyRatings?.length || 0}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Avg Competency</p>
+                  <p className="text-xl font-black text-[#0F766E]">
+                    {selectedAssessment.competencyRatings?.length > 0 
+                      ? (selectedAssessment.competencyRatings.reduce((sum, cr) => sum + (cr.rating || 0), 0) / selectedAssessment.competencyRatings.length).toFixed(1)
+                      : '—'
+                    }
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Key Contributions</p>
-                <div className="text-sm text-slate-800 whitespace-pre-wrap rounded-none border border-slate-200 bg-white p-3">
-                  {selectedAssessment.keyContributions || '—'}
+            {/* Competency Ratings Section - Modern Cards */}
+            <div>
+              <div className="mb-4">
+                <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Competency Ratings</p>
+                <p className="text-[11px] text-slate-500 mt-1">Detailed assessment across key competencies</p>
+              </div>
+              
+              {selectedAssessment.competencyRatings?.length > 0 ? (
+                <div className="grid gap-3">
+                  {selectedAssessment.competencyRatings.map((cr, i) => {
+                    // Determine competency ID - it could be cr.competency as number or as object
+                    let competencyId = null
+                    if (typeof cr.competency === 'number') {
+                      competencyId = cr.competency
+                    } else if (cr.competency?.id) {
+                      competencyId = cr.competency.id
+                    }
+                    
+                    // Try multiple ways to get the competency name
+                    let competencyName = null
+                    
+                    // 1. Check if competency is a populated object with competencyName
+                    if (cr.competency?.competencyName) {
+                      competencyName = cr.competency.competencyName
+                    } else if (cr.competency?.name) {
+                      competencyName = cr.competency.name
+                    } 
+                    // 2. Check if competencyName is directly on the rating object
+                    else if (cr.competencyName) {
+                      competencyName = cr.competencyName
+                    } else if (cr.name) {
+                      competencyName = cr.name
+                    } 
+                    // 3. If competencies array is available, search by ID
+                    else if (competencies && competencies.length > 0 && competencyId) {
+                      const found = competencies.find(c => c.id === competencyId)
+                      if (found) {
+                        competencyName = found.competencyName || found.name
+                      }
+                    }
+                    
+                    // 4. Final fallback - use ID or index
+                    if (!competencyName) {
+                      competencyName = competencyId ? `Competency #${competencyId}` : `Competency ${i + 1}`
+                    }
+                    
+                    const ratingPercentage = (cr.rating / 5) * 100
+                    
+                    return (
+                      <div key={i} className="rounded-lg border border-slate-200 bg-gradient-to-r from-white to-slate-50 p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-slate-900">{competencyName}</p>
+                            <div className="flex gap-1 mt-2">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <HiStar 
+                                  key={star} 
+                                  className={`h-4 w-4 transition-colors ${star <= cr.rating ? 'text-amber-400 drop-shadow-sm' : 'text-slate-200'}`} 
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-black text-[#0F766E]">{cr.rating || 0}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">{ratingPercentage.toFixed(0)}%</p>
+                          </div>
+                        </div>
+                        
+                        {/* Mini progress bar for competency */}
+                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-[#0F766E] to-[#14B8A6] transition-all duration-500"
+                            style={{ width: `${ratingPercentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                  <p className="text-sm text-slate-500 font-semibold">No competency ratings found.</p>
+                  <p className="text-xs text-slate-400 mt-1">Competencies will appear once they are added to the assessment.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Key Contributions & Growth Objectives */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <p className="text-xs font-black text-slate-600 uppercase tracking-wider mb-3">Key Contributions</p>
+                <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed max-h-[120px] overflow-y-auto">
+                  {selectedAssessment.keyContributions || <span className="text-slate-400 italic">No key contributions recorded.</span>}
                 </div>
               </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Growth Objectives</p>
-                <div className="text-sm text-slate-800 whitespace-pre-wrap rounded-none border border-slate-200 bg-white p-3">
-                  {selectedAssessment.growthObjectives || '—'}
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Remarks</p>
-                <div className="text-sm text-slate-800 whitespace-pre-wrap rounded-none border border-slate-200 bg-white p-3">
-                  {selectedAssessment.remarks || '—'}
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <p className="text-xs font-black text-slate-600 uppercase tracking-wider mb-3">Growth Objectives</p>
+                <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed max-h-[120px] overflow-y-auto">
+                  {selectedAssessment.growthObjectives || <span className="text-slate-400 italic">No growth objectives recorded.</span>}
                 </div>
               </div>
             </div>
+
+            {/* Remarks Section */}
+            {selectedAssessment.remarks && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-black text-slate-600 uppercase tracking-wider mb-3">Additional Remarks</p>
+                <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                  {selectedAssessment.remarks}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Modal>

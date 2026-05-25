@@ -20,6 +20,7 @@ import LeaveAbsence from "../pages/admin/hr/LeaveAbsence.jsx";
 import Documents from "../pages/admin/documents/Documents.jsx";
 import VisaNationality from "../pages/admin/compliance/VisaNationality.jsx";
 import Performance from "../pages/admin/hr/Performance.jsx";
+import ManagerPerformance from "../pages/admin/hr/ManagerPerformance.jsx";
 import Policies from "../pages/admin/compliance/Policies.jsx";
 import MyPolicies from "../pages/admin/compliance/MyPolicies.jsx";
 import Expenses from "../pages/admin/finance/Expenses.jsx";
@@ -193,6 +194,16 @@ export const router = createBrowserRouter([
                 moduleKey={["performance", "training-development"]}
               >
                 <Performance />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "manager-performance",
+            element: (
+              <AdminModuleGate
+                moduleKey={["performance", "training-development"]}
+              >
+                <ManagerPerformance />
               </AdminModuleGate>
             ),
           },

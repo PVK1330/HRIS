@@ -1,0 +1,108 @@
+import { HiXMark } from 'react-icons/hi2'
+import { Modal } from '../ui/Modal.jsx'
+
+function AssessmentDetailsModal({ assessment, onClose }) {
+  if (!assessment) return null
+
+  const formattedDate = assessment.createdAt
+    ? new Date(assessment.createdAt).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    : 'N/A'
+
+  return (
+    <Modal isOpen={true} onClose={onClose} size="lg">
+      <div className="space-y-6 p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Performance Review Details</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {assessment.employee?.fullName || assessment.employeeName || 'Employee'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 transition-colors hover:text-slate-600"
+          >
+            <HiXMark className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-medium text-slate-600">Employee Name</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">{assessment.employee?.fullName || assessment.employeeName || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-600">Department</p>
+              <p className="mt-1 text-sm text-slate-900">{assessment.department?.name || assessment.departmentName || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-600">Manager</p>
+              <p className="mt-1 text-sm text-slate-900">{assessment.manager?.fullName || assessment.managerName || 'N/A'}</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-medium text-slate-600">Performance Cycle</p>
+              <p className="mt-1 text-sm text-slate-900">{assessment.performanceCycle?.cycleName || assessment.performanceCycleName || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-600">Status</p>
+              <p className="mt-1 text-sm text-slate-900">{assessment.status || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-600">Created Date</p>
+              <p className="mt-1 text-sm text-slate-900">{formattedDate}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-5">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Competency Ratings</h3>
+            <div className="mt-4 grid gap-3">
+              {assessment.competencyRatings && assessment.competencyRatings.length > 0 ? (
+                assessment.competencyRatings.map((rating, idx) => (
+                  <div key={idx} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{rating.competency?.competencyName || 'Competency'}</p>
+                    </div>
+                    <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700">{rating.rating}/5</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-600">No competency ratings available.</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Key Contributions</h3>
+            <p className="mt-3 text-sm text-slate-700">{assessment.keyContributions || 'No key contributions provided.'}</p>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Growth Objectives</h3>
+            <p className="mt-3 text-sm text-slate-700">{assessment.growthObjectives || 'No growth objectives provided.'}</p>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+export default AssessmentDetailsModal

@@ -42,6 +42,7 @@ import { Avatar } from '../../components/ui/Avatar.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { dashboardStats } from '../../data/mockData.js'
 import api from '../../services/api.js'
+import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
 
 const growthData = [
   { name: 'JAN', headcount: 45 },
@@ -157,6 +158,11 @@ export default function Dashboard() {
         </div>
       </div>
     )
+  }
+
+  // Render Manager Dashboard for managers
+  if (isManager) {
+    return <ManagerDashboard />
   }
 
   return (

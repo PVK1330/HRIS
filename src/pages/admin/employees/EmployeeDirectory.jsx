@@ -104,6 +104,7 @@ function mapEmployeeFull(e) {
     employmentType: e.employment_type || 'Full-time',
     location: e.work_location || '',
     manager: e.manager_name || e.manager_emp_id || e.reporting_manager || '',
+    managerEmpId: e.manager_emp_id || '',
     status: e.employment_status || 'Active',
     joinDate: d(e.join_date),
     workMode: e.work_mode || '',
@@ -167,6 +168,7 @@ const initialFormData = {
   phoneNumber: '',
   department: '',
   departmentId: '',
+  departmentManagerName: '',
   jobTitle: '',
   about: '',
   /** Personal Information */
@@ -271,6 +273,7 @@ export default function EmployeeDirectory() {
   const [tenantRoles, setTenantRoles] = useState([])
   const [departmentsCatalog, setDepartmentsCatalog] = useState([])
   const [designationsCatalog, setDesignationsCatalog] = useState([])
+  const [deptsLoading, setDeptsLoading] = useState(false)
 
   const departmentRows = useMemo(() => {
     if (departmentsCatalog.length) return departmentsCatalog
@@ -439,6 +442,7 @@ export default function EmployeeDirectory() {
   useEffect(() => {
     if (!modalOpen) return
     let cancelled = false
+    setDeptsLoading(true)
       ; (async () => {
         try {
           const [depts, desigs] = await Promise.all([listDepartments(), listDesignations()])
@@ -449,6 +453,11 @@ export default function EmployeeDirectory() {
           if (!cancelled) {
             setDepartmentsCatalog([])
             setDesignationsCatalog([])
+            toast.error('Could not load departments or designations.')
+          }
+        } finally {
+          if (!cancelled) {
+            setDeptsLoading(false)
           }
         }
       })()
@@ -475,10 +484,15 @@ export default function EmployeeDirectory() {
     const value = e.target.value
     const row = departmentRows.find((d) => String(d.id) === value)
     const deptLabel = row?.name ?? row?.department_name ?? value
+    const deptManagerName = row?.head || ''
+    const deptManagerEmpId = row?.manager_emp_id || ''
+
     setFormData((prev) => ({
       ...prev,
       departmentId: value,
       department: deptLabel,
+      departmentManagerName: deptManagerName,
+      reportingManager: deptManagerEmpId,
       jobTitle: '',
     }))
   }
@@ -853,6 +867,7 @@ export default function EmployeeDirectory() {
                     ).id,
                   )
                 : '',
+          departmentManagerName: f.manager,
           jobTitle: f.jobTitle,
           about: f.bio || '',
           dateOfBirth: f.dateOfBirth,
@@ -868,7 +883,7 @@ export default function EmployeeDirectory() {
           homeAddress: f.homeAddress,
           employmentType: f.employmentType || 'Full-time',
           workLocation: f.location,
-          reportingManager: f.manager || '',
+          reportingManager: f.managerEmpId || '',
           probationEndDate: f.probationEndDate,
           salary: f.salary,
           employmentStatus: f.status,
@@ -1447,7 +1462,11 @@ export default function EmployeeDirectory() {
                     className={`${basicFieldClass} mt-0`}
                     required
                   >
-                    <option value="">Select department</option>
+                    {deptsLoading ? (
+                      <option value="">Loading departments...</option>
+                    ) : (
+                      <option value="">Select department</option>
+                    )}
                     {departmentRows.map((d) => {
                       const label = d.name ?? d.department_name ?? String(d.id)
                       const val = d.id != null ? String(d.id) : (d.name ?? d.department_name ?? '')
@@ -1456,6 +1475,19 @@ export default function EmployeeDirectory() {
                       )
                     })}
                   </select>
+                </div>
+                <div>
+                  <label htmlFor="emp-dept-manager" className="mb-1 block text-sm font-medium text-slate-800">
+                    Department Manager
+                  </label>
+                  <input
+                    id="emp-dept-manager"
+                    value={formData.departmentManagerName || ''}
+                    placeholder="Select department first"
+                    className={`${basicFieldClass} cursor-not-allowed bg-slate-100 text-slate-600`}
+                    readOnly
+                    disabled
+                  />
                 </div>
                 <div>
                   <label htmlFor="emp-desig" className="mb-1 block text-sm font-medium text-slate-800">

@@ -10,7 +10,17 @@ import api from './api'
 
 const BASE_URL = 'employee-performance'
 
-/** Get all assessments with optional search/page */
+// ============================================================================
+// ADMIN ASSESSMENT MANAGEMENT
+// ============================================================================
+
+/** Create assessment (admin) */
+const createAssessment = async (data) => {
+  const response = await api.post(`${BASE_URL}`, data)
+  return response.data
+}
+
+/** Get all assessments (admin) */
 const getAllAssessments = async (options = {}) => {
   const { search = '', page = 1, limit = 100, sortBy = 'created_at', sortOrder = 'DESC' } = options
   const params = new URLSearchParams()
@@ -24,9 +34,9 @@ const getAllAssessments = async (options = {}) => {
   return response.data
 }
 
-/** Create assessment */
-const createAssessment = async (data) => {
-  const response = await api.post(BASE_URL, data)
+/** Create bulk assessments */
+const createBulkAssessments = async (data) => {
+  const response = await api.post(`${BASE_URL}/bulk`, data)
   return response.data
 }
 
@@ -48,21 +58,67 @@ const deleteAssessment = async (id) => {
   return response.data
 }
 
+// ============================================================================
+// MANAGER PERFORMANCE PORTAL
+// ============================================================================
+
+/** Get performance assessments assigned to logged-in manager (NEW ENDPOINT) */
+const getManagerAssignedAssessments = async (options = {}) => {
+  const { search = '', page = 1, limit = 100, sortBy = 'created_at', sortOrder = 'DESC' } = options
+  const params = new URLSearchParams()
+  if (search) params.append('search', search)
+  params.append('page', page)
+  params.append('limit', limit)
+  params.append('sortBy', sortBy)
+  params.append('sortOrder', sortOrder)
+
+  const response = await api.get(`${BASE_URL}/manager?${params.toString()}`)
+  return response.data
+}
+
+/** Update manager goals for an assessment (NEW ENDPOINT) */
+const updateManagerGoalsForAssessment = async (id, managerGoals) => {
+  const response = await api.patch(`${BASE_URL}/${id}/manager-goals`, managerGoals)
+  return response.data
+}
+
+/** Get performance reviews assigned to logged-in manager (LEGACY - keep for backward compatibility) */
+const getManagerReviews = async (options = {}) => {
+  const { search = '', page = 1, limit = 100, sortBy = 'created_at', sortOrder = 'DESC' } = options
+  const params = new URLSearchParams()
+  if (search) params.append('search', search)
+  params.append('page', page)
+  params.append('limit', limit)
+  params.append('sortBy', sortBy)
+  params.append('sortOrder', sortOrder)
+
+  const response = await api.get(`manager/performance/reviews?${params.toString()}`)
+  return response.data
+}
+
+/** Get single performance review details for manager (LEGACY) */
+const getManagerReviewDetails = async (id) => {
+  const response = await api.get(`manager/performance/reviews/${id}`)
+  return response.data
+}
+
+/** Update manager goals for an assessment (LEGACY - use new endpoint instead) */
+const updateManagerGoals = async (id, managerGoals) => {
+  const response = await api.put(`${BASE_URL}/manager/assessments/${id}/goals`, { managerGoals })
+  return response.data
+}
+
+// Legacy alias for existing page usage
+const getManagerAssessments = async (options = {}) => getManagerReviews(options)
+const getManagerAssessmentDetails = async (id) => getManagerReviewDetails(id)
+
+// ============================================================================
+// DROPDOWN & SUMMARY APIs
+// ============================================================================
+
 /** Get metrics summary */
 const getSummary = async () => {
   const response = await api.get(`${BASE_URL}/summary`)
-  return response.data
-}
-
-/** Get assessments for a specific employee */
-const getEmployeeAssessments = async (employeeId) => {
-  const response = await api.get(`${BASE_URL}/employee/${employeeId}`)
-  return response.data
-}
-
-/** Get performance summary for a specific employee */
-const getEmployeePerformanceSummary = async (employeeId) => {
-  const response = await api.get(`${BASE_URL}/performance-summary/${employeeId}`)
   return response.data
 }
 
@@ -82,16 +138,47 @@ const getEmployeesDropdown = async () => {
   return response.data
 }
 
+// ============================================================================
+// EMPLOYEE PORTAL
+// ============================================================================
+
+/** Get assessments for a specific employee */
+const getEmployeeAssessments = async (employeeId) => {
+  const response = await api.get(`${BASE_URL}/employee/${employeeId}`)
+  return response.data
+}
+
+/** Get performance summary for a specific employee */
+const getEmployeePerformanceSummary = async (employeeId) => {
+  const response = await api.get(`${BASE_URL}/performance-summary/${employeeId}`)
+  return response.data
+}
+
+/** Get my assessments (logged-in employee) */
+const getMyAssessments = async () => {
+  const response = await api.get(`${BASE_URL}/employee/my-assessments`)
+  return response.data
+}
+
 export default {
-  getAllAssessments,
   createAssessment,
+  getAllAssessments,
+  createBulkAssessments,
   getAssessmentById,
   updateAssessment,
   deleteAssessment,
   getSummary,
-  getEmployeeAssessments,
-  getEmployeePerformanceSummary,
+  getManagerAssignedAssessments,
+  updateManagerGoalsForAssessment,
+  getManagerAssessments,
+  getManagerAssessmentDetails,
+  updateManagerGoals,
   getCyclesDropdown,
   getCompetenciesDropdown,
-  getEmployeesDropdown
+  getEmployeesDropdown,
+  getEmployeeAssessments,
+  getEmployeePerformanceSummary,
+  getMyAssessments,
+  getManagerReviews
 }
+
