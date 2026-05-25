@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- router module exports router + default app */
+import { lazy, Suspense } from "react";
 import {
   createBrowserRouter,
   Navigate,
@@ -9,7 +10,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import PermissionGate from "../components/PermissionGate.jsx";
 import AdminLayout from "../layouts/AdminLayout.jsx";
 import SuperAdminLayout from "../layouts/SuperAdminLayout.jsx";
-import Login from "../pages/auth/Login.jsx";
+const Login = lazy(() => import("../pages/auth/Login.jsx"));
 
 import AdminDashboard from "../pages/admin/Dashboard.jsx";
 import EmployeeDirectory from "../pages/admin/employees/EmployeeDirectory.jsx";
@@ -20,7 +21,6 @@ import LeaveAbsence from "../pages/admin/hr/LeaveAbsence.jsx";
 import Documents from "../pages/admin/documents/Documents.jsx";
 import VisaNationality from "../pages/admin/compliance/VisaNationality.jsx";
 import Performance from "../pages/admin/hr/Performance.jsx";
-import ManagerPerformance from "../pages/admin/hr/ManagerPerformance.jsx";
 import Policies from "../pages/admin/compliance/Policies.jsx";
 import MyPolicies from "../pages/admin/compliance/MyPolicies.jsx";
 import Expenses from "../pages/admin/finance/Expenses.jsx";
@@ -40,36 +40,39 @@ import Reports from "../pages/admin/reports/Reports.jsx";
 import AnnouncementsPage from "../pages/admin/Announcements.jsx";
 import Payroll from "../pages/admin/finance/Payroll.jsx";
 
-import PlatformDashboard from "../pages/superadmin/platform/Dashboard.jsx";
-import TenantManagement from "../pages/superadmin/tenants/TenantManagement.jsx";
-import SubscriptionsPlans from "../pages/superadmin/subscriptions/SubscriptionsPlans.jsx";
-import SubscriptionFeatures from "../pages/superadmin/subscriptions/SubscriptionFeatures.jsx";
-import Billing from "../pages/superadmin/billing/Billing.jsx";
-import Announcements from "../pages/superadmin/platform/Announcements.jsx";
-import ModuleManagement from "../pages/superadmin/platform/ModuleManagement.jsx";
-import AuditLogs from "../pages/superadmin/system/AuditLogs.jsx";
-import SystemHealth from "../pages/superadmin/system/SystemHealth.jsx";
-import SupportTickets from "../pages/superadmin/support/SupportTickets.jsx";
-import AdminUsers from "../pages/superadmin/AdminUsers.jsx";
-import Permissions from "../pages/superadmin/Permissions.jsx";
-import SuperProfile from "../pages/superadmin/Profile.jsx";
-import Register from "../pages/auth/Register.jsx";
-import ForgotPassword from "../pages/auth/ForgotPassword.jsx";
+const PlatformDashboard = lazy(() => import("../pages/superadmin/platform/Dashboard.jsx"));
+const TenantManagement = lazy(() => import("../pages/superadmin/tenants/TenantManagement.jsx"));
+const SubscriptionsPlans = lazy(() => import("../pages/superadmin/subscriptions/SubscriptionsPlans.jsx"));
+const SubscriptionFeatures = lazy(() => import("../pages/superadmin/subscriptions/SubscriptionFeatures.jsx"));
+const Billing = lazy(() => import("../pages/superadmin/billing/Billing.jsx"));
+const Announcements = lazy(() => import("../pages/superadmin/platform/Announcements.jsx"));
+const ModuleManagement = lazy(() => import("../pages/superadmin/platform/ModuleManagement.jsx"));
+const AuditLogs = lazy(() => import("../pages/superadmin/system/AuditLogs.jsx"));
+const SystemHealth = lazy(() => import("../pages/superadmin/system/SystemHealth.jsx"));
+const SupportTickets = lazy(() => import("../pages/superadmin/support/SupportTickets.jsx"));
+const AdminUsers = lazy(() => import("../pages/superadmin/AdminUsers.jsx"));
+const Permissions = lazy(() => import("../pages/superadmin/Permissions.jsx"));
+const SuperProfile = lazy(() => import("../pages/superadmin/Profile.jsx"));
+const Register = lazy(() => import("../pages/auth/Register.jsx"));
+const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword.jsx"));
+const CandidateOffer = lazy(() => import("../pages/public/onboarding/CandidateOffer.jsx"));
+const CandidateSign = lazy(() => import("../pages/public/onboarding/CandidateSign.jsx"));
+const CandidateDocuments = lazy(() => import("../pages/public/onboarding/CandidateDocuments.jsx"));
 
-import SettingsLayout from "../pages/superadmin/settings/SettingsLayout.jsx";
-import GeneralSettings from "../pages/superadmin/settings/GeneralSettings.jsx";
-import CompanyDetails from "../pages/superadmin/settings/CompanyDetails.jsx";
-import LogoSettings from "../pages/superadmin/settings/LogoSettings.jsx";
-import SystemInfo from "../pages/superadmin/settings/SystemInfo.jsx";
-import EmailSettingsPage from "../pages/superadmin/settings/email/EmailSettings.jsx";
-import EmailTemplatesPage from "../pages/superadmin/settings/email/EmailTemplates.jsx";
-import EmailLogPage from "../pages/superadmin/settings/email/EmailLog.jsx";
-import FreeTrialSettings from "../pages/superadmin/settings/FreeTrialSettings.jsx";
-import PaymentGatewaySettings from "../pages/superadmin/settings/PaymentGatewaySettings.jsx";
-import DomainSettings from "../pages/superadmin/settings/DomainSettings.jsx";
-import AccountSettings from "../pages/superadmin/settings/AccountSettings.jsx";
-import CurrencySettings from "../pages/superadmin/settings/CurrencySettings.jsx";
-import RecaptchaSettings from "../pages/superadmin/settings/RecaptchaSettings.jsx";
+const SettingsLayout = lazy(() => import("../pages/superadmin/settings/SettingsLayout.jsx"));
+const GeneralSettings = lazy(() => import("../pages/superadmin/settings/GeneralSettings.jsx"));
+const CompanyDetails = lazy(() => import("../pages/superadmin/settings/CompanyDetails.jsx"));
+const LogoSettings = lazy(() => import("../pages/superadmin/settings/LogoSettings.jsx"));
+const SystemInfo = lazy(() => import("../pages/superadmin/settings/SystemInfo.jsx"));
+const EmailSettingsPage = lazy(() => import("../pages/superadmin/settings/email/EmailSettings.jsx"));
+const EmailTemplatesPage = lazy(() => import("../pages/superadmin/settings/email/EmailTemplates.jsx"));
+const EmailLogPage = lazy(() => import("../pages/superadmin/settings/email/EmailLog.jsx"));
+const FreeTrialSettings = lazy(() => import("../pages/superadmin/settings/FreeTrialSettings.jsx"));
+const PaymentGatewaySettings = lazy(() => import("../pages/superadmin/settings/PaymentGatewaySettings.jsx"));
+const DomainSettings = lazy(() => import("../pages/superadmin/settings/DomainSettings.jsx"));
+const AccountSettings = lazy(() => import("../pages/superadmin/settings/AccountSettings.jsx"));
+const CurrencySettings = lazy(() => import("../pages/superadmin/settings/CurrencySettings.jsx"));
+const RecaptchaSettings = lazy(() => import("../pages/superadmin/settings/RecaptchaSettings.jsx"));
 
 // Legacy imports removed causing 404s
 
@@ -93,7 +96,11 @@ function AdminModuleGate({ moduleKey, children }) {
 }
 
 function RootLayout() {
-  return <Outlet />;
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full"></div></div>}>
+      <Outlet />
+    </Suspense>
+  );
 }
 
 const ADMIN_ROLES = [
@@ -114,6 +121,9 @@ export const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
       { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "onboarding/offer", element: <CandidateOffer /> },
+      { path: "onboarding/sign", element: <CandidateSign /> },
+      { path: "onboarding/documents", element: <CandidateDocuments /> },
       {
         path: "admin",
         element: (

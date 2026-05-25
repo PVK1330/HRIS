@@ -105,6 +105,8 @@ export default function Expenses() {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState('claims'); // 'claims' or 'categories'
   const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+  const [categorySearch, setCategorySearch] = useState('');
   const [activeStatus, setActiveStatus] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -128,6 +130,18 @@ export default function Expenses() {
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const [expenseCategories, setExpenseCategories] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
+
+  const filteredCategories = expenseCategories.filter(
+    (cat) =>
+      !categorySearch.trim() ||
+      cat.name.toLowerCase().includes(categorySearch.toLowerCase()) ||
+      cat.description.toLowerCase().includes(categorySearch.toLowerCase())
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q.trim()), 350);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const isEmployee = user?.role === 'employee';
   const canConfigure =
@@ -159,7 +173,7 @@ export default function Expenses() {
     setLoading(true);
     try {
       const params = { limit: 100, page: 1 };
-      if (q.trim()) params.search = q.trim();
+      if (debouncedQ) params.search = debouncedQ;
       if (activeStatus !== 'All') params.expenseType = activeStatus;
       const { rows } = await expenseService.listExpenses(params);
       let list = rows.map(mapRow);
@@ -174,7 +188,7 @@ export default function Expenses() {
     } finally {
       setLoading(false);
     }
-  }, [q, activeStatus, categoryFilter, viewMode]);
+  }, [debouncedQ, activeStatus, categoryFilter, viewMode]);
 
   useEffect(() => {
     if (viewMode === 'claims') {
@@ -436,10 +450,10 @@ export default function Expenses() {
       label: 'Category Name',
       render: (v, row) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0F766E]/10 text-[#0F766E] text-xs font-bold">
-            <HiTag className="h-4 w-4" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
+            <HiTag className="h-5 w-5" />
           </div>
-          <span className="font-semibold text-slate-900">{v}</span>
+          <span className="text-sm font-semibold text-slate-900">{v}</span>
         </div>
       ),
     },
@@ -510,12 +524,12 @@ export default function Expenses() {
       label: 'Employee',
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0F766E]/10 text-[#0F766E] text-xs font-bold">
-            {(row.employee || '?').charAt(0)}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] text-sm font-bold shadow-sm">
+            {(row.employee || '?').charAt(0).toUpperCase()}
           </div>
           <div>
-            <div className="font-semibold text-slate-900">{row.employee}</div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="text-sm font-semibold text-slate-900">{row.employee}</div>
+            <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
               ID: {row.empId ?? '—'}
             </div>
           </div>
@@ -562,14 +576,14 @@ export default function Expenses() {
       key: 'actions',
       label: 'Actions',
       render: (_, row) => (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <button
             type="button"
             onClick={() => {
               setSelectedClaim(row);
               setReviewModalOpen(true);
             }}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-50"
             aria-label="View"
           >
             <HiEye className="h-4 w-4" />
@@ -579,7 +593,7 @@ export default function Expenses() {
             <button
               type="button"
               onClick={() => openEditDraft(row)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white hover:bg-sky-600"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600"
               aria-label="Edit"
             >
               <HiPencilSquare className="h-4 w-4" />
@@ -673,107 +687,145 @@ export default function Expenses() {
       {viewMode === 'claims' && (
         <>
           <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {statCards.map((card) => (
-              <button
-                key={card.key}
-                type="button"
-                onClick={() => setActiveStatus(card.key)}
-                className={`flex min-w-0 items-center gap-3 rounded-none border p-3 shadow-sm transition-all sm:p-4 ${
-                  activeStatus === card.key
-                    ? 'border-[#0F766E] bg-emerald-50/30'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
-              >
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm sm:h-11 sm:w-11`}
+            {statCards.map((card) => {
+              const isActiveFilter = activeStatus === card.key;
+              return (
+                <button
+                  key={card.key}
+                  type="button"
+                  onClick={() => setActiveStatus(card.key)}
+                  title={`Filter by ${card.label}`}
+                  className={`group flex min-w-0 items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] shadow-sm ${
+                    isActiveFilter
+                      ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
                 >
-                  <card.icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1 text-left">
-                  <div className="truncate text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    {card.label}
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}
+                  >
+                    <card.icon className="h-5 w-5" />
                   </div>
-                  <div className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-                    {card.count}
+                  <div className="min-w-0 flex-1">
+                    <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                      {card.label}
+                    </div>
+                    <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">
+                      {card.count}
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="min-w-0 space-y-6">
-            <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm sm:p-6 min-w-0">
-              <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-end">
-                <div className="min-w-0 flex-1">
-                  <label className="ml-1 mb-2 block truncate text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Search
-                  </label>
-                  <div className="relative min-w-0">
-                    <HiMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Employee name…"
-                      className="h-11 w-full rounded-none border border-slate-200 bg-slate-50/50 pl-10 pr-3 text-sm outline-none transition focus:border-[#0F766E] focus:bg-white"
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && loadClaims()}
-                    />
-                  </div>
+          <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+              <h2 className="text-sm font-semibold text-white">Claims Listing</h2>
+              <HiDocumentArrowDown className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+              <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+                <div className="relative min-w-[240px] flex-1 max-w-xs">
+                  <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search employee name..."
+                    className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+                  />
                 </div>
-                <div className="w-full shrink-0 md:w-56">
-                  <label className="ml-1 mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Category
-                  </label>
+
+                <div className="relative min-w-[180px]">
                   <select
-                    className="h-11 w-full rounded-none border border-slate-200 bg-slate-50/50 px-3 text-sm outline-none focus:border-[#0F766E]"
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium appearance-none pr-8"
                   >
-                    <option value="">All categories</option>
+                    <option value="">All Categories</option>
                     {expenseCategories.map((c) => (
                       <option key={c.id ?? c.name} value={c.name}>
                         {c.name}
                       </option>
                     ))}
                   </select>
+                  <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    loadClaims();
-                    loadStats();
-                  }}
-                  className="h-11 rounded-none border border-slate-200 px-6 text-xs font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-50"
-                >
-                  Refresh
-                </button>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <p className="text-xs font-medium text-slate-500">{claims.length} records shown</p>
+                {q || categoryFilter || activeStatus !== 'All' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQ('');
+                      setCategoryFilter('');
+                      setActiveStatus('All');
+                    }}
+                    className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
+                  >
+                    Reset Filters
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loadClaims();
+                      loadStats();
+                    }}
+                    className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
+                  >
+                    Refresh
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
-              <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
-                <h2 className="truncate text-sm font-semibold uppercase tracking-wider text-white">
-                  Claims ({claims.length})
-                </h2>
-                <HiDocumentArrowDown className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
-              </div>
-              <Table columns={claimsColumns} data={claims} pageSize={10} loading={loading} square />
-            </div>
+            <Table columns={claimsColumns} data={claims} pageSize={10} loading={loading} square />
           </div>
         </>
       )}
 
       {viewMode === 'categories' && canConfigure && (
-        <div className="min-w-0 space-y-6">
-          <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
-            <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
-              <h2 className="truncate text-sm font-semibold uppercase tracking-wider text-white">
-                Expense Categories ({expenseCategories.length})
-              </h2>
-              <HiTag className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
-            </div>
-            <Table columns={categoryColumns} data={expenseCategories} pageSize={10} loading={categoryLoading} square />
+        <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+            <h2 className="text-sm font-semibold text-white">Expense Categories Listing</h2>
+            <HiTag className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
           </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+            <div className="relative min-w-[250px] flex-1 max-w-md">
+              <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                placeholder="Search category, description..."
+                className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <p className="text-xs font-medium text-slate-500">{filteredCategories.length} records shown</p>
+              {categorySearch ? (
+                <button
+                  type="button"
+                  onClick={() => setCategorySearch('')}
+                  className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
+                >
+                  Reset Filters
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <Table columns={categoryColumns} data={filteredCategories} pageSize={10} loading={categoryLoading} square />
         </div>
       )}
 

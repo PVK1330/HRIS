@@ -444,7 +444,14 @@ export default function LettersTemplates() {
     {
       key: 'view',
       label: 'Preview',
-      render: () => <Button variant="ghost" size="sm" icon={HiEye} />,
+      render: (_, row) => (
+        <button
+          onClick={() => alert("Protocol log view only.")}
+          className="h-8 w-8 rounded-none border border-slate-200 bg-white text-slate-400 hover:text-[#0F766E] hover:border-[#0F766E]/30 transition-all flex items-center justify-center shadow-sm"
+        >
+          <HiEye className="h-4 w-4" />
+        </button>
+      ),
     },
   ]
 
@@ -481,25 +488,31 @@ export default function LettersTemplates() {
           { id: 'Templates', label: 'GOVERNANCE TEMPLATES', count: kpis.templates, icon: HiDocumentText, bgColor: 'bg-slate-900' },
           { id: 'History', label: 'TRANSMISSION LOGS', count: kpis.generatedThisMonth, icon: HiClock, bgColor: 'bg-[#3B82F6]' },
           { id: 'Pending', label: 'PENDING VERIFICATION', count: kpis.pendingSignatures, icon: HiCheckBadge, bgColor: 'bg-[#F59E0B]' },
-        ].map((card, idx) => (
-          <button
-            key={idx}
-            onClick={() => setActiveTab(card.id)}
-            className={`flex items-center gap-3.5 rounded-none border p-4 shadow-sm min-w-0 transition-all ${
-              activeTab === card.id ? 'border-[#0F766E] bg-emerald-50/30' : 'border-slate-200 bg-white hover:border-slate-300'
-            }`}
-          >
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
-              <card.icon className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1 text-left">
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate leading-none">
-                {card.label}
+        ].map((card, idx) => {
+          const isActive = activeTab === card.id;
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setActiveTab(card.id)}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
+                isActive
+                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                <card.icon className="h-5 w-5" />
               </div>
-              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
-            </div>
-          </button>
-        ))}
+              <div className="min-w-0 flex-1">
+                <div className={`text-[10px] font-black uppercase tracking-widest truncate leading-none ${isActive ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                  {card.label}
+                </div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Workspace Grid */}
@@ -512,8 +525,9 @@ export default function LettersTemplates() {
                 <HiCodeBracket className="h-4 w-4 shrink-0" /> ASSET_TAGS
               </h3>
               <button
+                type="button"
                 onClick={openCreateTag}
-                className="flex items-center gap-1.5 text-[9px] font-black text-[#0F766E] hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-none border border-emerald-100 transition-all uppercase tracking-widest shrink-0"
+                className="flex items-center gap-1.5 text-[9px] font-black text-[#0F766E] hover:text-white bg-emerald-50/50 hover:bg-[#0F766E] px-3 py-1.5 rounded-none border border-[#0F766E]/20 hover:border-[#0F766E] transition-all uppercase tracking-widest shrink-0 active:scale-[0.97]"
               >
                 <HiPlus className="h-3 w-3" /> ADD_TAG
               </button>
@@ -523,10 +537,10 @@ export default function LettersTemplates() {
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center py-8">EMPTY_REGISTRY</p>
               )}
               {tags.map(t => (
-                <div key={t.id} className="group flex flex-col gap-1 rounded-none p-3 hover:bg-slate-50 transition-all border border-slate-50 hover:border-slate-200 min-w-0">
+                <div key={t.id} className="group flex flex-col gap-1 rounded-none p-3 bg-slate-50/30 hover:bg-slate-50/80 transition-all border border-slate-100 hover:border-[#0F766E]/30 min-w-0">
                   <div className="flex items-center justify-between min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <code className="text-[10px] font-black text-emerald-700 uppercase tracking-tight truncate max-w-[140px]">{t.tag}</code>
+                      <code className="text-[10px] font-black text-emerald-700 bg-emerald-50/60 px-1.5 py-0.5 border border-emerald-100/50 uppercase tracking-tight truncate max-w-[140px]">{t.tag}</code>
                       {t.isSystem && <HiLockClosed className="h-3 w-3 text-slate-300 shrink-0" title="System tag" />}
                     </div>
                     {!t.isSystem && (
@@ -552,27 +566,6 @@ export default function LettersTemplates() {
 
         {/* Main Workspace */}
         <div className="lg:col-span-3 space-y-6 min-w-0">
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm min-w-0">
-            <div className="flex flex-col gap-6 md:flex-row md:items-end">
-              <div className="flex-1 min-w-0">
-                <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Filter</label>
-                <div className="relative">
-                  <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="SEARCH TEMPLATES, CATEGORIES OR PROTOCOLS..."
-                    className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white focus:outline-none transition-all"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                  />
-                </div>
-              </div>
-              <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
-                ADVANCED_FILTERS
-              </button>
-            </div>
-          </div>
-
           {error && (
             <div className="rounded-none border border-red-100 bg-red-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-700">{error}</div>
           )}
@@ -584,6 +577,35 @@ export default function LettersTemplates() {
               </h2>
               <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Level: Document Admin</div>
             </div>
+
+            {/* Integrated Search and Filter Panel */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+              <div className="relative min-w-[280px] flex-1 max-w-md">
+                <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={activeTab === 'History' ? "Search history log..." : "Search templates, categories or protocols..."}
+                  className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium uppercase tracking-wider"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  {activeTab === 'History' ? history.length : filteredTemplates.length} records shown
+                </p>
+                {q ? (
+                  <button
+                    type="button"
+                    onClick={() => setQ('')}
+                    className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
+                  >
+                    Reset Filter
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
             {loading ? (
               <div className="flex items-center justify-center py-20 text-slate-400 text-[10px] font-black uppercase tracking-widest">SYNCHRONIZING_DATA...</div>
             ) : activeTab === 'History' ? (
@@ -604,7 +626,7 @@ export default function LettersTemplates() {
             <input
               type="text"
               placeholder="e.g. STANDARD_OFFER_PROTOCOL_2026"
-              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all"
               required
               value={form.name}
               onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
@@ -616,7 +638,7 @@ export default function LettersTemplates() {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Class</label>
               <select
-                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all cursor-pointer"
                 value={form.type}
                 onChange={(e) => setForm(f => ({ ...f, type: e.target.value }))}
               >
@@ -626,7 +648,7 @@ export default function LettersTemplates() {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Operational Dept</label>
               <select
-                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all cursor-pointer"
                 value={form.category}
                 onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))}
               >
@@ -636,7 +658,7 @@ export default function LettersTemplates() {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Governance Status</label>
               <select
-                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all cursor-pointer"
                 value={form.status}
                 onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}
               >
@@ -652,7 +674,7 @@ export default function LettersTemplates() {
             <input
               type="text"
               placeholder="ENTER PROTOCOL DESCRIPTION..."
-              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all"
               value={form.description}
               onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
             />
@@ -664,7 +686,7 @@ export default function LettersTemplates() {
             <div className="relative">
               <textarea
                 ref={createBodyRef}
-                className="w-full rounded-none border border-slate-200 bg-slate-50/30 p-6 text-[13px] font-mono leading-relaxed text-slate-800 focus:border-[#0F766E] focus:bg-white outline-none min-h-[350px] transition-all"
+                className="w-full rounded-none border border-slate-200 bg-slate-50/30 p-6 text-[13px] font-mono leading-relaxed text-slate-800 focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] outline-none min-h-[350px] transition-all"
                 placeholder="START PROTOCOL DRAFTING. USE {{TAGS}} FOR DYNAMIC INJECTION..."
                 value={form.body}
                 onChange={(e) => setForm(f => ({ ...f, body: e.target.value }))}
@@ -712,7 +734,7 @@ export default function LettersTemplates() {
             <input
               type="text"
               placeholder="PROTOCOL NAME"
-              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all"
               required
               value={editForm.name}
               onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
@@ -723,7 +745,7 @@ export default function LettersTemplates() {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Class</label>
               <select
-                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all cursor-pointer"
                 value={editForm.type}
                 onChange={(e) => setEditForm(f => ({ ...f, type: e.target.value }))}
               >
@@ -733,7 +755,7 @@ export default function LettersTemplates() {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Operational Dept</label>
               <select
-                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all cursor-pointer"
                 value={editForm.category}
                 onChange={(e) => setEditForm(f => ({ ...f, category: e.target.value }))}
               >
@@ -743,7 +765,7 @@ export default function LettersTemplates() {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Governance Status</label>
               <select
-                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all cursor-pointer"
                 value={editForm.status}
                 onChange={(e) => setEditForm(f => ({ ...f, status: e.target.value }))}
               >
@@ -758,7 +780,7 @@ export default function LettersTemplates() {
             <input
               type="text"
               placeholder="DESCRIPTION"
-              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all"
               value={editForm.description}
               onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
             />
@@ -769,7 +791,7 @@ export default function LettersTemplates() {
             <div className="relative">
               <textarea
                 ref={editBodyRef}
-                className="w-full rounded-none border border-slate-200 bg-slate-50/30 p-6 text-[13px] font-mono leading-relaxed text-slate-800 focus:border-[#0F766E] focus:bg-white outline-none min-h-[350px] transition-all"
+                className="w-full rounded-none border border-slate-200 bg-slate-50/30 p-6 text-[13px] font-mono leading-relaxed text-slate-800 focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] outline-none min-h-[350px] transition-all"
                 placeholder="TEMPLATE BODY..."
                 value={editForm.body}
                 onChange={(e) => setEditForm(f => ({ ...f, body: e.target.value }))}
@@ -841,12 +863,12 @@ export default function LettersTemplates() {
                   <input
                     type="text"
                     placeholder="SEARCH_DIRECTORY..."
-                    className="w-full rounded-none border border-slate-200 bg-white h-12 pl-12 pr-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
+                    className="w-full rounded-none border border-slate-200 bg-white h-12 pl-12 pr-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all"
                     value={empSearch}
                     onChange={e => setEmpSearch(e.target.value)}
                   />
                 </div>
-                <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar pr-1 bg-slate-50 border border-slate-100 p-1">
+                <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar pr-1 bg-slate-50/50 border border-slate-100 p-1">
                   {empListLoading ? (
                     <div className="flex items-center justify-center py-10">
                       <div className="h-5 w-5 rounded-none border-2 border-[#0F766E] border-t-transparent animate-spin" />
@@ -878,14 +900,14 @@ export default function LettersTemplates() {
                           key={e.id}
                           type="button"
                           onClick={() => setDispatchEmployeeId(String(e.id))}
-                          className={`w-full text-left px-3 py-3 border transition-all rounded-none ${
+                          className={`w-full text-left px-3 py-3 border transition-all rounded-none active:scale-[0.99] ${
                             String(dispatchEmployeeId) === String(e.id)
-                              ? 'border-[#0F766E] bg-emerald-50'
+                              ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
                               : 'border-transparent bg-transparent hover:bg-white hover:border-slate-200'
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-none bg-slate-900 flex items-center justify-center text-[10px] font-black text-white shrink-0">
+                            <div className="h-8 w-8 rounded-none bg-emerald-50 flex items-center justify-center text-[10px] font-black text-[#0F766E] shadow-sm shrink-0">
                               {(e.full_name || '?').charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
@@ -948,7 +970,7 @@ export default function LettersTemplates() {
                 <button
                   type="button"
                   onClick={() => { setSendModalOpen(false); openEdit(selectedTemplate) }}
-                  className="flex items-center gap-1.5 text-[10px] font-black text-[#0F766E] hover:text-emerald-800 transition-colors uppercase tracking-widest"
+                  className="flex items-center gap-1.5 text-[10px] font-black text-[#0F766E] hover:text-[#0c6b64] transition-colors uppercase tracking-widest"
                 >
                   <HiPencilSquare className="h-3.5 w-3.5" /> EDIT_SOURCE
                 </button>
@@ -1014,12 +1036,12 @@ export default function LettersTemplates() {
         title={editingTag ? 'TAG_MODIFICATION' : 'NEW_ASSET_TAG'}
         size="sm"
       >
-        <form onSubmit={handleSaveTag} className="animate-in fade-in duration-300 space-y-6 pt-2">
+        <form onSubmit={handleSaveTag} className="animate-in fade-in duration-500 space-y-6 pt-2">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
               PROTOCOL_KEY <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center rounded-none border border-slate-200 bg-white overflow-hidden focus-within:border-[#0F766E] transition-all h-12">
+            <div className="flex items-center rounded-none border border-slate-200 bg-white overflow-hidden focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E] transition-all h-12">
               <span className="px-4 text-[11px] font-black text-slate-400 select-none border-r border-slate-100 bg-slate-50 h-full flex items-center">{'{{'}</span>
               <input
                 type="text"
@@ -1039,7 +1061,7 @@ export default function LettersTemplates() {
             <input
               type="text"
               placeholder="E.G. EMPLOYEE_LEGAL_IDENTITY"
-              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all"
+              className="w-full rounded-none border border-slate-200 bg-white h-12 px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all"
               value={tagForm.description}
               onChange={e => setTagForm(f => ({ ...f, description: e.target.value }))}
             />

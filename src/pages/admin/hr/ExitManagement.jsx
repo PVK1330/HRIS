@@ -66,14 +66,16 @@ export default function ExitManagement() {
       label: 'Employee Name',
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0F766E]/10 text-[#0F766E] font-bold text-xs">
-            {row.name.charAt(0)}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] text-sm font-bold shadow-sm">
+            {row.name.charAt(0).toUpperCase()}
           </div>
-          <span className="font-semibold text-slate-900">{row.name}</span>
+          <div>
+            <div className="text-sm font-semibold text-slate-900">{row.name}</div>
+            <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">ID: {row.id}</div>
+          </div>
         </div>
       ),
     },
-    { key: 'id', label: 'Employee ID' },
     { key: 'dept', label: 'Department' },
     { key: 'type', label: 'Exit Type' },
     { key: 'lwd', label: 'Last Working Day' },
@@ -86,17 +88,17 @@ export default function ExitManagement() {
       key: 'actions',
       label: 'Action',
       render: (_, row) => (
-        <Button 
-          label="View Details" 
-          variant="ghost" 
-          size="sm" 
-          icon={HiEye} 
+        <button
           onClick={() => {
             setSelectedExit(row)
             setReviewModalOpen(true)
             setActiveTab('Summary')
           }}
-        />
+          className="h-8 w-8 flex items-center justify-center rounded-none border border-slate-200 bg-white text-slate-400 hover:text-[#0F766E] hover:border-slate-300 transition-all shadow-sm"
+          title="View Details"
+        >
+          <HiEye className="h-4 w-4" />
+        </button>
       ),
     },
   ]
@@ -141,57 +143,68 @@ export default function ExitManagement() {
           { id: 'In Progress', label: 'PROTOCOL ACTIVE', count: exitData.filter(e => e.status === 'In Progress').length, icon: HiArrowPathRoundedSquare, bgColor: 'bg-[#3B82F6]' },
           { id: 'Completed', label: 'OFFBOARDED', count: exitData.filter(e => e.status === 'Completed').length, icon: HiCheckBadge, bgColor: 'bg-[#10B981]' },
           { id: 'Settlement Pending', label: 'FINANCIAL SETTLEMENT', count: exitData.filter(e => e.status === 'Settlement Pending').length, icon: HiCurrencyDollar, bgColor: 'bg-[#EF4444]' }
-        ].map((card, idx) => (
-          <button
-            key={idx}
-            onClick={() => setActiveStatus(card.id)}
-            className={`flex items-center gap-3.5 rounded-none border p-4 shadow-sm min-w-0 transition-all ${
-              activeStatus === card.id ? 'border-[#0F766E] bg-emerald-50/30' : 'border-slate-200 bg-white hover:border-slate-300'
-            }`}
-          >
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
-              <card.icon className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1 text-left">
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate leading-none">
-                {card.label}
+        ].map((card, idx) => {
+          const isActive = activeStatus === card.id;
+          return (
+            <button
+              key={idx}
+              onClick={() => setActiveStatus(card.id)}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
+                isActive
+                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                <card.icon className="h-5 w-5" />
               </div>
-              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
-            </div>
-          </button>
-        ))}
+              <div className="min-w-0 flex-1">
+                <div className={`text-[10px] font-black uppercase tracking-widest truncate leading-none ${isActive ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                  {card.label}
+                </div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Main Workspace Area */}
-      <div className="space-y-6 min-w-0">
-        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm min-w-0">
-          <div className="flex flex-col gap-6 md:flex-row md:items-end min-w-0">
-            <div className="flex-1 min-w-0">
-              <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Security Filter</label>
-              <div className="relative min-w-0">
-                <HiMagnifyingGlass className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="SEARCH BY ASSET NAME, IDENTIFIER OR PROTOCOL TYPE..."
-                  className="w-full rounded-none border border-slate-200 bg-slate-50/50 h-12 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white focus:outline-none transition-all min-w-0"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                />
-              </div>
-            </div>
-            <button className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">
-               REFINE PROTOCOL
-            </button>
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+        <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider truncate">Offboarding Registry</h2>
+          <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Clearance Status: Admin</div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="relative min-w-[250px] flex-1 max-w-md">
+            <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by name, ID or type..."
+              className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-medium text-slate-500">{filtered.length} records shown</p>
+            {q || activeStatus !== 'All' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQ('');
+                  setActiveStatus('All');
+                }}
+                className="h-10 px-4 rounded-none border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Reset Filters
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
-          <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
-            <h2 className="text-sm font-semibold uppercase tracking-wider truncate">Offboarding Registry</h2>
-            <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Clearance Status: Admin</div>
-          </div>
-          <Table columns={columns} data={filtered} pageSize={10} className="rounded-none" />
-        </div>
+        <Table columns={columns} data={filtered} pageSize={10} className="rounded-none" />
       </div>
 
       {/* Review Exit Modal — Audit System */}

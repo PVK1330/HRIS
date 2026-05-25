@@ -22,6 +22,7 @@ import toast from 'react-hot-toast';
 export default function Announcements() {
   const { user } = useAuth();
   const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [activeStatus, setActiveStatus] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -75,17 +76,24 @@ export default function Announcements() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedQ(q);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const filtered = useMemo(() => {
     let data = announcements;
     if (activeStatus !== 'All') {
       data = data.filter(a => a.status === activeStatus);
     }
-    const query = q.trim().toLowerCase();
+    const query = debouncedQ.trim().toLowerCase();
     if (query) {
       data = data.filter((a) => `${a.title} ${a.category} ${a.posted_by_name}`.toLowerCase().includes(query));
     }
     return data;
-  }, [q, activeStatus, announcements]);
+  }, [debouncedQ, activeStatus, announcements]);
 
   const handleOpenModal = (announcement = null) => {
     if (announcement) {
@@ -364,20 +372,20 @@ export default function Announcements() {
               key={idx}
               type="button"
               onClick={card.onClickFilter}
-              className={`flex items-center gap-4 rounded-none border p-5 text-left transition-all min-w-0 shadow-sm ${
+              className={`group flex items-center gap-4 rounded-none border p-5 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
                 isActiveFilter
-                  ? 'border-[#0F766E] bg-emerald-50/50 ring-1 ring-[#0F766E]'
+                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
                   : 'border-slate-200 bg-white hover:border-slate-300'
               }`}
             >
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
-                <card.icon className="h-6 w-6" />
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                <card.icon className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className={`text-[10px] font-black uppercase tracking-widest truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
                   {card.label}
                 </div>
-                <div className="mt-2 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
               </div>
             </button>
           );
@@ -385,40 +393,41 @@ export default function Announcements() {
       </div>
 
       {/* Filters + Table Registry */}
-      <div className="space-y-6">
-        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-6 md:flex-row md:items-end">
-             <div className="flex-1">
-                <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Transmission Search</label>
-                <div className="relative">
-                  <HiMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="SUBJECT, CATEGORY OR AUTHOR..."
-                    className="w-full h-12 rounded-none border border-slate-200 bg-slate-50/50 pl-11 pr-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] focus:bg-white outline-none transition-all"
-                  />
-                </div>
-             </div>
-             { q && (
-                <button
-                  type="button"
-                  onClick={() => setQ('')}
-                  className="h-12 px-6 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors"
-                >
-                  RESET_FILTERS
-                </button>
-             )}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+        <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider truncate">Broadcast Structural Log</h2>
+          <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Security Level: Admin</div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="relative min-w-[250px] flex-1 max-w-md">
+            <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search subject, category or author..."
+              className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-medium text-slate-500">{filtered.length} records shown</p>
+            {q || activeStatus !== 'All' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQ('');
+                  setActiveStatus('All');
+                }}
+                className="h-10 px-4 rounded-none border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Reset Filters
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-          <div className="bg-[#0F766E] px-5 py-3.5 text-white border-b border-[#0F766E]">
-            <h2 className="text-sm font-semibold uppercase tracking-wider">Broadcast Structural Log</h2>
-          </div>
-          <Table columns={columns} data={filtered} pageSize={8} square className="rounded-none" />
-        </div>
+        <Table columns={columns} data={filtered} pageSize={8} square className="rounded-none" />
       </div>
 
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="BROADCAST_CONFIGURATION_INTERFACE" size="xl">
