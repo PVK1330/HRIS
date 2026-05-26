@@ -21,6 +21,7 @@ const LeaveAbsence = lazy(() => import("../pages/admin/hr/LeaveAbsence.jsx"));
 const Documents = lazy(() => import("../pages/admin/documents/Documents.jsx"));
 const VisaNationality = lazy(() => import("../pages/admin/compliance/VisaNationality.jsx"));
 const Performance = lazy(() => import("../pages/admin/hr/Performance.jsx"));
+const ManagerPerformance = lazy(() => import("../pages/admin/hr/ManagerPerformance.jsx"));
 const Policies = lazy(() => import("../pages/admin/compliance/Policies.jsx"));
 const MyPolicies = lazy(() => import("../pages/admin/compliance/MyPolicies.jsx"));
 const Expenses = lazy(() => import("../pages/admin/finance/Expenses.jsx"));
@@ -207,6 +208,16 @@ export const router = createBrowserRouter([
                 moduleKey={["performance", "training-development"]}
               >
                 <Performance />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "manager-performance",
+            element: (
+              <AdminModuleGate
+                moduleKey={["performance", "training-development"]}
+              >
+                <ManagerPerformance />
               </AdminModuleGate>
             ),
           },

@@ -11,13 +11,13 @@ import {
   HiAdjustmentsHorizontal,
   HiCalendarDays,
   HiDocumentText,
-  HiBriefcase,
   HiChevronRight,
   HiStar,
   HiOutlineStar,
   HiXMark,
   HiPencilSquare,
-  HiTrash
+  HiTrash,
+  HiBriefcase
 } from 'react-icons/hi2'
 import {
   BarChart,
@@ -47,19 +47,25 @@ import performanceCyclesAPI from '../../../services/performanceCyclesAPI.js'
 import competenciesAPI from '../../../services/competenciesAPI.js'
 import performanceAssessmentAPI from '../../../services/performanceAssessmentAPI.js'
 
+
 const COLORS = ['#0F766E', '#14B8A6', '#2DD4BF', '#99F6E4', '#F0FDFA']
 
 const initialFormData = {
-  employeeId: '',
+  employeeIds: [], // array of employee IDs for bulk assignment
+  departmentId: '', // auto-populated when employee is selected
+  managerName: '', // auto-populated when employee is selected
   reviewPeriod: '',
-  reviewerName: '',
   competencyRatings: [], // array of { competency, rating }
   overallRating: 0,
   strengths: '',
   goalsNextPeriod: '',
   remarks: '',
   assessmentDate: new Date().toISOString().split('T')[0],
-  status: 'Completed'
+  status: 'Completed',
+  goalTitle: '',
+  kpiTarget: '',
+  dueDate: '',
+  priority: 'Medium'
 }
 
 const reviews = employees.slice(0, 10).map((e, idx) => ({
@@ -130,7 +136,7 @@ function StarRating({ label, value, onChange }) {
   )
 }
 
-function SearchableEmployeeSelect({ value, onChange, employees = [] }) {
+function SearchableEmployeeSelect({ value, onChange, employees = [], isMulti = false, disabled = false }) {
   const [search, setSearch] = useState('')
   const [isOpen, setIsOpen] = useState(false)
 
@@ -144,27 +150,59 @@ function SearchableEmployeeSelect({ value, onChange, employees = [] }) {
     }).slice(0, 8)
   }, [search, employees])
 
+  const selectedIds = Array.isArray(value) ? value : (value ? [value] : [])
+
+  const handleSelect = (id) => {
+    if (!isMulti) {
+      onChange([id])
+      setIsOpen(false)
+      return
+    }
+    const newSelected = selectedIds.includes(id)
+      ? selectedIds.filter(i => i !== id)
+      : [...selectedIds, id]
+    onChange(newSelected)
+  }
+
+  const handleRemove = (e, id) => {
+    e.stopPropagation()
+    onChange(selectedIds.filter(i => i !== id))
+  }
+
   return (
     <div className="relative">
       <label className="mb-1 block text-sm font-medium text-slate-800">
-        Employee
+        Employee{isMulti && 's'}
       </label>
       <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-slate-300 bg-white h-10 px-3 text-sm transition-all focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/20 hover:border-slate-400"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`flex w-full min-h-[40px] cursor-pointer items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : 'focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]/20 hover:border-slate-400'}`}
       >
-        <span className={value ? 'text-slate-950 font-bold text-sm' : 'text-slate-400 font-medium'}>
-          {value ? (
-            (() => {
-              const emp = employees.find(e => String(e.id) === String(value));
-              return emp ? `${emp.full_name || emp.fullName || emp.name} (${emp.emp_id || emp.empId || emp.empCode || 'N/A'})` : 'Select employee...';
-            })()
-          ) : 'Select employee...'}
-        </span>
-        <HiMagnifyingGlass className="h-4 w-4 text-slate-500" />
+        <div className="flex flex-wrap gap-1.5">
+          {selectedIds.length > 0 ? (
+            selectedIds.map(id => {
+              const emp = employees.find(e => String(e.id) === String(id));
+              const name = emp ? `${emp.full_name || emp.fullName || emp.name} (${emp.emp_id || emp.empId || emp.empCode || 'N/A'})` : 'Unknown';
+              if (!isMulti) return <span key={id} className="text-slate-950 font-bold text-sm my-auto">{name}</span>;
+              return (
+                <span key={id} className="inline-flex items-center gap-1 bg-[#0F766E]/10 text-[#0F766E] px-2 py-0.5 rounded text-xs font-semibold">
+                  {name}
+                  {!disabled && (
+                    <button type="button" onClick={(e) => handleRemove(e, id)} className="hover:text-red-500 transition-colors">
+                      <HiXMark className="h-3 w-3" />
+                    </button>
+                  )}
+                </span>
+              )
+            })
+          ) : (
+            <span className="text-slate-400 font-medium my-auto">Select employee{isMulti ? 's' : ''}...</span>
+          )}
+        </div>
+        {!disabled && <HiMagnifyingGlass className="h-4 w-4 text-slate-500 shrink-0 ml-2" />}
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-[100] mt-1 w-full animate-in fade-in slide-in-from-top-2 rounded-lg border border-slate-200 bg-white p-2 shadow-2xl">
           <input
             autoFocus
@@ -178,23 +216,22 @@ function SearchableEmployeeSelect({ value, onChange, employees = [] }) {
             {filtered.map((e) => {
               const empName = e.full_name || e.fullName || e.name || 'Unknown Employee';
               const empCode = e.emp_id || e.empId || e.empCode || 'N/A';
+              const isSelected = selectedIds.includes(e.id);
               return (
                 <button
                   key={e.id}
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-emerald-50 focus:bg-emerald-50 focus:outline-none"
-                  onClick={() => {
-                    onChange(e.id)
-                    setIsOpen(false)
-                  }}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none ${isSelected ? 'bg-emerald-100/50' : 'hover:bg-emerald-50 focus:bg-emerald-50'}`}
+                  onClick={() => handleSelect(e.id)}
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-[#0F766E] font-bold text-xs">
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${isSelected ? 'bg-[#0F766E] text-white' : 'bg-emerald-50 text-[#0F766E]'} font-bold text-xs`}>
                     {empName.charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <div className="text-sm font-bold text-slate-900">{empName}</div>
                     <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{empCode}</div>
                   </div>
+                  {isSelected && isMulti && <div className="ml-auto text-[#0F766E]"><HiDocumentText className="h-4 w-4" /></div>}
                 </button>
               );
             })}
@@ -236,6 +273,15 @@ export default function Performance() {
   const [activeTab, setActiveTab] = useState('hub')
   const [modalOpen, setModalOpen] = useState(false)
   const [configModalOpen, setConfigModalOpen] = useState(false)
+  const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [viewModalOpen, setViewModalOpen] = useState(false)
+  const [viewingAssessment, setViewingAssessment] = useState(null)
+  const [exportFilters, setExportFilters] = useState({
+    startDate: '',
+    endDate: '',
+    department: 'All Departments'
+  })
+  const [approvalLoading, setApprovalLoading] = useState(false)
   const [compModalOpen, setCompModalOpen] = useState(false)
   const [formData, setFormData] = useState(initialFormData)
   const [configData, setConfigData] = useState(initialConfigData)
@@ -406,7 +452,7 @@ export default function Performance() {
     }))
 
     setFormData({
-      employeeId: assessment.employee?.id || assessment.employee,
+      employeeIds: [assessment.employee?.id || assessment.employee],
       reviewPeriod: assessment.performanceCycle?.id || assessment.performanceCycle,
       competencyRatings: formattedRatings,
       overallRating: assessment.overallRating,
@@ -414,11 +460,49 @@ export default function Performance() {
       goalsNextPeriod: assessment.growthObjectives || '',
       remarks: assessment.remarks || '',
       assessmentDate: assessment.assessmentDate ? assessment.assessmentDate.split('T')[0] : new Date().toISOString().split('T')[0],
-      reviewerName: assessment.performanceLead || '',
-      status: assessment.status || 'Completed'
+      status: assessment.status || 'Completed',
+      goalTitle: assessment.goalTitle || '',
+      kpiTarget: assessment.kpiTarget || '',
+      dueDate: assessment.dueDate ? assessment.dueDate.split('T')[0] : '',
+      priority: assessment.priority || 'Medium'
     })
 
     setModalOpen(true)
+  }
+
+  const handleViewAssessment = (assessment) => {
+    setViewingAssessment(assessment)
+    setViewModalOpen(true)
+  }
+
+  /**
+   * Handle approval of performance assessment
+   */
+  const handleApproveAssessment = async () => {
+    if (!viewingAssessment?.id) return
+    
+    try {
+      setApprovalLoading(true)
+      const response = await performanceAssessmentAPI.approveAssessment(viewingAssessment.id)
+      
+      if (response.success) {
+        // Update the viewing assessment with the approved status
+        setViewingAssessment(response.data)
+        
+        // Update the assessments list
+        setAssessments(prev => prev.map(a => a.id === response.data.id ? response.data : a))
+        
+        // Show success message
+        alert('Assessment approved successfully')
+      } else {
+        alert(response.message || 'Failed to approve assessment')
+      }
+    } catch (error) {
+      console.error('Error approving assessment:', error)
+      alert(error.response?.data?.message || 'Error approving assessment')
+    } finally {
+      setApprovalLoading(false)
+    }
   }
 
   /**
@@ -443,8 +527,8 @@ export default function Performance() {
   const handleSubmitAssessment = async (e) => {
     e.preventDefault()
 
-    if (!formData.employeeId) {
-      alert('Please select an employee')
+    if (!formData.employeeIds || formData.employeeIds.length === 0) {
+      alert('Please select at least one employee')
       return
     }
     if (!formData.reviewPeriod) {
@@ -452,40 +536,67 @@ export default function Performance() {
       return
     }
 
-    // Map competency ratings dynamically from list
+    // Map competency ratings dynamically from list - ensure all IDs and ratings are numbers
     const competencyRatings = compDropdownList.map(comp => {
-      const rObj = formData.competencyRatings?.find(r => r.competency === comp.id)
+      const rObj = formData.competencyRatings?.find(r => Number(r.competency) === Number(comp.id))
       return {
-        competency: comp.id,
-        rating: rObj ? rObj.rating : 1 // default to 1 star if not rated
+        competency: Number(comp.id), // ensure competency ID is a number
+        rating: rObj ? Number(rObj.rating) : 1 // ensure rating is a number
       }
     })
 
-    const payload = {
-      employee: formData.employeeId,
-      performanceCycle: formData.reviewPeriod,
-      competencyRatings,
-      keyContributions: formData.strengths,
-      growthObjectives: formData.goalsNextPeriod,
-      remarks: formData.remarks,
-      assessmentDate: formData.assessmentDate,
-      performanceLead: formData.reviewerName,
-      status: formData.status || 'Completed'
-    }
-
     try {
-      let response
+      // Ensure all IDs are numbers
+      const employeeId = Number(formData.employeeIds[0])
+      const departmentId = Number(formData.departmentId) || null
+      const managerId = Number(formData.managerId) || null
+      const cycleId = Number(formData.reviewPeriod)
+
       if (editingAssessmentId) {
-        response = await performanceAssessmentAPI.updateAssessment(editingAssessmentId, payload)
+        // Edit single assessment
+        const payload = {
+          employeeId,
+          departmentId,
+          performanceCycleId: cycleId,
+          competencyRatings,
+          keyContributions: formData.strengths,
+          growthObjectives: formData.goalsNextPeriod,
+          remarks: formData.remarks,
+          assessmentDate: formData.assessmentDate,
+          status: formData.status || 'Completed',
+          goalTitle: formData.goalTitle,
+          kpiTarget: formData.kpiTarget,
+          dueDate: formData.dueDate || null,
+          priority: formData.priority
+        }
+        await performanceAssessmentAPI.updateAssessment(editingAssessmentId, payload)
       } else {
-        response = await performanceAssessmentAPI.createAssessment(payload)
+        // Create detailed assessments for each selected employee
+        for (const empIdRaw of formData.employeeIds) {
+          const empId = Number(empIdRaw)
+          const payload = {
+            employeeId: empId,
+            departmentId,
+            performanceCycleId: cycleId,
+            competencyRatings,
+            keyContributions: formData.strengths,
+            growthObjectives: formData.goalsNextPeriod,
+            remarks: formData.remarks,
+            assessmentDate: formData.assessmentDate,
+            status: formData.status || 'Completed',
+            goalTitle: formData.goalTitle,
+            kpiTarget: formData.kpiTarget,
+            dueDate: formData.dueDate || null,
+            priority: formData.priority
+          }
+
+          await performanceAssessmentAPI.createAssessment(payload)
+        }
       }
 
-      if (response.success) {
-        handleCloseModal()
-        await fetchAssessments(q)
-        await fetchAssessmentsSummary()
-      }
+      handleCloseModal()
+      await fetchAssessments(q)
+      await fetchAssessmentsSummary()
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to save assessment')
       console.error('Error saving assessment:', error)
@@ -647,6 +758,35 @@ export default function Performance() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  /**
+   * Handle employee selection and auto-populate department and manager
+   */
+  const handleEmployeeSelect = (employeeId) => {
+    const selected = employeeDropdownList.find(e => String(e.id) === String(employeeId))
+    if (selected) {
+      const mId = selected.manager_id || selected.managerId || ''
+      const manager = mId ? employeeDropdownList.find(e => String(e.id) === String(mId)) : null;
+      const managerName = manager ? (manager.full_name || manager.fullName || manager.name) : 'N/A'
+      setFormData(prev => ({
+        ...prev,
+        employeeIds: [employeeId],
+        departmentId: selected.department_id || selected.departmentId || '',
+        managerId: mId,
+        managerName: managerName,
+        reviewerName: managerName
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        employeeIds: [employeeId],
+        departmentId: '',
+        managerId: '',
+        managerName: '',
+        reviewerName: ''
+      }))
+    }
+  }
+
   const handleCloseModal = () => {
     setModalOpen(false)
     setFormData(initialFormData)
@@ -668,6 +808,108 @@ export default function Performance() {
     setFormData(initialFormData)
     setFiles({})
     setModalOpen(true)
+  }
+
+  const applyQuickFilter = (days) => {
+    const end = new Date()
+    const start = new Date()
+    if (days) {
+      start.setDate(end.getDate() - days)
+    } else {
+      start.setMonth(end.getMonth() - 12)
+    }
+    setExportFilters(prev => ({
+      ...prev,
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0]
+    }))
+  }
+
+  const handleExportPDF = async () => {
+    if (!exportFilters.startDate || !exportFilters.endDate) {
+      alert("Start date and End date are required.")
+      return
+    }
+    if (new Date(exportFilters.endDate) < new Date(exportFilters.startDate)) {
+      alert("End date cannot be before start date.")
+      return
+    }
+
+    const filteredForExport = assessments.filter(assessment => {
+      const aDateStr = assessment.assessmentDate || assessment.reviewDate || assessment.createdAt
+      if (!aDateStr) return false
+      const aDate = new Date(aDateStr)
+      const start = new Date(exportFilters.startDate)
+      const end = new Date(exportFilters.endDate)
+      start.setHours(0, 0, 0, 0)
+      end.setHours(23, 59, 59, 999)
+      if (aDate < start || aDate > end) return false
+
+      if (exportFilters.department !== 'All Departments') {
+        const empDept = assessment.employee?.department || assessment.department || ''
+        if (empDept !== exportFilters.department) return false
+      }
+      return true
+    })
+
+    if (filteredForExport.length === 0) {
+      alert("No performance data found for the selected filters.")
+      return
+    }
+
+    try {
+      const { jsPDF } = await import('jspdf')
+      await import('jspdf-autotable')
+
+      const doc = new jsPDF('landscape')
+
+      doc.setFontSize(16)
+      doc.text("Performance Data Report", 14, 15)
+
+      doc.setFontSize(10)
+      doc.text(`Selected Date Range: ${exportFilters.startDate} to ${exportFilters.endDate}`, 14, 22)
+      doc.text(`Selected Department: ${exportFilters.department}`, 14, 27)
+      doc.text(`Export Date: ${new Date().toLocaleDateString()}`, 14, 32)
+
+      const tableColumn = [
+        "Employee Name", "Employee ID", "Department", "Performance Cycle",
+        "Manager Name", "Status", "Rating", "Review Date",
+        "Key Contributions", "Growth Objectives"
+      ]
+
+      const tableRows = []
+      filteredForExport.forEach(assessment => {
+        const ratingVal = assessment.overallRating ? Number(assessment.overallRating).toFixed(1) : 'N/A'
+
+        tableRows.push([
+          assessment.employee?.fullName || assessment.employee?.name || 'N/A',
+          assessment.employee?.empId || assessment.employee?.empCode || 'N/A',
+          assessment.employee?.department || assessment.department || 'N/A',
+          assessment.performanceCycle?.cycleName || assessment.performanceCycle || 'N/A',
+          assessment.managerName || assessment.reviewerName || 'N/A',
+          assessment.status || 'N/A',
+          ratingVal,
+          assessment.assessmentDate ? new Date(assessment.assessmentDate).toLocaleDateString() : 'N/A',
+          assessment.keyContributions || assessment.strengths || '',
+          assessment.growthObjectives || assessment.goalsNextPeriod || ''
+        ])
+      })
+
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 38,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [15, 118, 110] }
+      })
+
+      doc.save(`Performance_Report_${new Date().toISOString().split('T')[0]}.pdf`)
+      setExportModalOpen(false)
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      alert('Failed to generate PDF. Please ensure jsPDF and jspdf-autotable are installed.')
+    }
   }
 
   const handleAddCompetency = async (e) => {
@@ -695,8 +937,8 @@ export default function Performance() {
     return {
       hub: [
         { label: 'TOTAL ASSESSMENTS', count: assessmentsSummary.totalAssessments, bgColor: 'bg-[#0F172A]', icon: HiClipboardDocumentCheck },
-        { label: 'PENDING REVIEW', count: assessmentsSummary.pendingReviews, bgColor: 'bg-[#F59E0B]', icon: HiClock },
-        { label: 'COMPLETED', count: assessmentsSummary.completedReviews, bgColor: 'bg-[#0F766E]', icon: HiArrowTrendingUp },
+        { label: 'PENDING REVIEW', count: assessmentsSummary.pendingReview, bgColor: 'bg-[#F59E0B]', icon: HiClock },
+        { label: 'COMPLETED', count: assessmentsSummary.completed, bgColor: 'bg-[#0F766E]', icon: HiArrowTrendingUp },
       ],
       cycles: [
         { label: 'ACTIVE CYCLES', count: cyclesSummary.activeCycles, bgColor: 'bg-[#0F766E]', icon: HiCalendarDays },
@@ -743,6 +985,39 @@ export default function Performance() {
     )
   }
 
+  // Helper function to get progress bar color based on rating
+  const getProgressBarColor = (rating) => {
+    if (!rating) return 'rgba(203, 213, 225, 1)'
+    const ratingNum = Number(rating)
+    if (ratingNum >= 4.5) return 'rgba(5, 150, 105, 1)' // emerald-600
+    if (ratingNum >= 4) return 'rgba(37, 99, 235, 1)' // blue-600
+    if (ratingNum >= 3) return 'rgba(217, 119, 6, 1)' // amber-600
+    if (ratingNum >= 2) return 'rgba(234, 88, 12, 1)' // orange-600
+    return 'rgba(220, 38, 38, 1)' // red-600
+  }
+
+  // Helper function to get progress bar CSS class for Tailwind fallback
+  const getProgressBarClass = (rating) => {
+    if (!rating) return 'bg-slate-300'
+    const ratingNum = Number(rating)
+    if (ratingNum >= 4.5) return 'bg-emerald-500'
+    if (ratingNum >= 4) return 'bg-blue-500'
+    if (ratingNum >= 3) return 'bg-amber-500'
+    if (ratingNum >= 2) return 'bg-orange-500'
+    return 'bg-red-500'
+  }
+
+  // Helper function to get rating label
+  const getRatingLabel = (rating) => {
+    if (!rating) return 'Not Rated'
+    const ratingNum = Number(rating)
+    if (ratingNum >= 4.5) return 'Outstanding'
+    if (ratingNum >= 4) return 'Exceeds'
+    if (ratingNum >= 3) return 'Meets'
+    if (ratingNum >= 2) return 'Developing'
+    return 'Unsatisfactory'
+  }
+
   const columns = [
     {
       key: 'employee',
@@ -768,76 +1043,103 @@ export default function Performance() {
       label: 'Cycle',
       render: (_, row) => (
         <span className="text-sm font-medium text-slate-600">
-          {row.performanceCycle?.cycleName || 'N/A'}
+          {row.performanceCycle?.name || row.performanceCycle?.cycleName || (typeof row.performanceCycle === 'string' ? row.performanceCycle : 'N/A')}
         </span>
       )
     },
     {
-      key: 'performanceBand',
-      label: 'Performance Band',
+      key: 'employeeStatus',
+      label: 'Employee Status',
       render: (_, row) => {
-        const v = row.performanceBand || 'Pending'
+        const status = row.employeeStatus || 'Not Started'
+        let colorClass = 'bg-slate-100 text-slate-700'
+        let dotClass = 'bg-slate-400'
+        if (status === 'Approved') {
+          colorClass = 'bg-green-100 text-green-700'
+          dotClass = 'bg-green-500'
+        } else if (status === 'In Progress') {
+          colorClass = 'bg-blue-100 text-blue-700'
+          dotClass = 'bg-blue-500'
+        } else if (status === 'Completed') {
+          colorClass = 'bg-emerald-100 text-emerald-700'
+          dotClass = 'bg-emerald-500'
+        } else if (status === 'On Hold') {
+          colorClass = 'bg-orange-100 text-orange-700'
+          dotClass = 'bg-orange-500'
+        }
         return (
-          <Badge
-            label={v}
-            color={v === 'Outstanding' || v === 'Exceeds' ? 'green' : v === 'Meets' ? 'blue' : 'orange'}
-            className="rounded-none"
-          />
-        )
-      },
-    },
-    {
-      key: 'performanceLead',
-      label: 'Performance Lead',
-      render: (_, row) => (
-        <span className="text-sm font-medium text-slate-600">
-          {row.performanceLead || 'N/A'}
-        </span>
-      )
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (_, row) => {
-        const isCompleted = row.status === 'Completed'
-        return (
-          <div className="flex items-center justify-center">
-            <span className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${isCompleted ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              {row.status}
+          <div className="flex items-center">
+            <span className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${colorClass}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
+              {status}
             </span>
           </div>
         )
       }
     },
     {
+      key: 'employeeProgress',
+      label: 'Employee Progress',
+      render: (_, row) => {
+        const rawProgress = row.employeeProgress || '0'
+        // Extract lower bound number
+        const match = rawProgress.match(/\d+/)
+        const numericProgress = match ? parseInt(match[0], 10) : 0
+        const percentage = Math.min(100, Math.max(0, numericProgress))
+
+        let barColor = '#3B82F6' // blue-500
+        if (percentage >= 100) barColor = '#10B981' // emerald-500
+        else if (percentage <= 0) barColor = '#CBD5E1' // slate-300
+
+        const displayLabel = rawProgress === '0' ? '0%' : (rawProgress.includes('%') ? rawProgress : `${rawProgress}%`)
+
+        return (
+          <div className="flex flex-col gap-2 w-full min-w-[120px]">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1">
+                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full transition-all duration-500 ease-out rounded-full"
+                    style={{
+                      width: `${percentage}%`,
+                      backgroundColor: barColor
+                    }}
+                  />
+                </div>
+              </div>
+              <span className="text-xs font-bold text-slate-700 w-16 text-right tabular-nums">{displayLabel}</span>
+            </div>
+          </div>
+        )
+      }
+    },
+    {
+      key: 'employeeUpdatedAt',
+      label: 'Last Updated',
+      render: (_, row) => {
+        const dateStr = row.employeeUpdatedAt
+        if (!dateStr) return <span className="text-xs text-slate-400">N/A</span>
+        return (
+          <span className="text-xs font-medium text-slate-600">
+            {new Date(dateStr).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+        )
+      }
+    },
+    {
       key: 'actions',
-      label: 'Actions',
+      label: 'Action',
       render: (_, row) => (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation()
-              handleEditAssessment(row)
+              handleViewAssessment(row)
             }}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56] shadow-sm"
-            aria-label="Edit assessment"
-            title="Edit"
+            className="inline-flex items-center justify-center rounded-none border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-700 transition-colors hover:border-[#0F766E] hover:text-[#0F766E] uppercase tracking-wider shadow-sm"
           >
-            <HiPencilSquare className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeleteAssessment(row.id)
-            }}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600 shadow-sm"
-            aria-label="Delete assessment"
-            title="Delete"
-          >
-            <HiTrash className="h-4 w-4" />
+            View
           </button>
         </div>
       ),
@@ -856,31 +1158,17 @@ export default function Performance() {
             <span className="text-slate-600">Performance Listing</span>
           </div>
         </div>
-        {/* {isHR && (
+        {isHR && (
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setConfigModalOpen(true)}
-              type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm"
-            >
-              <HiPlus className="h-4 w-4" /> Competency Ratings
-            </button>
-            <button
-              onClick={() => setConfigModalOpen(true)}
-              type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm"
-            >
-              <HiPlus className="h-4 w-4" /> Performance Cycle
-            </button>
-            <button
-              onClick={openAddReview}
+              onClick={() => setExportModalOpen(true)}
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
             >
-              <HiPlus className="h-4 w-4" /> Add Assessment
+              <HiDocumentText className="h-4 w-4" /> Export Performance Data
             </button>
           </div>
-        )} */}
+        )}
       </div>
 
       {/* Tabs */}
@@ -1163,11 +1451,11 @@ export default function Performance() {
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E]">
                               <HiAdjustmentsHorizontal className="h-4 w-4" />
                             </div>
-                            <span className="text-sm font-semibold text-slate-900">{comp.name}</span>
+                            <span className="text-sm font-semibold text-slate-900">{comp.competencyName || comp.name || 'N/A'}</span>
                           </div>
                         </td>
                         <td className="px-5 py-4">
-                          <span className="text-sm font-medium text-slate-500">{comp.createdAt}</span>
+                          <span className="text-sm font-medium text-slate-500">{comp.createdAt ? new Date(comp.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}</span>
                         </td>
                         {isHR && (
                           <td className="px-5 py-4">
@@ -1361,14 +1649,41 @@ export default function Performance() {
         >
           <div className="space-y-4">
             {/* Employee + Review Info */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div>
                 <SearchableEmployeeSelect
-                  value={formData.employeeId}
-                  onChange={(id) => handleRatingChange('employeeId', id)}
+                  value={formData.employeeIds?.[0] || ''}
+                  onChange={(id) => handleEmployeeSelect(id)}
                   employees={employeeDropdownList}
                 />
               </div>
+
+              <Input
+                label="Department"
+                name="department"
+                type="text"
+                value={(() => {
+                  const empId = formData.employeeIds?.[0]
+                  if (!empId) return ''
+                  const emp = employeeDropdownList.find(e => String(e.id) === String(empId))
+                  return emp?.department || 'N/A'
+                })()}
+                readOnly
+                placeholder="Auto-filled department"
+                inputClassName="h-10 rounded-lg border-slate-300 bg-slate-50 text-slate-500 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              />
+
+              <Input
+                label="Manager"
+                name="managerName"
+                type="text"
+                value={formData.managerName}
+                readOnly
+                placeholder="Auto-filled manager"
+                inputClassName="h-10 rounded-lg border-slate-300 bg-slate-50 text-slate-500 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                labelClassName="mb-1 block text-sm font-medium text-slate-800"
+              />
 
               <Input
                 label="Performance Cycle"
@@ -1387,20 +1702,8 @@ export default function Performance() {
               />
             </div>
 
-            {/* Performance Lead + Status */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Input
-                label="Performance Lead"
-                name="reviewerName"
-                type="text"
-                value={formData.reviewerName}
-                onChange={handleFormChange}
-                required
-                placeholder="Enter performance lead name"
-                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
-                labelClassName="mb-1 block text-sm font-medium text-slate-800"
-              />
-
+            {/* Status */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
               <Input
                 label="Status"
                 name="status"
@@ -1516,6 +1819,65 @@ export default function Performance() {
                 />
               </div>
             </div>
+
+            {/* Goal & KPI Section */}
+            <div className="rounded-lg border border-slate-200 bg-emerald-50/40 p-4">
+              <p className="text-xs font-medium text-slate-600 mb-4 font-bold uppercase tracking-wider">Goal & KPI Details — Set performance targets and priorities</p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Input
+                  label="Goal Title"
+                  name="goalTitle"
+                  type="text"
+                  value={formData.goalTitle}
+                  onChange={handleFormChange}
+                  placeholder="e.g., Improve customer retention rate"
+                  inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-1 block text-sm font-medium text-slate-800"
+                />
+
+                <Input
+                  label="Priority"
+                  name="priority"
+                  type="select"
+                  value={formData.priority}
+                  onChange={handleFormChange}
+                  options={[
+                    { label: 'Low', value: 'Low' },
+                    { label: 'Medium', value: 'Medium' },
+                    { label: 'High', value: 'High' },
+                    { label: 'Critical', value: 'Critical' }
+                  ]}
+                  inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+                  labelClassName="mb-1 block text-sm font-medium text-slate-800"
+                />
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-800">
+                    KPI Target
+                  </label>
+                  <textarea
+                    name="kpiTarget"
+                    value={formData.kpiTarget}
+                    onChange={handleFormChange}
+                    placeholder="Define measurable KPI targets (e.g., Increase sales by 15%, Response time under 2 hours)"
+                    className="min-h-[100px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-800">
+                    Goal Due Date
+                  </label>
+                  <input
+                    type="date"
+                    name="dueDate"
+                    value={formData.dueDate}
+                    onChange={handleFormChange}
+                    className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
@@ -1532,7 +1894,7 @@ export default function Performance() {
               type="submit"
               className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors"
             >
-              Save Assessment
+              Create Assessment
             </button>
           </div>
         </form>
@@ -1662,6 +2024,330 @@ export default function Performance() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* ── View Assessment Modal ─────────────────────────────────────────── */}
+      <Modal
+        isOpen={viewModalOpen}
+        onClose={() => { setViewModalOpen(false); setViewingAssessment(null) }}
+        size="2xl"
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">Assessment Details</h2>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+              Review employee performance and progress updates
+            </p>
+          </div>
+        }
+      >
+        {viewingAssessment && (
+          <div className="pt-2 pb-6 space-y-6">
+
+            {/* 1. Assessment Information */}
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                  <HiIdentification className="h-4 w-4 text-slate-400" />
+                  Assessment Information
+                </h3>
+              </div>
+              <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Employee Name</div>
+                  <div className="text-sm font-bold text-slate-900">{viewingAssessment.employee?.fullName || viewingAssessment.employee?.name || 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Department</div>
+                  <div className="text-sm font-bold text-slate-900">{viewingAssessment.employee?.department?.name || viewingAssessment.employee?.department || viewingAssessment.department?.name || viewingAssessment.department || 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Performance Cycle</div>
+                  <div className="text-sm font-bold text-slate-900">{viewingAssessment.performanceCycle?.name || viewingAssessment.performanceCycle?.cycleName || (typeof viewingAssessment.performanceCycle === 'string' ? viewingAssessment.performanceCycle : 'N/A')}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Admin Status</div>
+                  <div className="text-sm font-bold text-slate-900">
+                    <span className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[10px] font-semibold ${viewingAssessment.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {viewingAssessment.status}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Created Date</div>
+                  <div className="text-sm font-bold text-slate-900">
+                    {viewingAssessment.assessmentDate ? new Date(viewingAssessment.assessmentDate).toLocaleDateString() : (viewingAssessment.createdAt ? new Date(viewingAssessment.createdAt).toLocaleDateString() : 'N/A')}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Competency Ratings */}
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                  <HiStar className="h-4 w-4 text-slate-400" />
+                  Competency Ratings
+                </h3>
+              </div>
+              <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                {(viewingAssessment.competencyRatings || []).length > 0 ? (
+                  viewingAssessment.competencyRatings.map((cr, idx) => {
+                      const competencyLabel =
+                        cr.competency?.competencyName ||
+                        cr.competency?.name ||
+                        cr.competencyName ||
+                        'Unknown'
+
+                      return (
+                        <div key={idx} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                          <div
+                            className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 truncate"
+                            title={competencyLabel}
+                          >
+                            {competencyLabel}
+                          </div>
+
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <HiStar
+                                key={star}
+                                className={`h-4 w-4 ${star <= (Number(cr.rating) || 0)
+                                    ? 'text-amber-400'
+                                    : 'text-slate-200'
+                                  }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    }) 
+
+                ) : (
+                  <div className="col-span-full text-xs text-slate-400 italic">No competencies rated.</div>
+                )}
+              </div>
+            </div>
+
+            {/* 3. Admin Feedback */}
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                  <HiPencilSquare className="h-4 w-4 text-slate-400" />
+                  Admin Feedback
+                </h3>
+              </div>
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Key Contributions</div>
+                  <div className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 p-3 rounded-lg min-h-[80px] border border-slate-100">
+                    {viewingAssessment.keyContributions || viewingAssessment.strengths || <span className="text-slate-400 italic">No feedback provided.</span>}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Growth Objectives</div>
+                  <div className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 p-3 rounded-lg min-h-[80px] border border-slate-100">
+                    {viewingAssessment.growthObjectives || viewingAssessment.goalsNextPeriod || <span className="text-slate-400 italic">No objectives provided.</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Employee Progress Update (Highlighted) */}
+            <div className="rounded-xl border-2 border-[#0F766E] bg-emerald-50/30 shadow-md overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-[#0F766E]" />
+              <div className="bg-[#0F766E]/5 px-4 py-3 border-b border-[#0F766E]/10 flex justify-between items-center ml-1.5">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-[#0F766E] flex items-center gap-2">
+                  <HiChartBar className="h-4 w-4" />
+                  Employee Progress Update
+                </h3>
+                {viewingAssessment.employeeUpdatedAt && (
+                  <span className="text-[10px] font-bold text-slate-500">
+                    Last Updated: {new Date(viewingAssessment.employeeUpdatedAt).toLocaleString()}
+                  </span>
+                )}
+              </div>
+
+              <div className="p-5 ml-1.5 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                {/* Status & Progress Bar */}
+                <div className="space-y-6">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Employee Status</div>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider shadow-sm border
+                      ${viewingAssessment.employeeStatus === 'Approved' ? 'bg-green-100 text-green-800 border-green-200' :
+                        viewingAssessment.employeeStatus === 'Completed' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                        viewingAssessment.employeeStatus === 'In Progress' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                          viewingAssessment.employeeStatus === 'On Hold' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                            'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                      <span className={`h-2 w-2 rounded-full ${viewingAssessment.employeeStatus === 'Approved' ? 'bg-green-500' : viewingAssessment.employeeStatus === 'Completed' ? 'bg-emerald-500' : viewingAssessment.employeeStatus === 'In Progress' ? 'bg-blue-500' : viewingAssessment.employeeStatus === 'On Hold' ? 'bg-orange-500' : 'bg-slate-400'}`} />
+                      {viewingAssessment.employeeStatus || 'Not Started'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Progress Percentage</div>
+
+                    {(() => {
+                      const rawProgress = viewingAssessment.employeeProgress || '0'
+                      const match = rawProgress.match(/\d+/)
+                      const numericProgress = match ? parseInt(match[0], 10) : 0
+                      const percentage = Math.min(100, Math.max(0, numericProgress))
+                      let barColor = '#3B82F6'
+                      if (percentage >= 100) barColor = '#10B981'
+                      else if (percentage <= 0) barColor = '#CBD5E1'
+                      const displayLabel = rawProgress === '0' ? '0%' : (rawProgress.includes('%') ? rawProgress : `${rawProgress}%`)
+
+                      return (
+                        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-3">
+                          <div className="flex justify-between items-end">
+                            <span className="text-2xl font-black text-slate-900 leading-none">{displayLabel}</span>
+                          </div>
+                          <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className="h-full transition-all duration-500 ease-out rounded-full"
+                              style={{ width: `${percentage}%`, backgroundColor: barColor }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
+
+                {/* Comments & Notes */}
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Employee Comments</div>
+                    <div className="text-sm text-slate-700 whitespace-pre-wrap bg-white p-3 rounded-lg min-h-[80px] border border-slate-200 shadow-sm">
+                      {viewingAssessment.employeeComments || <span className="text-slate-400 italic">No comments provided.</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Completion Notes</div>
+                    <div className="text-sm text-slate-700 whitespace-pre-wrap bg-white p-3 rounded-lg min-h-[80px] border border-slate-200 shadow-sm">
+                      {viewingAssessment.completionNotes || <span className="text-slate-400 italic">No notes provided.</span>}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        )}
+        <div className="border-t border-slate-100 px-6 py-4 flex justify-between bg-slate-50 rounded-b-xl">
+          <div>
+            {viewingAssessment?.approvedBy && (
+              <span className="text-xs text-slate-500">
+                ✓ Approved on {new Date(viewingAssessment.approvedAt).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-3">
+            {!viewingAssessment?.approvedBy && (
+              <button
+                type="button"
+                onClick={handleApproveAssessment}
+                disabled={approvalLoading}
+                className="h-10 inline-flex items-center justify-center gap-2 rounded-md bg-green-600 px-6 text-sm font-semibold text-white hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed transition-colors shadow-sm"
+              >
+                {approvalLoading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Approving...
+                  </>
+                ) : (
+                  <>
+                    ✓ Approve & Save
+                  </>
+                )}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => { setViewModalOpen(false); setViewingAssessment(null) }}
+              className="h-10 rounded-md bg-slate-800 px-6 text-sm font-semibold text-white hover:bg-slate-900 transition-colors shadow-sm"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Export Performance Data Modal ───────────────────────────────── */}
+      <Modal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        size="md"
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Export Performance Data</h2>
+            <p className="text-xs font-medium text-slate-500">Filter and export employee performance data as PDF.</p>
+          </div>
+        }
+      >
+        <div className="pt-2 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">Start Date</label>
+              <input
+                type="date"
+                value={exportFilters.startDate}
+                onChange={(e) => setExportFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">End Date</label>
+              <input
+                type="date"
+                value={exportFilters.endDate}
+                onChange={(e) => setExportFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-800">Quick Filters</label>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => applyQuickFilter(7)} className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">Last 7 Days</button>
+              <button type="button" onClick={() => applyQuickFilter(90)} className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">Last 3 Months</button>
+              <button type="button" onClick={() => applyQuickFilter(180)} className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">Last 6 Months</button>
+              <button type="button" onClick={() => applyQuickFilter(365)} className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">Last 12 Months</button>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-800">Department</label>
+            <select
+              value={exportFilters.department}
+              onChange={(e) => setExportFilters(prev => ({ ...prev, department: e.target.value }))}
+              className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20"
+            >
+              {['All Departments', 'HR', 'IT', 'Finance', 'Sales', 'Operations', 'Engineering', 'Marketing'].map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
+            <button
+              type="button"
+              onClick={() => setExportModalOpen(false)}
+              className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleExportPDF}
+              className="h-10 inline-flex items-center justify-center gap-2 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors"
+            >
+              <HiDocumentText className="h-4 w-4" /> Export PDF
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )
