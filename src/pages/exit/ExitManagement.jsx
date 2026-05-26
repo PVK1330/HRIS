@@ -10,8 +10,6 @@ import {
   HiPlus,
   HiArrowDownTray,
   HiChevronDown,
-  HiXMark,
-  HiCalendarDays,
   HiBriefcase,
   HiMapPin,
   HiDocumentText,
@@ -26,7 +24,6 @@ import toast from 'react-hot-toast'
 import { Badge } from '../../components/ui/Badge.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
-import ExitStatusStepper from '../../components/exit/ExitStatusStepper.jsx'
 import ResignationModal from '../../components/exit/ResignationModal.jsx'
 import TerminationModal from '../../components/exit/TerminationModal.jsx'
 import {

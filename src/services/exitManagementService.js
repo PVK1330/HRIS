@@ -148,3 +148,23 @@ export const deleteTerminationType = async (id) => {
   const { data } = await api.delete(`/admin/settings/termination-types/${id}`)
   return data.data
 }
+
+export const listClearanceTemplates = async (params = {}) => {
+  const { data } = await api.get('/admin/settings/termination-types/clearance-templates/list', { params })
+  return data.data
+}
+
+export const createClearanceTemplate = async (payload) => {
+  const { data } = await api.post('/admin/settings/termination-types/clearance-templates', payload)
+  return data.data
+}
+
+export const updateClearanceTemplate = async (id, payload) => {
+  const { data } = await api.put(`/admin/settings/termination-types/clearance-templates/${id}`, payload)
+  return data.data
+}
+
+export const deleteClearanceTemplate = async (id) => {
+  const { data } = await api.delete(`/admin/settings/termination-types/clearance-templates/${id}`)
+  return data.data
+}

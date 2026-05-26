@@ -25,6 +25,7 @@ import PasswordSecurity from "./PasswordSecurity.jsx";
 import RolesPermissions from "./RolesPermissions.jsx";
 import SensitiveData from "./SensitiveData.jsx";
 import TerminationTypes from "./TerminationTypes.jsx";
+import ClearanceChecklistSettings from "./ClearanceChecklist.jsx";
 
 const navItems = [
   {
@@ -74,7 +75,7 @@ const navItems = [
     id: "exit",
     label: "Exit Settings",
     Icon: HiArrowRightOnRectangle,
-    desc: "Termination types",
+    desc: "Termination & clearance",
   },
   {
     id: "notifications",
@@ -89,6 +90,36 @@ const navItems = [
     desc: "Auth & policies",
   },
 ];
+
+const EXIT_TABS = [
+  { id: "termination", label: "Termination Types" },
+  { id: "clearance", label: "Clearance Checklist" },
+];
+
+function ExitSettingsSection() {
+  const [exitTab, setExitTab] = useState("termination");
+  return (
+    <div className="space-y-0 min-w-0">
+      <div className="flex items-center gap-0 border-b border-slate-200 mb-6">
+        {EXIT_TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setExitTab(t.id)}
+            className={`relative px-5 py-2.5 text-sm font-semibold transition-colors ${
+              exitTab === t.id
+                ? "text-[#0F766E] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#0F766E]"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {exitTab === "termination" ? <TerminationTypes /> : <ClearanceChecklistSettings />}
+    </div>
+  );
+}
 
 function ActiveSection({
   active,
@@ -115,7 +146,7 @@ function ActiveSection({
     case "assets":
       return <AssetSettingsSection registerToolbar={registerAssetsToolbar} />;
     case "exit":
-      return <TerminationTypes />;
+      return <ExitSettingsSection />;
     case "notifications":
       return <NotificationSettings />;
     case "security":
