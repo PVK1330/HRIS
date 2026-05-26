@@ -172,6 +172,23 @@ const updateEmployeeProgress = async (id, data) => {
   return response.data
 }
 
+/** Get all performance cycles for export */
+const getPerformanceCycles = async () => {
+  const response = await api.get('/performance/cycles')
+  return response.data
+}
+
+/** Export performance data */
+const exportPerformanceData = async (filters, exportType) => {
+  const response = await api.post('/performance/export', {
+    ...filters,
+    exportType
+  }, {
+    responseType: 'blob'
+  })
+  return response
+}
+
 export default {
   createAssessment,
   getAllAssessments,
@@ -193,6 +210,8 @@ export default {
   getEmployeePerformanceSummary,
   getMyAssessments,
   getManagerReviews,
-  updateEmployeeProgress
+  updateEmployeeProgress,
+  getPerformanceCycles,
+  exportPerformanceData
 }
 
