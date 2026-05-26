@@ -25,7 +25,10 @@ const Policies = lazy(() => import("../pages/admin/compliance/Policies.jsx"));
 const MyPolicies = lazy(() => import("../pages/admin/compliance/MyPolicies.jsx"));
 const Expenses = lazy(() => import("../pages/admin/finance/Expenses.jsx"));
 const Onboarding = lazy(() => import("../pages/admin/hr/Onboarding.jsx"));
-const ExitManagement = lazy(() => import("../pages/admin/hr/ExitManagement.jsx"));
+const ExitManagement = lazy(() => import("../pages/exit/ExitManagement.jsx"));
+const ExitDetail = lazy(() => import("../pages/exit/ExitDetail.jsx"));
+const ManagerExitApprovals = lazy(() => import("../pages/exit/ManagerExitApprovals.jsx"));
+const EmployeeExit = lazy(() => import("../pages/exit/EmployeeExit.jsx"));
 const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemplates.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
 const AdminSettings = lazy(() => import("../pages/admin/settings/Settings.jsx"));
@@ -244,6 +247,30 @@ export const router = createBrowserRouter([
             element: (
               <AdminModuleGate moduleKey="exit-management">
                 <ExitManagement />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "exit-management/:id",
+            element: (
+              <AdminModuleGate moduleKey="exit-management">
+                <ExitDetail />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "exit-approvals",
+            element: (
+              <AdminModuleGate moduleKey="exit-management">
+                <ManagerExitApprovals />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "my-exit",
+            element: (
+              <AdminModuleGate moduleKey="exit-management">
+                <EmployeeExit />
               </AdminModuleGate>
             ),
           },

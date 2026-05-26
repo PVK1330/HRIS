@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  HiArrowRightOnRectangle,
   HiBell,
   HiBriefcase,
   HiBuildingOffice2,
@@ -23,6 +24,7 @@ import NotificationSettings from "./NotificationSettings.jsx";
 import PasswordSecurity from "./PasswordSecurity.jsx";
 import RolesPermissions from "./RolesPermissions.jsx";
 import SensitiveData from "./SensitiveData.jsx";
+import TerminationTypes from "./TerminationTypes.jsx";
 
 const navItems = [
   {
@@ -69,6 +71,12 @@ const navItems = [
     desc: "Categories & rules",
   },
   {
+    id: "exit",
+    label: "Exit Settings",
+    Icon: HiArrowRightOnRectangle,
+    desc: "Termination types",
+  },
+  {
     id: "notifications",
     label: "Notifications",
     Icon: HiBell,
@@ -106,6 +114,8 @@ function ActiveSection({
       return <DocumentSettings />;
     case "assets":
       return <AssetSettingsSection registerToolbar={registerAssetsToolbar} />;
+    case "exit":
+      return <TerminationTypes />;
     case "notifications":
       return <NotificationSettings />;
     case "security":
