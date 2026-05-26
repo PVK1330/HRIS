@@ -46,6 +46,7 @@ import { employees, performanceKpis } from '../../../data/mockData.js'
 import performanceCyclesAPI from '../../../services/performanceCyclesAPI.js'
 import competenciesAPI from '../../../services/competenciesAPI.js'
 import performanceAssessmentAPI from '../../../services/performanceAssessmentAPI.js'
+import { getEmployee } from '../../../services/employeeService.js'
 
 
 const COLORS = ['#0F766E', '#14B8A6', '#2DD4BF', '#99F6E4', '#F0FDFA']
@@ -53,6 +54,8 @@ const COLORS = ['#0F766E', '#14B8A6', '#2DD4BF', '#99F6E4', '#F0FDFA']
 const initialFormData = {
   employeeIds: [], // array of employee IDs for bulk assignment
   departmentId: '', // auto-populated when employee is selected
+  department: '', // auto-populated when employee is selected
+  managerId: '', // auto-populated when employee is selected
   managerName: '', // auto-populated when employee is selected
   reviewPeriod: '',
   competencyRatings: [], // array of { competency, rating }
@@ -277,10 +280,16 @@ export default function Performance() {
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [viewingAssessment, setViewingAssessment] = useState(null)
   const [exportFilters, setExportFilters] = useState({
+    cycleId: '',
     startDate: '',
     endDate: '',
-    department: 'All Departments'
+    departmentId: '',
+    employeeId: '',
+    exportType: 'pdf'
   })
+  const [exportCycles, setExportCycles] = useState([])
+  const [exportLoading, setExportLoading] = useState(false)
+  const [exportCyclesLoading, setExportCyclesLoading] = useState(false)
   const [approvalLoading, setApprovalLoading] = useState(false)
   const [compModalOpen, setCompModalOpen] = useState(false)
   const [formData, setFormData] = useState(initialFormData)
@@ -346,6 +355,13 @@ export default function Performance() {
     }
   }, [q, isHR])
 
+  // Fetch performance cycles when export modal opens
+  useEffect(() => {
+    if (exportModalOpen && exportCycles.length === 0) {
+      fetchPerformanceCycles()
+    }
+  }, [exportModalOpen])
+
   // Fetch competencies when search query changes
   useEffect(() => {
     if (isHR) {
@@ -409,6 +425,23 @@ export default function Performance() {
   }
 
   /**
+   * Fetch performance cycles for export modal
+   */
+  const fetchPerformanceCycles = async () => {
+    try {
+      setExportCyclesLoading(true)
+      const response = await performanceAssessmentAPI.getPerformanceCycles()
+      if (response.success && response.data) {
+        setExportCycles(response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching performance cycles:', error)
+    } finally {
+      setExportCyclesLoading(false)
+    }
+  }
+
+  /**
    * Fetch employee performance assessments
    */
   const fetchAssessments = async (search = '') => {
@@ -464,7 +497,11 @@ export default function Performance() {
       goalTitle: assessment.goalTitle || '',
       kpiTarget: assessment.kpiTarget || '',
       dueDate: assessment.dueDate ? assessment.dueDate.split('T')[0] : '',
-      priority: assessment.priority || 'Medium'
+      priority: assessment.priority || 'Medium',
+      departmentId: assessment.departmentId || assessment.employee?.departmentId || assessment.employee?.department_id || '',
+      department: assessment.departmentName || assessment.employee?.departmentName || assessment.employee?.department || '',
+      managerId: assessment.managerId || assessment.employee?.managerId || assessment.employee?.manager_id || '',
+      managerName: assessment.managerName || assessment.employee?.managerName || 'No manager assigned'
     })
 
     setModalOpen(true)
@@ -480,20 +517,26 @@ export default function Performance() {
    */
   const handleApproveAssessment = async () => {
     if (!viewingAssessment?.id) return
-    
+
     try {
       setApprovalLoading(true)
       const response = await performanceAssessmentAPI.approveAssessment(viewingAssessment.id)
-      
+
       if (response.success) {
         // Update the viewing assessment with the approved status
         setViewingAssessment(response.data)
-        
+
         // Update the assessments list
         setAssessments(prev => prev.map(a => a.id === response.data.id ? response.data : a))
-        
+
         // Show success message
         alert('Assessment approved successfully')
+
+        // Auto-close the modal after approval
+        setTimeout(() => {
+          setViewModalOpen(false)
+          setViewingAssessment(null)
+        }, 500)
       } else {
         alert(response.message || 'Failed to approve assessment')
       }
@@ -760,26 +803,51 @@ export default function Performance() {
 
   /**
    * Handle employee selection and auto-populate department and manager
+   * Fetches manager details from API if manager_id is available
    */
-  const handleEmployeeSelect = (employeeId) => {
+  const handleEmployeeSelect = async (employeeId) => {
     const selected = employeeDropdownList.find(e => String(e.id) === String(employeeId))
     if (selected) {
-      const mId = selected.manager_id || selected.managerId || ''
-      const manager = mId ? employeeDropdownList.find(e => String(e.id) === String(mId)) : null;
-      const managerName = manager ? (manager.full_name || manager.fullName || manager.name) : 'N/A'
+      let deptName = selected.departmentName || selected.department || ''
+      let managerName = selected.managerName || ''
+      let managerId = selected.managerId || selected.manager_id || ''
+
+      // If employee search API does not return managerName:
+      // Call employee details API by employee id.
+      // Use response.managerName to fill Manager field.
+      if (!managerName) {
+        try {
+          const empDetails = await getEmployee(employeeId)
+          if (empDetails) {
+            deptName = empDetails.departmentName || empDetails.department || deptName
+            managerName = empDetails.managerName || ''
+            managerId = empDetails.managerId || empDetails.manager_id || managerId
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch employee details for ID ${employeeId}:`, error)
+        }
+      }
+
+      // Do not set manager as N/A unless managerName is actually empty/null.
+      // Remove any hardcoded fallback like: managerName || "N/A"
+      // Use fallback only: managerName || "No manager assigned"
+      const finalManagerName = managerName || "No manager assigned"
+
       setFormData(prev => ({
         ...prev,
         employeeIds: [employeeId],
-        departmentId: selected.department_id || selected.departmentId || '',
-        managerId: mId,
-        managerName: managerName,
-        reviewerName: managerName
+        departmentId: selected.departmentId || selected.department_id || '',
+        department: deptName,
+        managerId: managerId || '',
+        managerName: finalManagerName,
+        reviewerName: finalManagerName
       }))
     } else {
       setFormData(prev => ({
         ...prev,
-        employeeIds: [employeeId],
+        employeeIds: [],
         departmentId: '',
+        department: '',
         managerId: '',
         managerName: '',
         reviewerName: ''
@@ -823,6 +891,72 @@ export default function Performance() {
       startDate: start.toISOString().split('T')[0],
       endDate: end.toISOString().split('T')[0]
     }))
+  }
+
+  const handleExport = async () => {
+    try {
+      // Validate inputs
+      if (!exportFilters.employeeId) {
+        alert('Please select an employee.')
+        return
+      }
+
+      if (!exportFilters.exportType) {
+        alert('Please select an export type.')
+        return
+      }
+
+      const hasCycle = exportFilters.cycleId !== undefined && exportFilters.cycleId !== null && exportFilters.cycleId !== ''
+      const hasDateRange = exportFilters.startDate || exportFilters.endDate
+
+      if (hasCycle && hasDateRange) {
+        alert('Please select either performance cycle or custom date range, not both.')
+        return
+      }
+
+      if (!hasCycle && (!exportFilters.startDate || !exportFilters.endDate)) {
+        alert('Please select performance cycle or start and end date.')
+        return
+      }
+
+      setExportLoading(true)
+      const response = await performanceAssessmentAPI.exportPerformanceData(
+        {
+          employeeId: Number(exportFilters.employeeId),
+          cycleId: hasCycle ? Number(exportFilters.cycleId) : null,
+          startDate: !hasCycle ? exportFilters.startDate : null,
+          endDate: !hasCycle ? exportFilters.endDate : null,
+          departmentId: exportFilters.departmentId ? Number(exportFilters.departmentId) : null,
+        },
+        exportFilters.exportType
+      )
+
+      // Handle file download
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      const filename = `employee-performance-report.${exportFilters.exportType}`
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      setExportModalOpen(false)
+      setExportFilters({
+        cycleId: '',
+        startDate: '',
+        endDate: '',
+        departmentId: '',
+        employeeId: '',
+        exportType: 'pdf'
+      })
+    } catch (error) {
+      console.error('Error exporting data:', error)
+      alert(error.response?.data?.message || 'Error exporting data.')
+    } finally {
+      setExportLoading(false)
+    }
   }
 
   const handleExportPDF = async () => {
@@ -886,7 +1020,7 @@ export default function Performance() {
           assessment.employee?.empId || assessment.employee?.empCode || 'N/A',
           assessment.employee?.department || assessment.department || 'N/A',
           assessment.performanceCycle?.cycleName || assessment.performanceCycle || 'N/A',
-          assessment.managerName || assessment.reviewerName || 'N/A',
+          assessment.managerName || assessment.reviewerName || 'No manager assigned',
           assessment.status || 'N/A',
           ratingVal,
           assessment.assessmentDate ? new Date(assessment.assessmentDate).toLocaleDateString() : 'N/A',
@@ -1081,34 +1215,38 @@ export default function Performance() {
       key: 'employeeProgress',
       label: 'Employee Progress',
       render: (_, row) => {
-        const rawProgress = row.employeeProgress || '0'
-        // Extract lower bound number
-        const match = rawProgress.match(/\d+/)
-        const numericProgress = match ? parseInt(match[0], 10) : 0
-        const percentage = Math.min(100, Math.max(0, numericProgress))
+        const rawProgress = row.employeeProgress || '0%'
 
-        let barColor = '#3B82F6' // blue-500
-        if (percentage >= 100) barColor = '#10B981' // emerald-500
-        else if (percentage <= 0) barColor = '#CBD5E1' // slate-300
+        // Get all numbers from text like "50 to 80%"
+        const numbers = String(rawProgress).match(/\d+/g)?.map(Number) || [0]
 
-        const displayLabel = rawProgress === '0' ? '0%' : (rawProgress.includes('%') ? rawProgress : `${rawProgress}%`)
+        // Use highest value for progress bar width
+        const percentage = Math.min(100, Math.max(0, Math.max(...numbers)))
+
+        let barColor = '#EF4444' // red
+        if (percentage >= 80) barColor = '#10B981' // green
+        else if (percentage >= 50) barColor = '#F59E0B' // orange
+        else if (percentage >= 1) barColor = '#3B82F6' // blue
+
+        const displayLabel = String(rawProgress).includes('%')
+          ? rawProgress
+          : `${rawProgress}%`
 
         return (
-          <div className="flex flex-col gap-2 w-full min-w-[120px]">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex-1">
-                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                  <div
-                    className="h-full transition-all duration-500 ease-out rounded-full"
-                    style={{
-                      width: `${percentage}%`,
-                      backgroundColor: barColor
-                    }}
-                  />
-                </div>
-              </div>
-              <span className="text-xs font-bold text-slate-700 w-16 text-right tabular-nums">{displayLabel}</span>
+          <div className="flex items-center gap-3 w-full min-w-[180px]">
+            <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="absolute left-0 top-0 h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${percentage}%`,
+                  backgroundColor: barColor,
+                }}
+              />
             </div>
+
+            <span className="text-xs font-bold text-slate-700 min-w-[70px] text-right">
+              {displayLabel}
+            </span>
           </div>
         )
       }
@@ -1662,12 +1800,7 @@ export default function Performance() {
                 label="Department"
                 name="department"
                 type="text"
-                value={(() => {
-                  const empId = formData.employeeIds?.[0]
-                  if (!empId) return ''
-                  const emp = employeeDropdownList.find(e => String(e.id) === String(empId))
-                  return emp?.department || 'N/A'
-                })()}
+                value={formData.department || ''}
                 readOnly
                 placeholder="Auto-filled department"
                 inputClassName="h-10 rounded-lg border-slate-300 bg-slate-50 text-slate-500 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
@@ -2092,35 +2225,35 @@ export default function Performance() {
               <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
                 {(viewingAssessment.competencyRatings || []).length > 0 ? (
                   viewingAssessment.competencyRatings.map((cr, idx) => {
-                      const competencyLabel =
-                        cr.competency?.competencyName ||
-                        cr.competency?.name ||
-                        cr.competencyName ||
-                        'Unknown'
+                    const competencyLabel =
+                      cr.competency?.competencyName ||
+                      cr.competency?.name ||
+                      cr.competencyName ||
+                      'Unknown'
 
-                      return (
-                        <div key={idx} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                          <div
-                            className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 truncate"
-                            title={competencyLabel}
-                          >
-                            {competencyLabel}
-                          </div>
-
-                          <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <HiStar
-                                key={star}
-                                className={`h-4 w-4 ${star <= (Number(cr.rating) || 0)
-                                    ? 'text-amber-400'
-                                    : 'text-slate-200'
-                                  }`}
-                              />
-                            ))}
-                          </div>
+                    return (
+                      <div key={idx} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                        <div
+                          className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 truncate"
+                          title={competencyLabel}
+                        >
+                          {competencyLabel}
                         </div>
-                      )
-                    }) 
+
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <HiStar
+                              key={star}
+                              className={`h-4 w-4 ${star <= (Number(cr.rating) || 0)
+                                ? 'text-amber-400'
+                                : 'text-slate-200'
+                                }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })
 
                 ) : (
                   <div className="col-span-full text-xs text-slate-400 italic">No competencies rated.</div>
@@ -2152,7 +2285,54 @@ export default function Performance() {
               </div>
             </div>
 
-            {/* 4. Employee Progress Update (Highlighted) */}
+            {/* 4. Goal & KPI Details */}
+            {(viewingAssessment.goalTitle || viewingAssessment.kpiTarget || viewingAssessment.dueDate || viewingAssessment.priority) && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/30 shadow-sm overflow-hidden">
+                <div className="bg-blue-50/60 px-4 py-3 border-b border-blue-200">
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-blue-700 flex items-center gap-2">
+                    <HiBriefcase className="h-4 w-4" />
+                    Goal & KPI Details
+                  </h3>
+                </div>
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Goal Title</div>
+                    <div className="text-sm font-semibold text-slate-900 bg-white p-3 rounded-lg border border-blue-100">
+                      {viewingAssessment.goalTitle || <span className="text-slate-400 italic">No goal title provided.</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Priority</div>
+                    <div className="text-sm font-semibold text-slate-900 bg-white p-3 rounded-lg border border-blue-100">
+                      {viewingAssessment.priority ? (
+                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${viewingAssessment.priority === 'High' ? 'bg-red-100 text-red-800' :
+                          viewingAssessment.priority === 'Medium' ? 'bg-amber-100 text-amber-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                          {viewingAssessment.priority}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 italic">No priority set.</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">KPI Target</div>
+                    <div className="text-sm font-semibold text-slate-900 bg-white p-3 rounded-lg border border-blue-100">
+                      {viewingAssessment.kpiTarget || <span className="text-slate-400 italic">No KPI target provided.</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Goal Due Date</div>
+                    <div className="text-sm font-semibold text-slate-900 bg-white p-3 rounded-lg border border-blue-100">
+                      {viewingAssessment.dueDate ? new Date(viewingAssessment.dueDate).toLocaleDateString() : <span className="text-slate-400 italic">No due date set.</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. Employee Progress Update (Highlighted) */}
             <div className="rounded-xl border-2 border-[#0F766E] bg-emerald-50/30 shadow-md overflow-hidden relative">
               <div className="absolute top-0 left-0 w-1.5 h-full bg-[#0F766E]" />
               <div className="bg-[#0F766E]/5 px-4 py-3 border-b border-[#0F766E]/10 flex justify-between items-center ml-1.5">
@@ -2176,9 +2356,9 @@ export default function Performance() {
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider shadow-sm border
                       ${viewingAssessment.employeeStatus === 'Approved' ? 'bg-green-100 text-green-800 border-green-200' :
                         viewingAssessment.employeeStatus === 'Completed' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
-                        viewingAssessment.employeeStatus === 'In Progress' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                          viewingAssessment.employeeStatus === 'On Hold' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                            'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                          viewingAssessment.employeeStatus === 'In Progress' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                            viewingAssessment.employeeStatus === 'On Hold' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                              'bg-slate-100 text-slate-700 border-slate-200'}`}>
                       <span className={`h-2 w-2 rounded-full ${viewingAssessment.employeeStatus === 'Approved' ? 'bg-green-500' : viewingAssessment.employeeStatus === 'Completed' ? 'bg-emerald-500' : viewingAssessment.employeeStatus === 'In Progress' ? 'bg-blue-500' : viewingAssessment.employeeStatus === 'On Hold' ? 'bg-orange-500' : 'bg-slate-400'}`} />
                       {viewingAssessment.employeeStatus || 'Not Started'}
                     </span>
@@ -2244,7 +2424,7 @@ export default function Performance() {
             )}
           </div>
           <div className="flex gap-3">
-            {!viewingAssessment?.approvedBy && (
+            {!viewingAssessment?.approvedBy ? (
               <button
                 type="button"
                 onClick={handleApproveAssessment}
@@ -2262,6 +2442,14 @@ export default function Performance() {
                   </>
                 )}
               </button>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="h-10 inline-flex items-center justify-center gap-2 rounded-md bg-green-600 px-6 text-sm font-semibold text-white cursor-not-allowed opacity-75 shadow-sm"
+              >
+                ✓ Approved
+              </button>
             )}
             <button
               type="button"
@@ -2277,24 +2465,90 @@ export default function Performance() {
       {/* ── Export Performance Data Modal ───────────────────────────────── */}
       <Modal
         isOpen={exportModalOpen}
-        onClose={() => setExportModalOpen(false)}
+        onClose={() => {
+          setExportModalOpen(false)
+          setExportFilters({
+            cycleId: '',
+            startDate: '',
+            endDate: '',
+            departmentId: '',
+            employeeId: '',
+            exportType: 'pdf'
+          })
+        }}
         size="md"
         header={
           <div className="flex flex-col gap-1">
             <h2 className="text-lg font-bold text-slate-900">Export Performance Data</h2>
-            <p className="text-xs font-medium text-slate-500">Filter and export employee performance data as PDF.</p>
+            <p className="text-xs font-medium text-slate-500">Filter and export employee performance data in CSV or PDF format.</p>
           </div>
         }
       >
         <div className="pt-2 space-y-4">
+          {/* Employee Dropdown */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-800">
+              Employee <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={exportFilters.employeeId}
+              onChange={(e) => {
+                const empId = e.target.value;
+                const emp = employeeDropdownList.find(x => String(x.id) === String(empId));
+                setExportFilters(prev => ({
+                  ...prev,
+                  employeeId: empId,
+                  departmentId: emp ? (emp.department_id || emp.departmentId || '') : ''
+                }));
+              }}
+              className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20"
+            >
+              <option value="">-- Select Employee --</option>
+              {employeeDropdownList.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.full_name || emp.fullName || emp.name} ({emp.emp_id || emp.empId})</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Performance Cycle Dropdown */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-800">Select Performance Cycle</label>
+            <select
+              value={exportFilters.cycleId}
+              onChange={(e) => setExportFilters(prev => ({
+                ...prev,
+                cycleId: e.target.value,
+                startDate: '',
+                endDate: ''
+              }))}
+              disabled={exportFilters.startDate !== '' || exportFilters.endDate !== ''}
+              className={`h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 ${(exportFilters.startDate !== '' || exportFilters.endDate !== '') ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
+            >
+              <option value="">-- Select Cycle --</option>
+              {exportCyclesLoading ? (
+                <option disabled>Loading cycles...</option>
+              ) : (
+                exportCycles.map(cycle => (
+                  <option key={cycle.id} value={cycle.id}>{cycle.cycleName}</option>
+                ))
+              )}
+            </select>
+          </div>
+
+          {/* Custom Date Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-800">Start Date</label>
               <input
                 type="date"
                 value={exportFilters.startDate}
-                onChange={(e) => setExportFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20"
+                onChange={(e) => setExportFilters(prev => ({
+                  ...prev,
+                  startDate: e.target.value,
+                  cycleId: ''
+                }))}
+                disabled={exportFilters.cycleId !== ''}
+                className={`h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 ${exportFilters.cycleId !== '' ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
               />
             </div>
             <div>
@@ -2302,49 +2556,64 @@ export default function Performance() {
               <input
                 type="date"
                 value={exportFilters.endDate}
-                onChange={(e) => setExportFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20"
+                onChange={(e) => setExportFilters(prev => ({
+                  ...prev,
+                  endDate: e.target.value,
+                  cycleId: ''
+                }))}
+                disabled={exportFilters.cycleId !== ''}
+                className={`h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 ${exportFilters.cycleId !== '' ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
               />
             </div>
           </div>
 
+          {/* Export Type */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-800">Quick Filters</label>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => applyQuickFilter(7)} className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">Last 7 Days</button>
-              <button type="button" onClick={() => applyQuickFilter(90)} className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">Last 3 Months</button>
-              <button type="button" onClick={() => applyQuickFilter(180)} className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">Last 6 Months</button>
-              <button type="button" onClick={() => applyQuickFilter(365)} className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">Last 12 Months</button>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-800">Department</label>
+            <label className="mb-1 block text-sm font-medium text-slate-800">Export Type</label>
             <select
-              value={exportFilters.department}
-              onChange={(e) => setExportFilters(prev => ({ ...prev, department: e.target.value }))}
+              value={exportFilters.exportType}
+              onChange={(e) => setExportFilters(prev => ({ ...prev, exportType: e.target.value }))}
               className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20"
             >
-              {['All Departments', 'HR', 'IT', 'Finance', 'Sales', 'Operations', 'Engineering', 'Marketing'].map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
+              <option value="pdf">PDF</option>
+              <option value="csv">CSV</option>
             </select>
           </div>
 
           <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
             <button
               type="button"
-              onClick={() => setExportModalOpen(false)}
+              onClick={() => {
+                setExportModalOpen(false)
+                setExportFilters({
+                  cycleId: '',
+                  startDate: '',
+                  endDate: '',
+                  departmentId: '',
+                  employeeId: '',
+                  exportType: 'pdf'
+                })
+              }}
               className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="button"
-              onClick={handleExportPDF}
-              className="h-10 inline-flex items-center justify-center gap-2 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors"
+              onClick={handleExport}
+              disabled={exportLoading}
+              className="h-10 inline-flex items-center justify-center gap-2 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
             >
-              <HiDocumentText className="h-4 w-4" /> Export PDF
+              {exportLoading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <HiDocumentText className="h-4 w-4" /> Export
+                </>
+              )}
             </button>
           </div>
         </div>

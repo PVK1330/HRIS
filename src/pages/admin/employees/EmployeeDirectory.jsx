@@ -150,6 +150,8 @@ function mapEmployeeFull(e) {
     isCurrentlyWorking: e.is_currently_working || false,
     username: e.username || '',
     profileImageUrl: e.profile_image_url || '',
+    managerName: e.managerName || '',
+    managerId: e.managerId || null,
     createdAt: e.createdAt || '',
     updatedAt: e.updatedAt || '',
   }
@@ -2242,11 +2244,12 @@ export default function EmployeeDirectory() {
               {viewActiveTab === 'basic' && (
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
                   {[
-                    ['Employee ID', formatEmpIdDisplay(selectedEmployee.empId)],
-                    ['Full Name', selectedEmployee.name],
-                    ['Work Email', selectedEmployee.email],
+                    ['Employee Name', selectedEmployee.name],
+                    ['Employee Code', formatEmpIdDisplay(selectedEmployee.empId)],
+                    ['Email', selectedEmployee.email],
                     ['Phone', formatPhoneDisplay(selectedEmployee.phone)],
                     ['Department', selectedEmployee.department],
+                    ['Department Manager Name', selectedEmployee.managerName || 'No manager assigned'],
                     ['Designation', selectedEmployee.jobTitle],
                     ['Join Date', formatJoinDateDisplay(selectedEmployee.joinDate)],
                     ['Portal Role', selectedEmployee.rbacRoleName || selectedEmployee.portalRole],

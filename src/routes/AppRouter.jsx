@@ -28,7 +28,7 @@ import Onboarding from "../pages/admin/hr/Onboarding.jsx";
 import ExitManagement from "../pages/admin/hr/ExitManagement.jsx";
 import LettersTemplates from "../pages/admin/documents/LettersTemplates.jsx";
 import TemplateGenerator from "../pages/admin/documents/TemplateGenerator.jsx";
-import AdminSettings from "../pages/admin/settings/Settings.jsx";
+import AdminSettings from "../pages/admin/AdminSettings.jsx";
 import RolesPermissions from "../pages/admin/settings/RolesPermissions.jsx";
 import DepartmentManagement from "../pages/admin/settings/Departments.jsx";
 import DesignationsManagement from "../pages/admin/settings/Designations.jsx";
