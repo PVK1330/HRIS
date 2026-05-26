@@ -45,6 +45,8 @@ import {
   listExitDocuments,
   generateExitDocument,
   listTerminationTypesDropdown,
+  approveResignationWithdrawal,
+  rejectResignationWithdrawal,
 } from '../../../services/exitManagementService.js'
 
 const STATUS_COLORS = {
@@ -253,6 +255,58 @@ export default function ExitManagement() {
       fetchStats()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to reject')
+    }
+  }
+
+  const handleApproveWithdrawal = async () => {
+    if (!exitDetails) return
+    const result = await Swal.fire({
+      title: 'Approve Withdrawal Request?',
+      text: 'The employee will return to Active status, and this exit request will be canceled.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#0F766E',
+      confirmButtonText: 'Yes, approve withdrawal',
+    })
+    if (!result.isConfirmed) return
+    setSubmitting(true)
+    try {
+      await approveResignationWithdrawal(exitDetails.id)
+      toast.success('Resignation withdrawal approved. Employee is now active.')
+      setReviewModalOpen(false)
+      fetchRecords()
+      fetchStats()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve withdrawal')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleRejectWithdrawal = async () => {
+    if (!exitDetails) return
+    const { value: reason } = await Swal.fire({
+      title: 'Reject Withdrawal Request?',
+      input: 'textarea',
+      inputLabel: 'Reason for rejecting withdrawal',
+      inputPlaceholder: 'Provide a reason...',
+      inputValidator: (v) => (!v?.trim() ? 'Reason is required' : undefined),
+      showCancelButton: true,
+      confirmButtonColor: '#C8102E',
+      confirmButtonText: 'Reject request',
+    })
+    if (!reason) return
+    setSubmitting(true)
+    try {
+      await rejectResignationWithdrawal(exitDetails.id, { rejection_reason: reason })
+      toast.success('Resignation withdrawal rejected')
+      loadExitDetails(exitDetails.id)
+      fetchRecords()
+      fetchStats()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject withdrawal')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -614,6 +668,39 @@ export default function ExitManagement() {
               <Spinner />
             ) : activeTab === 'Summary' ? (
               <div className="space-y-6 p-1">
+                {/* Resignation Withdrawal Request Panel */}
+                {exitDetails?.is_withdrawal_requested && (
+                  <div className="border border-teal-200 bg-teal-50/50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div className="flex items-start gap-2">
+                      <HiClock className="h-5 w-5 text-teal-600 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-xs font-black text-teal-900">Resignation Withdrawal Request Pending</h4>
+                        {exitDetails.withdrawal_reason && (
+                          <div className="mt-1 text-[11px] italic text-teal-800 bg-white/60 p-2 border border-teal-100 font-medium">
+                            &ldquo;{exitDetails.withdrawal_reason}&rdquo;
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={handleApproveWithdrawal}
+                        disabled={submitting}
+                        className="h-8 px-4 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all disabled:opacity-50"
+                      >
+                        Approve Withdrawal
+                      </button>
+                      <button
+                        onClick={handleRejectWithdrawal}
+                        disabled={submitting}
+                        className="h-8 px-4 rounded-none bg-red-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-700 transition-all disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Summary grid */}
                 <div className="grid gap-8 lg:grid-cols-2">
                   <div>
@@ -667,13 +754,33 @@ export default function ExitManagement() {
                       </>
                     )}
                     {exitDetails.status === 'Approved' && (
-                      <button onClick={() => handleStatusUpdate('In Progress')} className="h-10 px-6 rounded-none bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all">
-                        Start Offboarding
+                      <button onClick={() => handleStatusUpdate('clearance')} className="h-10 px-6 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all">
+                        Start Offboarding (Move to Clearance)
                       </button>
                     )}
                     {exitDetails.status === 'In Progress' && (
+                      <>
+                        <button onClick={() => handleStatusUpdate('clearance')} className="h-10 px-6 rounded-none bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all">
+                          Move to Clearance
+                        </button>
+                        <button onClick={() => handleStatusUpdate('Completed')} className="h-10 px-6 rounded-none bg-emerald-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-700 transition-all">
+                          Mark Completed
+                        </button>
+                      </>
+                    )}
+                    {exitDetails.status === 'clearance' && (
+                      <button onClick={() => handleStatusUpdate('interview')} className="h-10 px-6 rounded-none bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all">
+                        Move to Exit Interview
+                      </button>
+                    )}
+                    {exitDetails.status === 'interview' && (
+                      <button onClick={() => handleStatusUpdate('settlement')} className="h-10 px-6 rounded-none bg-indigo-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-indigo-700 transition-all">
+                        Move to Settlement
+                      </button>
+                    )}
+                    {exitDetails.status === 'settlement' && (
                       <button onClick={() => handleStatusUpdate('Completed')} className="h-10 px-6 rounded-none bg-emerald-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-700 transition-all">
-                        Mark Completed
+                        Mark Process Completed
                       </button>
                     )}
                   </div>

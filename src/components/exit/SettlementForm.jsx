@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import Swal from 'sweetalert2'
+import { HiArrowDownTray } from 'react-icons/hi2'
 import { Button } from '../ui/Button.jsx'
 import { Input } from '../ui/Input.jsx'
 import { processSettlement } from '../../services/exitManagementService.js'
@@ -91,6 +92,23 @@ export default function SettlementForm({ exitRequestId, existingSettlement, onSu
           <div>
             <span className="text-xs text-gray-500">Notes</span>
             <p className="text-sm text-gray-700 mt-1">{existingSettlement.notes}</p>
+          </div>
+        )}
+        {existingSettlement.file_url && (
+          <div className="border-t border-gray-100 pt-3 flex items-center justify-between">
+            <div>
+              <span className="text-xs text-gray-500">Settlement Slip</span>
+              <p className="text-sm font-semibold text-gray-800">Full & Final Slip</p>
+            </div>
+            <a
+              href={existingSettlement.file_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#0F766E] hover:bg-[#0D645D] transition-colors rounded-none"
+            >
+              <HiArrowDownTray className="h-4 w-4" />
+              Download F&F PDF Slip
+            </a>
           </div>
         )}
       </div>

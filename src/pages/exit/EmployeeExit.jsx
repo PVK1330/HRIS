@@ -17,6 +17,8 @@ import ClearanceChecklist from '../../components/exit/ClearanceChecklist.jsx'
 import ExitInterviewForm from '../../components/exit/ExitInterviewForm.jsx'
 import ExitDocuments from '../../components/exit/ExitDocuments.jsx'
 import ResignationModal from '../../components/exit/ResignationModal.jsx'
+import WithdrawalModal from '../../components/exit/WithdrawalModal.jsx'
+import { useExitSocket } from '../../hooks/useExitSocket.js'
 import {
   listExitRecords,
   getExitRecord,
@@ -70,9 +72,20 @@ export default function EmployeeExit() {
   const [interview, setInterview] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showResignModal, setShowResignModal] = useState(false)
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false)
   const [personalChecklist, setPersonalChecklist] = useState(() => {
     const saved = localStorage.getItem('exit_personal_checklist')
     return saved ? JSON.parse(saved) : {}
+  })
+
+  // Real-time optimistic Socket.io room subscription
+  useExitSocket(record?.id, {
+    onWorkflowUpdated: () => {
+      fetchMyExit()
+    },
+    onTaskUpdated: () => {
+      fetchMyExit()
+    }
   })
 
   const fetchMyExit = useCallback(async () => {
@@ -180,9 +193,18 @@ export default function EmployeeExit() {
   return (
     <div className="p-6 space-y-6 font-[Poppins]">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black tracking-tight text-slate-900">My Exit</h1>
-        <p className="text-sm text-slate-500 mt-1">Track your exit progress and complete required tasks</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">My Exit</h1>
+          <p className="text-sm text-slate-500 mt-1">Track your exit progress and complete required tasks</p>
+        </div>
+        {record.exit_type === 'Resignation' && ['Pending Approval', 'Approved'].includes(record.status) && !record.is_withdrawal_requested && (
+          <Button
+            label="Withdraw Resignation"
+            variant="outline"
+            onClick={() => setIsWithdrawModalOpen(true)}
+          />
+        )}
       </div>
 
       {/* Exit Journey Visualization */}
@@ -192,6 +214,26 @@ export default function EmployeeExit() {
           exitType={(record.exit_type || '').toLowerCase()}
         />
       </div>
+
+      {/* Resignation Withdrawal Request Pending Notice */}
+      {record.is_withdrawal_requested && (
+        <div className="bg-teal-50/50 border border-teal-200 p-5 rounded-none">
+          <div className="flex items-start gap-3">
+            <HiClock className="h-5 w-5 text-teal-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-teal-900">Resignation Withdrawal Request Pending</p>
+              <p className="text-xs text-teal-700 mt-1 leading-relaxed">
+                Your request to retract this resignation is currently awaiting review by HR.
+              </p>
+              {record.withdrawal_reason && (
+                <p className="mt-2 text-xs italic text-teal-800 bg-white/60 p-2.5 border border-teal-100 font-medium">
+                  &ldquo;{record.withdrawal_reason}&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status Summary Card */}
       <div className="bg-white border border-slate-200 rounded-none p-6">
@@ -344,6 +386,17 @@ export default function EmployeeExit() {
           </a>
         </div>
       </div>
+    
+      {/* Resignation Withdrawal Request Modal */}
+      <WithdrawalModal
+        isOpen={isWithdrawModalOpen}
+        onClose={() => setIsWithdrawModalOpen(false)}
+        onSuccess={() => {
+          setIsWithdrawModalOpen(false)
+          fetchMyExit()
+        }}
+        exitRequestId={record.id}
+      />
     </div>
   )
 }

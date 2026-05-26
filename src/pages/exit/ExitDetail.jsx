@@ -35,7 +35,11 @@ import {
   updateExitStatus,
   updateClearanceTask,
   getAuditLog,
+  approveResignationWithdrawal,
+  rejectResignationWithdrawal
 } from '../../services/exitManagementService.js'
+import { useExitSocket } from '../../hooks/useExitSocket.js'
+import WithdrawalModal from '../../components/exit/WithdrawalModal.jsx'
 
 const STATUS_COLOR = {
   'Pending Approval': 'orange',
@@ -59,7 +63,7 @@ const STATUS_RANK = {
   Completed: 5,
 }
 
-const HR_ROLES = ['admin', 'hr_admin']
+const HR_ROLES = ['admin', 'hr_admin', 'hr_executive']
 
 const DETAIL_TABS = [
   { key: 'submitted', label: 'Submitted', icon: HiDocumentText, rankIndex: 0 },
@@ -97,6 +101,7 @@ export default function ExitDetail() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(null)
   const [activeTab, setActiveTab] = useState('submitted')
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false)
 
   const isHR = HR_ROLES.includes(user?.role)
   const rank = STATUS_RANK[record?.status] ?? 0
@@ -124,6 +129,23 @@ export default function ExitDetail() {
       setAuditLogs(logs || [])
     } catch { /* silent */ }
   }, [id])
+
+  // Real-time optimistic Socket.io room subscription
+  useExitSocket(id, {
+    onWorkflowUpdated: () => {
+      fetchRecord()
+      fetchAudit()
+    },
+    onTaskUpdated: () => {
+      fetchRecord()
+      fetchAudit()
+    },
+    onSlaBreached: (data) => {
+      toast.error(`ALERT: Clearance SLA breached for task "${data.taskName}"!`, { duration: 6000 })
+      fetchRecord()
+      fetchAudit()
+    }
+  })
 
   useEffect(() => {
     fetchRecord()
@@ -184,6 +206,54 @@ export default function ExitDetail() {
       fetchAudit()
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to reject')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleApproveWithdrawal = async () => {
+    const result = await Swal.fire({
+      title: 'Approve Withdrawal Request?',
+      text: 'The employee will return to Active status, and this exit request will be canceled.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#0F766E',
+      confirmButtonText: 'Yes, approve withdrawal',
+    })
+    if (!result.isConfirmed) return
+    try {
+      setActionLoading('approve_withdrawal')
+      await approveResignationWithdrawal(id)
+      toast.success('Resignation withdrawal approved. Employee is now active.')
+      fetchRecord()
+      fetchAudit()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to approve withdrawal')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleRejectWithdrawal = async () => {
+    const { value: reason } = await Swal.fire({
+      title: 'Reject Withdrawal Request?',
+      input: 'textarea',
+      inputLabel: 'Reason for rejecting withdrawal',
+      inputPlaceholder: 'Provide a reason...',
+      inputValidator: (v) => (!v?.trim() ? 'Reason is required' : undefined),
+      showCancelButton: true,
+      confirmButtonColor: '#C8102E',
+      confirmButtonText: 'Reject request',
+    })
+    if (!reason) return
+    try {
+      setActionLoading('reject_withdrawal')
+      await rejectResignationWithdrawal(id, { rejection_reason: reason })
+      toast.success('Resignation withdrawal rejected')
+      fetchRecord()
+      fetchAudit()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to reject withdrawal')
     } finally {
       setActionLoading(null)
     }
@@ -274,6 +344,16 @@ export default function ExitDetail() {
           <div className="flex items-center gap-2 shrink-0">
             <Badge label={record.exit_type} color={record.exit_type === 'Resignation' ? 'purple' : 'red'} />
             <Badge label={record.status} color={STATUS_COLOR[record.status] || 'gray'} />
+            
+            {/* Ex-Employee Retraction Trigger */}
+            {!isHR && record.exit_type === 'Resignation' && ['Pending Approval', 'Approved'].includes(record.status) && !record.is_withdrawal_requested && (
+              <Button
+                label="Request Withdrawal"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsWithdrawModalOpen(true)}
+              />
+            )}
           </div>
           {days != null && (
             <div className={`text-center shrink-0 px-3 py-1.5 border rounded-none ${days < 7 ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50'}`}>
@@ -284,7 +364,50 @@ export default function ExitDetail() {
         </div>
       </div>
 
-     
+      {/* Resignation Withdrawal Request Panel */}
+      {record.is_withdrawal_requested && (
+        <div className="mx-6 border border-teal-200 bg-teal-50/50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <HiClock className="h-6 w-6 text-teal-600 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-black text-teal-900">Resignation Withdrawal Request Pending</h4>
+              <p className="text-xs text-teal-700 mt-1 leading-relaxed">
+                Submitted on {fmtDateTime(record.withdrawal_requested_at)}
+              </p>
+              {record.withdrawal_reason && (
+                <div className="mt-2 text-xs italic text-teal-800 bg-white/60 p-2.5 border border-teal-100 font-medium">
+                  &ldquo;{record.withdrawal_reason}&rdquo;
+                </div>
+              )}
+            </div>
+          </div>
+          {isHR ? (
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                label="Approve Withdrawal"
+                variant="Approve"
+                onClick={handleApproveWithdrawal}
+                loading={actionLoading === 'approve_withdrawal'}
+                disabled={!!actionLoading}
+              />
+              <Button
+                label="Reject"
+                variant="danger"
+                onClick={handleRejectWithdrawal}
+                loading={actionLoading === 'reject_withdrawal'}
+                disabled={!!actionLoading}
+              />
+            </div>
+          ) : (
+            <div className="shrink-0">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-teal-800 bg-teal-100 border border-teal-200">
+                Awaiting HR Review
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabbed Content Section */}
       <div className="mx-6 overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
         {/* Tab Headers */}
@@ -392,7 +515,7 @@ export default function ExitDetail() {
                     </div>
                   </div>
 
-                  {record.status === 'Approved' && isHR && (
+                  {(record.status === 'Approved' || record.status === 'In Progress') && isHR && (
                     <div className="flex items-center gap-3">
                       <Button label="Move to Clearance" variant="secondary" icon={HiArrowPath} onClick={() => handleStatusChange('clearance')} loading={actionLoading === 'status'} />
                     </div>
@@ -431,7 +554,7 @@ export default function ExitDetail() {
                     </div>
                   )}
 
-                  {record.status === 'clearance' && isHR && (
+                  {(record.status === 'clearance' || record.status === 'In Progress') && isHR && (
                     <div className="flex items-center gap-3 pt-2">
                       <Button label="Move to Interview" variant="secondary" icon={HiArrowPath} onClick={() => handleStatusChange('interview')} loading={actionLoading === 'status'} />
                     </div>
@@ -547,6 +670,18 @@ export default function ExitDetail() {
 
         </div>
       </div>
+      
+      {/* Resignation Withdrawal Request Modal */}
+      <WithdrawalModal
+        isOpen={isWithdrawModalOpen}
+        onClose={() => setIsWithdrawModalOpen(false)}
+        onSuccess={() => {
+          setIsWithdrawModalOpen(false)
+          fetchRecord()
+          fetchAudit()
+        }}
+        exitRequestId={record.id}
+      />
     </div>
   )
 }
