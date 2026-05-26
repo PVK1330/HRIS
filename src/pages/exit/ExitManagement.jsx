@@ -21,17 +21,29 @@ import {
   HiCheck,
 } from 'react-icons/hi2'
 import toast from 'react-hot-toast'
+import Swal from 'sweetalert2'
 import { Badge } from '../../components/ui/Badge.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
+import { Button } from '../../components/ui/Button.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import ResignationModal from '../../components/exit/ResignationModal.jsx'
 import TerminationModal from '../../components/exit/TerminationModal.jsx'
+import ClearanceChecklist from '../../components/exit/ClearanceChecklist.jsx'
+import ExitInterviewForm from '../../components/exit/ExitInterviewForm.jsx'
+import SettlementForm from '../../components/exit/SettlementForm.jsx'
+import ExitDocuments from '../../components/exit/ExitDocuments.jsx'
 import {
   listExitRecords,
   getExitRecordStats,
   getExitRecord,
   getAuditLog,
   listTerminationTypesDropdown,
+  approveResignation,
+  rejectResignation,
+  updateExitStatus,
+  updateClearanceTask,
+  approveResignationWithdrawal,
+  rejectResignationWithdrawal,
 } from '../../services/exitManagementService.js'
 import { listEmployeesDropdown } from '../../services/employeeService.js'
 
@@ -175,6 +187,132 @@ export default function ExitManagement() {
   const handleSuccess = () => {
     fetchRecords(pagination.page)
     fetchStats()
+  }
+
+  const refreshViewRecord = async (exitId) => {
+    try {
+      const full = await getExitRecord(exitId)
+      setViewRecord(full)
+      try {
+        const logs = await getAuditLog(exitId)
+        setViewAuditLogs(logs || [])
+      } catch { /* silent */ }
+    } catch { /* silent */ }
+  }
+
+  const handleModalActionSuccess = () => {
+    if (viewRecord) {
+      refreshViewRecord(viewRecord.id)
+    }
+    handleSuccess()
+  }
+
+  const handleApprove = async () => {
+    if (!viewRecord) return
+    const result = await Swal.fire({
+      title: 'Approve Resignation?',
+      text: 'The employee will move to notice period and clearance tasks will be seeded.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#0F766E',
+      confirmButtonText: 'Yes, approve',
+    })
+    if (!result.isConfirmed) return
+    try {
+      await approveResignation(viewRecord.id)
+      toast.success('Resignation approved successfully')
+      handleModalActionSuccess()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve resignation')
+    }
+  }
+
+  const handleReject = async () => {
+    if (!viewRecord) return
+    const { value: reason } = await Swal.fire({
+      title: 'Reject Resignation',
+      input: 'textarea',
+      inputLabel: 'Rejection reason',
+      inputPlaceholder: 'Enter reason...',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      confirmButtonText: 'Reject',
+      inputValidator: (v) => (!v && 'Reason is required'),
+    })
+    if (!reason) return
+    try {
+      await rejectResignation(viewRecord.id, { rejection_reason: reason })
+      toast.success('Resignation rejected')
+      handleModalActionSuccess()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject resignation')
+    }
+  }
+
+  const handleApproveWithdrawal = async () => {
+    if (!viewRecord) return
+    const result = await Swal.fire({
+      title: 'Approve Withdrawal?',
+      text: 'The employee will return to Active status and the offboarding will be canceled.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#0F766E',
+      confirmButtonText: 'Yes, approve withdrawal',
+    })
+    if (!result.isConfirmed) return
+    try {
+      await approveResignationWithdrawal(viewRecord.id)
+      toast.success('Resignation withdrawal approved. Employee is now active.')
+      setViewModalOpen(false)
+      setViewRecord(null)
+      handleSuccess()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve withdrawal')
+    }
+  }
+
+  const handleRejectWithdrawal = async () => {
+    if (!viewRecord) return
+    const { value: reason } = await Swal.fire({
+      title: 'Reject Withdrawal Request?',
+      input: 'textarea',
+      inputLabel: 'Reason for rejecting withdrawal',
+      inputPlaceholder: 'Provide a reason...',
+      inputValidator: (v) => (!v?.trim() ? 'Reason is required' : undefined),
+      showCancelButton: true,
+      confirmButtonColor: '#C8102E',
+      confirmButtonText: 'Reject request',
+    })
+    if (!reason) return
+    try {
+      await rejectResignationWithdrawal(viewRecord.id, { rejection_reason: reason })
+      toast.success('Resignation withdrawal rejected')
+      handleModalActionSuccess()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject withdrawal')
+    }
+  }
+
+  const handleStatusChange = async (newStatus) => {
+    if (!viewRecord) return
+    try {
+      await updateExitStatus(viewRecord.id, { status: newStatus })
+      toast.success(`Status updated to ${newStatus}`)
+      handleModalActionSuccess()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update status')
+    }
+  }
+
+  const handleTaskToggle = async (taskId, payload) => {
+    if (!viewRecord) return
+    try {
+      await updateClearanceTask(viewRecord.id, taskId, payload)
+      toast.success('Clearance task updated')
+      handleModalActionSuccess()
+    } catch (err) {
+      toast.error('Failed to update task')
+    }
   }
 
   const handleView = async (rec) => {
@@ -511,6 +649,13 @@ export default function ExitManagement() {
             auditLogs={viewAuditLogs}
             activeTab={viewTab}
             setActiveTab={setViewTab}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onApproveWithdrawal={handleApproveWithdrawal}
+            onRejectWithdrawal={handleRejectWithdrawal}
+            onStatusChange={handleStatusChange}
+            onTaskToggle={handleTaskToggle}
+            onSuccess={handleModalActionSuccess}
           />
         ) : null}
       </Modal>
@@ -534,17 +679,30 @@ export default function ExitManagement() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  View Modal Content — 6-tab read-only summary                       */
+/*  View Modal Content — 6-tab dynamic summary                          */
 /* ------------------------------------------------------------------ */
 
-function ViewModalContent({ record, auditLogs, activeTab, setActiveTab }) {
+function ViewModalContent({
+  record,
+  auditLogs,
+  activeTab,
+  setActiveTab,
+  onApprove,
+  onReject,
+  onApproveWithdrawal,
+  onRejectWithdrawal,
+  onStatusChange,
+  onTaskToggle,
+  onSuccess,
+}) {
   const rank = VIEW_STATUS_RANK[record.status] ?? 0
   const days = daysUntil(record.last_working_day)
+  const navigate = useNavigate()
 
   return (
     <div className="space-y-4 mt-4">
       {/* Employee Header */}
-      <div className="flex items-center gap-4 p-4 border border-slate-200 rounded-none bg-slate-50/50">
+      <div className="flex items-center gap-4 p-4 border border-slate-200 rounded-none bg-slate-50/50 flex-wrap sm:flex-nowrap">
         <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#004CA5] to-[#0F766E] flex items-center justify-center text-white text-xl font-black shrink-0">
           {(record.employee_name || 'U')[0].toUpperCase()}
         </div>
@@ -555,11 +713,49 @@ function ViewModalContent({ record, auditLogs, activeTab, setActiveTab }) {
             {record.job_title && <span className="flex items-center gap-1"><HiMapPin className="h-3.5 w-3.5" /> {record.job_title}</span>}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <Badge label={record.exit_type} color={TYPE_COLOR[record.exit_type] || 'gray'} />
           <Badge label={record.status} color={STATUS_COLOR[record.status] || 'gray'} />
+          <button
+            type="button"
+            onClick={() => navigate(`/admin/exit-management/${record.id}`)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0c6b64] transition-colors"
+          >
+            Manage Detailed Page
+          </button>
         </div>
       </div>
+
+      {/* Resignation Withdrawal Request Panel */}
+      {record.is_withdrawal_requested && (
+        <div className="border border-teal-200 bg-teal-50/50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <HiClock className="h-5 w-5 text-teal-600 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-xs font-black text-teal-900">Resignation Withdrawal Request Pending</h4>
+              {record.withdrawal_reason && (
+                <div className="mt-1 text-[11px] italic text-teal-800 bg-white/60 p-2 border border-teal-100 font-medium">
+                  &ldquo;{record.withdrawal_reason}&rdquo;
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onApproveWithdrawal}
+              className="h-8 px-4 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all"
+            >
+              Approve Withdrawal
+            </button>
+            <button
+              onClick={onRejectWithdrawal}
+              className="h-8 px-4 rounded-none bg-red-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-700 transition-all"
+            >
+              Reject Request
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 6-Tab Headers */}
       <div className="border border-slate-200 rounded-none overflow-hidden">
@@ -629,16 +825,43 @@ function ViewModalContent({ record, auditLogs, activeTab, setActiveTab }) {
           {activeTab === 'approved' && (
             <div className="space-y-4">
               {rank < 1 ? (
-                <ViewPending icon={HiClock} title="Awaiting Approval" desc="This exit request is pending manager/HR approval." />
-              ) : (
-                <div className="border border-emerald-200 bg-emerald-50 rounded-none p-4 flex items-center gap-3">
-                  <HiCheckCircle className="h-6 w-6 text-emerald-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-bold text-emerald-800">Approved</p>
-                    <p className="text-xs text-emerald-600 mt-0.5">
-                      {record.approved_by_name ? `By ${record.approved_by_name}` : 'Approved'}{record.approved_at ? ` on ${fmtDate(record.approved_at)}` : ''}
-                    </p>
+                <ViewPending icon={HiClock} title="Awaiting Approval" desc="This exit request is pending manager/HR approval.">
+                  <div className="flex items-center gap-3 mt-4">
+                    <button
+                      onClick={onApprove}
+                      className="inline-flex items-center justify-center rounded-none bg-[#0F766E] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#0c6b64] transition-all"
+                    >
+                      Approve Resignation
+                    </button>
+                    <button
+                      onClick={onReject}
+                      className="inline-flex items-center justify-center rounded-none bg-red-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-red-700 transition-all"
+                    >
+                      Reject
+                    </button>
                   </div>
+                </ViewPending>
+              ) : (
+                <div className="space-y-4">
+                  <div className="border border-emerald-200 bg-emerald-50 rounded-none p-4 flex items-center gap-3">
+                    <HiCheckCircle className="h-6 w-6 text-emerald-600 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-emerald-800">Approved</p>
+                      <p className="text-xs text-emerald-600 mt-0.5">
+                        {record.approved_by_name ? `By ${record.approved_by_name}` : 'Approved'}{record.approved_at ? ` on ${fmtDate(record.approved_at)}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  {(record.status === 'Approved' || record.status === 'In Progress') && (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => onStatusChange('clearance')}
+                        className="inline-flex items-center justify-center rounded-none bg-[#0F766E] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#0c6b64] transition-all"
+                      >
+                        Start Offboarding (Move to Clearance)
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -651,29 +874,22 @@ function ViewModalContent({ record, auditLogs, activeTab, setActiveTab }) {
                 <ViewPending icon={HiClipboardDocumentCheck} title="Not Yet Started" desc="Clearance tasks will be available after approval." />
               ) : (
                 <>
-                  {(record.clearance_tasks || []).length > 0 ? (
-                    <div className="space-y-2">
-                      {(record.clearance_tasks || []).map((task) => (
-                        <div key={task.id} className="flex items-center gap-3 px-3 py-2 border border-slate-100 rounded-none">
-                          <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${task.is_completed ? 'bg-emerald-500' : 'bg-slate-200'}`}>
-                            {task.is_completed && <HiCheck className="h-3 w-3 text-white" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${task.is_completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{task.task_name}</p>
-                            <p className="text-[10px] text-slate-400">{task.department}</p>
-                          </div>
-                          <Badge label={task.is_completed ? 'Done' : 'Pending'} color={task.is_completed ? 'emerald' : 'orange'} />
-                        </div>
-                      ))}
-                      <div className="flex items-center gap-2 pt-2 text-xs text-slate-500">
-                        <span className="font-bold text-[#0F766E]">
-                          {(record.clearance_tasks || []).filter((t) => t.is_completed).length}
-                        </span>
-                        <span>of {(record.clearance_tasks || []).length} tasks completed</span>
-                      </div>
+                  <ClearanceChecklist
+                    exitRequestId={record.id}
+                    tasks={record.clearance_tasks || []}
+                    onTaskUpdate={onTaskToggle}
+                    roleCanEdit={true}
+                    currentUserRole="hr"
+                  />
+                  {(record.status === 'clearance' || record.status === 'In Progress') && (
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        onClick={() => onStatusChange('interview')}
+                        className="inline-flex items-center justify-center rounded-none bg-blue-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-blue-700 transition-all"
+                      >
+                        Move to Exit Interview
+                      </button>
                     </div>
-                  ) : (
-                    <p className="text-sm text-slate-400 text-center py-6">No clearance tasks assigned yet.</p>
                   )}
                 </>
               )}
@@ -685,29 +901,24 @@ function ViewModalContent({ record, auditLogs, activeTab, setActiveTab }) {
             <div className="space-y-4">
               {rank < 3 ? (
                 <ViewPending icon={HiChatBubbleLeftRight} title="Not Yet Started" desc="Exit interview available after clearance." />
-              ) : record.exit_interview ? (
-                <div className="space-y-3">
-                  <div className="border border-emerald-200 bg-emerald-50 rounded-none p-3 flex items-center gap-2">
-                    <HiCheckCircle className="h-5 w-5 text-emerald-600" />
-                    <p className="text-sm font-bold text-emerald-800">Interview Completed</p>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <ViewField label="Format" value={record.exit_interview.format || '—'} />
-                    <ViewField label="Rating" value={record.exit_interview.overall_rating ? `${record.exit_interview.overall_rating}/5` : '—'} />
-                    <ViewField label="Rehire Eligible" value={record.exit_interview.rehire_eligible || '—'} />
-                    {record.exit_interview.conducted_by_full_name && (
-                      <ViewField label="Conducted By" value={record.exit_interview.conducted_by_full_name} />
-                    )}
-                  </div>
-                  {record.exit_interview.feedback && (
-                    <div className="border border-slate-200 rounded-none p-3">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Feedback</span>
-                      <p className="text-sm text-slate-700 mt-1">{record.exit_interview.feedback}</p>
+              ) : (
+                <>
+                  <ExitInterviewForm
+                    exitRequestId={record.id}
+                    existingInterview={record.exit_interview || null}
+                    onSubmitted={onSuccess}
+                  />
+                  {record.status === 'interview' && (
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        onClick={() => onStatusChange('settlement')}
+                        className="inline-flex items-center justify-center rounded-none bg-indigo-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-indigo-700 transition-all"
+                      >
+                        Move to Settlement
+                      </button>
                     </div>
                   )}
-                </div>
-              ) : (
-                <ViewPending icon={HiChatBubbleLeftRight} title="Interview Pending" desc="Exit interview has not been submitted yet." />
+                </>
               )}
             </div>
           )}
@@ -717,25 +928,25 @@ function ViewModalContent({ record, auditLogs, activeTab, setActiveTab }) {
             <div className="space-y-4">
               {rank < 4 ? (
                 <ViewPending icon={HiBanknotes} title="Not Yet Started" desc="Settlement available after interview." />
-              ) : record.final_settlement ? (
-                <div className="space-y-3">
-                  <div className="border border-emerald-200 bg-emerald-50 rounded-none p-3 flex items-center gap-2">
-                    <HiCheckCircle className="h-5 w-5 text-emerald-600" />
-                    <p className="text-sm font-bold text-emerald-800">Settlement Processed</p>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <ViewField label="Unpaid Salary" value={`£${Number(record.final_settlement.unpaid_salary || 0).toFixed(2)}`} />
-                    <ViewField label="Leave Encashment" value={`£${Number(record.final_settlement.leave_encashment || 0).toFixed(2)}`} />
-                    <ViewField label="Gratuity" value={`£${Number(record.final_settlement.gratuity || 0).toFixed(2)}`} />
-                    <ViewField label="Deductions" value={`£${Number(record.final_settlement.deductions || 0).toFixed(2)}`} />
-                  </div>
-                  <div className="border-t border-slate-200 pt-3 flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-600">Net Payable</span>
-                    <span className="text-xl font-black text-[#0F766E]">£{Number(record.final_settlement.net_payable || 0).toFixed(2)}</span>
-                  </div>
-                </div>
               ) : (
-                <ViewPending icon={HiBanknotes} title="Settlement Pending" desc="Final settlement has not been processed yet." />
+                <>
+                  <SettlementForm
+                    exitRequestId={record.id}
+                    existingSettlement={record.final_settlement || null}
+                    onSubmitted={onSuccess}
+                    employeeTenure={0}
+                  />
+                  {record.status === 'settlement' && (
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        onClick={() => onStatusChange('Completed')}
+                        className="inline-flex items-center justify-center rounded-none bg-emerald-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-emerald-700 transition-all"
+                      >
+                        Mark Process Completed
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -756,18 +967,13 @@ function ViewModalContent({ record, auditLogs, activeTab, setActiveTab }) {
                       <p className="text-xs text-emerald-600 mt-0.5">{record.employee_name} has been officially off-boarded.</p>
                     </div>
                   </div>
-                  {(record.exit_documents || []).length > 0 && (
-                    <div className="space-y-2">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Documents Generated</span>
-                      {(record.exit_documents || []).map((doc) => (
-                        <div key={doc.id} className="flex items-center gap-2 px-3 py-2 border border-slate-100 rounded-none">
-                          <HiDocumentText className="h-4 w-4 text-[#0F766E]" />
-                          <span className="text-sm font-medium text-slate-700">{doc.document_title || doc.document_type}</span>
-                          <Badge label="Generated" color="emerald" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <ExitDocuments
+                    exitRequestId={record.id}
+                    exitType={(record.exit_type || '').toLowerCase()}
+                    documents={record.exit_documents || []}
+                    onGenerated={onSuccess}
+                    canGenerate={true}
+                  />
                   <ViewAuditMini logs={auditLogs} />
                 </>
               )}
@@ -789,14 +995,15 @@ function ViewField({ label, value, valueClass = '' }) {
   )
 }
 
-function ViewPending({ icon: Icon, title, desc }) {
+function ViewPending({ icon: Icon, title, desc, children }) {
   return (
     <div className="flex flex-col items-center text-center py-6">
       <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-2">
         <Icon className="h-6 w-6 text-slate-300" />
       </div>
       <p className="text-sm font-bold text-slate-700">{title}</p>
-      <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
+      <p className="text-xs text-slate-400 mt-0.5 mb-3">{desc}</p>
+      {children}
     </div>
   )
 }
