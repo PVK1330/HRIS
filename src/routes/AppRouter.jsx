@@ -40,6 +40,37 @@ import Reports from "../pages/admin/reports/Reports.jsx";
 import AnnouncementsPage from "../pages/admin/Announcements.jsx";
 import Payroll from "../pages/admin/finance/Payroll.jsx";
 import ManagerPerformance from "../pages/admin/hr/ManagerPerformance.jsx";
+const AdminDashboard = lazy(() => import("../pages/admin/Dashboard.jsx"));
+const EmployeeDirectory = lazy(() => import("../pages/admin/employees/EmployeeDirectory.jsx"));
+const EmployeeGrid = lazy(() => import("../pages/admin/employees/EmployeeGrid.jsx"));
+const EmployeeProfile = lazy(() => import("../pages/admin/employees/EmployeeProfile.jsx"));
+const Attendance = lazy(() => import("../pages/admin/hr/Attendance.jsx"));
+const LeaveAbsence = lazy(() => import("../pages/admin/hr/LeaveAbsence.jsx"));
+const Documents = lazy(() => import("../pages/admin/documents/Documents.jsx"));
+const VisaNationality = lazy(() => import("../pages/admin/compliance/VisaNationality.jsx"));
+const Performance = lazy(() => import("../pages/admin/hr/Performance.jsx"));
+const ManagerPerformance = lazy(() => import("../pages/admin/hr/ManagerPerformance.jsx"));
+const Policies = lazy(() => import("../pages/admin/compliance/Policies.jsx"));
+const MyPolicies = lazy(() => import("../pages/admin/compliance/MyPolicies.jsx"));
+const Expenses = lazy(() => import("../pages/admin/finance/Expenses.jsx"));
+const Onboarding = lazy(() => import("../pages/admin/hr/Onboarding.jsx"));
+const ExitManagement = lazy(() => import("../pages/exit/ExitManagement.jsx"));
+const ExitDetail = lazy(() => import("../pages/exit/ExitDetail.jsx"));
+const ManagerExitApprovals = lazy(() => import("../pages/exit/ManagerExitApprovals.jsx"));
+const EmployeeExit = lazy(() => import("../pages/exit/EmployeeExit.jsx"));
+const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemplates.jsx"));
+const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
+const AdminSettings = lazy(() => import("../pages/admin/settings/Settings.jsx"));
+const RolesPermissions = lazy(() => import("../pages/admin/settings/RolesPermissions.jsx"));
+const DepartmentManagement = lazy(() => import("../pages/admin/settings/Departments.jsx"));
+const DesignationsManagement = lazy(() => import("../pages/admin/settings/Designations.jsx"));
+const ProjectManagement = lazy(() => import("../pages/admin/settings/Projects.jsx"));
+const TaskManagement = lazy(() => import("../pages/admin/settings/Tasks.jsx"));
+const Messages = lazy(() => import("../pages/admin/communication/Messages.jsx"));
+const AssetManagement = lazy(() => import("../pages/admin/assets/AssetManagement.jsx"));
+const Reports = lazy(() => import("../pages/admin/reports/Reports.jsx"));
+const AnnouncementsPage = lazy(() => import("../pages/admin/Announcements.jsx"));
+const Payroll = lazy(() => import("../pages/admin/finance/Payroll.jsx"));
 
 const PlatformDashboard = lazy(() => import("../pages/superadmin/platform/Dashboard.jsx"));
 const TenantManagement = lazy(() => import("../pages/superadmin/tenants/TenantManagement.jsx"));
@@ -255,6 +286,30 @@ export const router = createBrowserRouter([
             element: (
               <AdminModuleGate moduleKey="exit-management">
                 <ExitManagement />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "exit-management/:id",
+            element: (
+              <AdminModuleGate moduleKey="exit-management">
+                <ExitDetail />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "exit-approvals",
+            element: (
+              <AdminModuleGate moduleKey="exit-management">
+                <ManagerExitApprovals />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "my-exit",
+            element: (
+              <AdminModuleGate moduleKey="exit-management">
+                <EmployeeExit />
               </AdminModuleGate>
             ),
           },
