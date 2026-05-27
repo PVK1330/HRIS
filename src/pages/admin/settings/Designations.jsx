@@ -206,27 +206,32 @@ export default function DesignationsManagement() {
     {
       key: 'name',
       label: 'Designation',
-      render: (v) => (
+      render: (v, row) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
             <HiBriefcase className="h-5 w-5" />
           </div>
-          <span className="text-sm font-medium text-gray-900">{v}</span>
+          <div>
+            <div className="text-sm font-semibold text-slate-900">{v}</div>
+            {row.code ? (
+              <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{row.code}</div>
+            ) : null}
+          </div>
         </div>
       ),
     },
     {
       key: 'department_name',
-      label: 'Department Name',
-      render: (v) => <span className="text-sm text-gray-600">{v || '-'}</span>,
+      label: 'Department',
+      render: (v) => (
+        <span className="text-sm font-medium text-slate-600">{v || 'Not assigned'}</span>
+      ),
     },
     {
       key: 'description',
       label: 'Description',
-      render: (v) => (
-        <span className="max-w-[220px] truncate text-sm text-gray-600" title={v || ''}>
-          {v || '—'}
-        </span>
+      render: (_, row) => (
+        <span className="text-sm font-medium text-slate-600">{row.description || '-'}</span>
       ),
     },
     {
@@ -298,22 +303,15 @@ export default function DesignationsManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-6xl space-y-6 animate-in fade-in duration-500 min-w-0">
-      {/* Page header — matches /admin/settings section titles */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between min-w-0">
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar with Moved Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
-          <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight truncate">
-            Designations Management
-          </h1>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">
-            Organizational Roles &amp; Department Mappings
-          </p>
-          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-400">
-            <HiBriefcase className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span className="font-medium">Organization</span>
-            <span className="text-slate-300">·</span>
-            <span className="font-bold text-slate-600">Designation Listing</span>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Designation Management</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Designations</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Designation Listing</span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -322,11 +320,11 @@ export default function DesignationsManagement() {
               type="button"
               disabled={exportLoading}
               onClick={() => setExportOpen((prev) => !prev)}
-              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-40"
+              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 shadow-sm"
             >
-              <HiDocumentArrowDown className="h-3.5 w-3.5" />
+              <HiDocumentArrowDown className="h-4 w-4" />
               Export
-              <HiChevronDown className={`h-3.5 w-3.5 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+              <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
             </button>
             {exportOpen ? (
               <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
@@ -334,18 +332,18 @@ export default function DesignationsManagement() {
                   type="button"
                   disabled={exportLoading}
                   onClick={() => runServerExport('pdf')}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                 >
-                  <HiDocumentArrowDown className="h-3.5 w-3.5 text-slate-500" />
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
                   Export as PDF
                 </button>
                 <button
                   type="button"
                   disabled={exportLoading}
                   onClick={() => runServerExport('excel')}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                 >
-                  <HiDocumentArrowDown className="h-3.5 w-3.5 text-slate-500" />
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" />
                   Export as Excel
                 </button>
               </div>
@@ -354,9 +352,9 @@ export default function DesignationsManagement() {
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none bg-[#0F766E] px-4 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#0c6d66]"
+            className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
           >
-            <HiPlus className="h-3.5 w-3.5" /> Add Designation
+            <HiPlus className="h-4 w-4" /> Add Designation
           </button>
         </div>
       </div>
@@ -413,10 +411,10 @@ export default function DesignationsManagement() {
                 <card.icon className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className={`text-[11px] font-bold uppercase tracking-widest truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
                   {card.label}
                 </div>
-                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none tabular-nums">{card.count}</div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
               </div>
             </button>
           );
@@ -425,29 +423,26 @@ export default function DesignationsManagement() {
 
       {/* Main Table Registry Area */}
       <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 bg-slate-50/60 px-5 py-4">
-          <h2 className="text-sm font-semibold text-gray-900">Designation Listing</h2>
-          <p className="mt-1 text-xs leading-relaxed text-gray-500">
-            Search, filter, and manage designation records across departments.
-          </p>
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Designation Listing</h2>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
           <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
-            <div className="relative min-w-[200px] flex-1 max-w-md">
+            <div className="relative min-w-[250px] flex-1 max-w-md">
               <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search designation or department..."
-                className="h-10 w-full rounded-none border border-gray-200 bg-white px-3 pl-9 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15"
+                placeholder="Search designation, department or description..."
+                className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
               />
             </div>
             <select
               value={departmentFilterId}
               onChange={(e) => setDepartmentFilterId(e.target.value)}
-              className="h-10 min-w-[180px] cursor-pointer rounded-none border border-gray-200 bg-white px-3 text-sm text-gray-800 shadow-sm outline-none transition focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15"
+              className="h-10 min-w-[180px] cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]"
             >
               <option value="">All departments</option>
               {departmentOptions.map((d) => (
@@ -456,12 +451,12 @@ export default function DesignationsManagement() {
             </select>
           </div>
           <div className="flex items-center gap-3">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{desTotal} records</p>
+            <p className="text-xs font-medium text-slate-500">{desTotal} records shown</p>
             {search || departmentFilterId || statusFilter !== 'all' ? (
               <button
                 type="button"
                 onClick={() => { setSearch(''); setDepartmentFilterId(''); setStatusFilter('all') }}
-                className="inline-flex h-8 items-center rounded-none border border-slate-200 bg-white px-4 text-[10px] font-black uppercase tracking-widest text-slate-600 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
               >
                 Reset Filters
               </button>
@@ -488,12 +483,12 @@ export default function DesignationsManagement() {
         size="md"
         showClose
         header={
-          <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
               {editMode ? 'Edit Designation' : 'Add New Designation'}
             </h2>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-              Configure organizational roles and department mappings
+            <p className="text-xs font-medium text-slate-500">
+              Configure designation profile settings and department assignment below.
             </p>
           </div>
         }
@@ -507,11 +502,11 @@ export default function DesignationsManagement() {
               onChange={handleFormChange}
               placeholder="Enter designation name"
               required
-              inputClassName="h-10 rounded-none border-gray-200 shadow-sm focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15"
-              labelClassName="mb-1 block text-sm font-medium text-gray-900"
+              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              labelClassName="mb-1 block text-sm font-medium text-slate-800"
             />
             <Input
-              label="Department Name"
+              label="Department"
               name="departmentId"
               type="select"
               value={formData.departmentId}
@@ -519,17 +514,17 @@ export default function DesignationsManagement() {
               placeholder="Select department"
               required
               options={departmentOptions.map((d) => ({ label: d.name, value: String(d.id) }))}
-              inputClassName="h-10 rounded-none border-gray-200 shadow-sm focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15"
-              labelClassName="mb-1 block text-sm font-medium text-gray-900"
+              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              labelClassName="mb-1 block text-sm font-medium text-slate-800"
             />
             <Input
               label="Description"
               name="description"
               value={formData.description}
               onChange={handleFormChange}
-              placeholder="Optional description"
-              inputClassName="h-10 rounded-none border-gray-200 shadow-sm focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15"
-              labelClassName="mb-1 block text-sm font-medium text-gray-900"
+              placeholder="Enter designation description"
+              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              labelClassName="mb-1 block text-sm font-medium text-slate-800"
             />
             <Input
               label="Status"
@@ -543,8 +538,8 @@ export default function DesignationsManagement() {
                 { label: 'Active', value: 'Active' },
                 { label: 'Inactive', value: 'Inactive' },
               ]}
-              inputClassName="h-10 rounded-none border-gray-200 shadow-sm focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15"
-              labelClassName="mb-1 block text-sm font-medium text-gray-900"
+              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              labelClassName="mb-1 block text-sm font-medium text-slate-800"
             />
           </div>
 
@@ -552,21 +547,20 @@ export default function DesignationsManagement() {
             <button
               type="button"
               onClick={handleCloseModal}
-              className="h-8 rounded-none border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+              className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="h-8 rounded-none bg-[#0F766E] px-4 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#0c6d66] disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? 'Saving…' : editMode ? 'Save Changes' : 'Add Designation'}
             </button>
           </div>
         </form>
       </Modal>
-      </div>
     </div>
   )
 }

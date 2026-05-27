@@ -13,7 +13,7 @@ import {
   SelectInput,
   SettingsBanner,
   SettingsLoading,
-  SettingsPageHeader,
+  SettingsSection,
   TextInput,
 } from '../components/ui'
 
@@ -186,17 +186,12 @@ export default function AssetSettingsSection({ registerToolbar }) {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <SettingsSection>
       {(error || rulesBanner) && (
         <SettingsBanner type={rulesBanner?.type === 'ok' ? 'ok' : 'error'}>
           {rulesBanner?.type === 'ok' ? rulesBanner.text : error}
         </SettingsBanner>
       )}
-
-      <SettingsPageHeader
-        title="Asset Settings"
-        subtitle="Asset categories, assignment rules, and approval workflows."
-      />
 
       <SectionCard title="Asset categories" noTable>
         <div className="mb-8 rounded-none border border-dashed border-slate-200 bg-slate-50/30 p-5">
@@ -383,17 +378,17 @@ export default function AssetSettingsSection({ registerToolbar }) {
               }
             />
           </FieldRow>
-          <tr>
-            <td colSpan={2} className="px-4 py-3 text-xs text-gray-500 sm:px-5 bg-slate-50/40">
+          <FieldRow colSpan={2}>
+            <p className="text-xs text-slate-500">
               Use Save changes in the settings toolbar to apply rule updates.
-            </td>
-          </tr>
+            </p>
+          </FieldRow>
         </SectionCard>
       ) : (
         <SectionCard title="Assignment & return rules" noTable>
           <p className="text-sm text-gray-500 py-6 text-center">Loading rules…</p>
         </SectionCard>
       )}
-    </div>
+    </SettingsSection>
   )
 }

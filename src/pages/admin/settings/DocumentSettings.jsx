@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Badge, FieldRow, SectionCard, SelectInput, SettingsPageHeader, TextInput, Toggle } from './components/ui'
+import { Badge, FieldRow, SectionCard, SelectInput, SettingsSection, TextInput, Toggle } from './components/ui'
 import { useDocumentSettings } from '../../../hooks/settings/useDocumentSettings'
 
 const MANDATORY_OPTS = ['Mandatory', 'Optional']
@@ -94,17 +94,12 @@ export default function DocumentSettings() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <SettingsSection>
       {error && list.length === 0 ? (
         <div className="rounded-none border border-red-100 bg-red-50 p-4 text-sm text-red-700 font-medium">
           {error}
         </div>
       ) : null}
-
-      <SettingsPageHeader
-        title="Document Settings"
-        subtitle="Required document types, upload rules, and visibility per classification."
-      />
 
       <SectionCard title="Document types" noTable>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -317,7 +312,7 @@ export default function DocumentSettings() {
           </div>
         ) : null
       )}
-    </div>
+    </SettingsSection>
   )
 }
 

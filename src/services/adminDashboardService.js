@@ -1,7 +1,10 @@
-import api from './api'
+import { fetchAdminDashboard, fetchEmployeeDashboard, fetchAnnouncements } from './dashboardService.js'
 
+/** @deprecated Prefer dashboardService.fetchAdminDashboard */
 export const adminDashboardService = {
-  getDashboardData() {
-    return api.get('/admin/dashboard')
-  }
+  getDashboardData: fetchAdminDashboard,
+  fetchEmployeeDashboard,
+  fetchAnnouncements,
 }
+
+export { fetchAdminDashboard, fetchEmployeeDashboard, fetchAnnouncements }

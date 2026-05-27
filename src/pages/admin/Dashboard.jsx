@@ -40,25 +40,31 @@ import { StatCard } from '../../components/ui/StatCard.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
 import { Avatar } from '../../components/ui/Avatar.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { dashboardStats } from '../../data/mockData.js'
-import api from '../../services/api.js'
+import { fetchAdminDashboard, fetchEmployeeDashboard } from '../../services/dashboardService.js'
 import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
 
-const growthData = [
-  { name: 'JAN', headcount: 45 },
-  { name: 'FEB', headcount: 52 },
-  { name: 'MAR', headcount: 48 },
-  { name: 'APR', headcount: 61 },
-  { name: 'MAY', headcount: 55 },
-  { name: 'JUN', headcount: 67 },
-  { name: 'JUL', headcount: 75 },
+const FALLBACK_ANNOUNCEMENTS = [
+  { id: 1, title: 'Annual General Meeting 2026', content: 'The annual general meeting for all shareholders and employees will be held in the main auditorium.', priority: 'High', created_at: new Date().toISOString() },
+  { id: 2, title: 'New Health Insurance Policy', content: 'We have updated our health insurance provider to ensure better coverage for all employees.', priority: 'Standard', created_at: new Date().toISOString() },
 ]
+
+const EMPTY_STATS = {
+  employees: { total: 0, active: 0, probation: 0, notice: 0 },
+  attendance: { present: 0, remote: 0, onLeave: 0, absent: 0 },
+  pending: { leaves: 0, documents: 0, expenses: 0 },
+  personal: { leaveBalance: 0, attendanceRate: '—', pendingTasks: 0 },
+  growthData: [],
+  celebrations: [],
+  expiryAlerts: [],
+  joinersExits: { newJoiners: [], exits: [] },
+  announcements: [],
+}
 
 export default function Dashboard() {
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
-  const [liveAnnouncements, setLiveAnnouncements] = useState([])
+  const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
 
   const todayLabel = useMemo(
     () =>
@@ -71,83 +77,67 @@ export default function Dashboard() {
     [],
   )
 
-  const fetchLiveAnnouncements = async () => {
+  const isHRAdmin = user?.role === 'hr_admin' || user?.role === 'admin'
+  const isHRTeam = isHRAdmin || user?.role === 'hr_executive'
+  const isManager = user?.role === 'manager'
+  const isEmployee = user?.role === 'employee'
+
+  const loadDashboardData = async () => {
+    setIsLoading(true)
     try {
-      const res = await api.get('/admin/announcements')
-      const allAnns = res.data?.data || []
-      setLiveAnnouncements(
-        allAnns
-          .filter(a => a.status === 'Published' && (!a.dispatch_channels || a.dispatch_channels === 'In App' || a.dispatch_channels === 'Both'))
-          .slice(0, 4)
-      )
-    } catch (e) {
-      console.warn('Could not pull live broadcasts:', e)
+      if (user?.role === 'employee') {
+        const employeeId = user?.employeeId || user?.id
+        if (employeeId) {
+          const data = await fetchEmployeeDashboard(employeeId)
+          setDashboardData((prev) => ({
+            ...prev,
+            personal: data.personal,
+            announcements: data.announcements,
+          }))
+        }
+      } else {
+        const data = await fetchAdminDashboard()
+        setDashboardData(data)
+      }
+    } catch (err) {
+      console.error('Dashboard load failed:', err)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchLiveAnnouncements()
-    setIsLoading(false)
-  }, [])
-
-  const loadDashboardData = () => {
-    setIsLoading(true)
-    fetchLiveAnnouncements()
-    setTimeout(() => setIsLoading(false), 800)
-  }
-
-  const isHRAdmin = user?.role === 'hr_admin' || user?.role === 'admin'
-  const isManager = user?.role === 'manager'
-  const isEmployee = user?.role === 'employee'
+    loadDashboardData()
+  }, [user?.role, user?.employeeId, user?.id])
 
   const stats = {
-    employees: {
-      total: dashboardStats.totalEmployees,
-      active: dashboardStats.activeEmployees,
-      probation: dashboardStats.onProbation,
-      notice: dashboardStats.inNotice
-    },
+    employees: dashboardData.employees,
     attendance: {
-      present: dashboardStats.todayInOffice,
-      remote: dashboardStats.todayRemote,
-      absent: dashboardStats.todayAbsent
+      present: dashboardData.attendance.present,
+      remote: dashboardData.attendance.remote,
+      absent: dashboardData.attendance.onLeave,
     },
-    pending: {
-      leaves: dashboardStats.pendingLeaves,
-      documents: dashboardStats.pendingDocuments,
-      expenses: dashboardStats.pendingExpenses
-    },
-    personal: {
-       leaveBalance: 14,
-       attendanceRate: '98%',
-       pendingTasks: 3
-    }
+    pending: dashboardData.pending,
+    personal: dashboardData.personal,
   }
 
-  const announcements = liveAnnouncements.length > 0 ? liveAnnouncements : [
-    { id: 1, title: 'Annual General Meeting 2026', content: 'The annual general meeting for all shareholders and employees will be held in the main auditorium.', priority: 'High', created_at: new Date().toISOString() },
-    { id: 2, title: 'New Health Insurance Policy', content: 'We have updated our health insurance provider to ensure better coverage for all employees.', priority: 'Standard', created_at: new Date().toISOString() },
-  ]
+  const growthData = dashboardData.growthData?.length
+    ? dashboardData.growthData
+    : [{ name: 'NOW', headcount: stats.employees.total || 0 }]
 
-  const birthdays = [
-    { name: 'Sarah Ahmed', type: 'Birthday', icon: '🎂', date: 'Today', dept: 'Engineering' },
-    { name: 'Omar Hassan', type: 'Anniversary', icon: '🎉', date: 'Tomorrow', dept: 'Marketing' },
-  ]
+  const announcements = dashboardData.announcements?.length
+    ? dashboardData.announcements
+    : FALLBACK_ANNOUNCEMENTS
 
-  const expiryAlerts = [
-     { name: 'PASSPORT_EXPIRY', count: 3, items: ['John Doe', 'Jane Smith', 'Mike Ross'], color: 'rose' },
-     { name: 'VISA_EXPIRY', count: 5, items: ['Ali Khan', 'Sara Lee', 'David B.'], color: 'amber' },
-  ]
+  const birthdays = dashboardData.celebrations?.length
+    ? dashboardData.celebrations
+    : [{ name: 'No events today', type: 'Calendar', icon: '📅', date: '—', dept: '—' }]
 
-  const joinersExits = {
-     newJoiners: [
-        { name: 'Alice Wong', dept: 'IT', date: '01 May' },
-        { name: 'Bob Saget', dept: 'Sales', date: '03 May' },
-     ],
-     exits: [
-        { name: 'Charlie Sheen', dept: 'Legal', date: '15 May' },
-     ]
-  }
+  const expiryAlerts = dashboardData.expiryAlerts?.length
+    ? dashboardData.expiryAlerts
+    : [{ name: 'COMPLIANCE', count: 0, items: ['All records up to date'], color: 'slate' }]
+
+  const joinersExits = dashboardData.joinersExits || { newJoiners: [], exits: [] }
 
   if (isLoading) {
     return (
@@ -174,7 +164,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-2 text-slate-400">
                <HiBolt className="w-4 h-4 text-[#0F766E]" />
                <span className="text-[10px] font-black uppercase tracking-[0.4em]">
-                  {isHRAdmin ? 'Corporate Command Center' : isManager ? 'Team Orchestrator' : 'Identity Portal'}
+                  {isHRTeam ? 'Corporate Command Center' : isManager ? 'Team Orchestrator' : 'Identity Portal'}
                </span>
             </div>
             <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase leading-none">
@@ -204,7 +194,7 @@ export default function Dashboard() {
 
       {/* RBAC Stats Registry */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-         {isHRAdmin ? (
+         {isHRTeam ? (
             <>
                <StatCard title="TOTAL HEADCOUNT" value={stats.employees.total} subtitle="Global Identity" color="slate" icon={HiUsers} square />
                <StatCard title="ACTIVE TALENT" value={stats.employees.active} subtitle="Operational" color="emerald" icon={HiBriefcase} square />
@@ -335,7 +325,7 @@ export default function Dashboard() {
         {/* Sidebar Intelligence */}
         <div className="space-y-8">
            {/* Pending Approvals */}
-           {(isHRAdmin || isManager) && (
+           {(isHRTeam || isManager) && (
               <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
                     PENDING_ACTION <HiBellAlert className="h-4 w-4 text-amber-500" />
@@ -344,7 +334,7 @@ export default function Dashboard() {
                     {[
                        { label: 'Leave Requests', count: stats.pending.leaves, path: '/admin/leave' },
                        { label: 'Expense Claims', count: stats.pending.expenses, path: '/admin/expenses' },
-                       { label: 'Document Audits', count: stats.pending.documents, path: '/admin/documents' }
+                       { label: 'Regularizations', count: stats.pending.documents, path: '/admin/attendance' },
                     ].map(item => (
                        <Link key={item.label} to={item.path} className="flex items-center justify-between p-4 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E] transition-all">
                           <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{item.label}</span>
@@ -356,7 +346,7 @@ export default function Dashboard() {
            )}
 
            {/* Compliance Alerts */}
-           {isHRAdmin && (
+           {isHRTeam && (
               <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
                     COMPLIANCE_PROTOCOL <HiShieldCheck className="h-4 w-4 text-rose-500" />
@@ -453,7 +443,7 @@ export default function Dashboard() {
                <div>
                   <p className="text-[9px] font-black text-emerald-700 uppercase tracking-[0.3em] mb-4">INDUCTION_AUDIT</p>
                   <div className="space-y-4">
-                     {joinersExits.newJoiners.map(j => (
+                     {joinersExits.newJoiners.length ? joinersExits.newJoiners.map(j => (
                         <div key={j.name} className="flex items-center justify-between">
                            <div className="flex items-center gap-3">
                               <Avatar name={j.name} size="xs" className="rounded-none" />
@@ -464,13 +454,15 @@ export default function Dashboard() {
                            </div>
                            <span className="text-[9px] font-black text-slate-900">{j.date}</span>
                         </div>
-                     ))}
+                     )) : (
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No new joiners this month</p>
+                     )}
                   </div>
                </div>
                <div className="pt-6 border-t border-slate-100">
                   <p className="text-[9px] font-black text-rose-700 uppercase tracking-[0.3em] mb-4">TERMINATION_AUDIT</p>
                   <div className="space-y-4">
-                     {joinersExits.exits.map(e => (
+                     {joinersExits.exits.length ? joinersExits.exits.map(e => (
                         <div key={e.name} className="flex items-center justify-between">
                            <div className="flex items-center gap-3">
                               <Avatar name={e.name} size="xs" className="rounded-none" />
@@ -481,7 +473,9 @@ export default function Dashboard() {
                            </div>
                            <span className="text-[9px] font-black text-slate-900">{e.date}</span>
                         </div>
-                     ))}
+                     )) : (
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No upcoming exits</p>
+                     )}
                   </div>
                </div>
             </div>

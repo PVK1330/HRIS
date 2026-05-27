@@ -5,7 +5,7 @@ import {
   SelectInput,
   SettingsError,
   SettingsLoading,
-  SettingsPageHeader,
+  SettingsSection,
 } from './components/ui'
 import { useSensitiveData } from '../../../hooks/settings/useSensitiveData'
 
@@ -110,12 +110,7 @@ export default function SensitiveData({ registerToolbar }) {
   const notesOptsMerged = mergeOptionList(notesVisibilityOptions, [settings.notesVisibility])
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <SettingsPageHeader
-        title="Security & Privacy"
-        subtitle="Control who can view salary, documents, and confidential employee data."
-      />
-
+    <SettingsSection>
       <SectionCard title="Compensation visibility">
         {SALARY_ROWS.map(({ key, label }) => (
           <FieldRow key={key} label={label}>
@@ -165,7 +160,7 @@ export default function SensitiveData({ registerToolbar }) {
           />
         </FieldRow>
       </SectionCard>
-    </div>
+    </SettingsSection>
   )
 }
 

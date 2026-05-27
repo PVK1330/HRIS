@@ -5,7 +5,7 @@ import {
   SettingsError,
   SettingsLoading,
   SettingsMatrixRow,
-  SettingsPageHeader,
+  SettingsSection,
   Toggle,
 } from './components/ui'
 import { NOTIFICATION_EVENTS } from './notificationConstants'
@@ -45,12 +45,7 @@ export default function NotificationSettings({ registerToolbar }) {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <SettingsPageHeader
-        title="Notifications"
-        subtitle="Enable channels and assign alerts to email, SMS, and in-app delivery."
-      />
-
+    <SettingsSection>
       <SectionCard title="Delivery channels">
         <FieldRow label="Email notifications">
           <Toggle
@@ -104,6 +99,6 @@ export default function NotificationSettings({ registerToolbar }) {
           )
         })}
       </SectionCard>
-    </div>
+    </SettingsSection>
   )
 }

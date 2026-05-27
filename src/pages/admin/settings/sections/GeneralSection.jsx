@@ -18,7 +18,7 @@ import {
   SettingsBanner,
   SettingsError,
   SettingsLoading,
-  SettingsPageHeader,
+  SettingsSection,
   TextInput,
   Toggle,
 } from '../components/ui'
@@ -158,17 +158,12 @@ export default function GeneralSection({ registerToolbar }) {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <SettingsSection>
       {(banner?.type === 'ok' || error) && (
         <SettingsBanner type={banner?.type === 'ok' ? 'ok' : 'error'}>
           {banner?.type === 'ok' ? banner.text : error}
         </SettingsBanner>
       )}
-
-      <SettingsPageHeader
-        title="General"
-        subtitle="Company profile, working calendar, and default HR policies."
-      />
 
       <SectionCard title="Company profile">
         <FieldRow label="Organization Name">
@@ -178,8 +173,8 @@ export default function GeneralSection({ registerToolbar }) {
             className="font-medium"
           />
         </FieldRow>
-        <FieldRow label="Identity Asset (Logo)" hint="PNG, JPG, SVG • Max 2MB">
-          <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center">
+        <FieldRow label="Identity Asset (Logo)" hint="PNG, JPG, SVG • Max 2MB" align="left">
+          <div className="flex flex-wrap items-center gap-3">
             {draft.logoUrl ? (
               <div className="group relative">
                 <img
@@ -322,7 +317,7 @@ export default function GeneralSection({ registerToolbar }) {
           </div>
         </FieldRow>
       </SectionCard>
-    </div>
+    </SettingsSection>
   )
 }
 

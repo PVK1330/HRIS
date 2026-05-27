@@ -5,7 +5,7 @@ import {
   SelectInput,
   SettingsError,
   SettingsLoading,
-  SettingsPageHeader,
+  SettingsSection,
   TextInput,
   Toggle,
 } from './components/ui'
@@ -48,12 +48,7 @@ export default function PasswordSecurity({ registerToolbar }) {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <SettingsPageHeader
-        title="Password & Security"
-        subtitle="Password rules, session timeouts, and account recovery options."
-      />
-
+    <SettingsSection>
       <SectionCard title="Password policy">
         <FieldRow label="Minimum length">
           <TextInput
@@ -126,6 +121,6 @@ export default function PasswordSecurity({ registerToolbar }) {
           />
         </FieldRow>
       </SectionCard>
-    </div>
+    </SettingsSection>
   )
 }

@@ -15,7 +15,7 @@ import {
   SettingsBanner,
   SettingsError,
   SettingsLoading,
-  SettingsPageHeader,
+  SettingsSection,
   TextInput,
   Toggle,
 } from '../components/ui'
@@ -132,17 +132,12 @@ export default function AttendanceSection({ registerToolbar }) {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <SettingsSection>
       {(banner?.type === 'ok' || error) && (
         <SettingsBanner type={banner?.type === 'ok' ? 'ok' : 'error'}>
           {banner?.type === 'ok' ? banner.text : error}
         </SettingsBanner>
       )}
-
-      <SettingsPageHeader
-        title="Attendance & Time"
-        subtitle="Work hours, punctuality rules, regularization, and overtime policies."
-      />
 
       <SectionCard title="Work hours">
           <FieldRow label="Operational Start">
@@ -307,7 +302,7 @@ export default function AttendanceSection({ registerToolbar }) {
             />
           </FieldRow>
       </SectionCard>
-    </div>
+    </SettingsSection>
   )
 }
 
