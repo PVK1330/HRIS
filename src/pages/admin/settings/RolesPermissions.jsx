@@ -431,11 +431,13 @@ export default function RolesPermissions() {
                               selectedRole?.is_system && permission.key === 'dashboard'
                             const enabled = isPermissionEnabled(permission.id)
                             const permSaving = savingPermissionId === permission.id
-                            const label =
+                            const rawLabel =
                               permission.name ||
                               permission.label ||
                               permission.key ||
                               'Permission'
+                              
+                            const label = rawLabel.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
                             return (
                               <label

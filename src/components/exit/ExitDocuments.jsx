@@ -9,6 +9,9 @@ const BASE_DOCUMENTS = [
   { type: 'Relieving Letter', title: 'Relieving Letter' },
   { type: 'Experience Letter', title: 'Experience Letter' },
   { type: 'Final Payslip', title: 'Final Payslip' },
+  { type: 'NOC', title: 'No Objection Certificate' },
+  { type: 'FnF Settlement', title: 'Full & Final Settlement' },
+  { type: 'Recommendation Letter', title: 'Recommendation Letter' },
 ]
 
 const TERMINATION_DOCUMENTS = [
@@ -77,16 +80,18 @@ export default function ExitDocuments({ exitRequestId, exitType, documents, onGe
                     </a>
                   )}
                 </div>
-              ) : (
+              ) : canGenerate ? (
                 <Button
                   label="Generate"
                   variant="secondary"
                   size="sm"
                   icon={isGenerating ? undefined : HiDocumentText}
                   loading={isGenerating}
-                  disabled={!canGenerate || isGenerating}
+                  disabled={isGenerating}
                   onClick={() => handleGenerate(type, title)}
                 />
+              ) : (
+                <span className="text-xs font-semibold text-gray-400 italic">Not available</span>
               )}
             </div>
           )

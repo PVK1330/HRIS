@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import api from '../../services/api.js'
 import {
   HiCalendarDays,
   HiClock,
@@ -71,6 +72,7 @@ export default function EmployeeExit() {
   const [record, setRecord] = useState(null)
   const [interview, setInterview] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [exportingGdpr, setExportingGdpr] = useState(false)
   const [showResignModal, setShowResignModal] = useState(false)
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false)
   const [personalChecklist, setPersonalChecklist] = useState(() => {
@@ -93,7 +95,7 @@ export default function EmployeeExit() {
       setLoading(true)
       const result = await listExitRecords({ limit: 10, employee_id: user?.id })
       const myRecords = (result?.records || []).filter(
-        (r) => r.status !== 'Rejected' && r.status !== 'Completed',
+        (r) => r.status !== 'Rejected'
       )
       if (myRecords.length > 0) {
         const full = await getExitRecord(myRecords[0].id)
@@ -111,6 +113,26 @@ export default function EmployeeExit() {
       setLoading(false)
     }
   }, [])
+
+  const handleGdprExport = async () => {
+    try {
+      setExportingGdpr(true)
+      const res = await api.get('/employees/gdpr/export', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `GDPR_Data_Export_${user?.id}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+      toast.success('GDPR data exported successfully.')
+    } catch (error) {
+      toast.error('Failed to export GDPR data.')
+      console.error(error)
+    } finally {
+      setExportingGdpr(false)
+    }
+  }
 
   useEffect(() => { fetchMyExit() }, [fetchMyExit])
 
@@ -351,8 +373,8 @@ export default function EmployeeExit() {
         </div>
       )}
 
-      {/* Exit Documents */}
-      {record.status === 'Completed' && (
+      {/* Exit Documents (show if any exist) */}
+      {(record.exit_documents?.length > 0 || record.status === 'Completed') && (
         <div className="bg-white border border-slate-200 rounded-none p-6">
           <h3 className="text-lg font-bold text-slate-800 mb-4">Exit Documents</h3>
           <ExitDocuments
@@ -377,13 +399,14 @@ export default function EmployeeExit() {
               Under GDPR, you have the right to request a copy of your personal data held by the organisation.
             </p>
           </div>
-          <a
-            href="mailto:hr@company.com?subject=GDPR%20Data%20Export%20Request&body=I%20would%20like%20to%20request%20an%20export%20of%20my%20personal%20data%20under%20GDPR."
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0F766E] hover:underline whitespace-nowrap shrink-0"
+          <button
+            onClick={handleGdprExport}
+            disabled={exportingGdpr}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0F766E] hover:underline whitespace-nowrap shrink-0 disabled:opacity-50"
           >
             <HiEnvelope className="h-4 w-4" />
-            Request data export
-          </a>
+            {exportingGdpr ? 'Exporting...' : 'Request data export'}
+          </button>
         </div>
       </div>
     
