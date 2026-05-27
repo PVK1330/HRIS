@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import {
   HiMagnifyingGlass, HiChatBubbleLeftRight, HiPaperAirplane,
@@ -30,10 +30,9 @@ export default function Messages() {
 
   const [conversations, setConversations] = useState([])
   const [empList, setEmpList] = useState([])
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set())
   const [activeConvId, setActiveConvId] = useState(null)
   const [search, setSearch] = useState('')
-  const [newChatSearch, setNewChatSearch] = useState('')
-  const [showNewChat, setShowNewChat] = useState(false)
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState('')
 
@@ -45,8 +44,77 @@ export default function Messages() {
   const typingTimer = useRef(null)
   const chatEndRef = useRef(null)
   const activeConvIdRef = useRef(null)
+  const searchInputRef = useRef(null)
 
-  const activeConv = conversations.find(c => c.id === activeConvId)
+  // Build the unified list of active chats + other employees
+  const unifiedChats = useMemo(() => {
+    const convsMap = new Map()
+    conversations.forEach(c => {
+      if (c.other_id) {
+        convsMap.set(String(c.other_id), c)
+      }
+    })
+
+    const items = []
+    const addedConvIds = new Set()
+    const currentUserId = user?.employeeId || user?.id
+
+    empList.forEach(emp => {
+      if (currentUserId && String(emp.id) === String(currentUserId)) return
+
+      const existingConv = convsMap.get(String(emp.id))
+      const isOnline = onlineUserIds.has(emp.id) || onlineUserIds.has(String(emp.id))
+      if (existingConv) {
+        items.push({
+          ...existingConv,
+          isPlaceholder: false,
+          job_title: emp.job_title || existingConv.job_title || existingConv.other_role,
+          other_name: emp.full_name || existingConv.other_name,
+          online: isOnline,
+        })
+        addedConvIds.add(String(existingConv.id))
+      } else {
+        items.push({
+          id: `emp-${emp.id}`,
+          isPlaceholder: true,
+          other_id: emp.id,
+          other_name: emp.full_name,
+          job_title: emp.job_title,
+          last_message: 'No messages yet — Click to start chatting',
+          last_message_at: null,
+          unread_count: 0,
+          online: isOnline,
+        })
+      }
+    })
+
+    conversations.forEach(c => {
+      if (!addedConvIds.has(String(c.id))) {
+        if (currentUserId && String(c.other_id) === String(currentUserId)) return
+        const isOnline = onlineUserIds.has(c.other_id) || onlineUserIds.has(String(c.other_id))
+        items.push({
+          ...c,
+          isPlaceholder: false,
+          online: isOnline,
+        })
+      }
+    })
+
+    return items.sort((a, b) => {
+      const aTime = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
+      const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
+
+      if (aTime !== bTime) {
+        return bTime - aTime
+      }
+
+      const nameA = (a.other_name || '').toLowerCase()
+      const nameB = (b.other_name || '').toLowerCase()
+      return nameA.localeCompare(nameB)
+    })
+  }, [conversations, empList, user?.id, onlineUserIds])
+
+  const activeConv = unifiedChats.find(c => String(c.id) === String(activeConvId))
 
   useEffect(() => {
     activeConvIdRef.current = activeConvId
@@ -100,10 +168,23 @@ export default function Messages() {
       ))
     })
 
-    socket.on('user:online', ({ userId }) =>
-      setConversations(prev => prev.map(c => c.other_id === userId ? { ...c, online: true } : c)))
-    socket.on('user:offline', ({ userId }) =>
-      setConversations(prev => prev.map(c => c.other_id === userId ? { ...c, online: false } : c)))
+    socket.on('online_users_list', ({ onlineIds }) => {
+      setOnlineUserIds(new Set(onlineIds))
+    })
+    socket.on('user:online', ({ userId }) => {
+      setOnlineUserIds(prev => {
+        const next = new Set(prev)
+        next.add(userId)
+        return next
+      })
+    })
+    socket.on('user:offline', ({ userId }) => {
+      setOnlineUserIds(prev => {
+        const next = new Set(prev)
+        next.delete(userId)
+        return next
+      })
+    })
     socket.on('user_typing', ({ conversationId, isTyping }) => {
       if (String(conversationId ?? '') === String(activeConvIdRef.current ?? '')) setTyping(isTyping)
     })
@@ -149,13 +230,13 @@ export default function Messages() {
     } finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { loadConversations() }, [loadConversations])
-
-  // ── Load employees for new chat ──────────────────────────────────────────────
+  // ── Load conversations and employees on mount ──────────────────────────────────
   useEffect(() => {
-    if (!showNewChat || empList.length > 0) return
-    listEmployees({ limit: 100 }).then(d => setEmpList(d?.employees || [])).catch(() => { })
-  }, [showNewChat, empList.length])
+    loadConversations()
+    listEmployees({ limit: 100 })
+      .then(d => setEmpList(d?.employees || []))
+      .catch((err) => console.error('Failed to load employee list:', err))
+  }, [loadConversations])
 
   // ── Load messages when conversation changes ──────────────────────────────────
   const [msgError, setMsgError] = useState('')
@@ -199,7 +280,7 @@ export default function Messages() {
     setNewMessage(''); setSending(true)
 
     const optimistic = {
-      id: `opt-${Date.now()}`, sender_id: user?.id,
+      id: `opt-${Date.now()}`, sender_id: user?.employeeId || user?.id,
       body, created_at: new Date().toISOString(), is_read: false, optimistic: true,
     }
     setMessages(prev => [...prev, optimistic])
@@ -234,20 +315,25 @@ export default function Messages() {
   }
 
   const handleStartChat = async (emp) => {
+    const employeeId = emp.id && typeof emp.id === 'number' ? emp.id : emp.other_id
+    if (!employeeId) return
     try {
-      const { conversation } = await openConversation(emp.id)
+      const { conversation } = await openConversation(employeeId)
       await loadConversations()
       setActiveConvId(conversation.id)
-      setShowNewChat(false); setNewChatSearch('')
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.error('Failed to start chat:', err)
+    }
   }
 
-  const filteredConvs = conversations.filter(c =>
-    !search || c.other_name?.toLowerCase().includes(search.toLowerCase()))
-  const filteredEmps = empList.filter(e =>
-    !newChatSearch ||
-    e.full_name?.toLowerCase().includes(newChatSearch.toLowerCase()) ||
-    e.emp_id?.toLowerCase().includes(newChatSearch.toLowerCase()))
+  const filteredChats = unifiedChats.filter(c => {
+    if (!search) return true
+    const query = search.toLowerCase()
+    return (
+      c.other_name?.toLowerCase().includes(query) ||
+      c.job_title?.toLowerCase().includes(query)
+    )
+  })
 
   return (
     <div className="flex h-[calc(100vh-100px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -260,44 +346,12 @@ export default function Messages() {
               <h1 className="text-xl font-black text-slate-900 tracking-tight">Messages</h1>
               <div className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-slate-300'}`} title={connected ? 'Connected' : 'Disconnected'} />
             </div>
-            <button
-              onClick={() => setShowNewChat(v => !v)}
-              className="h-8 w-8 rounded-full bg-emerald-50 text-[#0F766E] flex items-center justify-center hover:bg-emerald-100 transition-colors"
-              title="New conversation">
-              {showNewChat ? <HiXMark className="h-4 w-4" /> : <HiPlus className="h-5 w-5" />}
-            </button>
           </div>
 
-          {/* New chat search */}
-          {showNewChat && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 space-y-2">
-              <p className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Start new conversation</p>
-              <div className="relative">
-                <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                <input type="text" placeholder="Search employee…" value={newChatSearch}
-                  onChange={e => setNewChatSearch(e.target.value)}
-                  className="w-full rounded-lg border-none bg-white py-2 pl-8 pr-3 text-xs shadow-sm focus:ring-1 focus:ring-emerald-400 outline-none" />
-              </div>
-              <div className="max-h-40 overflow-y-auto space-y-1">
-                {filteredEmps.slice(0, 20).map(emp => (
-                  <button key={emp.id} onClick={() => handleStartChat(emp)}
-                    className="w-full flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white transition-colors text-left">
-                    <Avatar name={emp.full_name} size="xs" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate">{emp.full_name}</p>
-                      <p className="text-[9px] text-slate-400">{emp.job_title}</p>
-                    </div>
-                  </button>
-                ))}
-                {filteredEmps.length === 0 && <p className="text-xs text-slate-400 text-center py-2">No employees found</p>}
-              </div>
-            </div>
-          )}
-
-          {/* Conversation search */}
+          {/* Unified search */}
           <div className="relative">
             <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input type="text" placeholder="Search chats…" value={search} onChange={e => setSearch(e.target.value)}
+            <input type="text" ref={searchInputRef} placeholder="Search employees & chats…" value={search} onChange={e => setSearch(e.target.value)}
               className="w-full rounded-xl border-none bg-white py-2 pl-9 pr-4 text-sm shadow-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" />
           </div>
         </div>
@@ -319,16 +373,13 @@ export default function Messages() {
               <p className="text-xs font-bold text-orange-700">⚠ Messaging unavailable</p>
               <p className="text-[10px] text-orange-600 leading-relaxed">{apiError}</p>
             </div>
-          ) : filteredConvs.length === 0 ? (
+          ) : filteredChats.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <HiChatBubbleLeftRight className="h-8 w-8 text-slate-200 mb-2" />
-              <p className="text-xs text-slate-400">No conversations yet</p>
-              <button onClick={() => setShowNewChat(true)} className="mt-2 text-xs font-bold text-[#0F766E] hover:underline">
-                Start one
-              </button>
+              <p className="text-xs text-slate-400">No employees or chats found</p>
             </div>
-          ) : filteredConvs.map(conv => (
-            <button key={conv.id} onClick={() => setActiveConvId(conv.id)}
+          ) : filteredChats.map(conv => (
+            <button key={conv.id} onClick={() => conv.isPlaceholder ? handleStartChat(conv) : setActiveConvId(conv.id)}
               className={`group flex w-full items-center gap-3 rounded-xl p-3 transition-all ${activeConvId === conv.id ? 'bg-white shadow-md ring-1 ring-slate-200/50' : 'hover:bg-white/60'}`}>
               <div className="relative shrink-0">
                 <Avatar name={conv.other_name} size="md" />
@@ -338,11 +389,16 @@ export default function Messages() {
               </div>
               <div className="min-w-0 flex-1 text-left">
                 <div className="flex items-center justify-between">
-                  <span className="truncate text-sm font-bold text-slate-900">{conv.other_name}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate text-sm font-bold text-slate-900">{conv.other_name}</span>
+                    {conv.job_title && (
+                      <span className="text-[10px] text-slate-400 truncate">{conv.job_title}</span>
+                    )}
+                  </div>
                   <span className="text-[10px] font-medium text-slate-400 shrink-0 ml-1">{formatTime(conv.last_message_at)}</span>
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-xs text-slate-500">{conv.last_message || 'No messages yet'}</p>
+                <div className="flex items-center justify-between gap-2 mt-0.5">
+                  <p className={`truncate text-xs ${conv.isPlaceholder ? 'text-slate-400 italic' : 'text-slate-500'}`}>{conv.last_message}</p>
                   {conv.unread_count > 0 && (
                     <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[#0F766E] px-1 text-[9px] font-bold text-white shrink-0">
                       {conv.unread_count}
@@ -415,7 +471,7 @@ export default function Messages() {
                   {messages.map((msg) => {
                     // Use == (loose) to handle int vs string mismatch between DB and JWT
                     // eslint-disable-next-line eqeqeq
-                    const isMine = msg.sender_id == user?.id
+                    const isMine = msg.sender_id == (user?.employeeId || user?.id)
                     const key = msg.optimistic ? msg.id : `msg-${msg.id}`
                     return (
                       <div key={key} className={`flex ${isMine ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-1 duration-200`}>
@@ -463,7 +519,7 @@ export default function Messages() {
                 Choose a contact from the left or start a new conversation.
               </p>
             </div>
-            <button onClick={() => setShowNewChat(true)}
+            <button onClick={() => searchInputRef.current?.focus()}
               className="flex items-center gap-2 rounded-xl bg-[#0F766E] px-5 py-2.5 text-sm font-bold text-white shadow-lg hover:scale-105 transition-all">
               <HiPlus className="h-4 w-4" /> New Conversation
             </button>

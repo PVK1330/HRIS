@@ -356,6 +356,9 @@ export function AuthProvider({ children }) {
       if (key === "system-settings" && user?.role === "admin") {
         return true;
       }
+      if (key === "messages") {
+        return true;
+      }
       if (
         (user?.role === "employee" || user?.role === "admin") &&
         planModuleKeys instanceof Set
