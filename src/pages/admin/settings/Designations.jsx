@@ -8,7 +8,6 @@ import {
   HiPencilSquare,
   HiPlus,
   HiTrash,
-  HiXMark,
   HiCheckBadge,
   HiUserCircle,
   HiTag,
@@ -207,27 +206,32 @@ export default function DesignationsManagement() {
     {
       key: 'name',
       label: 'Designation',
-      render: (v) => (
+      render: (v, row) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
             <HiBriefcase className="h-5 w-5" />
           </div>
-          <span className="text-sm font-semibold text-slate-900">{v}</span>
+          <div>
+            <div className="text-sm font-semibold text-slate-900">{v}</div>
+            {row.code ? (
+              <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{row.code}</div>
+            ) : null}
+          </div>
         </div>
       ),
     },
     {
       key: 'department_name',
-      label: 'Department Name',
-      render: (v) => <span className="text-sm font-medium text-slate-600">{v || '-'}</span>,
+      label: 'Department',
+      render: (v) => (
+        <span className="text-sm font-medium text-slate-600">{v || 'Not assigned'}</span>
+      ),
     },
     {
       key: 'description',
       label: 'Description',
-      render: (v) => (
-        <span className="max-w-[220px] truncate text-sm text-slate-600" title={v || ''}>
-          {v || '—'}
-        </span>
+      render: (_, row) => (
+        <span className="text-sm font-medium text-slate-600">{row.description || '-'}</span>
       ),
     },
     {
@@ -303,7 +307,7 @@ export default function DesignationsManagement() {
       {/* Top Title Bar with Moved Actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Designations Management</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Designation Management</h1>
           <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
             <span>Designations</span>
             <span className="text-slate-400">&gt;</span>
@@ -425,20 +429,20 @@ export default function DesignationsManagement() {
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
           <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
-            <div className="relative min-w-[200px] flex-1 max-w-md">
+            <div className="relative min-w-[250px] flex-1 max-w-md">
               <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search designation or department..."
+                placeholder="Search designation, department or description..."
                 className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
               />
             </div>
             <select
               value={departmentFilterId}
               onChange={(e) => setDepartmentFilterId(e.target.value)}
-              className="h-10 min-w-[180px] rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer"
+              className="h-10 min-w-[180px] cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]"
             >
               <option value="">All departments</option>
               {departmentOptions.map((d) => (
@@ -484,7 +488,7 @@ export default function DesignationsManagement() {
               {editMode ? 'Edit Designation' : 'Add New Designation'}
             </h2>
             <p className="text-xs font-medium text-slate-500">
-              Configure organizational roles and department mappings below.
+              Configure designation profile settings and department assignment below.
             </p>
           </div>
         }
@@ -502,7 +506,7 @@ export default function DesignationsManagement() {
               labelClassName="mb-1 block text-sm font-medium text-slate-800"
             />
             <Input
-              label="Department Name"
+              label="Department"
               name="departmentId"
               type="select"
               value={formData.departmentId}
@@ -518,7 +522,7 @@ export default function DesignationsManagement() {
               name="description"
               value={formData.description}
               onChange={handleFormChange}
-              placeholder="Optional description"
+              placeholder="Enter designation description"
               inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
               labelClassName="mb-1 block text-sm font-medium text-slate-800"
             />
