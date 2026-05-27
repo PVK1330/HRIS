@@ -15,6 +15,9 @@ export function Table({
   totalCount,
   currentPage,
   onPageChange,
+  square = false,
+  /** Optional Tailwind classes per data row (server-side pagination). */
+  rowClassName,
 }) {
   const [internalPage, setInternalPage] = useState(0)
 
@@ -49,7 +52,7 @@ export function Table({
   }
 
   return (
-    <div className="flex min-w-0 max-w-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className={`flex min-w-0 max-w-full flex-col overflow-hidden border border-gray-200 bg-white shadow-sm ${square ? 'rounded-none' : 'rounded-xl'}`}>
       <div
         className={`min-w-0 overflow-auto overscroll-contain ${maxHeightClass}`}
       >
@@ -73,7 +76,7 @@ export function Table({
                 <tr key={`sk-${i}`}>
                   {columns.map((col) => (
                     <td key={col.key} className={`px-3 py-3 sm:px-4 ${col.className || ''}`}>
-                      <div className="h-4 animate-pulse rounded bg-gray-200" />
+                      <div className={`h-4 animate-pulse bg-gray-200 ${square ? 'rounded-none' : 'rounded'}`} />
                     </td>
                   ))}
                 </tr>
@@ -92,7 +95,7 @@ export function Table({
                 <tr
                   key={row.id ?? ri}
                   onClick={() => onRowClick?.(row)}
-                  className={`${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                  className={`${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''} ${rowClassName ? rowClassName(row) : ''}`.trim()}
                 >
                   {columns.map((col) => {
                     const raw = row[col.key]

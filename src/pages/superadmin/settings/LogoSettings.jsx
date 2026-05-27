@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { HiPhoto, HiShieldCheck } from 'react-icons/hi2'
 import toast from 'react-hot-toast'
 
-import settingsService from '../../../services/settingsService.js'
+import { adminSettingsService } from '../../../services/adminSettingsService.js'
 
 const ACCEPT = 'image/png,image/jpeg,image/jpg,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,.ico'
 
@@ -27,11 +27,12 @@ export default function LogoSettings() {
   const refetch = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await settingsService.getLogo()
+      const res = await adminSettingsService.getSuperadminLogo()
+      const d = res?.data?.data
       setLogos({
-        largeLogo: res?.data?.largeLogo || '',
-        smallLogo: res?.data?.smallLogo || '',
-        favicon:   res?.data?.favicon   || '',
+        largeLogo: d?.largeLogo || '',
+        smallLogo: d?.smallLogo || '',
+        favicon:   d?.favicon   || '',
       })
     } catch (err) {
       toast.error(err?.message || 'Failed to load logos')
@@ -160,8 +161,8 @@ function LogoSlot({ title, caption, hint, type, currentUrl, onUploaded }) {
 
     setUploading(true)
     try {
-      const res = await settingsService.uploadLogo(type, fd)
-      const url = res?.data?.url
+      const res = await adminSettingsService.uploadSuperadminLogo(type, fd)
+      const url = res?.data?.data?.url
       toast.success(`${title} Updated`)
       onUploaded?.(url)
       window.dispatchEvent(

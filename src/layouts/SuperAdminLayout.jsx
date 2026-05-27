@@ -1,6 +1,6 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import settingsService from "../services/settingsService.js";
+import useTenantLogo from "../hooks/useTenantLogo.js";
 import {
   HiBars3,
   HiBell,
@@ -10,12 +10,13 @@ import {
   HiExclamationTriangle,
   HiGlobeAlt,
   HiHome,
+  HiLightBulb,
   HiLockClosed,
-  HiServer,
+  HiServerStack,
   HiShieldCheck,
-  HiSquares2X2,
   HiUserCircle,
   HiUsers,
+  HiWrenchScrewdriver,
 } from "react-icons/hi2";
 import { Sidebar } from "../components/ui/Sidebar.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
@@ -38,10 +39,23 @@ const superNavGroups = [
         path: '/superadmin/tenants',
         roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
+
       {
-        label: 'Pricing Plans',
+        label: 'Global Modules',
+        icon: HiWrenchScrewdriver,
+        path: '/superadmin/modules',
+        roles: ['superadmin'],
+      },
+      {
+        label: 'Subscription Plans',
         icon: HiCurrencyDollar,
         path: '/superadmin/subscriptions',
+        roles: ['superadmin', 'billing_admin'],
+      },
+      {
+        label: 'Subscription Features',
+        icon: HiLightBulb,
+        path: '/superadmin/subscription-features',
         roles: ['superadmin', 'billing_admin'],
       },
       {
@@ -65,12 +79,6 @@ const superNavGroups = [
         label: 'Permissions',
         icon: HiLockClosed,
         path: '/superadmin/permissions',
-        roles: ['superadmin'],
-      },
-      {
-        label: 'Modules',
-        icon: HiSquares2X2,
-        path: '/superadmin/modules',
         roles: ['superadmin'],
       },
       {
@@ -123,30 +131,7 @@ export default function SuperAdminLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [sidebarLogo, setSidebarLogo] = useState('')
-
-  const fetchLogo = useCallback(async () => {
-    try {
-      const res = await settingsService.getLogo()
-      setSidebarLogo(res?.data?.largeLogo || '')
-    } catch {
-      setSidebarLogo('')
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchLogo()
-    const handler = (e) => {
-      if (e?.detail?.type && e.detail.type !== 'large') return
-      if (e?.detail?.url !== undefined) {
-        setSidebarLogo(e.detail.url || '')
-      } else {
-        fetchLogo()
-      }
-    }
-    window.addEventListener('platform-logo-updated', handler)
-    return () => window.removeEventListener('platform-logo-updated', handler)
-  }, [fetchLogo])
+  const { logoUrl: sidebarLogo, loading: logoLoading } = useTenantLogo()
 
   const filteredNavGroups = useMemo(() => {
     return superNavGroups.map(group => ({
@@ -172,7 +157,9 @@ export default function SuperAdminLayout() {
         onLogout={logout}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
-        logoUrl={sidebarLogo}
+        logoUrl={sidebarLogo ?? undefined}
+        logoLoading={logoLoading}
+        logoFallbackLabel="HRIS"
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
         <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-border-tertiary bg-background-primary px-3 sm:h-16 sm:px-4">
@@ -224,7 +211,7 @@ export default function SuperAdminLayout() {
           </div>
         </header>
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-background-tertiary p-4 sm:p-6">
-          <div className="mx-auto min-w-0 max-w-[1600px]">
+          <div className="superadmin-ui mx-auto min-w-0 max-w-[1500px]">
             <Outlet />
           </div>
         </main>

@@ -1,17 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --primary: 10, 147, 81; /* #0a9351 - Emerald */
+    --primary-light: 236, 253, 245;
+  }
+
+  * {
+    font-family: 'Poppins', sans-serif !important;
+  }
+
   body {
-    @apply font-sans bg-gray-50 antialiased;
+    @apply bg-[#F8FAFC] text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
   }
 }
-button {
-  cursor: pointer;
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+  }
+
+  .premium-shadow {
+    @apply shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)];
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-1.5 h-1.5;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  }
+
+  /* Superadmin visual system */
+  .sa-page {
+    @apply space-y-6;
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  .sa-hero {
+    @apply relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#0D5F57] text-white shadow-xl shadow-emerald-900/20;
+  }
+
+  .sa-card {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .sa-card-head {
+    @apply flex items-center justify-between border-b border-slate-100 bg-slate-50/40 px-4 py-3;
+  }
+
+  .sa-title {
+    @apply text-xl font-bold tracking-tight text-slate-900;
+  }
+
+  .sa-subtitle {
+    @apply text-[11px] font-medium text-slate-500;
+  }
 }
 
-/* Ensure SweetAlert2 is above our Modals (which use z-[9999]) */
+/* Animations */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+/* Ensure SweetAlert2 is above our Modals */
 .swal2-container {
   z-index: 10000 !important;
+}
+
+button {
+  @apply transition-all duration-200 active:scale-[0.98];
+}
+
+/* Global Overrides */
+.h-full {
+  height: auto !important;
 }

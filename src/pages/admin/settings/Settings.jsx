@@ -1,647 +1,312 @@
-import { useMemo, useState } from 'react'
-import { Badge } from '../../../components/ui/Badge.jsx'
-import { Button } from '../../../components/ui/Button.jsx'
-import FileUpload from '../../../components/ui/FileUpload.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
-import { Modal } from '../../../components/ui/Modal.jsx'
-import { Table } from '../../../components/ui/Table.jsx'
-import { Toggle } from '../../../components/ui/Toggle.jsx'
-import { dashboardStats } from '../../../data/mockData.js'
-import { HiBuildingOffice, HiUsers, HiKey, HiCog6Tooth, HiShieldCheck, HiPencil, HiTrash, HiCalendarDays, HiPlus, HiPhoto, HiDevicePhoneMobile, HiQrCode } from 'react-icons/hi2'
+import { useState } from 'react'
+import {
+  HiArrowRightOnRectangle,
+  HiBell,
+  HiBriefcase,
+  HiBuildingOffice2,
+  HiCalendar,
+  HiClock,
+  HiCog6Tooth,
+  HiDocumentText,
+  HiKey,
+  HiLockClosed,
+  HiShieldCheck,
+  HiWrenchScrewdriver,
+} from 'react-icons/hi2'
+import GeneralSection from './sections/GeneralSection.jsx'
+import AttendanceSection from './sections/AttendanceSection.jsx'
+import LeaveSettings from './LeaveSettings.jsx'
+import { ModulesSection } from './sections/PlaceholderSections.jsx'
+import AssetSettingsSection from './sections/AssetSettingsSection.jsx'
+import DocumentSettings from './DocumentSettings.jsx'
+import NotificationSettings from './NotificationSettings.jsx'
+import PasswordSecurity from './PasswordSecurity.jsx'
+import RolesPermissions from './RolesPermissions.jsx'
+import SensitiveData from './SensitiveData.jsx'
+import TerminationTypes from './TerminationTypes.jsx'
+import ClearanceChecklistSettings from './ClearanceChecklist.jsx'
 
-const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+const navItems = [
+  { id: 'general',       label: 'General',              Icon: HiBuildingOffice2    },
+  { id: 'roles',         label: 'Roles & Permissions',  Icon: HiShieldCheck        },
+  { id: 'sensitive',     label: 'Sensitive Data',        Icon: HiLockClosed         },
+  { id: 'attendance',    label: 'Attendance & Time',     Icon: HiClock              },
+  { id: 'leave',         label: 'Leave Settings',        Icon: HiCalendar           },
+  { id: 'documents',     label: 'Document Settings',     Icon: HiDocumentText       },
+  { id: 'assets',        label: 'Asset Settings',        Icon: HiBriefcase          },
+  { id: 'exit',          label: 'Exit Settings',         Icon: HiArrowRightOnRectangle },
+  { id: 'notifications', label: 'Notifications',         Icon: HiBell               },
+  { id: 'security',      label: 'Password & Security',   Icon: HiKey                },
+]
 
-const MOCK_LEAVE_TYPES = [
-  { id: 1, name: 'Annual Leave', days: 30, carryForward: true, carryLimit: 10, color: 'blue' },
-  { id: 2, name: 'Sick Leave', days: 15, carryForward: false, carryLimit: 0, color: 'red' },
-  { id: 3, name: 'Maternity Leave', days: 90, carryForward: false, carryLimit: 0, color: 'purple' },
-  { id: 4, name: 'Paternity Leave', days: 5, carryForward: false, carryLimit: 0, color: 'orange' },
-];
+const sectionMeta = {
+  general: {
+    title: 'General',
+    subtitle: 'Company profile, working calendar, and default HR policies.',
+  },
+  roles: {
+    title: 'Roles & Permissions',
+    subtitle: 'Control module access and which employee records each role can view.',
+  },
+  sensitive: {
+    title: 'Sensitive Data',
+    subtitle: 'Control who can view salary, documents, and confidential employee data.',
+  },
+  attendance: {
+    title: 'Attendance & Time',
+    subtitle: 'Work hours, punctuality rules, regularization, and overtime policies.',
+  },
+  leave: {
+    title: 'Leave Settings',
+    subtitle: 'Configure leave types, entitlements, and approval rules.',
+  },
+  documents: {
+    title: 'Document Settings',
+    subtitle: 'Required document types, upload rules, and visibility per classification.',
+  },
+  assets: {
+    title: 'Asset Settings',
+    subtitle: 'Asset categories, assignment rules, and approval workflows.',
+  },
+  exit: {
+    title: 'Exit Settings',
+    subtitle: 'Termination types and clearance checklist templates for employee exits.',
+  },
+  notifications: {
+    title: 'Notifications',
+    subtitle: 'Enable channels and assign alerts to email, SMS, and in-app delivery.',
+  },
+  security: {
+    title: 'Password & Security',
+    subtitle: 'Password rules, session timeouts, and account recovery options.',
+  },
+}
 
-export default function Settings() {
-  const [companyName, setCompanyName] = useState('HRIS Holdings')
-  const [timezone, setTimezone] = useState('Asia/Dubai')
-  const [notify, setNotify] = useState(true)
-  const [files, setFiles] = useState({})
-  const [activeTab, setActiveTab] = useState('company')
-  const [teamModalOpen, setTeamModalOpen] = useState(false)
-  const [editTeamMode, setEditTeamMode] = useState(false)
-  const [editingTeamId, setEditingTeamId] = useState(null)
-  const [teamFormData, setTeamFormData] = useState({ name: '', email: '', role: '', department: '', status: 'Active' })
-  const [searchTeam, setSearchTeam] = useState('')
-  const [roleModalOpen, setRoleModalOpen] = useState(false)
-  const [editRoleMode, setEditRoleMode] = useState(false)
-  const [editingRoleId, setEditingRoleId] = useState(null)
-  const [roleFormData, setRoleFormData] = useState({ name: '', description: '', permissions: [] })
-  
-  // Security settings state
-  const [twoFactorAuth, setTwoFactorAuth] = useState(true)
-  const [sessionTimeout, setSessionTimeout] = useState(true)
-  const [ipWhitelist, setIpWhitelist] = useState(false)
-  const [passwordComplexity, setPasswordComplexity] = useState(true)
-  const [loginMonitoring, setLoginMonitoring] = useState(true)
-  const [show2FAModal, setShow2FAModal] = useState(false)
-  const [faStep, setFaStep] = useState(1)
-  
-  // Module visibility state
-  const [moduleVisibility, setModuleVisibility] = useState({
-    employeeDirectory: true,
-    attendance: true,
-    leave: true,
-    performance: true,
-    documents: true,
-    visa: true,
-    departments: true,
-    projects: true,
-    tasks: true,
-    payroll: true
-  })
-  
-  // Attendance & Leave configuration state
-  const [workingHours, setWorkingHours] = useState('9:00 AM - 6:00 PM')
-  const [workingDays, setWorkingDays] = useState('Monday - Friday')
-  const [annualLeaveDays, setAnnualLeaveDays] = useState('30')
-  const [sickLeaveDays, setSickLeaveDays] = useState('15')
-  
-  // Leave Type state
-  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
-  const [editLeaveMode, setEditLeaveMode] = useState(false);
-  const [leaveFormData, setLeaveFormData] = useState({ name: '', days: '', carryForward: false, carryLimit: 0 });
+const EXIT_TABS = [
+  { id: 'termination', label: 'Termination Types',   Icon: HiArrowRightOnRectangle },
+  { id: 'clearance',   label: 'Clearance Checklist', Icon: HiWrenchScrewdriver     },
+]
 
-  // Sensitive data access state
-  const [salaryAccess, setSalaryAccess] = useState('Admin Only')
-  const [performanceAccess, setPerformanceAccess] = useState('Admin Only')
-  const [visaAccess, setVisaAccess] = useState('Admin Only')
-  const [contactAccess, setContactAccess] = useState('Admin Only')
-
-  const teamMembers = useMemo(
-    () => [
-      { id: 1, name: 'Sarah Johnson', email: 'sarah.johnson@hris.com', role: 'HR Admin', department: 'HR', status: 'Active', lastLogin: '2026-04-13' },
-      { id: 2, name: 'Michael Brown', email: 'michael.brown@hris.com', role: 'Manager', department: 'IT', status: 'Active', lastLogin: '2026-04-12' },
-      { id: 3, name: 'Emily Davis', email: 'emily.davis@hris.com', role: 'HR Admin', department: 'HR', status: 'Active', lastLogin: '2026-04-13' },
-      { id: 4, name: 'David Wilson', email: 'david.wilson@hris.com', role: 'Manager', department: 'Operations', status: 'Active', lastLogin: '2026-04-10' },
-      { id: 5, name: 'John Smith', email: 'john.smith@hris.com', role: 'Employee', department: 'IT', status: 'Active', lastLogin: '2026-04-13' },
-    ],
-    []
+function ExitSettingsSection() {
+  const [exitTab, setExitTab] = useState('termination')
+  return (
+    <div className="space-y-6 min-w-0">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {EXIT_TABS.map((t) => {
+          const Icon = t.Icon
+          const isActive = exitTab === t.id
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setExitTab(t.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all ${
+                isActive
+                  ? 'bg-[#0F766E] text-white shadow-2xs'
+                  : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+              <span>{t.label}</span>
+            </button>
+          )
+        })}
+      </div>
+      {exitTab === 'termination' ? (
+        <TerminationTypes embedded />
+      ) : (
+        <ClearanceChecklistSettings embedded />
+      )}
+    </div>
   )
+}
 
-  const [customRoles, setCustomRoles] = useState([
-    { id: 1, name: 'HR Admin', description: 'Full HR module access', userCount: 8, isSystem: true, permissions: ['employee_directory', 'attendance', 'leave', 'performance', 'documents', 'visa', 'departments', 'projects', 'tasks', 'templates', 'reports'] },
-    { id: 2, name: 'Manager', description: 'Team management access', userCount: 12, isSystem: true, permissions: ['employee_directory', 'attendance', 'leave', 'performance', 'documents'] },
-    { id: 3, name: 'Employee', description: 'Self-service access', userCount: 45, isSystem: true, permissions: ['attendance', 'leave', 'documents'] },
-  ])
-
-  const availablePermissions = useMemo(
-    () => [
-      { key: 'employee_directory', label: 'Employee Directory' },
-      { key: 'attendance', label: 'Attendance & Timesheet' },
-      { key: 'leave', label: 'Leave Management' },
-      { key: 'performance', label: 'Performance Management' },
-      { key: 'documents', label: 'Documents' },
-      { key: 'visa', label: 'Visa & Nationality' },
-      { key: 'departments', label: 'Departments' },
-      { key: 'projects', label: 'Projects' },
-      { key: 'tasks', label: 'Tasks' },
-      { key: 'templates', label: 'Template Generator' },
-      { key: 'reports', label: 'Reports' },
-      { key: 'settings', label: 'Settings' },
-    ],
-    []
-  )
-
-  const filteredTeam = useMemo(() => {
-    const query = searchTeam.trim().toLowerCase()
-    return teamMembers.filter((m) => {
-      if (!query) return true
-      return `${m.name} ${m.email} ${m.role}`.toLowerCase().includes(query)
-    })
-  }, [searchTeam])
-
-  const handleTeamFormChange = (e) => {
-    const { name, value } = e.target
-    setTeamFormData((prev) => ({ ...prev, [name]: value }))
+function ActiveSection({
+  active,
+  registerGeneralToolbar,
+  registerAttendanceToolbar,
+  registerAssetsToolbar,
+  registerLeaveToolbar,
+  registerSensitiveToolbar,
+  registerSecurityToolbar,
+  registerNotificationsToolbar,
+  registerRolesToolbar,
+}) {
+  switch (active) {
+    case 'general':
+      return <GeneralSection registerToolbar={registerGeneralToolbar} />
+    case 'roles':
+      return <RolesPermissions registerToolbar={registerRolesToolbar} />
+    case 'modules':
+      return <ModulesSection />
+    case 'sensitive':
+      return <SensitiveData registerToolbar={registerSensitiveToolbar} />
+    case 'attendance':
+      return <AttendanceSection registerToolbar={registerAttendanceToolbar} />
+    case 'leave':
+      return <LeaveSettings registerToolbar={registerLeaveToolbar} />
+    case 'documents':
+      return <DocumentSettings />
+    case 'assets':
+      return <AssetSettingsSection registerToolbar={registerAssetsToolbar} />
+    case 'exit':
+      return <ExitSettingsSection />
+    case 'notifications':
+      return <NotificationSettings registerToolbar={registerNotificationsToolbar} />
+    case 'security':
+      return <PasswordSecurity registerToolbar={registerSecurityToolbar} />
+    default:
+      return null
   }
+}
 
-  const resetTeamModal = () => {
-    setTeamFormData({ name: '', email: '', role: '', department: '', status: 'Active' })
-    setEditTeamMode(false)
-    setEditingTeamId(null)
-  }
+export default function HRISSettings() {
+  const [active, setActive] = useState('general')
+  const [generalToolbar, setGeneralToolbar] = useState(null)
+  const [attendanceToolbar, setAttendanceToolbar] = useState(null)
+  const [assetsToolbar, setAssetsToolbar] = useState(null)
+  const [leaveToolbar, setLeaveToolbar] = useState(null)
+  const [sensitiveToolbar, setSensitiveToolbar] = useState(null)
+  const [securityToolbar, setSecurityToolbar] = useState(null)
+  const [notificationsToolbar, setNotificationsToolbar] = useState(null)
+  const [rolesToolbar, setRolesToolbar] = useState(null)
 
-  const handleTeamSubmit = (e) => {
-    e.preventDefault()
-    console.log({ teamFormData, editTeamMode, editingTeamId })
-    resetTeamModal()
-    setTeamModalOpen(false)
-  }
+  const toolbar =
+    active === 'general'        ? generalToolbar        :
+    active === 'attendance'     ? attendanceToolbar     :
+    active === 'assets'         ? assetsToolbar         :
+    active === 'leave'          ? leaveToolbar          :
+    active === 'sensitive'      ? sensitiveToolbar      :
+    active === 'security'       ? securityToolbar       :
+    active === 'notifications'  ? notificationsToolbar  :
+    active === 'roles'          ? rolesToolbar          :
+    null
 
-  const handleEditTeam = (id) => {
-    const member = teamMembers.find((m) => m.id === id)
-    if (member) {
-      setTeamFormData({
-        name: member.name,
-        email: member.email,
-        role: member.role,
-        department: member.department,
-        status: member.status,
-      })
-      setEditTeamMode(true)
-      setEditingTeamId(id)
-      setTeamModalOpen(true)
-    }
-  }
-
-  const handleDeleteTeam = (id) => {
-    if (confirm('Are you sure you want to remove this team member?')) {
-      console.log('Delete team member:', id)
-    }
-  }
-
-  const handleRoleFormChange = (e) => {
-    const { name, value } = e.target
-    setRoleFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handlePermissionToggle = (permission) => {
-    setRoleFormData((prev) => ({
-      ...prev,
-      permissions: prev.permissions.includes(permission)
-        ? prev.permissions.filter((p) => p !== permission)
-        : [...prev.permissions, permission]
-    }))
-  }
-
-  const resetRoleModal = () => {
-    setRoleFormData({ name: '', description: '', permissions: [] })
-    setEditRoleMode(false)
-    setEditingRoleId(null)
-  }
-
-  const handleRoleSubmit = (e) => {
-    e.preventDefault()
-    console.log({ roleFormData, editRoleMode, editingRoleId })
-    resetRoleModal()
-    setRoleModalOpen(false)
-  }
-
-  const handleEditRole = (id) => {
-    const role = customRoles.find((r) => r.id === id)
-    if (role && !role.isSystem) {
-      setRoleFormData({
-        name: role.name,
-        description: role.description,
-        permissions: role.permissions || []
-      })
-      setEditRoleMode(true)
-      setEditingRoleId(id)
-      setRoleModalOpen(true)
-    }
-  }
-
-  const handleDeleteRole = (id) => {
-    const role = customRoles.find((r) => r.id === id)
-    if (role && !role.isSystem && confirm(`Are you sure you want to delete the role "${role.name}"?`)) {
-      setCustomRoles((prev) => prev.filter((r) => r.id !== id))
-    }
-  }
-
-  const handleModuleVisibilityToggle = (module) => {
-    setModuleVisibility((prev) => ({ ...prev, [module]: !prev[module] }))
-  }
-
-  const handleSaveCompanySettings = () => {
-    alert('Company settings saved successfully!')
-  }
-
-  const handleSaveSecuritySettings = () => {
-    alert('Security settings saved successfully!')
-  }
-
-  const handleSaveAttendanceSettings = () => {
-    alert('Attendance & Leave settings saved successfully!')
-  }
-
-  const handleSaveDataAccessSettings = () => {
-    alert('Data access settings saved successfully!')
-  }
-
-  const handleLeaveSubmit = (e) => {
-    e.preventDefault();
-    console.log('Leave Type Data:', leaveFormData);
-    setLeaveModalOpen(false);
-  };
-
-  const teamColumns = [
-    { key: 'name', label: 'Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'role', label: 'Role' },
-    { key: 'department', label: 'Department' },
-    { key: 'lastLogin', label: 'Last Login' },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (v) => <Badge label={v} color={v === 'Active' ? 'green' : 'red'} />,
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (_, row) => (
-        <div className="flex gap-2">
-          <Button label="Edit" variant="ghost" size="sm" icon={HiPencil} onClick={() => handleEditTeam(row.id)} />
-          <Button label="Delete" variant="ghost" size="sm" icon={HiTrash} onClick={() => handleDeleteTeam(row.id)} />
-        </div>
-      ),
-    },
-  ]
+  const activeMeta = navItems.find((n) => n.id === active)
+  const meta = sectionMeta[active]
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-gray-900">Settings & Permissions</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Organization defaults and system configuration.
-        </p>
-      </div>
-
-      <div className="flex gap-2 border-b border-gray-200 overflow-x-auto no-scrollbar">
-        {[
-          { id: 'company', label: 'Company Profile', icon: HiBuildingOffice },
-          { id: 'team', label: 'Team & Roles', icon: HiUsers },
-          { id: 'leave', label: 'Leave Settings', icon: HiCalendarDays },
-          { id: 'permissions', label: 'Module Permissions', icon: HiKey },
-          { id: 'security', label: 'Security', icon: HiShieldCheck },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all ${
-              activeTab === tab.id
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'company' && (
-        <div className="space-y-6">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Company Profile</h2>
-              <div className="mt-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <label className="text-[11px] font-bold text-slate-500 px-1 uppercase tracking-widest">Company Logo</label>
-                    <div className="relative group overflow-hidden rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center transition-all hover:border-blue-500 hover:bg-white">
-                        <img src="/HRIS_Logo.png" alt="Current Logo" className="h-12 w-auto object-contain mb-4 group-hover:scale-105 transition-transform" />
-                        <div className="text-center">
-                          <p className="text-[10px] font-bold text-slate-900 mb-0.5">Change Logo</p>
-                          <p className="text-[9px] text-slate-400">PNG, SVG (Max 1MB)</p>
-                        </div>
-                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-[11px] font-bold text-slate-500 px-1 uppercase tracking-widest">Favicon Icon</label>
-                    <div className="relative group overflow-hidden rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center transition-all hover:border-blue-500 hover:bg-white h-full">
-                        <div className="h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                          <img src="/HRIS_Logo.png" alt="Current Favicon" className="h-5 w-5 object-contain" />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] font-bold text-slate-900 mb-0.5">Change Favicon</p>
-                          <p className="text-[9px] text-slate-400">ICO, PNG (32x32)</p>
-                        </div>
-                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                  </div>
-                </div>
-                <Input
-                  label="Company name"
-                  name="companyName"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                />
-                <Input
-                  label="Timezone"
-                  name="timezone"
-                  type="select"
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  options={[
-                    { value: 'Asia/Dubai', label: 'Asia/Dubai' },
-                    { value: 'Asia/Riyadh', label: 'Asia/Riyadh' },
-                    { value: 'Europe/London', label: 'Europe/London' },
-                    { value: 'America/New_York', label: 'America/New_York' },
-                  ]}
-                />
-              </div>
-              <div className="mt-6 flex justify-end">
-                <Button label="Save Changes" variant="primary" onClick={handleSaveCompanySettings} />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="font-display text-lg font-bold text-gray-900">Localization</h2>
-              <div className="mt-4 space-y-4">
-                 <Input label="Fiscal Year Start" type="select" options={[{value: 'Jan', label: 'January'}]} value="Jan" />
-                 <Input label="Currency" type="select" options={[{value: 'AED', label: 'AED (Dirham)'}]} value="AED" />
-                 <Input label="Date Format" type="select" options={[{value: 'YYYY-MM-DD', label: 'YYYY-MM-DD'}]} value="YYYY-MM-DD" />
-              </div>
-            </div>
+    <div className="space-y-6 pb-12 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar — matches Employee Profile */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">System Settings Portal</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Administration</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Organization Configuration</span>
           </div>
         </div>
-      )}
 
-      {activeTab === 'team' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-lg font-bold text-gray-900">Team Members</h2>
-              <p className="mt-1 text-sm text-gray-500">Manage team members, roles, and permissions</p>
-            </div>
-            <Button label="Add Team Member" variant="primary" icon={HiPlus} onClick={() => setTeamModalOpen(true)} />
-          </div>
-
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <Input label="Search" name="search" placeholder="Search team members..." value={searchTeam} onChange={(e) => setSearchTeam(e.target.value)} />
-          </div>
-
-          <Table columns={teamColumns} data={filteredTeam} pageSize={10} />
-
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-lg font-bold text-gray-900">Roles</h2>
-              <Button label="Add Role" variant="outline" size="sm" onClick={() => { resetRoleModal(); setRoleModalOpen(true) }} />
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {customRoles.map((role) => (
-                <div key={role.id} className="rounded-lg border border-gray-200 p-4 relative group">
-                  <h3 className="font-bold text-gray-900">{role.name}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{role.description}</p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <Badge label={`${role.userCount} Users`} color="blue" />
-                    {!role.isSystem && (
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleEditRole(role.id)} className="p-1 text-gray-400 hover:text-blue-500"><HiPencil className="h-4 w-4" /></button>
-                        <button onClick={() => handleDeleteRole(role.id)} className="p-1 text-gray-400 hover:text-red-500"><HiTrash className="h-4 w-4" /></button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'leave' && (
-        <div className="space-y-6">
-           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-lg font-bold text-gray-900">Leave Policies</h2>
-              <p className="mt-1 text-sm text-gray-500">Configure leave types, accruals and carry-forward rules</p>
-            </div>
-            <Button label="Add Leave Type" variant="primary" icon={HiPlus} onClick={() => { setEditLeaveMode(false); setLeaveModalOpen(true); }} />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {MOCK_LEAVE_TYPES.map((type) => (
-              <div key={type.id} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all">
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-4">
-                    <div className={`h-12 w-12 rounded-xl bg-${type.color}-100 flex items-center justify-center text-${type.color}-600`}>
-                      <HiCalendarDays className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">{type.name}</h3>
-                      <p className="text-sm text-gray-500">{type.days} Days / Year</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                     <Button variant="ghost" size="sm" icon={HiPencil} onClick={() => { setEditLeaveMode(true); setLeaveModalOpen(true); }} />
-                     <Button variant="ghost" size="sm" icon={HiTrash} />
-                  </div>
-                </div>
-                <div className="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
-                   <div>
-                     <p className="text-xs font-bold text-gray-400 uppercase">Carry Forward</p>
-                     <p className="text-sm font-medium mt-1">{type.carryForward ? `Enabled (${type.carryLimit} days)` : 'Disabled'}</p>
-                   </div>
-                   <div>
-                     <p className="text-xs font-bold text-gray-400 uppercase">Accrual Method</p>
-                     <p className="text-sm font-medium mt-1">Monthly</p>
-                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'permissions' && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-lg font-bold text-gray-900">Module Visibility Control</h2>
-            <div className="mt-4 space-y-3">
-              {Object.keys(moduleVisibility).map((key) => (
-                <Toggle 
-                  key={key}
-                  checked={moduleVisibility[key]} 
-                  onChange={() => handleModuleVisibilityToggle(key)} 
-                  label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} 
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-lg font-bold text-gray-900">Sensitive Data Access</h2>
-            <div className="mt-4 space-y-4">
-              {['Salary Information', 'Performance Reviews', 'Visa Data'].map((label) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">{label}</span>
-                  <select className={selectClass} style={{ width: '150px' }}>
-                    <option>Admin Only</option>
-                    <option>HR Admin</option>
-                    <option>Manager</option>
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'security' && (
-        <div className="max-w-2xl">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
-            <h2 className="font-display text-lg font-bold text-gray-900">Security Configuration</h2>
-            <div className="space-y-4">
-              <Toggle checked={twoFactorAuth} onChange={setTwoFactorAuth} label="Require 2FA for all Admin users" />
-              
-              <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-50/50 border border-indigo-100 mt-6">
-                <div className="flex gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center text-indigo-600 shadow-sm">
-                    <HiDevicePhoneMobile className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">Personal 2FA</p>
-                    <p className="text-[11px] text-slate-500">Configure your authenticator app.</p>
-                  </div>
-                </div>
-                <Button label="Configure" variant="outline" size="sm" onClick={() => { setFaStep(1); setShow2FAModal(true); }} />
-              </div>
-
-              <Toggle checked={sessionTimeout} onChange={setSessionTimeout} label="Automatic logout after 30m inactivity" />
-              <Toggle checked={passwordComplexity} onChange={setPasswordComplexity} label="Enforce complex password rules" />
-              <Toggle checked={loginMonitoring} onChange={setLoginMonitoring} label="Email on new device login" />
-            </div>
-            <div className="pt-4 border-t border-gray-100 flex justify-end">
-               <Button label="Update Security Policy" variant="primary" onClick={handleSaveSecuritySettings} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modals */}
-      <Modal isOpen={teamModalOpen} onClose={() => { resetTeamModal(); setTeamModalOpen(false) }} title={editTeamMode ? 'Edit Team Member' : 'Add Team Member'} size="md">
-        <form onSubmit={handleTeamSubmit} className="space-y-4">
-          <Input label="Full Name" name="name" value={teamFormData.name} onChange={handleTeamFormChange} required />
-          <Input label="Email" name="email" type="email" value={teamFormData.email} onChange={handleTeamFormChange} required />
-          <Input label="Role" name="role" type="select" options={[{value: 'HR Admin', label: 'HR Admin'}, {value: 'Manager', label: 'Manager'}]} value={teamFormData.role} onChange={handleTeamFormChange} required />
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setTeamModalOpen(false)} />
-            <Button type="submit" label="Save Member" variant="primary" />
-          </div>
-        </form>
-      </Modal>
-
-      <Modal isOpen={leaveModalOpen} onClose={() => setLeaveModalOpen(false)} title={editLeaveMode ? 'Edit Leave Type' : 'Add Leave Type'} size="md">
-        <form onSubmit={handleLeaveSubmit} className="space-y-4">
-          <Input label="Leave Name" name="name" value={leaveFormData.name} onChange={(e) => setLeaveFormData({...leaveFormData, name: e.target.value})} required placeholder="e.g. Vacation" />
-          <Input label="Days Per Year" name="days" type="number" value={leaveFormData.days} onChange={(e) => setLeaveFormData({...leaveFormData, days: e.target.value})} required />
-          <div className="flex items-center gap-4 py-2">
-            <Toggle checked={leaveFormData.carryForward} onChange={(val) => setLeaveFormData({...leaveFormData, carryForward: val})} label="Enable Carry Forward" />
-          </div>
-          {leaveFormData.carryForward && (
-            <Input label="Carry Forward Limit (Days)" type="number" value={leaveFormData.carryLimit} onChange={(e) => setLeaveFormData({...leaveFormData, carryLimit: e.target.value})} />
-          )}
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setLeaveModalOpen(false)} />
-            <Button type="submit" label="Save Policy" variant="primary" />
-          </div>
-        </form>
-      </Modal>
-
-      <Modal isOpen={roleModalOpen} onClose={() => setRoleModalOpen(false)} title={editRoleMode ? 'Edit Role' : 'Add Role'} size="lg">
-        <form onSubmit={handleRoleSubmit} className="space-y-4">
-          <Input label="Role Name" name="name" value={roleFormData.name} onChange={handleRoleFormChange} required />
-          <Input label="Description" name="description" value={roleFormData.description} onChange={handleRoleFormChange} />
-          <div className="mt-4">
-            <h3 className="font-semibold text-gray-900 mb-3 text-sm">Module Permissions</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {availablePermissions.map((perm) => (
-                <div key={perm.key} className="flex items-center gap-2">
-                  <input type="checkbox" id={`perm-${perm.key}`} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                  <label htmlFor={`perm-${perm.key}`} className="text-sm text-gray-700">{perm.label}</label>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={() => setRoleModalOpen(false)} />
-            <Button type="submit" label="Create Role" variant="primary" />
-          </div>
-        </form>
-      </Modal>
-
-      <Modal 
-        isOpen={show2FAModal} 
-        onClose={() => setShow2FAModal(false)} 
-        title="Setup Two-Factor Auth"
-        size="md"
-      >
-        <div className="p-2">
-          {faStep === 1 ? (
-            <div className="space-y-6 text-center">
-              <div className="mx-auto h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                <HiQrCode className="h-10 w-10" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-slate-900">Scan QR Code</h3>
-                <p className="text-sm text-slate-500 max-w-[240px] mx-auto leading-relaxed">
-                  Open <strong>Google Authenticator</strong> or your preferred 2FA app to scan the code.
-                </p>
-              </div>
-              
-              {/* Live Scannable QR Code */}
-              <div className="mx-auto w-44 h-44 bg-white border-2 border-slate-100 rounded-2xl p-4 shadow-xl flex items-center justify-center relative overflow-hidden">
-                <img 
-                   src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=otpauth://totp/HRIS:Admin?secret=B477H7S8L99S&issuer=HRIS" 
-                   alt="Authenticator QR Code" 
-                   className="w-full h-full object-contain"
-                />
-              </div>
-
-              <div className="space-y-2">
-                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Manual Setup Code</p>
-                 <div className="flex items-center justify-center gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-100 border-dashed">
-                    <code className="text-xs font-bold text-slate-700">KJHA 82HS 12LK P092</code>
-                    <button className="text-indigo-600 text-[10px] font-bold">Copy Code</button>
-                 </div>
-              </div>
-
-              <div className="flex items-center justify-center gap-4 grayscale opacity-30">
-                 <span className="text-[9px] font-bold uppercase tracking-widest border border-slate-900 px-2 py-1 rounded">Google</span>
-                 <span className="text-[9px] font-bold uppercase tracking-widest border border-slate-900 px-2 py-1 rounded">Microsoft</span>
-                 <span className="text-[9px] font-bold uppercase tracking-widest border border-slate-900 px-2 py-1 rounded">Authy</span>
-              </div>
-
-              <Button 
-                label="Next: Verify Token" 
-                variant="primary" 
-                className="w-full py-3 bg-slate-900 rounded-xl" 
-                onClick={() => setFaStep(2)}
-              />
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 shrink-0">
+          {toolbar ? (
+            <>
+              <button
+                type="button"
+                disabled={!toolbar.dirty || toolbar.saving}
+                onClick={() => toolbar?.onDiscard?.()}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#0F766E] transition-colors shadow-2xs shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                disabled={toolbar.disableSave}
+                onClick={() => toolbar?.onSave?.()}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-none bg-[#0F766E] px-3 text-xs font-bold text-white hover:bg-[#0c6b64] transition-colors shadow-2xs shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {toolbar?.saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </>
           ) : (
-            <div className="space-y-6 text-center">
-              <div className="mx-auto h-16 w-16 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                <HiShieldCheck className="h-10 w-10" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-slate-900">Verification</h3>
-                <p className="text-sm text-slate-500">Enter the 6-digit code from your app.</p>
-              </div>
-
-              <div className="flex justify-center gap-2">
-                {Array.from({length: 6}).map((_, i) => (
-                  <input 
-                    key={i}
-                    type="text" 
-                    maxLength={1}
-                    className="w-10 h-12 bg-slate-50 border-2 border-transparent rounded-lg text-center text-lg font-bold text-slate-900 focus:bg-white focus:border-indigo-500 outline-none"
-                    placeholder="0"
-                  />
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <Button label="Back" variant="ghost" className="flex-1" onClick={() => setFaStep(1)} />
-                <Button label="Enable 2FA" variant="primary" className="flex-2 bg-indigo-600 rounded-xl" onClick={() => {
-                  alert('2FA enabled!');
-                  setShow2FAModal(false);
-                }} />
-              </div>
-            </div>
+            <span className="text-xs font-medium text-slate-400 hidden sm:inline">Auto-saved or read-only</span>
           )}
         </div>
-      </Modal>
+      </div>
+
+      {/* Context header panel — matches Employee Profile identity card */}
+      <div className="relative overflow-hidden rounded-none border border-slate-200 bg-white p-4 shadow-2xs min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="relative shrink-0">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-emerald-50 text-[#0F766E] shadow-2xs">
+              <HiCog6Tooth className="h-6 w-6" aria-hidden />
+            </div>
+            <div
+              className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-white"
+              title="Active configuration"
+            >
+              <span className="h-1 w-1 rounded-full bg-white" />
+            </div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 flex items-center gap-1.5">
+              <HiCog6Tooth className="h-3.5 w-3.5 shrink-0 text-[#0F766E]" aria-hidden />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F766E] leading-none">System Settings</span>
+            </div>
+            <h2 className="mb-1.5 truncate text-xl font-black uppercase leading-none tracking-tight text-slate-900">
+              {meta?.title || 'General'}
+            </h2>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-black leading-none rounded-none border border-slate-200 bg-slate-100 px-2 py-0.5 text-slate-700">
+                {activeMeta?.label || '—'}
+              </span>
+              {meta?.subtitle ? (
+                <span className="text-xs font-semibold leading-none text-slate-600 truncate max-w-xl">
+                  • {meta.subtitle}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tab card — matches Employee Profile tab strip */}
+      <div className="rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:p-5 min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {navItems.map((item) => {
+              const isActive = active === item.id
+              const Icon = item.Icon
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActive(item.id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-[#0F766E] text-white shadow-2xs'
+                      : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                  <span>{item.label}</span>
+                </button>
+              )
+            })}
+          </div>
+          <div className="flex items-center gap-1.5 border-t border-slate-100 pt-2.5 text-xs text-slate-400">
+            <HiClock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span className="truncate">
+              <span className="font-medium">Active module </span>
+              <span className="font-bold text-slate-600">{activeMeta?.label || '—'}</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="min-w-0 p-4 sm:p-6">
+          <ActiveSection
+            active={active}
+            registerGeneralToolbar={setGeneralToolbar}
+            registerAttendanceToolbar={setAttendanceToolbar}
+            registerAssetsToolbar={setAssetsToolbar}
+            registerLeaveToolbar={setLeaveToolbar}
+            registerSensitiveToolbar={setSensitiveToolbar}
+            registerSecurityToolbar={setSecurityToolbar}
+            registerNotificationsToolbar={setNotificationsToolbar}
+            registerRolesToolbar={setRolesToolbar}
+          />
+        </div>
+      </div>
     </div>
   )
 }

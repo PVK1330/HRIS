@@ -5,11 +5,14 @@ import { Button } from '../../components/ui/Button.jsx'
 import { Input } from '../../components/ui/Input.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import axios from 'axios'
+import { parseTenantSlugFromHostname } from '../../utils/tenantSlug.js'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
+const LAST_TENANT_ID_KEY = 'hris_last_tenant_id'
+
 const ROLE_TABS = [
-  { id: 'admin', label: 'Organization Admin', defaultEmail: 'admin@acme.com', defaultPassword: 'admin@acme.com', icon: HiBuildingOffice2 },
+  { id: 'admin', label: 'Organization Admin', defaultEmail: '', defaultPassword: '', icon: HiBuildingOffice2 },
   { id: 'superadmin', label: 'Super Admin', defaultEmail: 'superadmin@hris.com', defaultPassword: 'SuperAdmin123', icon: HiLockClosed },
 ]
 
@@ -30,20 +33,34 @@ export default function Login() {
   const { login, user } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('admin')
-  const [email, setEmail] = useState('admin@acme.com')
-  const [password, setPassword] = useState('admin@acme.com')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [stage, setStage] = useState('login') // 'login' | 'twoFactor'
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState(null)
+  const tenantSlugFromHost =
+    typeof window !== 'undefined' ? parseTenantSlugFromHostname(window.location.hostname) : null
+
+  const [organizationId, setOrganizationId] = useState(() => {
+    if (tenantSlugFromHost) return ''
+    try {
+      return typeof window !== 'undefined' ? (window.localStorage.getItem(LAST_TENANT_ID_KEY) || '') : ''
+    } catch {
+      return ''
+    }
+  })
 
   // Effect to navigate after user is set
   useEffect(() => {
     if (user) {
       const target = POST_LOGIN[user.role]
-      if (target) navigate(target, { replace: true })
+      // Only navigate if we have a target and we're not already there (or trying to go there)
+      if (target && window.location.pathname !== target) {
+        navigate(target, { replace: true })
+      }
     }
   }, [user, navigate])
 
@@ -57,10 +74,27 @@ export default function Login() {
       const isSuperAdmin = activeTab === 'superadmin'
       const endpoint = isSuperAdmin ? '/superadmin/login' : '/auth/login'
 
-      const response = await axios.post(`${API_URL}/api/v1${endpoint}`, {
-        email,
-        password
-      })
+      const body = { email, password }
+      if (!isSuperAdmin) {
+        const slug =
+          tenantSlugFromHost || parseTenantSlugFromHostname(window.location.hostname)
+        if (slug) {
+          body.tenantSlug = slug
+        } else {
+          let tid = parseInt(String(organizationId || '').trim(), 10)
+          if (!Number.isInteger(tid) || tid <= 0) {
+            try {
+              const stored = localStorage.getItem(LAST_TENANT_ID_KEY)
+              tid = parseInt(String(stored || ''), 10)
+            } catch {
+              /* ignore */
+            }
+          }
+          if (Number.isInteger(tid) && tid > 0) body.tenantId = tid
+        }
+      }
+
+      const response = await axios.post(`${API_URL}/api/v1${endpoint}`, body)
       const result = response.data
 
       if (!result.success) {
@@ -75,7 +109,24 @@ export default function Login() {
 
       // Standard login success
       const userData = isSuperAdmin ? result.data.superadmin : result.data.user
-      login(userData, result.data.token)
+      if (!isSuperAdmin && userData) {
+        const tid = userData.tenantId ?? userData.tenant_id
+        if (tid != null && tid !== '') {
+          try {
+            localStorage.setItem(LAST_TENANT_ID_KEY, String(tid))
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+      login(
+        userData, 
+        result.data.token, 
+        result.data.plan_details || [], 
+        result.data.plan_features || [],
+        result.data.tenant_features || [],
+        result.data.allowedModules,
+      )
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Login failed'
       setError(msg)
@@ -99,7 +150,14 @@ export default function Login() {
         throw new Error(result.message || 'Verification failed')
       }
 
-      login(result.data.superadmin, result.data.token)
+      login(
+        result.data.superadmin, 
+        result.data.token, 
+        result.data.plan_details || [], 
+        result.data.plan_features || [],
+        result.data.tenant_features || [],
+        result.data.allowedModules,
+      )
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Verification failed'
       setError(msg)
@@ -196,11 +254,15 @@ export default function Login() {
 
                 <div className="space-y-5">
                   <Input
-                    label="Email Address"
+                    label={tenantSlugFromHost && activeTab === 'admin' ? 'Work email or username' : 'Email Address'}
                     labelClassName={labelUpper}
                     name="email"
-                    type="email"
-                    placeholder="admin@company.com"
+                    type={tenantSlugFromHost && activeTab === 'admin' ? 'text' : 'email'}
+                    placeholder={
+                      tenantSlugFromHost && activeTab === 'admin'
+                        ? 'admin@company.com or portal username'
+                        : 'admin@company.com'
+                    }
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -242,6 +304,26 @@ export default function Login() {
                       </Link>
                     </div>
                   </div>
+
+                  {activeTab === 'admin' && !tenantSlugFromHost ? (
+                    <Input
+                      label="Organization ID"
+                      labelClassName={labelUpper}
+                      name="organizationId"
+                      type="text"
+                      placeholder="e.g. 4"
+                      helpText="Required on localhost when not using your company subdomain (e.g. your-org.localhost:5173). Org admins can also sign in on the main URL with their organization email only."
+                      value={organizationId}
+                      onChange={(e) => setOrganizationId(e.target.value)}
+                      disabled={loading}
+                    />
+                  ) : null}
+                  {activeTab === 'admin' && tenantSlugFromHost ? (
+                    <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                      Signing in to organization workspace:{' '}
+                      <span className="font-semibold">{tenantSlugFromHost}</span>
+                    </p>
+                  ) : null}
 
                   <div>
                     <p className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wider text-[10px]">Quick Login Roles</p>
@@ -286,8 +368,7 @@ export default function Login() {
                           <p className="text-xs font-mono font-medium text-gray-700">{password}</p>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </div>                  </div>
 
                   {error && (
                     <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

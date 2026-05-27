@@ -1,104 +1,99 @@
-import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { HiMagnifyingGlass, HiUsers, HiClock, HiCalendar, HiDocument, HiCreditCard, HiClipboardDocumentCheck, HiChartBar, HiBuildingOffice, HiChevronLeft, HiChevronRight } from 'react-icons/hi2'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import {
+  HiArrowPath,
+  HiArrowTrendingUp,
+  HiBellAlert,
+  HiBriefcase,
+  HiCalendarDays,
+  HiChartBar,
+  HiCheckCircle,
+  HiClock,
+  HiCreditCard,
+  HiDocumentArrowDown,
+  HiMegaphone,
+  HiUserGroup,
+  HiArrowPath,
+  HiQuestionMarkCircle
+  HiUsers,
+} from 'react-icons/hi2'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import { Avatar } from '../../components/ui/Avatar.jsx'
 import { Badge } from '../../components/ui/Badge.jsx'
-import { Button } from '../../components/ui/Button.jsx'
-import { Input } from '../../components/ui/Input.jsx'
-import { StatCard } from '../../components/ui/StatCard.jsx'
-import { Table } from '../../components/ui/Table.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { employees } from '../../data/mockData.js'
+import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
+import { fetchAdminDashboard, fetchEmployeeDashboard } from '../../services/dashboardService.js'
 
-const dotClass = {
-  blue: 'bg-blue-500',
-  green: 'bg-green-500',
-  yellow: 'bg-yellow-500',
-  red: 'bg-red-600',
-}
-
-const alertTone = {
-  red: 'border-red-100 bg-red-50 text-red-800',
-  blue: 'border-blue-100 bg-blue-50 text-blue-800',
-  green: 'border-green-100 bg-green-50 text-green-800',
-}
-
-// Dummy announcements data
-const dummyAnnouncements = [
+const FALLBACK_ANNOUNCEMENTS = [
   {
     id: 1,
-    title: 'Company Annual Event',
-    date: '2026-04-25',
-    timing: '3:00 PM - 5:00 PM',
-    details: 'Join us for our annual company event featuring awards, networking, and light refreshments. Location: Main Conference Hall. RSVP required.',
+    title: 'Annual General Meeting 2026',
+    content: 'The annual general meeting for all shareholders and employees will be held in the main auditorium.',
+    priority: 'High',
+    created_at: new Date().toISOString(),
   },
   {
     id: 2,
-    title: 'System Maintenance',
-    date: '2026-04-20',
-    timing: '10:00 PM - 2:00 AM',
-    details: 'The HR system will be under maintenance. Please save your work before 10:00 PM. Expected downtime: 4 hours.',
-  },
-  {
-    id: 3,
-    title: 'Training Session: Professional Development',
-    date: '2026-05-10',
-    timing: '2:00 PM - 4:00 PM',
-    details: 'Mandatory training session on professional development and workplace ethics. Location: Training Room 1. Attendance required.',
+    title: 'New Health Insurance Policy',
+    content: 'We have updated our health insurance provider to ensure better coverage for all employees.',
+    priority: 'Standard',
+    created_at: new Date().toISOString(),
   },
 ]
 
-// Full year holidays organized by month with day numbers
-const fullYearHolidays = {
-  0: [ // January
-    { name: 'New Year Day', date: 'Jan 1', day: 1 },
-  ],
-  1: [], // February
-  2: [], // March
-  3: [ // April
-    { name: 'Eid al-Fitr', date: 'Apr 10-11', days: [10, 11] },
-    { name: 'Founding Day', date: 'Apr 18', day: 18 },
-  ],
-  4: [ // May
-    { name: 'Labor Day', date: 'May 1', day: 1 },
-    { name: 'Memorial Day', date: 'May 26', day: 26 },
-  ],
-  5: [ // June
-    { name: 'Mid Year Event', date: 'Jun 15', day: 15 },
-  ],
-  6: [ // July
-    { name: 'Independence Day', date: 'Jul 4', day: 4 },
-  ],
-  7: [ // August
-    { name: 'Summer Break', date: 'Aug 1-15', days: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] },
-  ],
-  8: [ // September
-    { name: 'Labor Day', date: 'Sep 2', day: 2 },
-  ],
-  9: [ // October
-    { name: 'Diwali', date: 'Oct 20', day: 20 },
-  ],
-  10: [ // November
-    { name: 'Thanksgiving', date: 'Nov 27', day: 27 },
-  ],
-  11: [ // December
-    { name: 'Christmas Day', date: 'Dec 25', day: 25 },
-    { name: 'New Year Eve', date: 'Dec 31', day: 31 },
-    { name: 'Company Annual Event', date: 'Dec 28', day: 28 },
-  ],
+const EMPTY_STATS = {
+  employees: { total: 0, active: 0, probation: 0, notice: 0 },
+  attendance: { present: 0, remote: 0, onLeave: 0, absent: 0 },
+  pending: { leaves: 0, documents: 0, expenses: 0 },
+  personal: { leaveBalance: 0, attendanceRate: '—', pendingTasks: 0 },
+  growthData: [],
+  celebrations: [],
+  expiryAlerts: [],
+  joinersExits: { newJoiners: [], exits: [] },
+  announcements: [],
+}
+
+function MetricCard({ label, value, subtitle, tone = 'slate' }) {
+  const tones = {
+    slate: 'from-slate-900 to-slate-800',
+    blue: 'from-blue-600 to-blue-500',
+    emerald: 'from-emerald-600 to-emerald-500',
+    amber: 'from-amber-600 to-amber-500',
+  }
+  return (
+    <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+        <span className={`h-2 w-2 rounded-full bg-gradient-to-r ${tones[tone] || tones.slate}`} />
+      </div>
+      <p className="mt-2 text-2xl font-black text-slate-900">{value}</p>
+      <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>
+    </div>
+  )
 }
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const navigate = useNavigate()
-  const [qEmp, setQEmp] = useState('')
-  const [qDoc, setQDoc] = useState('')
-  const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [searchResults, setSearchResults] = useState([])
-  const [showSearchResults, setShowSearchResults] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
-  const [selectedMonthForHolidays, setSelectedMonthForHolidays] = useState(new Date().getMonth())
-  
+  const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
+
+  const isManager = user?.role === 'manager'
+  const isEmployee = user?.role === 'employee'
+  const isHrView = user?.role === 'admin' || user?.role === 'hr_admin' || user?.role === 'hr_executive'
+
   const todayLabel = useMemo(
     () =>
       new Date().toLocaleDateString('en-GB', {
@@ -109,569 +104,440 @@ export default function Dashboard() {
       }),
     [],
   )
-  
-  // Dynamic statistics based on actual employee data
-  const dashboardStats = useMemo(() => {
-    const totalEmployees = employees.length
-    const activeEmployees = employees.filter((e) => e.status === 'Active').length
-    const onProbation = employees.filter((e) => e.status === 'Probation').length
-    const inNotice = employees.filter((e) => e.status === 'Notice Period').length
-    const todayInOffice = Math.floor(totalEmployees * 0.7)
-    const todayRemote = Math.floor(totalEmployees * 0.2)
-    const todayOnLeave = Math.floor(totalEmployees * 0.05)
-    const todayAbsent = totalEmployees - todayInOffice - todayRemote - todayOnLeave
-    const pendingLeaves = 5
-    const pendingDocuments = 3
-    const pendingExpenses = 7
-    
-    return {
-      totalEmployees,
-      activeEmployees,
-      onProbation,
-      inNotice,
-      todayInOffice,
-      todayRemote,
-      todayOnLeave,
-      todayAbsent,
-      pendingLeaves,
-      pendingDocuments,
-      pendingExpenses,
-    }
-  }, [])
-  
-  // Dynamic alerts based on actual data
-  const dashboardAlerts = useMemo(() => {
-    const expiringVisas = employees.filter((e) => {
-      // Simulate visa expiry check
-      return Math.random() > 0.8
-    })
-    
-    const alerts = [
-      {
-        id: 1,
-        type: 'Visa Expiry',
-        detail: `${expiringVisas.length} employee visas expiring soon`,
-        tone: 'red',
-      },
-      {
-        id: 2,
-        type: 'Leave Balance',
-        detail: '3 employees with low annual leave balance',
-        tone: 'blue',
-      },
-      {
-        id: 3,
-        type: 'Onboarding',
-        detail: '2 new employees completing onboarding',
-        tone: 'green',
-      },
-    ]
-    return alerts
-  }, [])
-  
-  // Dynamic birthdays and anniversaries
-  const birthdaysAndAnniversaries = useMemo(() => {
-    const today = new Date()
-    const currentMonth = today.getMonth()
-    const currentDay = today.getDate()
-    
-    return [
-      {
-        id: 1,
-        name: 'John Smith',
-        type: 'Birthday',
-        detail: 'Birthday Today',
-        icon: '🎂',
-        tone: 'blue',
-      },
-      {
-        id: 2,
-        name: 'Sarah Johnson',
-        type: 'Anniversary',
-        detail: '3 Years Anniversary',
-        icon: '🎉',
-        tone: 'purple',
-      },
-    ]
-  }, [])
-  
-  // Dynamic calendar
-  const calendarDays = useMemo(() => {
-    const year = currentMonth.getFullYear()
-    const month = currentMonth.getMonth()
-    const firstDay = new Date(year, month, 1).getDay()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const today = new Date()
-    
-    const days = []
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null)
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(year, month, i)
-      const dayOfWeek = date.getDay()
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-      const isToday = date.toDateString() === today.toDateString()
-      
-      // Check for holidays from fullYearHolidays
-      let isHoliday = false
-      let holidayName = null
-      const monthHolidays = fullYearHolidays[month] || []
-      for (const holiday of monthHolidays) {
-        const dayList = holiday.days || (holiday.day ? [holiday.day] : [])
-        if (dayList.includes(i)) {
-          isHoliday = true
-          holidayName = holiday.name
-          break
-        }
-      }
-      
-      const isBirthday = i === 13 && month === 3
-      const isAnniversary = i === 15 && month === 3
-      
-      // Check if there's an announcement on this day
-      const announcementOnDay = dummyAnnouncements.find((ann) => {
-        const annDate = new Date(ann.date)
-        return annDate.getDate() === i && annDate.getMonth() === month && annDate.getFullYear() === year
-      })
-      
-      days.push({
-        day: i,
-        isWeekend,
-        isToday,
-        isHoliday,
-        holidayName,
-        isBirthday,
-        isAnniversary,
-        announcement: announcementOnDay,
-      })
-    }
-    return days
-  }, [currentMonth])
-  
-  const monthLabel = useMemo(() => {
-    return currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-  }, [currentMonth])
-  
-  const handlePreviousMonth = () => {
-    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
-  }
-  
-  const handleNextMonth = () => {
-    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
-  }
-  
-  // Dynamic joiners and exits
-  const joinersAndExits = useMemo(() => {
-    return [
-      { name: 'Alice Williams', type: 'New Joiner', department: 'Marketing', date: '2026-04-15' },
-      { name: 'Robert Chen', type: 'New Joiner', department: 'IT', date: '2026-04-18' },
-      { name: 'Jennifer Lee', type: 'Exit', department: 'Finance', date: '2026-04-20' },
-    ]
-  }, [])
 
-  const joinColumns = [
-    { key: 'name', label: 'Name' },
-    { key: 'type', label: 'Type' },
-    { key: 'department', label: 'Department' },
-    {
-      key: 'date',
-      label: 'Date',
-      render: (v) => <span className="text-gray-600">{v}</span>,
-    },
+  const loadDashboardData = async () => {
+    setIsLoading(true)
+    try {
+      if (isEmployee) {
+        const employeeId = user?.employeeId || user?.id
+        if (employeeId) {
+          const data = await fetchEmployeeDashboard(employeeId)
+          setDashboardData((prev) => ({ ...prev, ...data }))
+        }
+      } else {
+        const data = await fetchAdminDashboard()
+        setDashboardData(data)
+      }
+    } catch (err) {
+      console.error('Dashboard load failed:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [user?.id, user?.employeeId, user?.role])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <HiArrowPath className="h-8 w-8 animate-spin text-[#0F766E]" />
+          <p className="text-xs font-semibold text-slate-500">Loading dashboard…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isManager) return <ManagerDashboard />
+
+  const announcements = dashboardData.announcements?.length
+    ? dashboardData.announcements
+    : FALLBACK_ANNOUNCEMENTS
+
+  const attendancePieData = [
+    { name: 'In Office', value: dashboardData.attendance.present },
+    { name: 'Remote', value: dashboardData.attendance.remote },
+    { name: 'On Leave', value: dashboardData.attendance.onLeave },
   ]
 
-  const handleSearch = () => {
-    if (qEmp) {
-      const results = employees.filter((e) =>
-        `${e.name} ${e.empId} ${e.department} ${e.jobTitle}`.toLowerCase().includes(qEmp.toLowerCase())
-      )
-      setSearchResults(results)
-      setShowSearchResults(true)
-    }
-    if (qDoc) {
-      navigate('/admin/documents')
-    }
-  }
-  
-  const handleEmployeeClick = (employee) => {
-    navigate(`/admin/employee-directory`, { state: { selectedEmployee: employee } })
-    setShowSearchResults(false)
-    setQEmp('')
-  }
+  const growthData = dashboardData.growthData?.length
+    ? dashboardData.growthData
+    : [{ name: 'NOW', headcount: dashboardData.employees.total }]
+
+  const events = dashboardData.celebrations?.length
+    ? dashboardData.celebrations
+    : [{ name: 'No upcoming events', type: 'Event', date: '—', dept: '—', icon: '📅' }]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-500 min-w-0">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Welcome back, {user?.name?.split(' ')[0] ?? 'there'}.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            {isHrView ? 'HR Dashboard' : 'Employee Dashboard'}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">{todayLabel}</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600">
-          {todayLabel}
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Total Employees"
-          value={dashboardStats.totalEmployees}
-          subtitle="Company-wide headcount"
-          color="blue"
-        />
-        <StatCard
-          title="Active Employees"
-          value={dashboardStats.activeEmployees}
-          subtitle="Currently active"
-          color="green"
-        />
-        <StatCard
-          title="On Probation"
-          value={dashboardStats.onProbation}
-          subtitle="In evaluation window"
-          color="yellow"
-        />
-        <StatCard
-          title="In Notice"
-          value={dashboardStats.inNotice}
-          subtitle="Departing employees"
-          color="red"
-        />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Today&apos;s Work Status</h2>
-          <ul className="mt-4 space-y-3">
-            <li className="flex items-center justify-between text-sm">
-              <Link to="/admin/attendance" className="flex items-center gap-2 text-gray-700 hover:text-[#004CA5] transition-colors">
-                <span className={`h-2.5 w-2.5 rounded-full ${dotClass.blue}`} />
-                In Office
-              </Link>
-              <span className="font-semibold text-gray-900">{dashboardStats.todayInOffice}</span>
-            </li>
-            <li className="flex items-center justify-between text-sm">
-              <Link to="/admin/attendance" className="flex items-center gap-2 text-gray-700 hover:text-[#004CA5] transition-colors">
-                <span className={`h-2.5 w-2.5 rounded-full ${dotClass.green}`} />
-                Remote
-              </Link>
-              <span className="font-semibold text-gray-900">{dashboardStats.todayRemote}</span>
-            </li>
-            <li className="flex items-center justify-between text-sm">
-              <Link to="/admin/leave" className="flex items-center gap-2 text-gray-700 hover:text-[#004CA5] transition-colors">
-                <span className={`h-2.5 w-2.5 rounded-full ${dotClass.yellow}`} />
-                On Leave
-              </Link>
-              <span className="font-semibold text-gray-900">{dashboardStats.todayOnLeave}</span>
-            </li>
-            <li className="flex items-center justify-between text-sm">
-              <Link to="/admin/attendance" className="flex items-center gap-2 text-gray-700 hover:text-[#004CA5] transition-colors">
-                <span className={`h-2.5 w-2.5 rounded-full ${dotClass.red}`} />
-                Absent
-              </Link>
-              <span className="font-semibold text-gray-900">{dashboardStats.todayAbsent}</span>
-            </li>
-          </ul>
-        </div>
-
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Pending Approvals</h2>
-          <ul className="mt-4 space-y-3">
-            <Link to="/admin/leave" className="flex items-center justify-between text-sm text-gray-700 hover:text-[#004CA5] transition-colors">
-              <span>Leave requests</span>
-              <Badge label={String(dashboardStats.pendingLeaves)} color="orange" />
-            </Link>
-            <Link to="/admin/documents" className="flex items-center justify-between text-sm text-gray-700 hover:text-[#004CA5] transition-colors">
-              <span>Documents</span>
-              <Badge label={String(dashboardStats.pendingDocuments)} color="blue" />
-            </Link>
-            <Link to="/admin/expenses" className="flex items-center justify-between text-sm text-gray-700 hover:text-[#004CA5] transition-colors">
-              <span>Expenses</span>
-              <Badge label={String(dashboardStats.pendingExpenses)} color="purple" />
-            </Link>
-          </ul>
-        </div>
-
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Alerts &amp; Reminders</h2>
-          <ul className="mt-4 space-y-3">
-            {dashboardAlerts.map((a) => (
-              <li
-                key={a.id}
-                className={`rounded-lg border px-3 py-2 text-sm ${alertTone[a.tone] ?? alertTone.blue}`}
-              >
-                <div className="font-semibold">{a.type}</div>
-                <div className="mt-0.5 text-xs opacity-90">{a.detail}</div>
-              </li>
-            ))}
-          </ul>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={loadDashboardData}
+            className="inline-flex h-9 items-center gap-2 rounded-none border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            <HiArrowPath className="h-4 w-4" />
+            Refresh
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-9 items-center gap-2 rounded-none border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            <HiDocumentArrowDown className="h-4 w-4" />
+            Export
+          </button>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-bold text-gray-900">Calendar</h2>
-            <div className="flex items-center gap-2">
-              <Button ariaLabel="Previous Month" variant="ghost" size="sm" icon={HiChevronLeft} onClick={handlePreviousMonth} />
-              <span className="text-sm font-medium text-gray-700">{monthLabel}</span>
-              <Button ariaLabel="Next Month" variant="ghost" size="sm" icon={HiChevronRight} onClick={handleNextMonth} />
-            </div>
+      {isHrView ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard label="Total Employees" value={dashboardData.employees.total} subtitle="Headcount overview" />
+            <MetricCard label="Active Employees" value={dashboardData.employees.active} subtitle="Currently active" tone="emerald" />
+            <MetricCard label="On Probation" value={dashboardData.employees.probation} subtitle="Under evaluation" tone="amber" />
+            <MetricCard label="Notice Period" value={dashboardData.employees.notice} subtitle="Potential exits" tone="blue" />
           </div>
-          <div className="mt-4 grid grid-cols-7 gap-2 text-center text-sm">
-            <div className="font-semibold text-gray-500">Sun</div>
-            <div className="font-semibold text-gray-500">Mon</div>
-            <div className="font-semibold text-gray-500">Tue</div>
-            <div className="font-semibold text-gray-500">Wed</div>
-            <div className="font-semibold text-gray-500">Thu</div>
-            <div className="font-semibold text-gray-500">Fri</div>
-            <div className="font-semibold text-gray-500">Sat</div>
-            {calendarDays.map((day, i) => {
-              if (!day) {
-                return <div key={i} className="h-10" />
-              }
-              return (
-                <div key={i} className="relative group">
-                  <button
-                    onClick={() => day.announcement && setSelectedAnnouncement(day.announcement)}
-                    disabled={!day.announcement}
-                    className={`flex h-10 items-center justify-center rounded-lg text-xs cursor-pointer transition-colors relative w-full ${
-                      day.isWeekend
-                        ? 'bg-gray-100 text-gray-400'
-                        : day.isToday
-                        ? 'bg-blue-500 text-white font-semibold'
-                        : day.isHoliday
-                        ? 'bg-purple-50 text-purple-600 font-semibold'
-                        : day.isBirthday
-                        ? 'bg-blue-50 text-blue-600 font-semibold'
-                        : day.isAnniversary
-                        ? 'bg-green-50 text-green-600 font-semibold'
-                        : day.announcement
-                        ? 'bg-orange-50 text-orange-600 font-semibold hover:bg-orange-100'
-                        : 'bg-white border border-gray-200 hover:bg-gray-50'
-                    }`}
-                    title={day.holidayName || day.announcement?.title || ''}
-                  >
-                    {day.day}
-                    {day.announcement && (
-                      <span className="absolute bottom-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-orange-500" />
-                    )}
-                    {day.isHoliday && (
-                      <span className="absolute bottom-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-purple-500" />
-                    )}
-                  </button>
-                  {(day.holidayName || day.announcement) && (
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-20 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                      {day.holidayName || day.announcement?.title}
-                    </div>
-                  )}
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Attendance Trend</h3>
+                  <HiArrowTrendingUp className="h-4 w-4 text-[#0F766E]" />
                 </div>
-              )
-            })}
+                <div className="h-60">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={growthData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="headcount" stroke="#0F766E" fill="#0F766E" fillOpacity={0.12} strokeWidth={2.5} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-sm font-semibold text-slate-900">Pending Approvals</h3>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Link to="/admin/leave" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
+                    <p className="text-xs font-semibold text-slate-500">Leave Requests</p>
+                    <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.leaves}</p>
+                  </Link>
+                  <Link to="/admin/expenses" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
+                    <p className="text-xs font-semibold text-slate-500">Expense Claims</p>
+                    <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.expenses}</p>
+                  </Link>
+                  <Link to="/admin/attendance" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
+                    <p className="text-xs font-semibold text-slate-500">Regularizations</p>
+                    <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.documents}</p>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-sm font-semibold text-slate-900">Employee Status</h3>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={attendancePieData} dataKey="value" innerRadius={45} outerRadius={70} paddingAngle={3}>
+                        <Cell fill="#0F766E" />
+                        <Cell fill="#3B82F6" />
+                        <Cell fill="#F59E0B" />
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Announcements</h3>
+                  <HiMegaphone className="h-4 w-4 text-[#0F766E]" />
+                </div>
+                <div className="space-y-3">
+                  {announcements.slice(0, 3).map((ann) => (
+                    <button
+                      key={ann.id}
+                      type="button"
+                      onClick={() => setSelectedAnnouncement(ann)}
+                      className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
+                    >
+                      <p className="text-xs font-semibold text-slate-900">{ann.title}</p>
+                      <p className="mt-1 line-clamp-1 text-xs text-slate-500">{ann.content}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-blue-500" />
-              <span className="text-gray-600">Today</span>
+        </>
+      ) : (
+        <>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <Avatar name={user?.name || 'Employee'} size="lg" />
+                <div>
+                  <p className="text-lg font-bold text-slate-900">{user?.name || 'Employee'}</p>
+                  <p className="text-sm text-slate-500">{user?.role?.replace('_', ' ') || 'Employee'}</p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2 text-sm text-slate-600">
+                <p><span className="font-medium">Email:</span> {user?.email || '—'}</p>
+                <p><span className="font-medium">Department:</span> {user?.department || '—'}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-purple-500" />
-              <span className="text-gray-600">Holiday</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-blue-600" />
-              <span className="text-gray-600">Birthday</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-green-600" />
-              <span className="text-gray-600">Anniversary</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-orange-500" />
-              <span className="text-gray-600">Announcement</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-gray-100 border border-gray-300" />
-              <span className="text-gray-600">Weekend</span>
-            </div>
+
+            <MetricCard label="Leave Balance" value={dashboardData.personal.leaveBalance} subtitle="Available days" tone="emerald" />
+            <MetricCard label="Attendance Rate" value={dashboardData.personal.attendanceRate} subtitle="This month" tone="blue" />
           </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">My Attendance</h3>
+                  <HiClock className="h-4 w-4 text-[#0F766E]" />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <MetricCard label="In Office" value={dashboardData.attendance.present} subtitle="Today" />
+                  <MetricCard label="Remote" value={dashboardData.attendance.remote} subtitle="Today" tone="blue" />
+                  <MetricCard label="On Leave" value={dashboardData.attendance.onLeave} subtitle="Today" tone="amber" />
+                  <MetricCard label="Pending Tasks" value={dashboardData.personal.pendingTasks} subtitle="Claims pending" />
+                </div>
+              </div>
+
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-sm font-semibold text-slate-900">My Announcements</h3>
+                <div className="space-y-3">
+                  {announcements.map((ann) => (
+                    <button
+                      key={ann.id}
+                      type="button"
+                      onClick={() => setSelectedAnnouncement(ann)}
+                      className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge label={ann.priority || 'Standard'} color={ann.priority === 'High' ? 'red' : 'blue'} />
+                        <span className="text-xs text-slate-400">{new Date(ann.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">{ann.title}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Team Events</h3>
+                  <HiCalendarDays className="h-4 w-4 text-[#0F766E]" />
+                </div>
+                <div className="space-y-3">
+                  {events.slice(0, 5).map((event, i) => (
+                    <div key={`${event.name}-${i}`} className="flex items-center gap-3 rounded-none border border-slate-200 bg-slate-50/60 p-3">
+                      <Avatar name={event.name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">{event.name}</p>
+                        <p className="text-xs text-slate-500">{event.type} • {event.date}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-sm font-semibold text-slate-900">Quick Links</h3>
+                <div className="space-y-2">
+                  <Link to="/admin/leave" className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
+                    <HiCalendarDays className="h-4 w-4" />
+                    Apply Leave
+                  </Link>
+                  <Link to="/admin/attendance" className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
+                    <HiClock className="h-4 w-4" />
+                    View Attendance
+                  </Link>
+                  <Link to="/admin/employee-profile" className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
+                    <HiUsers className="h-4 w-4" />
+                    My Profile
+                  </Link>
+                </div>
+              </div>
+           </div>
+
+           {/* Trends / Graphs */}
+           {!isEmployee && (
+              <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
+                 <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Workforce Evolution Index</h3>
+                    <HiArrowTrendingUp className="h-5 w-5 text-[#0F766E]" />
+                 </div>
+                 <div className="h-[240px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                       <AreaChart data={growthData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 9, fontWeight: 900}} />
+                          <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 9, fontWeight: 900}} />
+                          <Tooltip contentStyle={{ border: '1px solid #f1f5f9', borderRadius: '0px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                          <Area type="stepAfter" dataKey="headcount" stroke="#0F766E" strokeWidth={3} fill="#0F766E" fillOpacity={0.05} />
+                       </AreaChart>
+                    </ResponsiveContainer>
+                 </div>
+              </div>
+           )}
+
+           {/* Quick Access Grid */}
+           <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Execution Gateways</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                 {[
+                    { label: 'Directory', icon: HiUsers, path: '/admin/employee-directory', color: 'blue' },
+                    { label: 'Profile', icon: HiIdentification, path: '/admin/employee-profile', color: 'emerald' },
+                    { label: 'Attendance', icon: HiClock, path: '/admin/attendance', color: 'amber' },
+                    { label: 'Leave', icon: HiCalendar, path: '/admin/leave', color: 'rose' },
+                    { label: 'Documents', icon: HiDocument, path: '/admin/documents', color: 'indigo' },
+                    { label: 'Visa/Nat', icon: HiCreditCard, path: '/admin/visa', color: 'purple' },
+                    { label: 'Policies', icon: HiClipboardDocumentCheck, path: '/admin/policies', color: 'emerald' },
+                    { label: 'Performance', icon: HiChartBar, path: '/admin/performance', color: 'blue' },
+                    { label: 'Support', icon: HiQuestionMarkCircle, path: '/admin/support', color: 'slate' },
+                    ...(isHRAdmin ? [{ label: 'Settings', icon: HiCog6Tooth, path: '/admin/settings', color: 'slate' }] : [])
+                 ].map((mod) => (
+                    <Link key={mod.label} to={mod.path} className="flex flex-col items-center p-4 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E] transition-all group">
+                       <mod.icon className="h-5 w-5 text-slate-400 mb-3 group-hover:text-[#0F766E] transition-colors" />
+                       <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{mod.label}</span>
+                    </Link>
+                 ))}
+              </div>
+           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-lg font-bold text-gray-900">Birthday &amp; Anniversary</h2>
-            <ul className="mt-4 space-y-3">
-              {birthdaysAndAnniversaries.map((item) => (
-                <li key={item.id} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                  item.tone === 'blue' ? 'bg-blue-50' : 'bg-purple-50'
-                }`}>
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                    item.tone === 'blue' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'
-                  }`}>
-                    {item.icon}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">{item.name}</div>
-                    <div className="text-xs text-gray-500">{item.detail}</div>
-                  </div>
-                </li>
-              ))}
-              {birthdaysAndAnniversaries.length === 0 && (
-                <li className="text-sm text-gray-500 text-center py-4">No birthdays or anniversaries this month</li>
-              )}
-            </ul>
-          </div>
+        {/* Sidebar Intelligence */}
+        <div className="space-y-8">
+           {/* Pending Approvals */}
+           {(isHRAdmin || isManager) && (
+              <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
+                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
+                    PENDING_ACTION <HiBellAlert className="h-4 w-4 text-amber-500" />
+                 </h3>
+                 <div className="space-y-3">
+                    {[
+                       { label: 'Leave Requests', count: stats.pending.leaves, path: '/admin/leave' },
+                       { label: 'Expense Claims', count: stats.pending.expenses, path: '/admin/expenses' },
+                       { label: 'Document Audits', count: stats.pending.documents, path: '/admin/documents' }
+                    ].map(item => (
+                       <Link key={item.label} to={item.path} className="flex items-center justify-between p-4 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E] transition-all">
+                          <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{item.label}</span>
+                          <span className="text-[11px] font-black text-[#0F766E]">{item.count}</span>
+                       </Link>
+                    ))}
+                 </div>
+              </div>
+           )}
 
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-lg font-bold text-gray-900">Upcoming Holidays</h2>
+           {/* Compliance Alerts */}
+           {isHRAdmin && (
+              <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
+                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
+                    COMPLIANCE_PROTOCOL <HiShieldCheck className="h-4 w-4 text-rose-500" />
+                 </h3>
+                 <div className="space-y-3">
+                    {expiryAlerts.map(alert => (
+                       <div key={alert.name} className="p-4 border border-slate-100 bg-slate-50/50">
+                          <div className="flex justify-between items-center mb-2">
+                             <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">{alert.name}</span>
+                             <Badge label={alert.count} color={alert.color} variant="soft" className="text-[9px] font-black" />
+                          </div>
+                          <p className="text-[9px] text-slate-400 font-black uppercase tracking-tight truncate">{alert.items.join(', ')}</p>
+                       </div>
+                    ))}
+                 </div>
+              </div>
+           )}
+
+           {/* Celebrations: Visual List */}
+           <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
+                 EVENT_LOG <HiGift className="h-4 w-4 text-rose-500" />
+              </h3>
+              <div className="space-y-4">
+                 {birthdays.map((b, i) => (
+                    <div key={i} className="flex items-center gap-4 p-4 border border-slate-100 bg-slate-50/50 hover:bg-white transition-all group">
+                       <Avatar name={b.name} size="sm" className="rounded-none border-2 border-white shadow-sm" />
+                       <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black text-slate-900 mb-1 uppercase tracking-tight truncate">{b.name}</p>
+                          <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest">{b.type} • {b.date.toUpperCase()}</p>
+                       </div>
+                       <div className="text-lg opacity-50 group-hover:opacity-100 transition-opacity">
+                          {b.icon}
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+
+           {/* Upcoming Holidays */}
+           <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
+                 CALENDAR_PROTOCOL <HiFlag className="h-4 w-4 text-[#0F766E]" />
+              </h3>
+              <div className="space-y-3">
+                 {[
+                    { name: 'EID AL ADHA', date: '16 JUNE', days: 'IN 40 DAYS', color: 'emerald' },
+                    { name: 'ISLAMIC NEW YEAR', date: '07 JULY', days: 'UPCOMING', color: 'blue' }
+                 ].map(h => (
+                    <div key={h.name} className="flex items-center justify-between p-4 border border-slate-100 bg-slate-50/50">
+                       <div className="flex items-center gap-4">
+                          <div className={`h-8 w-1 bg-${h.color}-500`} />
+                          <div>
+                             <p className="text-[10px] font-black text-slate-900 leading-none mb-1">{h.name}</p>
+                             <p className="text-[8px] text-slate-400 font-black uppercase">{h.date}</p>
+                          </div>
+                       </div>
+                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{h.days}</span>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+      </div>
+
+      {/* Broadcasts & New Talent */}
+      <div className="grid gap-8 lg:grid-cols-3">
+         <div className="lg:col-span-2 rounded-none border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+               <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Broadcast Repository</h3>
+               <HiMegaphone className="h-5 w-5 text-[#0F766E]" />
+            </div>
+          </div>
+        </>
+      )}
+
+      {selectedAnnouncement ? (
+        <Modal title="Announcement" isOpen onClose={() => setSelectedAnnouncement(null)} size="lg">
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-2">
+              <Badge label={selectedAnnouncement.priority || 'Standard'} color={selectedAnnouncement.priority === 'High' ? 'red' : 'blue'} />
+              <span className="text-xs text-slate-500">{new Date(selectedAnnouncement.created_at).toLocaleString()}</span>
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900">{selectedAnnouncement.title}</h3>
+            <p className="text-sm leading-relaxed text-slate-600">{selectedAnnouncement.content}</p>
+            <div className="pt-2">
               <button
-                onClick={() => setSelectedMonthForHolidays(currentMonth.getMonth())}
-                className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-700"
+                type="button"
+                onClick={() => setSelectedAnnouncement(null)}
+                className="h-9 rounded-none bg-[#0F766E] px-4 text-sm font-semibold text-white hover:bg-[#0c6b64]"
               >
-                Sync
+                Close
               </button>
             </div>
-            <div className="mt-4 space-y-3">
-              <Input
-                type="select"
-                label="Select Month"
-                name="holiday-month"
-                placeholder="Choose a month"
-                value={selectedMonthForHolidays}
-                onChange={(e) => setSelectedMonthForHolidays(Number(e.target.value))}
-                options={[
-                  { value: '0', label: 'January' },
-                  { value: '1', label: 'February' },
-                  { value: '2', label: 'March' },
-                  { value: '3', label: 'April' },
-                  { value: '4', label: 'May' },
-                  { value: '5', label: 'June' },
-                  { value: '6', label: 'July' },
-                  { value: '7', label: 'August' },
-                  { value: '8', label: 'September' },
-                  { value: '9', label: 'October' },
-                  { value: '10', label: 'November' },
-                  { value: '11', label: 'December' },
-                ]}
-              />
-              {fullYearHolidays[selectedMonthForHolidays].length > 0 ? (
-                <ul className="mt-4 space-y-2 text-sm">
-                  {fullYearHolidays[selectedMonthForHolidays].map((holiday, idx) => (
-                    <li key={idx} className="flex items-center justify-between text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
-                      <span>{holiday.name}</span>
-                      <span className="font-medium text-gray-900">{holiday.date}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="mt-4 text-sm text-gray-500 text-center py-4">No holidays in this month</div>
-              )}
-            </div>
           </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Visa &amp; Passport Expiry</h2>
-        <ul className="mt-4 space-y-3">
-          <Link to="/admin/visa" className="flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 text-sm hover:bg-red-100 transition-colors">
-            <div>
-              <div className="font-medium text-gray-900">Michael Brown</div>
-              <div className="text-xs text-gray-500">Passport expires in 15 days</div>
-            </div>
-            <Badge label="Critical" color="red" />
-          </Link>
-          <Link to="/admin/visa" className="flex items-center justify-between rounded-lg bg-yellow-50 px-3 py-2 text-sm hover:bg-yellow-100 transition-colors">
-            <div>
-              <div className="font-medium text-gray-900">Emily Davis</div>
-              <div className="text-xs text-gray-500">Visa expires in 45 days</div>
-            </div>
-            <Badge label="Warning" color="orange" />
-          </Link>
-        </ul>
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Quick Access</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link to="/admin/employee-directory">
-            <Button ariaLabel="Employee Directory" variant="secondary" className="w-full justify-start" icon={HiUsers} />
-          </Link>
-          <Link to="/admin/attendance">
-            <Button ariaLabel="Attendance" variant="secondary" className="w-full justify-start" icon={HiClock} />
-          </Link>
-          <Link to="/admin/leave">
-            <Button ariaLabel="Leave Management" variant="secondary" className="w-full justify-start" icon={HiCalendar} />
-          </Link>
-          <Link to="/admin/documents">
-            <Button ariaLabel="Documents" variant="secondary" className="w-full justify-start" icon={HiDocument} />
-          </Link>
-          <Link to="/admin/visa">
-            <Button ariaLabel="Visa & Nationality" variant="secondary" className="w-full justify-start" icon={HiCreditCard} />
-          </Link>
-          <Link to="/admin/policies">
-            <Button ariaLabel="Policies" variant="secondary" className="w-full justify-start" icon={HiClipboardDocumentCheck} />
-          </Link>
-          <Link to="/admin/performance">
-            <Button ariaLabel="Performance" variant="secondary" className="w-full justify-start" icon={HiChartBar} />
-          </Link>
-          <Link to="/admin/departments">
-            <Button ariaLabel="Departments" variant="secondary" className="w-full justify-start" icon={HiBuildingOffice} />
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-3">
-          <h2 className="font-display text-lg font-bold text-gray-900">New Joiners &amp; Exits</h2>
-          <Table columns={joinColumns} data={joinersAndExits} pageSize={5} />
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-bold text-gray-900">Quick Search</h2>
-          <p className="mt-1 text-sm text-gray-500">Find employees or documents quickly.</p>
-          <div className="mt-4 space-y-3">
-            <Input
-              label="Search employees"
-              name="q-emp"
-              placeholder="Name, department, or ID"
-              value={qEmp}
-              onChange={(e) => setQEmp(e.target.value)}
-            />
-            <Input
-              label="Search documents"
-              name="q-doc"
-              placeholder="Policy, contract, or letter"
-              value={qDoc}
-              onChange={(e) => setQDoc(e.target.value)}
-            />
-            <Button ariaLabel="Search" variant="primary" icon={HiMagnifyingGlass} className="w-full sm:w-auto" onClick={handleSearch} />
-          </div>
-          {showSearchResults && searchResults.length > 0 && (
-            <div className="mt-4 border-t border-gray-200 pt-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Search Results</h3>
-              <ul className="space-y-2">
-                {searchResults.map((emp) => (
-                  <li key={emp.id}>
-                    <button
-                      onClick={() => handleEmployeeClick(emp)}
-                      className="w-full text-left rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="font-medium text-gray-900">{emp.name}</div>
-                      <div className="text-xs text-gray-500">{emp.empId} • {emp.department} • {emp.jobTitle}</div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {showSearchResults && searchResults.length === 0 && (
-            <div className="mt-4 border-t border-gray-200 pt-4 text-sm text-gray-500">No results found</div>
-          )}
-        </div>
-      </div>
+        </Modal>
+      ) : null}
     </div>
   )
 }

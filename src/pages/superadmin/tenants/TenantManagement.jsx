@@ -6,6 +6,10 @@ import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
+import { Toggle } from '../../../components/ui/Toggle.jsx'
+import PlanPaymentStep from './PlanPaymentStep.jsx'
+import settingsService from '../../../services/settingsService.js'
+import { createStripeCheckoutSession } from '../../../services/billingService.js'
 import {
   HiCheck,
   HiClock,
@@ -24,13 +28,21 @@ import {
   HiShieldCheck,
   HiQuestionMarkCircle,
   HiGlobeAlt,
-  HiInformationCircle
+  HiInformationCircle,
+  HiSquares2X2
 } from 'react-icons/hi2'
 
 const slugify = (text) => text.toString().toLowerCase().trim()
   .replace(/\s+/g, '-')
   .replace(/[^\w-]+/g, '')
   .replace(/--+/g, '-')
+
+const resolveBaseDomain = () => {
+  const host = window.location.hostname
+  if (host === 'localhost' || host === '127.0.0.1') return 'localhost'
+  const parts = host.split('.')
+  return parts.length >= 2 ? parts.slice(-2).join('.') : host
+}
 
 export default function TenantManagement() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -39,6 +51,7 @@ export default function TenantManagement() {
 
   // Data State
   const [organizations, setOrganizations] = useState([])
+  const [plans, setPlans] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(0) // 0-indexed for UI, 1-indexed for API
@@ -46,7 +59,93 @@ export default function TenantManagement() {
 
   useEffect(() => {
     fetchTenants(currentPage)
-  }, [currentPage])
+    fetchPlans()
+  }, [currentPage, searchQuery, planFilter, statusFilter])
+
+  const fetchPlans = async () => {
+    try {
+      const response = await api.get('/superadmin/plans/active')
+      const list = response.data.data || []
+      setPlans(list)
+      if (list.length > 0) {
+        setNewForm((prev) => ({ ...prev, plan: String(list[0].id) }))
+        setEditForm((prev) => ({ ...prev, plan: list[0].plan_name }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch plans:', error)
+    }
+  }
+
+  const fetchEnabledGateways = async () => {
+    try {
+      const res = await settingsService.getEnabledPaymentGateways()
+      const list = Array.isArray(res?.data) ? res.data : []
+      setPaymentGateways(list)
+      if (list.length > 0) {
+        setNewForm((prev) => ({
+          ...prev,
+          paymentGateway: prev.paymentGateway === 'manual' ? list[0].slug : prev.paymentGateway,
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch payment gateways:', error)
+      setPaymentGateways([])
+    }
+  }
+
+  const fetchPlatformBillingContext = async () => {
+    try {
+      const currencyRes = await settingsService.getCurrency()
+      setPlatformCurrency(currencyRes?.data?.defaultCurrency || 'AED')
+    } catch {
+      setPlatformCurrency('AED')
+    }
+  }
+
+  const openPaymentTab = () => {
+    const tab = window.open('about:blank', '_blank', 'noopener,noreferrer')
+    if (!tab) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Popup blocked',
+        text: 'Allow popups for this site so Stripe Checkout can open in a new tab.',
+        confirmButtonColor: '#4f46e5',
+      })
+      return null
+    }
+    try {
+      tab.document.write(
+        '<!DOCTYPE html><html><head><title>Stripe Checkout</title></head><body style="font-family:system-ui,sans-serif;padding:2rem;color:#334155"><p><strong>Opening Stripe Checkout…</strong></p><p>Leave this tab open.</p></body></html>',
+      )
+      tab.document.close()
+    } catch {
+      /* ignore */
+    }
+    return tab
+  }
+
+  const openNewOrgModal = () => {
+    setAddOrgTab('details')
+    setShowNewModal(true)
+    fetchEnabledGateways()
+    fetchPlatformBillingContext()
+  }
+
+  const resetNewOrgForm = () => {
+    const defaultPlan = plans[0]?.id ? String(plans[0].id) : ''
+    setNewForm({
+      name: '',
+      adminName: '',
+      adminEmail: '',
+      adminPassword: '',
+      plan: defaultPlan,
+      billingCycle: 'monthly',
+      paymentGateway: paymentGateways[0]?.slug || 'manual',
+      paymentCollection: 'trial',
+      paymentReference: '',
+    })
+    setAddOrgTab('details')
+  }
 
   const fetchTenants = async (page = 0) => {
     try {
@@ -54,7 +153,10 @@ export default function TenantManagement() {
       const response = await api.get('/tenants', {
         params: {
           page: page + 1,
-          limit: pageSize
+          limit: pageSize,
+          search: searchQuery,
+          plan: planFilter,
+          status: statusFilter
         }
       })
       const { tenants, total } = response.data.data
@@ -62,14 +164,14 @@ export default function TenantManagement() {
       // Transform data to match UI expectations
       const transformed = tenants.map(t => {
         const slug = slugify(t.name)
-        const baseDomain = window.location.hostname === 'localhost' ? 'localhost' : 'hris.cloud'
+        const baseDomain = resolveBaseDomain()
         return {
           id: t.id,
           name: t.name,
           dbName: t.db_name,
           domain: `${slug}.${baseDomain}`,
           adminEmail: t.admin_email,
-          plan: 'Starter', // Default for now
+          plan: t.plan || 'Free', // Use plan from API or default to Free
           users: 0,
           maxUsers: 100,
           storage: 0,
@@ -82,7 +184,6 @@ export default function TenantManagement() {
           billingCycle: 'Monthly'
         }
       })
-      // console.log('Tenants fetched:', transformed)
       setOrganizations(transformed)
       setTotalCount(total)
     } catch (error) {
@@ -98,48 +199,141 @@ export default function TenantManagement() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showFeaturesModal, setShowFeaturesModal] = useState(false)
 
   const [selectedOrg, setSelectedOrg] = useState(null)
   const [confirmAction, setConfirmAction] = useState('')
   const [confirmInput, setConfirmInput] = useState('')
+  const [tenantFeatures, setTenantFeatures] = useState([])
+  const [isFeaturesLoading, setIsFeaturesLoading] = useState(false)
 
   // Form States
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' })
-  const [editForm, setEditForm] = useState({ name: '', adminEmail: '', plan: 'Starter', billingCycle: 'Monthly', maxUsers: 50, status: 'Active' })
-  const [newForm, setNewForm] = useState({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' })
+  const [editForm, setEditForm] = useState({ name: '', adminEmail: '', plan: '', billingCycle: 'Monthly', maxUsers: 50, status: 'Active' })
+  const [addOrgTab, setAddOrgTab] = useState('details')
+  const [paymentGateways, setPaymentGateways] = useState([])
+  const [platformCurrency, setPlatformCurrency] = useState('AED')
+  const [stripeCheckoutLoading, setStripeCheckoutLoading] = useState(false)
+  const [newForm, setNewForm] = useState({
+    name: '',
+    adminName: '',
+    adminEmail: '',
+    adminPassword: '',
+    plan: '',
+    billingCycle: 'monthly',
+    paymentGateway: 'manual',
+    paymentCollection: 'trial',
+    paymentReference: '',
+  })
   const [errors, setErrors] = useState({})
 
-  const filteredOrganizations = useMemo(() => {
-    return organizations.filter((org) => {
-      const matchesSearch = org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        org.domain.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        org.adminEmail.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesPlan = planFilter === 'all' || org.plan === planFilter
-      const matchesStatus = statusFilter === 'all' || org.status === statusFilter
-      return matchesSearch && matchesPlan && matchesStatus
-    })
-  }, [organizations, searchQuery, planFilter, statusFilter])
+  const filteredOrganizations = organizations; // Now filtered on the server
 
   const handleExport = () => {
+    const headers = ['ID', 'Name', 'Domain', 'Admin Email', 'Plan', 'Status', 'Onboarded']
+    const csvData = organizations.map(org => [
+      org.id,
+      org.name,
+      org.domain,
+      org.adminEmail,
+      org.plan,
+      org.status,
+      org.created
+    ])
+    
+    const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `organizations_export_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
     Swal.fire({
-      icon: 'info',
-      title: 'Exporting Data',
-      text: `Preparing ${organizations.length} organizations for CSV export...`,
+      icon: 'success',
+      title: 'Export Successful',
+      text: 'Organization data has been downloaded as CSV.',
       timer: 2000,
       showConfirmButton: false,
-      background: '#fff',
-      color: '#1e293b'
     })
   }
 
-  const handleLoginAs = (org) => {
-    const url = `http://${org.domain}:5173/login`
-    window.open(url, '_blank')
+  const handleLoginAs = async (org) => {
+    try {
+      const response = await api.post(`/tenants/${org.id}/login-as`)
+      const loginUrl = response?.data?.data?.loginUrl
+      if (!loginUrl) {
+        throw new Error('Login URL not returned')
+      }
+      const popup = window.open(loginUrl, '_blank')
+      if (!popup) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Popup Blocked',
+          text: 'Please allow popups for this site and try again.',
+          confirmButtonColor: '#0F766E',
+        })
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Login Failed',
+        text: error.response?.data?.message || 'Unable to login as tenant admin.',
+        confirmButtonColor: '#0F766E',
+      })
+    }
   }
 
   const handleView = (org) => {
     setSelectedOrg(org)
     setShowDetailModal(true)
+  }
+
+  const fetchTenantFeatures = async (tenantId) => {
+    try {
+      setIsFeaturesLoading(true)
+      const response = await api.get(`/tenants/${tenantId}/features`)
+      setTenantFeatures(response?.data?.data?.features || [])
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Features Load Failed',
+        text: error.response?.data?.message || 'Failed to load tenant features',
+        confirmButtonColor: '#4f46e5'
+      })
+    } finally {
+      setIsFeaturesLoading(false)
+    }
+  }
+
+  const handleOpenFeatures = async (org) => {
+    setSelectedOrg(org)
+    setShowFeaturesModal(true)
+    await fetchTenantFeatures(org.id)
+  }
+
+  const handleToggleFeature = async (feature) => {
+    if (!selectedOrg) return
+    try {
+      await api.patch(`/tenants/${selectedOrg.id}/features/${feature.id}`, {
+        isEnabled: !feature.isEnabled
+      })
+      setTenantFeatures(prev => prev.map(item => (
+        item.id === feature.id
+          ? { ...item, isEnabled: !item.isEnabled, isAssigned: true }
+          : item
+      )))
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: error.response?.data?.message || 'Failed to update feature access',
+        confirmButtonColor: '#ef4444'
+      })
+    }
   }
 
   const handleEdit = (org) => {
@@ -178,39 +372,157 @@ export default function TenantManagement() {
     }
   }
 
-  const handleCreateOrganization = async () => {
+  const validateNewOrgForm = () => {
     if (!newForm.name || !newForm.adminEmail || !newForm.adminName || !newForm.adminPassword) {
       Swal.fire({
         icon: 'warning',
         title: 'Incomplete Form',
-        text: 'Please fill all required fields to provision the organization.',
-        confirmButtonColor: '#4f46e5'
+        text: 'Please fill all required fields on the Organization tab.',
+        confirmButtonColor: '#4f46e5',
       })
-      return
+      setAddOrgTab('details')
+      return false
+    }
+    if (!newForm.plan) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Select a plan',
+        text: 'Choose a subscription plan on the Plan & payment tab.',
+        confirmButtonColor: '#4f46e5',
+      })
+      setAddOrgTab('subscription')
+      return false
+    }
+    return true
+  }
+
+  const buildCreateOrgPayload = () => ({
+    name: newForm.name,
+    adminEmail: newForm.adminEmail,
+    adminName: newForm.adminName,
+    adminPassword: newForm.adminPassword,
+    plan_id: String(newForm.plan),
+    billing_cycle: newForm.billingCycle,
+    payment_gateway: newForm.paymentGateway,
+    payment_collection: newForm.paymentCollection,
+    payment_reference: newForm.paymentReference || undefined,
+  })
+
+  const openStripeCheckoutUrl = async (tenant, checkoutTab) => {
+    const plan = plans.find((p) => String(p.id) === String(newForm.plan))
+    const amount =
+      newForm.billingCycle === 'annual'
+        ? Number(plan?.annual_price)
+        : Number(plan?.monthly_price)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      checkoutTab?.close?.()
+      Swal.fire({
+        icon: 'info',
+        title: 'No payment required',
+        text: 'This plan has no charge — Stripe Checkout is not needed.',
+        confirmButtonColor: '#4f46e5',
+      })
+      return false
+    }
+
+    const session = await createStripeCheckoutSession({
+      tenantId: tenant.id,
+      paymentId: tenant.paymentId,
+      planId: tenant.planId || Number(newForm.plan),
+      billingCycle: newForm.billingCycle,
+      customerEmail: newForm.adminEmail,
+    })
+
+    if (!session?.url) {
+      checkoutTab?.close?.()
+      throw new Error('Stripe did not return a checkout URL')
+    }
+
+    if (checkoutTab && !checkoutTab.closed) {
+      checkoutTab.location.href = session.url
+      checkoutTab.focus()
+    } else {
+      const tab = window.open(session.url, '_blank', 'noopener,noreferrer')
+      if (!tab) {
+        Swal.fire({
+          icon: 'info',
+          title: 'Open Stripe Checkout',
+          html: `<a href="${session.url}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-bold underline">Click here to pay in Stripe</a>`,
+          confirmButtonColor: '#4f46e5',
+        })
+      } else {
+        tab.focus()
+      }
+    }
+    return true
+  }
+
+  const provisionOrganization = async ({ openStripe = false, checkoutTab = null } = {}) => {
+    if (!validateNewOrgForm()) {
+      checkoutTab?.close?.()
+      return null
     }
 
     try {
-      setIsLoading(true)
-      await api.post('/tenants/create', {
-        name: newForm.name,
-        adminEmail: newForm.adminEmail,
-        adminName: newForm.adminName,
-        adminPassword: newForm.adminPassword
-      })
+      if (openStripe) setStripeCheckoutLoading(true)
+      else setIsLoading(true)
+
+      const res = await api.post('/tenants/create', buildCreateOrgPayload())
+      const tenant = res.data?.data?.tenant
+      if (!tenant?.id) throw new Error('Tenant was created but the response was invalid')
+
+      if (openStripe && newForm.paymentGateway === 'stripe') {
+        await openStripeCheckoutUrl(tenant, checkoutTab)
+      } else {
+        checkoutTab?.close?.()
+      }
 
       setShowNewModal(false)
-      setNewForm({ name: '', adminName: '', adminEmail: '', adminPassword: '', plan: 'Starter', billingCycle: 'Monthly' })
-      fetchTenants() // Refresh list
+      resetNewOrgForm()
+      fetchTenants()
+
+      if (openStripe && newForm.paymentGateway === 'stripe') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Organization created',
+          text: 'Complete payment in the Stripe tab. The organization is provisioned.',
+          timer: 2800,
+          showConfirmButton: false,
+        })
+      } else {
+        Swal.fire({
+          icon: 'success',
+          title: 'Organization created',
+          text: 'Tenant provisioned with subscription and payment record.',
+          timer: 2200,
+          showConfirmButton: false,
+        })
+      }
+
+      return tenant
     } catch (error) {
+      checkoutTab?.close?.()
       Swal.fire({
         icon: 'error',
-        title: 'Provisioning Failed',
-        text: error.response?.data?.message || 'Failed to create organization',
-        confirmButtonColor: '#ef4444'
+        title: openStripe ? 'Stripe checkout failed' : 'Provisioning Failed',
+        text: error.response?.data?.message || error.message || 'Failed to create organization',
+        confirmButtonColor: '#ef4444',
       })
+      return null
     } finally {
       setIsLoading(false)
+      setStripeCheckoutLoading(false)
     }
+  }
+
+  const handlePaymentGatewayChange = (slug) => {
+    setNewForm((prev) => ({ ...prev, paymentGateway: slug }))
+  }
+
+  const handleCreateOrganization = async () => {
+    const openStripe = newForm.paymentGateway === 'stripe'
+    const checkoutTab = openStripe ? openPaymentTab() : null
+    await provisionOrganization({ openStripe, checkoutTab })
   }
 
   const handleAction = (type, org) => {
@@ -300,7 +612,7 @@ export default function TenantManagement() {
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500">
+    <div className="sa-page">
       {/* Header */}
       <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="space-y-0.5">
@@ -322,22 +634,21 @@ export default function TenantManagement() {
         </div>
         <div className="flex gap-2">
           <Button label="Export CSV" variant="ghost" size="sm" icon={HiArrowDownTray} onClick={handleExport} className="text-slate-500 font-bold" />
-          <Button label="Add Organization" variant="primary" size="sm" icon={HiPlus} onClick={() => setShowNewModal(true)} />
+          <Button label="Add Organization" variant="primary" size="sm" icon={HiPlus} onClick={openNewOrgModal} />
         </div>
       </div>
 
       {/* Filter Section */}
-      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+      <div className="sa-card p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Input label="Search Organizations" placeholder="Name, domain, or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           <div>
             <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Subscription Plan</label>
             <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all appearance-none cursor-pointer" value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
               <option value="all">All Ecosystem Tiers</option>
-              <option>Starter</option>
-              <option>Growth</option>
-              <option>Pro</option>
-              <option>Enterprise</option>
+              {plans.map(plan => (
+                <option key={plan.id} value={plan.plan_name}>{plan.plan_name}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -357,7 +668,7 @@ export default function TenantManagement() {
       </div>
 
       {/* Organization Table */}
-      <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden">
+      <div className="sa-card overflow-hidden">
         <Table
           pageSize={pageSize}
           totalCount={totalCount}
@@ -396,6 +707,7 @@ export default function TenantManagement() {
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" icon={HiDocumentText} className="text-slate-400 hover:text-indigo-600" onClick={() => handleView(org)} />
                 <Button variant="ghost" size="sm" icon={HiPencil} className="text-slate-400 hover:text-blue-600" onClick={() => handleEdit(org)} />
+                <Button variant="ghost" size="sm" icon={HiSquares2X2} className="text-slate-400 hover:text-violet-600" onClick={() => handleOpenFeatures(org)} />
                 <Button variant="ghost" size="sm" icon={HiArrowTopRightOnSquare} className="text-slate-400 hover:text-emerald-600" onClick={() => handleLoginAs(org)} />
               </div>
             ),
@@ -406,28 +718,87 @@ export default function TenantManagement() {
       {/* New Organization Modal */}
       <Modal
         isOpen={showNewModal}
-        onClose={() => setShowNewModal(false)}
+        onClose={() => { setShowNewModal(false); resetNewOrgForm() }}
         title="Add Organization"
-        description="Fill in the details below to create a new organization account."
+        description="Organization details, subscription plan, and payment collection."
         icon={HiPlus}
-        size="lg"
+        size="xl"
       >
-        <div className="space-y-8 p-2">
-          <div className="grid grid-cols-2 gap-6">
-            <Input label="Organization Name *" placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
-            <Input label="Root Admin Name *" placeholder="e.g. John Doe" value={newForm.adminName} onChange={(e) => setNewForm({ ...newForm, adminName: e.target.value })} />
-            <Input label="Root Admin Email *" type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
-            <Input label="Root Admin Password *" type="password" placeholder="••••••••" value={newForm.adminPassword} onChange={(e) => setNewForm({ ...newForm, adminPassword: e.target.value })} />
-            <div>
-              <label className="mb-2 block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Subscription Tier</label>
-              <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer" value={newForm.plan} onChange={(e) => setNewForm({ ...newForm, plan: e.target.value })}>
-                <option>Starter</option><option>Growth</option><option>Pro</option><option>Enterprise</option>
-              </select>
-            </div>
+        <div className="space-y-6 p-2">
+          <div className="flex gap-1 border-b border-slate-200">
+            <button
+              type="button"
+              onClick={() => setAddOrgTab('details')}
+              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                addOrgTab === 'details'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Organization
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddOrgTab('subscription')}
+              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                addOrgTab === 'subscription'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Plan & payment
+            </button>
           </div>
-          <div className="flex gap-4 justify-end pt-6 border-t border-slate-100">
-            <Button label="Cancel" variant="ghost" className="font-bold text-slate-400" onClick={() => setShowNewModal(false)} />
-            <Button label="Save" variant="primary" onClick={handleCreateOrganization} />
+
+          {addOrgTab === 'details' ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <Input label="Organization Name *" placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
+              <Input label="Root Admin Name *" placeholder="e.g. John Doe" value={newForm.adminName} onChange={(e) => setNewForm({ ...newForm, adminName: e.target.value })} />
+              <Input label="Root Admin Email *" type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
+              <Input label="Root Admin Password *" type="password" placeholder="••••••••" value={newForm.adminPassword} onChange={(e) => setNewForm({ ...newForm, adminPassword: e.target.value })} />
+            </div>
+          ) : (
+            <PlanPaymentStep
+              plans={plans}
+              selectedPlanId={newForm.plan}
+              onSelectPlan={(id) => setNewForm((prev) => ({ ...prev, plan: id }))}
+              billingCycle={newForm.billingCycle}
+              onBillingCycleChange={(v) => setNewForm((prev) => ({ ...prev, billingCycle: v }))}
+              paymentGateways={paymentGateways}
+              paymentGateway={newForm.paymentGateway}
+              onPaymentGatewayChange={handlePaymentGatewayChange}
+              stripeCheckoutLoading={stripeCheckoutLoading}
+              currencyCode={platformCurrency}
+              paymentCollection={newForm.paymentCollection}
+              onPaymentCollectionChange={(v) => setNewForm((prev) => ({ ...prev, paymentCollection: v }))}
+              paymentReference={newForm.paymentReference}
+              onPaymentReferenceChange={(v) => setNewForm((prev) => ({ ...prev, paymentReference: v }))}
+            />
+          )}
+
+          <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-6">
+            <Button label="Cancel" variant="ghost" className="font-bold text-slate-400" onClick={() => { setShowNewModal(false); resetNewOrgForm() }} />
+            {addOrgTab === 'subscription' ? (
+              <Button label="Back" variant="ghost" className="font-bold text-slate-600" onClick={() => setAddOrgTab('details')} />
+            ) : (
+              <Button label="Next: Plan & payment" variant="ghost" className="font-bold text-indigo-600" onClick={() => setAddOrgTab('subscription')} />
+            )}
+            {addOrgTab === 'subscription' && (
+              <Button
+                label={
+                  isLoading || stripeCheckoutLoading
+                    ? stripeCheckoutLoading
+                      ? 'Opening Stripe…'
+                      : 'Creating…'
+                    : newForm.paymentGateway === 'stripe'
+                      ? 'Create & pay with Stripe'
+                      : 'Create organization'
+                }
+                variant="primary"
+                onClick={handleCreateOrganization}
+                disabled={isLoading || stripeCheckoutLoading}
+              />
+            )}
           </div>
         </div>
       </Modal>
@@ -480,6 +851,10 @@ export default function TenantManagement() {
                   <Button variant="ghost" size="sm" icon={HiPencil} className="bg-white shadow-sm text-blue-600 hover:bg-blue-600 hover:text-white" onClick={() => handleEdit(selectedOrg)} />
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[9px] font-bold rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">Edit Details</div>
                 </div>
+                <div className="group relative">
+                  <Button variant="ghost" size="sm" icon={HiSquares2X2} className="bg-white shadow-sm text-violet-600 hover:bg-violet-600 hover:text-white" onClick={() => handleOpenFeatures(selectedOrg)} />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[9px] font-bold rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">Manage Features</div>
+                </div>
               </div>
             </div>
 
@@ -492,6 +867,50 @@ export default function TenantManagement() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Features Modal */}
+      <Modal
+        isOpen={showFeaturesModal}
+        onClose={() => setShowFeaturesModal(false)}
+        title={`Feature Access · ${selectedOrg?.name || ''}`}
+        description={`Tenant ID: ${selectedOrg?.id || '-'} · Configure feature overrides`}
+        icon={HiSquares2X2}
+        size="lg"
+      >
+        <div className="space-y-5 p-2">
+          {isFeaturesLoading ? (
+            <div className="py-10 text-center text-sm font-semibold text-slate-500">Loading features...</div>
+          ) : tenantFeatures.length === 0 ? (
+            <div className="py-10 text-center text-sm font-semibold text-slate-500">No features found.</div>
+          ) : (
+            <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+              {tenantFeatures.map((feature) => (
+                <div key={feature.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="pr-4">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-slate-900">{feature.name}</p>
+                      {!feature.isActive && <Badge label="Inactive" color="gray" />}
+                      {feature.isAssigned && <Badge label="Override" color="indigo" variant="glass" />}
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{feature.code}</p>
+                    {feature.description && (
+                      <p className="mt-1 text-xs text-slate-600">{feature.description}</p>
+                    )}
+                  </div>
+                  <Toggle
+                    checked={Boolean(feature.isEnabled)}
+                    disabled={!feature.isActive}
+                    onChange={() => handleToggleFeature(feature)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end border-t border-slate-100 pt-4">
+            <Button label="Close" variant="ghost" className="font-bold text-slate-500" onClick={() => setShowFeaturesModal(false)} />
+          </div>
+        </div>
       </Modal>
 
       {/* Edit Modal */}
@@ -509,7 +928,9 @@ export default function TenantManagement() {
             <div>
               <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Ecosystem Plan</label>
               <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all" value={editForm.plan} onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}>
-                <option>Starter</option><option>Growth</option><option>Pro</option><option>Enterprise</option>
+                {plans.map(plan => (
+                  <option key={plan.id} value={plan.plan_name}>{plan.plan_name}</option>
+                ))}
               </select>
             </div>
             <div>

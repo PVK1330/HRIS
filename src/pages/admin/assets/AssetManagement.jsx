@@ -1,48 +1,169 @@
-import React, { useState } from 'react';
-import { HiPlus, HiMagnifyingGlass, HiFunnel, HiCheck, HiXMark, HiArrowPath } from 'react-icons/hi2';
+import React, { useState, useMemo, useEffect } from 'react';
+import {
+  HiPlus, HiMagnifyingGlass, HiAdjustmentsHorizontal, HiCheck, HiXMark, HiArrowPath,
+  HiArchiveBox, HiUserGroup, HiClipboardDocumentList, HiClock, HiIdentification,
+  HiTrash, HiPencilSquare, HiEye, HiCheckBadge, HiUserCircle, HiChevronDown, HiArrowsUpDown
+} from 'react-icons/hi2';
 import { Button } from '../../../components/ui/Button.jsx';
-import { Input } from '../../../components/ui/Input.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
+import { Table } from '../../../components/ui/Table.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { employees } from '../../../data/mockData.js';
+import { assetService } from '../../../services/assetService.js';
+import { fetchAssetCategories } from '../../../services/assetSettingsService.js';
+import { listEmployees } from '../../../services/employeeService.js';
+import { toast } from 'react-hot-toast';
 
-const MOCK_ASSETS = [
-  { id: 'AST-001', type: 'Laptop', serial: 'SN123456', assignedTo: 'John Doe', department: 'Engineering', issueDate: '2026-01-10', condition: 'Good', status: 'Issued' },
-  { id: 'AST-002', type: 'Mobile', serial: 'SN789012', assignedTo: 'Sarah Ahmed', department: 'HR', issueDate: '2026-02-15', condition: 'Good', status: 'Issued' },
-  { id: 'AST-003', type: 'Access Card', serial: 'AC998877', assignedTo: 'Michael Chen', department: 'Product', issueDate: '2026-03-05', condition: 'Good', status: 'Issued' },
-  { id: 'AST-004', type: 'Laptop', serial: 'SN654321', assignedTo: '-', department: '-', issueDate: '-', condition: 'Good', status: 'Available' },
-  { id: 'AST-005', type: 'Uniform', serial: 'U-XL-01', assignedTo: 'Neha Jain', department: 'Sales', issueDate: '2026-04-01', condition: 'New', status: 'Issued' },
-];
+const basicFieldClass = 'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/25';
 
-const MOCK_REQUESTS = [
-  { id: 1, employee: 'David Smith', empId: 'EMP-105', type: 'Laptop', requestedOn: '2026-05-01', status: 'Pending' },
-  { id: 2, employee: 'Lisa Wong', empId: 'EMP-108', type: 'Access Card', requestedOn: '2026-04-28', status: 'Approved' },
-];
+function colLabel(text) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {text}
+      <HiArrowsUpDown className="h-3 w-3 shrink-0 opacity-45" aria-hidden />
+    </span>
+  )
+}
 
-const MOCK_RETURNS = [
-  { id: 1, employee: 'James Bond', asset: 'Laptop (SN-007)', returnDate: '2026-04-30', condition: 'Damaged', remarks: 'Screen crack' },
-];
+function statusColor(status) {
+  if (status === 'Available') return 'bg-green-100 text-green-700 ring-green-600/20';
+  if (status === 'Issued') return 'bg-blue-100 text-blue-700 ring-blue-600/20';
+  if (status === 'Damaged' || status === 'Lost') return 'bg-red-100 text-red-700 ring-red-600/20';
+  if (status === 'In Repair') return 'bg-orange-100 text-orange-700 ring-orange-600/20';
+  return 'bg-slate-100 text-slate-700 ring-slate-600/20';
+}
+
+function conditionColor(condition) {
+  if (condition === 'New') return 'bg-emerald-100 text-emerald-700 ring-emerald-600/20';
+  if (condition === 'Good') return 'bg-blue-100 text-blue-700 ring-blue-600/20';
+  if (condition === 'Fair') return 'bg-orange-100 text-orange-700 ring-orange-600/20';
+  if (condition === 'Damaged') return 'bg-red-100 text-red-700 ring-red-600/20';
+  return 'bg-slate-100 text-slate-700 ring-slate-600/20';
+}
+
+const IconMap = {
+  'laptop': HiArchiveBox,
+  'smartphone': HiIdentification,
+  'sim-card': HiClipboardDocumentList,
+  'credit-card': HiIdentification,
+  'shirt': HiArchiveBox,
+  'tool': HiAdjustmentsHorizontal,
+  'box': HiArchiveBox
+};
+
+const getCategoryIcon = (iconName) => {
+  return IconMap[iconName] || HiArchiveBox;
+};
 
 export default function AssetManagement() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('inventory');
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState(null);
+
+  const [assets, setAssets] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [employeeList, setEmployeeList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
-    type: '',
-    serial: '',
+    categoryId: '',
+    serialNumber: '',
     condition: 'Good',
-    assignedTo: '',
+    employeeId: '',
     issueDate: '',
-    notes: ''
+    notes: '',
+    status: 'Available'
   });
 
-  const canAddAsset = user?.role === 'hr_admin';
+  const canManage = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin';
 
-  const handleOpenModal = () => setIsModalOpen(true);
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      const [assetData, categoryData, empData] = await Promise.all([
+        assetService.getAssets(),
+        fetchAssetCategories(),
+        listEmployees({ limit: 1000 })
+      ]);
+      setAssets(assetData || []);
+      setCategories(categoryData?.data || []);
+      setEmployeeList(empData?.employees || empData?.records || []);
+    } catch (error) {
+      console.error('Error loading asset data:', error);
+      toast.error(`Failed to load data: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stats = useMemo(() => {
+    return {
+      total: assets.length,
+      issued: assets.filter(a => a.status === 'Issued').length,
+      available: assets.filter(a => a.status === 'Available').length,
+      damaged: assets.filter(a => a.status === 'Damaged' || a.status === 'Lost' || a.status === 'In Repair').length
+    }
+  }, [assets]);
+
+  const filteredAssets = useMemo(() => {
+    return assets.filter(asset => {
+      const matchesSearch = search === '' ||
+        asset.serial_number?.toLowerCase().includes(search.toLowerCase()) ||
+        asset.asset_id?.toLowerCase().includes(search.toLowerCase()) ||
+        asset.assignedTo?.toLowerCase().includes(search.toLowerCase());
+      const matchesType = typeFilter === '' || asset.category_id === typeFilter;
+      const matchesStatus = statusFilter === '' || asset.status === statusFilter;
+      return matchesSearch && matchesType && matchesStatus;
+    });
+  }, [assets, search, typeFilter, statusFilter]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, typeFilter, statusFilter]);
+
+  const handleOpenModal = (asset = null) => {
+    if (asset) {
+      setEditMode(true);
+      setSelectedAssetId(asset.id);
+      setFormData({
+        categoryId: asset.category_id || '',
+        serialNumber: asset.serial_number || '',
+        condition: asset.condition || 'Good',
+        employeeId: asset.employee_id || '',
+        issueDate: asset.issue_date ? asset.issue_date.split('T')[0] : '',
+        notes: asset.notes || '',
+        status: asset.status || 'Available'
+      });
+    } else {
+      setEditMode(false);
+      setFormData({
+        categoryId: '',
+        serialNumber: '',
+        condition: 'Good',
+        employeeId: '',
+        issueDate: '',
+        notes: '',
+        status: 'Available'
+      });
+    }
+    setIsModalOpen(true);
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setFormData({ type: '', serial: '', condition: 'Good', assignedTo: '', issueDate: '', notes: '' });
+    setEditMode(false);
+    setSelectedAssetId(null);
   };
 
   const handleInputChange = (e) => {
@@ -50,219 +171,398 @@ export default function AssetManagement() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('New Asset Data:', formData);
-    handleCloseModal();
+    setSubmitting(true);
+    try {
+      if (editMode) {
+        await assetService.updateAsset(selectedAssetId, formData);
+        toast.success('Asset updated successfully');
+      } else {
+        await assetService.createAsset(formData);
+        toast.success('Asset registered successfully');
+      }
+      handleCloseModal();
+      loadInitialData();
+    } catch (error) {
+      toast.error(error.message || 'Operation failed');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary">Asset Management</h1>
-          <p className="text-sm text-text-secondary">Track company assets, issuance, and returns</p>
-        </div>
-        {activeTab === 'inventory' && canAddAsset && (
-          <Button label="Add Asset" icon={HiPlus} variant="primary" onClick={handleOpenModal} />
-        )}
-      </div>
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this asset?')) return;
+    try {
+      await assetService.deleteAsset(id);
+      toast.success('Asset removed');
+      loadInitialData();
+    } catch (error) {
+      toast.error('Failed to delete asset');
+    }
+  };
 
-      {/* Tabs */}
-      <div className="flex border-b border-border-tertiary">
-        {['inventory', 'requests', 'returns'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3 text-sm font-semibold capitalize transition-all ${activeTab === tab
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-text-secondary hover:text-text-primary'
-              }`}
-          >
-            {tab === 'inventory' ? 'Asset Inventory' : tab === 'requests' ? 'Asset Requests' : 'Return Tracker'}
+  const columns = [
+    {
+      key: 'asset_id',
+      label: colLabel('Asset / Serial'),
+      render: (_v, row) => {
+        const Icon = getCategoryIcon(row.categoryIcon);
+        return (
+          <div className="flex items-center gap-3 py-1">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-none shadow-sm border border-slate-200"
+              style={{ backgroundColor: `${row.categoryColor}15`, color: row.categoryColor || '#0F766E' }}
+            >
+              <Icon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-bold text-slate-900">{row.asset_id}</div>
+              <div className="truncate text-xs text-slate-500 font-mono">SN: {row.serial_number || 'N/A'}</div>
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'categoryName',
+      label: colLabel('Category'),
+      render: (_v, row) => (
+        <span className="text-sm font-semibold text-slate-700">{row.categoryName || '—'}</span>
+      )
+    },
+    {
+      key: 'assignedTo',
+      label: colLabel('Assignment'),
+      render: (_v, row) => {
+        if (!row.assignedTo || row.assignedTo === '-') {
+          return <span className="text-sm text-slate-400 italic">Unassigned</span>;
+        }
+        return <span className="text-sm font-medium text-slate-900">{row.assignedTo}</span>;
+      }
+    },
+    {
+      key: 'condition',
+      label: colLabel('Condition'),
+      render: (v) => (
+        <span className={`inline-flex items-center rounded-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset ${conditionColor(v)}`}>
+          {v || '—'}
+        </span>
+      )
+    },
+    {
+      key: 'status',
+      label: colLabel('Status'),
+      render: (v) => (
+        <span className={`inline-flex items-center rounded-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset ${statusColor(v)}`}>
+          {v || '—'}
+        </span>
+      )
+    }
+  ];
+
+  if (canManage) {
+    columns.push({
+      key: 'actions', label: 'Actions',
+      render: (_, row) => (
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={() => handleOpenModal(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56]" aria-label="Edit">
+            <HiPencilSquare className="h-4 w-4" />
           </button>
-        ))}
-      </div>
-
-      {/* Filters */}
-      {activeTab === 'inventory' && (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
-            <Input
-              placeholder="Search serial no, employee or ID..."
-              className="pl-10"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <Button label="Filters" icon={HiFunnel} variant="outline" />
+          <button type="button" onClick={() => handleDelete(row.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" aria-label="Delete">
+            <HiTrash className="h-4 w-4" />
+          </button>
         </div>
-      )}
+      )
+    });
+  }
 
-      {/* Content */}
-      <div className="rounded-xl border border-border-tertiary bg-background-primary overflow-hidden shadow-sm">
-        {activeTab === 'inventory' && (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-background-secondary border-b border-border-tertiary">
-              <tr>
-                <th className="px-6 py-4 font-semibold text-text-primary">Asset ID</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Asset Type</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Serial No.</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Assigned To</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Department</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Issue Date</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Condition</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-tertiary">
-              {MOCK_ASSETS.map((asset) => (
-                <tr key={asset.id} className="hover:bg-background-tertiary/50">
-                  <td className="px-6 py-4 font-medium text-text-primary">{asset.id}</td>
-                  <td className="px-6 py-4 text-text-secondary">{asset.type}</td>
-                  <td className="px-6 py-4 text-text-secondary">{asset.serial}</td>
-                  <td className="px-6 py-4 text-text-primary font-medium">{asset.assignedTo}</td>
-                  <td className="px-6 py-4 text-text-secondary">{asset.department}</td>
-                  <td className="px-6 py-4 text-text-secondary">{asset.issueDate}</td>
-                  <td className="px-6 py-4">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${asset.condition === 'Good' ? 'bg-success-DEFAULT/10 text-success-DEFAULT' : 'bg-warning-DEFAULT/10 text-warning-DEFAULT'
-                      }`}>
-                      {asset.condition}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${asset.status === 'Issued' ? 'bg-primary/10 text-primary' : 'bg-success-DEFAULT/10 text-success-DEFAULT'
-                      }`}>
-                      {asset.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
 
-        {activeTab === 'requests' && (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-background-secondary border-b border-border-tertiary">
-              <tr>
-                <th className="px-6 py-4 font-semibold text-text-primary">Employee</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">ID</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Asset Type</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Requested On</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Status</th>
-                <th className="px-6 py-4 font-semibold text-text-primary text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-tertiary">
-              {MOCK_REQUESTS.map((req) => (
-                <tr key={req.id} className="hover:bg-background-tertiary/50">
-                  <td className="px-6 py-4 font-medium text-text-primary">{req.employee}</td>
-                  <td className="px-6 py-4 text-text-secondary">{req.empId}</td>
-                  <td className="px-6 py-4 text-text-secondary">{req.type}</td>
-                  <td className="px-6 py-4 text-text-secondary">{req.requestedOn}</td>
-                  <td className="px-6 py-4">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${req.status === 'Pending' ? 'bg-warning-DEFAULT/10 text-warning-DEFAULT' : 'bg-success-DEFAULT/10 text-success-DEFAULT'
-                      }`}>
-                      {req.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button className="rounded-lg p-1 text-success-DEFAULT hover:bg-success-DEFAULT/10" title="Approve"><HiCheck className="h-5 w-5 bg-green-100 text-green-600 hover:bg-green-200" /></button>
-                      <button className="rounded-lg p-1 text-danger-DEFAULT hover:bg-danger-DEFAULT/10" title="Reject"><HiXMark className="h-5 w-5 bg-red-100 text-red-600 hover:bg-red-200" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {activeTab === 'returns' && (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-background-secondary border-b border-border-tertiary">
-              <tr>
-                <th className="px-6 py-4 font-semibold text-text-primary">Employee</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Asset</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Return Date</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Condition</th>
-                <th className="px-6 py-4 font-semibold text-text-primary">Remarks</th>
-                <th className="px-6 py-4 font-semibold text-text-primary text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-tertiary">
-              {MOCK_RETURNS.map((ret) => (
-                <tr key={ret.id} className="hover:bg-background-tertiary/50">
-                  <td className="px-6 py-4 font-medium text-text-primary">{ret.employee}</td>
-                  <td className="px-6 py-4 text-text-secondary">{ret.asset}</td>
-                  <td className="px-6 py-4 text-text-secondary">{ret.returnDate}</td>
-                  <td className="px-6 py-4 text-text-secondary">{ret.condition}</td>
-                  <td className="px-6 py-4 text-text-secondary">{ret.remarks}</td>
-                  <td className="px-6 py-4 text-right">
-                    <Button label="Mark Returned" size="sm" variant="primary" icon={HiArrowPath} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      {/* Top Title Bar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Asset Management</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Assets</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Inventory</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => handleOpenModal()}
+              className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm"
+            >
+              <HiPlus className="h-4 w-4" /> Add Asset
+            </button>
+          )}
+        </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Add New Asset" size="xl">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Asset Type"
-            name="type"
-            type="select"
-            options={[
-              { value: 'Laptop', label: 'Laptop' },
-              { value: 'Mobile', label: 'Mobile' },
-              { value: 'Access Card', label: 'Access Card' },
-              { value: 'Uniform', label: 'Uniform' },
-            ]}
-            value={formData.type}
-            onChange={handleInputChange}
-            required
-          />
-          <Input label="Serial No" name="serial" value={formData.serial} onChange={handleInputChange} required />
-          <Input
-            label="Condition"
-            name="condition"
-            type="select"
-            options={[
-              { value: 'New', label: 'New' },
-              { value: 'Good', label: 'Good' },
-              { value: 'Fair', label: 'Fair' },
-              { value: 'Damaged', label: 'Damaged' },
-            ]}
-            value={formData.condition}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="Assign To"
-            name="assignedTo"
-            type="select"
-            options={employees.map(e => ({ value: e.name, label: `${e.name} (${e.empId})` }))}
-            value={formData.assignedTo}
-            onChange={handleInputChange}
-          />
-          <Input label="Issue Date" name="issueDate" type="date" value={formData.issueDate} onChange={handleInputChange} />
-          <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-1">Notes</label>
-            <textarea
-              name="notes"
-              className="w-full rounded-lg border border-border-tertiary bg-background-primary px-4 py-2 text-sm outline-none focus:border-primary"
-              rows={3}
-              value={formData.notes}
-              onChange={handleInputChange}
-            />
+      {/* Metrics Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          {
+            label: 'TOTAL ASSETS',
+            count: stats.total,
+            bgColor: 'bg-[#0F172A]',
+            icon: HiArchiveBox,
+            onClickFilter: () => setStatusFilter('')
+          },
+          {
+            label: 'AVAILABLE',
+            count: stats.available,
+            bgColor: 'bg-[#10B981]',
+            icon: HiCheckBadge,
+            onClickFilter: () => setStatusFilter('Available')
+          },
+          {
+            label: 'ISSUED',
+            count: stats.issued,
+            bgColor: 'bg-[#3B82F6]',
+            icon: HiUserGroup,
+            onClickFilter: () => setStatusFilter('Issued')
+          },
+          {
+            label: 'DAMAGED/REPAIR',
+            count: stats.damaged,
+            bgColor: 'bg-[#EF4444]',
+            icon: HiAdjustmentsHorizontal,
+            onClickFilter: () => setStatusFilter('Damaged')
+          }
+        ].map((card, idx) => {
+          const isActiveFilter =
+            (card.label === 'TOTAL ASSETS' && statusFilter === '') ||
+            (card.label === 'AVAILABLE' && statusFilter === 'Available') ||
+            (card.label === 'ISSUED' && statusFilter === 'Issued') ||
+            (card.label === 'DAMAGED/REPAIR' && statusFilter === 'Damaged');
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={card.onClickFilter}
+              title={`Filter by ${card.label}`}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${isActiveFilter
+                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                <card.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                  {card.label}
+                </div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Filters + Full width Table */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Asset Inventory</h2>
+        </div>
+
+        <div className="space-y-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="relative">
+              <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search serial, asset ID, owner..."
+                className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+              />
+            </div>
+
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
+              <option value="">All Statuses</option>
+              <option value="Available">Available</option>
+              <option value="Issued">Issued</option>
+              <option value="Damaged">Damaged</option>
+              <option value="Lost">Lost</option>
+              <option value="In Repair">In Repair</option>
+            </select>
           </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button label="Cancel" variant="ghost" onClick={handleCloseModal} />
-            <Button label="Add Asset" variant="primary" type="submit" />
+
+          <div className="flex items-center justify-between pt-1">
+            <p className="text-xs font-medium text-slate-500">{filteredAssets.length} records shown</p>
+            <button
+              type="button"
+              onClick={() => { setSearch(''); setTypeFilter(''); setStatusFilter(''); }}
+              className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
+            >
+              Reset Filters
+            </button>
+          </div>
+        </div>
+
+        <Table
+          columns={columns}
+          data={filteredAssets}
+          pageSize={8}
+          square
+          loading={loading}
+          totalCount={filteredAssets.length}
+          currentPage={currentPage - 1}
+          onPageChange={(idx) => setCurrentPage(idx + 1)}
+        />
+      </div>
+
+      {/* Add / Edit Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        size="md"
+        showClose
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
+              {editMode ? 'Edit Asset' : 'Add New Asset'}
+            </h2>
+
+          </div>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">
+                Asset Category<span className="text-red-500"> *</span>
+              </label>
+              <select
+                name="categoryId"
+                value={formData.categoryId}
+                onChange={handleInputChange}
+                required
+                className={basicFieldClass}
+              >
+                <option value="">Select Category</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">
+                Serial Number<span className="text-red-500"> *</span>
+              </label>
+              <input
+                type="text"
+                name="serialNumber"
+                value={formData.serialNumber}
+                onChange={handleInputChange}
+                placeholder="e.g. SN-12345"
+                required
+                className={basicFieldClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">
+                Current Condition
+              </label>
+              <select
+                name="condition"
+                value={formData.condition}
+                onChange={handleInputChange}
+                className={basicFieldClass}
+              >
+                <option value="New">New</option>
+                <option value="Good">Good</option>
+                <option value="Fair">Fair</option>
+                <option value="Damaged">Damaged</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">
+                Status
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                className={basicFieldClass}
+              >
+                <option value="Available">Available</option>
+                <option value="Issued">Issued</option>
+                <option value="In Repair">In Repair</option>
+                <option value="Lost">Lost</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">
+                Assign To Employee
+              </label>
+              <select
+                name="employeeId"
+                value={formData.employeeId}
+                onChange={handleInputChange}
+                className={basicFieldClass}
+              >
+                <option value="">Not Assigned</option>
+                {employeeList.map(e => (
+                  <option key={e.id} value={e.id}>{e.full_name || e.name} ({e.emp_id})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">
+                Issue Date
+              </label>
+              <input
+                type="date"
+                name="issueDate"
+                value={formData.issueDate}
+                onChange={handleInputChange}
+                className={basicFieldClass}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm font-medium text-slate-800">
+                Notes
+              </label>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="Record any specific details..."
+                className={basicFieldClass}
+              />
+            </div>
+          </div>
+          <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition disabled:opacity-50"
+            >
+              {submitting ? 'Saving...' : (editMode ? 'Update Asset' : 'Add Asset')}
+            </button>
           </div>
         </form>
       </Modal>

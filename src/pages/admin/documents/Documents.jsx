@@ -1,772 +1,561 @@
-import { useMemo, useState, useCallback } from 'react'
-import { HiArrowDownTray, HiArrowPath } from 'react-icons/hi2'
-import { useAuth } from '../../../context/AuthContext.jsx'
-import {
-  employees,
-  mandatoryDocumentTypes,
-  optionalDocumentUploadTypes,
-  initialDocumentSubmissions,
-  initialDocumentAuditLog,
-} from '../../../data/mockData.js'
-import { Badge } from '../../../components/ui/Badge.jsx'
-import { Button } from '../../../components/ui/Button.jsx'
-import FileUpload from '../../../components/ui/FileUpload.jsx'
-import { Input } from '../../../components/ui/Input.jsx'
-import { Modal } from '../../../components/ui/Modal.jsx'
-import { Table } from '../../../components/ui/Table.jsx'
+import React, { useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import { 
+  HiEye, HiDocumentCheck, HiClipboardDocumentList, HiExclamationCircle, HiShieldCheck,
+  HiMagnifyingGlass, HiCheckCircle, HiXCircle, HiIdentification,
+  HiArrowDownTray, HiClock, HiGlobeAlt, HiArrowsUpDown, HiPlus, HiDocumentArrowDown,
+  HiFolderOpen
+} from 'react-icons/hi2';
+import { Badge } from '../../../components/ui/Badge.jsx';
+import { Button } from '../../../components/ui/Button.jsx';
+import { Modal } from '../../../components/ui/Modal.jsx';
+import { Table } from '../../../components/ui/Table.jsx';
+import api from '../../../services/api.js';
 
-const selectClass =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
+const basicFieldClass = 'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/25';
 
-const textareaClass =
-  'w-full min-h-[88px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
-
-const uploadTypeOptions = [...mandatoryDocumentTypes, ...optionalDocumentUploadTypes]
-
-const clone = (x) => JSON.parse(JSON.stringify(x))
-
-function nextSubmissionId() {
-  return `ds-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-}
-
-function nextAuditId() {
-  return `da-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-}
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function formatAuditClock(iso) {
-  try {
-    return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  } catch {
-    return iso
-  }
-}
-
-function maxVersionFor(submissions, employeeId, docType) {
-  const v = submissions
-    .filter((s) => s.employeeId === employeeId && s.docType === docType)
-    .map((s) => s.version)
-  return v.length ? Math.max(...v) : 0
-}
-
-/** Best status for mandatory checklist cell for one document type */
-function checklistStatusForType(submissions, employeeId, docType) {
-  const rows = submissions
-    .filter((s) => s.employeeId === employeeId && s.docType === docType)
-    .sort((a, b) => b.version - a.version)
-  if (!rows.length) return 'missing'
-  const latest = rows[0]
-  if (latest.status === 'Approved') return 'approved'
-  if (latest.status === 'Rejected') return 'rejected'
-  return 'pending'
-}
-
-function resolveSelfEmployee(authUser) {
-  if (!authUser) return null
+function colLabel(text) {
   return (
-    employees.find((e) => e.email?.toLowerCase() === authUser.email?.toLowerCase()) ||
-    employees.find((e) => e.name === authUser.name) ||
-    null
-  )
+    <span className="inline-flex items-center gap-1.5">
+      {text}
+      <HiArrowsUpDown className="h-3 w-3 shrink-0 opacity-45" aria-hidden />
+    </span>
+  );
 }
+
+function statusColor(status) {
+  if (status === 'Approved') return 'bg-green-100 text-green-700 ring-green-600/20';
+  if (status === 'Pending') return 'bg-orange-100 text-orange-700 ring-orange-600/20';
+  if (status === 'Rejected') return 'bg-red-100 text-red-700 ring-red-600/20';
+  return 'bg-slate-100 text-slate-700 ring-slate-600/20';
+}
+
+const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const resolveDocFileUrl = (url) => {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const path = url.startsWith('/') ? url : `/${url}`;
+  return `${API_ORIGIN}${path}`;
+};
 
 export default function Documents() {
-  const { user } = useAuth()
-  const isHrReviewer = user?.role === 'hr_admin' || user?.role === 'hr_executive'
-  const isManager = user?.role === 'manager'
+  const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState([]);
+  const [allDocs, setAllDocs] = useState([]);
+  
+  const [q, setQ] = useState('');
+  const [deptFilter, setDeptFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
-  const selfEmployee = useMemo(() => resolveSelfEmployee(user), [user])
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [actionType, setActionType] = useState(''); 
+  const [actionReason, setActionReason] = useState('');
+  const [selectedDoc, setSelectedDoc] = useState(null);
 
-  const visibleEmployees = useMemo(() => {
-    if (!user) return []
-    if (isHrReviewer) return [...employees]
-    if (isManager && user.department) {
-      return employees.filter((e) => e.department === user.department)
+  const loadDocuments = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/admin/documents');
+      const docs = res.data?.data?.documents || [];
+      setAllDocs(docs);
+
+      const grouped = docs.reduce((acc, doc) => {
+        if (!acc[doc.employee_id]) {
+          acc[doc.employee_id] = {
+            employee_id: doc.employee_id,
+            employee_name: doc.employee_name,
+            emp_id: doc.emp_id,
+            department: doc.department,
+            docs: []
+          };
+        }
+        acc[doc.employee_id].docs.push(doc);
+        return acc;
+      }, {});
+      setEmployees(Object.values(grouped));
+    } catch (err) {
+      toast.error('Failed to load documents');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    if (selfEmployee) return [selfEmployee]
-    return []
-  }, [user, isHrReviewer, isManager, selfEmployee])
+  };
 
-  const [submissions, setSubmissions] = useState(() => clone(initialDocumentSubmissions))
-  const [auditLog, setAuditLog] = useState(() => clone(initialDocumentAuditLog))
-
-  const [checklistEmployeeId, setChecklistEmployeeId] = useState('')
-
-  const resolvedChecklistEmployeeId = useMemo(() => {
-    const allowed = visibleEmployees.map((e) => e.id)
-    if (checklistEmployeeId && allowed.includes(checklistEmployeeId)) return checklistEmployeeId
-    return visibleEmployees[0]?.id ?? ''
-  }, [visibleEmployees, checklistEmployeeId])
-
-  const [q, setQ] = useState('')
-  const [deptFilter, setDeptFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [uploadModalOpen, setUploadModalOpen] = useState(false)
-  const [uploadMode, setUploadMode] = useState('create')
-  const [replaceCtx, setReplaceCtx] = useState(null)
-  const [formData, setFormData] = useState({
-    employeeId: '',
-    documentType: '',
-    documentTitle: '',
-    documentNumber: '',
-    issueDate: '',
-    expiryDate: '',
-    issuedBy: '',
-    notes: '',
-  })
-  const [files, setFiles] = useState({})
-
-  const [viewSubmission, setViewSubmission] = useState(null)
-
-  const [rejectModalOpen, setRejectModalOpen] = useState(false)
-  const [rejectTargetId, setRejectTargetId] = useState(null)
-  const [rejectComment, setRejectComment] = useState('')
-
-  const pushAudit = useCallback((detail, actor) => {
-    const entry = {
-      id: nextAuditId(),
-      at: new Date().toISOString(),
-      actor: actor || user?.name || 'User',
-      detail,
-    }
-    setAuditLog((prev) => [entry, ...prev])
-  }, [user])
-
-  const visibleSubmissions = useMemo(() => {
-    const ids = new Set(visibleEmployees.map((e) => e.id))
-    return submissions.filter((s) => ids.has(s.employeeId))
-  }, [submissions, visibleEmployees])
-
-  const deptOptions = useMemo(() => {
-    const u = [...new Set(visibleSubmissions.map((s) => s.department))].sort()
-    return [{ value: '', label: 'All departments' }, ...u.map((d) => ({ value: d, label: d }))]
-  }, [visibleSubmissions])
-
-  const statusOptions = [
-    { value: '', label: 'All statuses' },
-    { value: 'Pending', label: 'Pending' },
-    { value: 'Approved', label: 'Approved' },
-    { value: 'Rejected', label: 'Rejected' },
-  ]
+  useEffect(() => {
+    loadDocuments();
+  }, []);
 
   const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase()
-    return visibleSubmissions.filter((r) => {
-      if (query && !`${r.employee} ${r.empId} ${r.docType}`.toLowerCase().includes(query)) return false
-      if (deptFilter && r.department !== deptFilter) return false
-      if (statusFilter && r.status !== statusFilter) return false
-      return true
-    })
-  }, [q, deptFilter, statusFilter, visibleSubmissions])
+    return employees.filter(e => {
+      const matchQ = !q || String(e.employee_name).toLowerCase().includes(q.toLowerCase()) || String(e.emp_id).toLowerCase().includes(q.toLowerCase());
+      const matchDept = !deptFilter || e.department === deptFilter;
+      // If statusFilter is applied, only show employees who have at least one doc matching the status
+      const matchStatus = !statusFilter || e.docs.some(d => d.status === statusFilter);
+      return matchQ && matchDept && matchStatus;
+    });
+  }, [employees, q, deptFilter, statusFilter]);
 
-  const checklistStatuses = useMemo(() => {
-    if (!checklistEmployeeId) return []
-    return mandatoryDocumentTypes.map((docType) => ({
-      docType,
-      state: checklistStatusForType(submissions, checklistEmployeeId, docType),
-    }))
-  }, [submissions, checklistEmployeeId])
+  const stats = useMemo(() => ({
+    total: allDocs.length,
+    pending: allDocs.filter(s => s.status === 'Pending').length,
+    approved: allDocs.filter(s => s.status === 'Approved').length,
+    rejected: allDocs.filter(s => s.status === 'Rejected').length
+  }), [allDocs]);
 
-  const checklistEmployeeName = useMemo(() => {
-    const e = employees.find((emp) => emp.id === checklistEmployeeId)
-    return e?.name ?? ''
-  }, [checklistEmployeeId])
+  const handleViewEmployee = (emp) => {
+    setSelectedEmployee(emp);
+    setEmployeeModalOpen(true);
+  };
 
-  /** Latest rows only per employee + type for version panel (top N groups) */
-  const versionSnapshots = useMemo(() => {
-    const map = new Map()
-    visibleSubmissions.forEach((s) => {
-      const key = `${s.employeeId}:::${s.docType}`
-      if (!map.has(key)) map.set(key, [])
-      map.get(key).push(s)
-    })
-    const chains = [...map.entries()].map(([, rows]) => {
-      const sorted = [...rows].sort((a, b) => b.version - a.version)
-      return sorted.map((row, idx) => ({
-        ...row,
-        archived: idx > 0,
-      }))
-    })
-    const flat = chains.flatMap((chain) =>
-      chain.slice(0, 2).map((row) => ({
-        ...row,
-        label: `${row.docType} — ${row.employee}`,
-      })),
-    )
-    return flat.slice(0, 8)
-  }, [visibleSubmissions])
+  const handleAction = (doc, type) => {
+    setSelectedDoc(doc);
+    setActionType(type);
+    setActionReason(type === 'Approve' ? 'Compliance Verified' : '');
+    setActionModalOpen(true);
+  };
 
-  const openCreateUpload = () => {
-    setUploadMode('create')
-    setReplaceCtx(null)
-    let defaultEmp = ''
-    if (visibleEmployees.length === 1) defaultEmp = visibleEmployees[0].id
-    if (user?.role === 'employee' && selfEmployee) defaultEmp = selfEmployee.id
-    setFormData({
-      employeeId: defaultEmp,
-      documentType: '',
-      documentTitle: '',
-      documentNumber: '',
-      issueDate: '',
-      expiryDate: '',
-      issuedBy: '',
-      notes: '',
-    })
-    setFiles({})
-    setUploadModalOpen(true)
-  }
+  const handlePreview = (doc) => {
+    setSelectedDoc(doc);
+    setPreviewModalOpen(true);
+  };
 
-  const openReplaceUpload = (row) => {
-    setUploadMode('replace')
-    const nextVer = maxVersionFor(submissions, row.employeeId, row.docType) + 1
-    setReplaceCtx({ employeeId: row.employeeId, docType: row.docType, nextVersion: nextVer })
-    setFormData({
-      employeeId: row.employeeId,
-      documentType: row.docType,
-      documentTitle: `${row.docType} — replaced`,
-      documentNumber: '',
-      issueDate: '',
-      expiryDate: '',
-      issuedBy: '',
-      notes: '',
-    })
-    setFiles({})
-    setUploadModalOpen(true)
-  }
-
-  const handleCloseUpload = () => {
-    setUploadModalOpen(false)
-    setReplaceCtx(null)
-    setFiles({})
-  }
-
-  const handleSubmitUpload = (e) => {
-    e.preventDefault()
-    const emp = employees.find((x) => x.id === formData.employeeId)
-    if (!emp || !formData.documentType || !files.documentFile?.length) {
-      handleCloseUpload()
-      return
+  const confirmAction = async () => {
+    try {
+      const payload = {
+        status: actionType === 'Approve' ? 'Approved' : 'Rejected',
+        rejection_reason: actionReason
+      };
+      await api.put(`/admin/documents/${selectedDoc.id}/status`, payload);
+      toast.success(`Document ${actionType === 'Approve' ? 'approved' : 'rejected'} successfully.`);
+      setActionModalOpen(false);
+      setSelectedDoc(null);
+      // Reload documents
+      await loadDocuments();
+      // If employee modal is open, we need to update its contents implicitly via loadDocuments, 
+      // but selectedEmployee won't auto-update since it's a static copy. We can just refresh it:
+      setEmployeeModalOpen(false); // Quick way is to close or update the selectedEmployee
+      setTimeout(() => {
+        // Find updated employee and reopen
+        const updatedEmp = employees.find(e => e.employee_id === selectedEmployee?.employee_id);
+        if (updatedEmp) {
+          setSelectedEmployee(updatedEmp);
+          setEmployeeModalOpen(true);
+        }
+      }, 100);
+    } catch (error) {
+      toast.error('Failed to update document status.');
+      console.error(error);
     }
+  };
 
-    const nextVersion =
-      uploadMode === 'replace' && replaceCtx
-        ? replaceCtx.nextVersion
-        : maxVersionFor(submissions, emp.id, formData.documentType) + 1
-
-    const newRow = {
-      id: nextSubmissionId(),
-      employeeId: emp.id,
-      employee: emp.name,
-      empId: emp.empId,
-      department: emp.department,
-      docType: formData.documentType,
-      version: nextVersion,
-      submittedDate: todayStr(),
-      updated: todayStr(),
-      status: 'Pending',
-      hrComments: '',
-    }
-
-    setSubmissions((prev) => [newRow, ...prev])
-    pushAudit(
-      `${emp.name} uploaded ${formData.documentType} v${nextVersion}${uploadMode === 'replace' ? ' (replacement)' : ''}`,
-      emp.name,
-    )
-    handleCloseUpload()
-  }
-
-  const approveRow = (row) => {
-    if (!(row.status === 'Pending')) return
-    setSubmissions((prev) =>
-      prev.map((s) =>
-        s.id === row.id
-          ? {
-              ...s,
-              status: 'Approved',
-              hrComments: '',
-              updated: todayStr(),
-            }
-          : s,
-      ),
-    )
-    pushAudit(`${row.employee}'s ${row.docType} v${row.version} approved by HR`)
-  }
-
-  const openReject = (row) => {
-    if (!(row.status === 'Pending')) return
-    setRejectTargetId(row.id)
-    setRejectComment('')
-    setRejectModalOpen(true)
-  }
-
-  const confirmReject = () => {
-    const trimmed = rejectComment.trim()
-    if (trimmed.length < 8) return
-    const row = submissions.find((s) => s.id === rejectTargetId)
-    if (!row) {
-      setRejectModalOpen(false)
-      return
-    }
-    setSubmissions((prev) =>
-      prev.map((s) =>
-        s.id === rejectTargetId
-          ? {
-              ...s,
-              status: 'Rejected',
-              hrComments: trimmed,
-              updated: todayStr(),
-            }
-          : s,
-      ),
-    )
-    pushAudit(`${row.employee}'s ${row.docType} v${row.version} rejected — ${trimmed}`)
-    setRejectModalOpen(false)
-    setRejectTargetId(null)
-    setRejectComment('')
-  }
-
-  const canEmployeeActOnRow = (row) => selfEmployee?.id === row.employeeId
-
-  const rowCanReplace = (row) => {
-    if (isHrReviewer) return true
-    if (user?.role === 'employee' && canEmployeeActOnRow(row)) return true
-    return false
-  }
-
-  const showReviewActions = (row) => isHrReviewer && row.status === 'Pending'
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const checklistIcon = (state) => {
-    if (state === 'approved') {
-      return (
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-700 text-xs font-bold">
-          ✓
-        </div>
-      )
-    }
-    if (state === 'pending') {
-      return (
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
-          ⋯
-        </div>
-      )
-    }
-    if (state === 'rejected') {
-      return (
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700 text-xs font-bold">
-          !
-        </div>
-      )
-    }
-    return (
-      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 text-xs">
-        —
-      </div>
-    )
-  }
-
-  const checklistLabel = (state) => {
-    if (state === 'approved') return 'Approved on file'
-    if (state === 'pending') return 'Awaiting HR review'
-    if (state === 'rejected') return 'Rejected — re-upload required'
-    return 'Missing'
-  }
-
-  const columns = [
+  const empColumns = [
     {
       key: 'employee',
-      label: 'Employee',
+      label: colLabel('Contributor'),
       render: (_, row) => (
-        <div>
-          <div className="font-medium text-gray-900">{row.employee}</div>
-          <div className="text-xs text-gray-500">{row.empId}</div>
+        <div className="flex items-center gap-3 py-1">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-none border border-slate-200 bg-slate-50 text-[12px] font-bold text-slate-600 shadow-sm">
+            {String(row.employee_name || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-bold text-slate-900">{row.employee_name}</div>
+            <div className="truncate text-xs font-mono text-slate-500">{row.emp_id}</div>
+          </div>
         </div>
-      ),
+      )
     },
-    { key: 'department', label: 'Department' },
-    { key: 'docType', label: 'Document Type' },
-    {
-      key: 'version',
-      label: 'Version',
-      render: (v) => <span className="tabular-nums">v{v}</span>,
-    },
-    { key: 'submittedDate', label: 'Submitted' },
-    { key: 'updated', label: 'Updated' },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (v) => {
-        const color = v === 'Pending' ? 'orange' : v === 'Rejected' ? 'red' : 'green'
-        return <Badge label={v} color={color} />
-      },
+    { 
+       key: 'department', 
+       label: colLabel('Department'),
+       render: (v) => <span className="text-sm font-medium text-slate-700">{v || '—'}</span>
     },
     {
-      key: 'hrComments',
-      label: 'HR Comments',
-      render: (v) => <span className="text-xs text-gray-600">{v || '—'}</span>,
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
+      key: 'docStats',
+      label: colLabel('Documents'),
       render: (_, row) => (
-        <div className="flex flex-wrap items-center gap-1">
-          <Button label="View"variant='primary' size="sm" onClick={() => setViewSubmission(row)} />
-          <Button
-            label="Download"
-            variant="secondary"
-            size="sm"
-            icon={HiArrowDownTray}
-            onClick={() =>
-              alert('Demo only: file download would be served from HRIS API / document storage.')
-            }
+        <div className="flex items-center gap-2">
+          <Badge label={`${row.docs.length} Total`} color="blue" variant="soft" className="font-bold text-[10px]" />
+          {row.docs.some(d => d.status === 'Pending') && (
+             <Badge label={`${row.docs.filter(d => d.status === 'Pending').length} Pending`} color="orange" className="font-bold text-[10px]" />
+          )}
+          {row.docs.some(d => d.status === 'Rejected') && (
+             <Badge label={`${row.docs.filter(d => d.status === 'Rejected').length} Flagged`} color="red" className="font-bold text-[10px]" />
+          )}
+        </div>
+      )
+    },
+    {
+       key: 'actions',
+       label: 'Actions',
+       render: (_, row) => (
+          <Button 
+            type="button" 
+            onClick={() => handleViewEmployee(row)} 
+            variant="outline" 
+            size="sm" 
+            icon={HiFolderOpen} 
+            label="VIEW DOCS" 
+            className="text-[10px] font-black tracking-widest text-[#0F766E]"
           />
-          {rowCanReplace(row) && (
-            <Button
-              label="Replace"
-              variant="outline"
-              size="sm"
-              icon={HiArrowPath}
-              title="Upload a newer version"
-              onClick={() => openReplaceUpload(row)}
-            />
-          )}
-          {showReviewActions(row) && (
-            <>
-              <Button label="Approve" variant="Approve" size="sm" onClick={() => approveRow(row)} />
-              <Button label="Reject" variant="danger" size="sm" onClick={() => openReject(row)} />
-            </>
-          )}
-        </div>
-      ),
-    },
-  ]
-
-  const rejectTargetRow = submissions.find((s) => s.id === rejectTargetId)
+       )
+    }
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">Documents &amp; Approval</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Mandatory uploads, HR review, and compliance tracking —{' '}
-            {user?.role === 'employee'
-              ? 'your uploads only.'
-              : isManager
-                ? `${user?.department ?? 'your'} team.`
-                : 'full organization view.'}
-          </p>
-        </div>
-        <Button label="Upload document" variant="primary" onClick={openCreateUpload} />
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <Input
-            label="Search"
-            name="q"
-            placeholder="Employee name, ID, or document type"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <Input
-            label="Department"
-            name="dept"
-            type="select"
-            value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
-            options={deptOptions}
-          />
-          <Input
-            label="Document status"
-            name="status"
-            type="select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            options={statusOptions}
-          />
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="font-display text-lg font-bold text-gray-900">Mandatory document checklist</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Per HRIS doc: Passport, IDs, certificates, contract, offer, experience letters — tracked per employee.
-            </p>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      
+      {/* Top Title Bar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Documents & Approval</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Compliance</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Employee Documents Registry</span>
           </div>
-          {(isHrReviewer || isManager || visibleEmployees.length > 1) && (
-            <div className="w-full max-w-xs">
-              <label htmlFor="checklist-employee" className="mb-1 block text-xs font-semibold uppercase text-gray-500">
-                Employee
-              </label>
-              <select
-                id="checklist-employee"
-                value={resolvedChecklistEmployeeId}
-                onChange={(e) => setChecklistEmployeeId(e.target.value)}
-                className={selectClass}
-              >
-                {visibleEmployees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name} ({e.empId})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm"
+          >
+            <HiDocumentArrowDown className="h-4 w-4" /> Export Report
+          </button>
+        </div>
+      </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {checklistStatuses.map(({ docType, state }) => (
-            <div
-              key={docType}
-              className="flex items-start gap-3 rounded-lg border border-gray-200 px-4 py-3"
+      {/* Metrics Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          {
+            label: 'TOTAL SUBMISSIONS',
+            count: stats.total,
+            bgColor: 'bg-[#0F172A]',
+            icon: HiGlobeAlt,
+            onClickFilter: () => setStatusFilter('')
+          },
+          {
+            label: 'VERIFIED ASSETS',
+            count: stats.approved,
+            bgColor: 'bg-[#10B981]',
+            icon: HiDocumentCheck,
+            onClickFilter: () => setStatusFilter('Approved')
+          },
+          {
+            label: 'AWAITING AUDIT',
+            count: stats.pending,
+            bgColor: 'bg-[#F59E0B]',
+            icon: HiClipboardDocumentList,
+            onClickFilter: () => setStatusFilter('Pending')
+          },
+          {
+            label: 'POLICY FLAGS',
+            count: stats.rejected,
+            bgColor: 'bg-[#EF4444]',
+            icon: HiExclamationCircle,
+            onClickFilter: () => setStatusFilter('Rejected')
+          }
+        ].map((card, idx) => {
+          const isActiveFilter = 
+            (card.label === 'TOTAL SUBMISSIONS' && statusFilter === '') ||
+            (card.label === 'VERIFIED ASSETS' && statusFilter === 'Approved') ||
+            (card.label === 'AWAITING AUDIT' && statusFilter === 'Pending') ||
+            (card.label === 'POLICY FLAGS' && statusFilter === 'Rejected');
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={card.onClickFilter}
+              title={`Filter by ${card.label}`}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
+                isActiveFilter
+                  ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
             >
-              {checklistIcon(state)}
-              <div className="min-w-0">
-                <div className="text-sm font-medium text-gray-800">{docType}</div>
-                <div className="mt-0.5 text-xs text-gray-500">
-                  {checklistEmployeeName ? `${checklistLabel(state)} (${checklistEmployeeName})` : checklistLabel(state)}
-                </div>
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+                <card.icon className="h-5 w-5" />
               </div>
-            </div>
-          ))}
-        </div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                  {card.label}
+                </div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      <Table columns={columns} data={filtered} pageSize={8} />
-
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Document version tracking</h2>
-        <p className="mt-1 text-sm text-gray-500">Recent versions visible in your scope (current vs archived).</p>
-        <div className="mt-4 space-y-3">
-          {versionSnapshots.length === 0 && (
-            <p className="text-sm text-gray-500">No submissions in this view.</p>
-          )}
-          {versionSnapshots.map((row) => (
-            <div key={`${row.id}-ver`} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
-              <div>
-                <div className="font-medium text-gray-900">
-                  {row.docType} — {row.employee}
-                </div>
-                <div className="text-xs text-gray-500">
-                  v{row.version} • Updated {row.updated}{row.archived ? ' (superseded)' : ''}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge
-                  label={row.archived ? 'Archived' : 'Current'}
-                  color={row.archived ? 'orange' : 'green'}
-                  size="sm"
-                />
-                <Button label="View" variant="danger" size="sm" onClick={() => setViewSubmission(row)} />
-              </div>
-            </div>
-          ))}
+      {/* Filters + Full width Table */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Employee Directories</h2>
         </div>
-      </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-gray-900">Audit &amp; compliance tracking</h2>
-        <p className="mt-1 text-sm text-gray-500">Latest activity (stored in-session for demo).</p>
-        <div className="mt-4 max-h-64 space-y-3 overflow-y-auto">
-          {[...auditLog]
-            .sort((a, b) => String(b.at).localeCompare(String(a.at)))
-            .map((entry) => (
-              <div key={entry.id} className="flex items-start gap-2 text-sm">
-                <span className="whitespace-nowrap text-gray-400">{formatAuditClock(entry.at)}</span>
-                <span>
-                  <span className="font-medium text-gray-700">{entry.actor}:</span> {entry.detail}
-                </span>
-              </div>
-            ))}
-        </div>
-      </div>
-
-      <Modal isOpen={uploadModalOpen} onClose={handleCloseUpload} title="Upload document" size="xl">
-        <form onSubmit={handleSubmitUpload} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Document details</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 w-full sm:col-span-1">
-              <label htmlFor="doc-employee" className="mb-1 block text-sm font-medium text-gray-700">
-                Employee
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="doc-employee"
-                name="employeeId"
-                value={formData.employeeId}
-                onChange={handleFormChange}
-                disabled={uploadMode === 'replace' || user?.role === 'employee'}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select employee
-                </option>
-                {(user?.role === 'employee' && selfEmployee
-                  ? [selfEmployee]
-                  : isHrReviewer
-                    ? employees
-                    : isManager && user?.department
-                      ? employees.filter((e) => e.department === user.department)
-                      : visibleEmployees
-                ).map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name} ({e.empId})
-                  </option>
-                ))}
-              </select>
-              {uploadMode === 'replace' && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Replacing raises version to v{replaceCtx?.nextVersion ?? '?'}. Goes to Pending for HR approval.
-                </p>
-              )}
-            </div>
-            <div className="col-span-2 w-full">
-              <label htmlFor="doc-type" className="mb-1 block text-sm font-medium text-gray-700">
-                Document type
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="doc-type"
-                name="documentType"
-                value={formData.documentType}
-                onChange={handleFormChange}
-                disabled={uploadMode === 'replace'}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select type
-                </option>
-                {uploadTypeOptions.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Input
-              label="Document title"
-              name="documentTitle"
-              value={formData.documentTitle}
-              onChange={handleFormChange}
-              placeholder="e.g. Passport — front & back"
-              required
-              className="col-span-2"
-            />
-            <Input label="Document number" name="documentNumber" value={formData.documentNumber} onChange={handleFormChange} />
-            <Input label="Issue date" name="issueDate" type="date" value={formData.issueDate} onChange={handleFormChange} />
-            <Input label="Expiry date" name="expiryDate" type="date" value={formData.expiryDate} onChange={handleFormChange} />
-            <div className="col-span-2">
-              <Input
-                label="Issued by / authority"
-                name="issuedBy"
-                value={formData.issuedBy}
-                onChange={handleFormChange}
+        <div className="space-y-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="relative">
+              <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search talent name or ID..."
+                className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
               />
             </div>
-          </div>
-          <div className="mt-3 w-full">
-            <label htmlFor="doc-notes" className="mb-1 block text-sm font-medium text-gray-700">
-              Notes
-            </label>
-            <textarea
-              id="doc-notes"
-              name="notes"
-              value={formData.notes}
-              onChange={handleFormChange}
-              className={textareaClass}
-              rows={3}
-            />
+
+            <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
+              <option value="">All Divisions</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Human Resources">Human Resources</option>
+              <option value="Finance">Finance</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Design">Design</option>
+            </select>
+
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
+              <option value="">All Document Statuses</option>
+              <option value="Pending">Awaiting Review</option>
+              <option value="Approved">Verified / Valid</option>
+              <option value="Rejected">Flagged / Rejected</option>
+            </select>
           </div>
 
-          <p className="mt-4 mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Upload</p>
-          <FileUpload
-            label="Document file"
-            name="documentFile"
-            accept=".jpg,.png,.pdf,.doc,.docx"
-            onChange={(fileList) => setFiles((prev) => ({ ...prev, documentFile: fileList }))}
-            helpText="Max 10MB"
-            required
+          <div className="flex items-center justify-between pt-1">
+            <p className="text-xs font-medium text-slate-500">{filtered.length} records shown</p>
+            <button
+              type="button"
+              onClick={() => { setQ(''); setDeptFilter(''); setStatusFilter(''); }}
+              className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
+            >
+              Reset Filters
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center p-8 text-slate-400">Loading documents...</div>
+        ) : (
+          <Table
+            columns={empColumns}
+            data={filtered}
+            pageSize={8}
+            square
+            totalCount={filtered.length}
+            currentPage={currentPage - 1}
+            onPageChange={(idx) => setCurrentPage(idx + 1)}
           />
+        )}
+      </div>
 
-          <div className="mt-6 flex justify-end gap-2">
-            <Button type="button" label="Cancel" variant="ghost" onClick={handleCloseUpload} />
-            <Button type="submit" label={uploadMode === 'replace' ? 'Upload replacement' : 'Submit'} variant="primary" />
+      {/* Employee Documents Modal */}
+      <Modal 
+        isOpen={employeeModalOpen} 
+        onClose={() => setEmployeeModalOpen(false)} 
+        showClose
+        size="2xl"
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
+              Documents for {selectedEmployee?.employee_name}
+            </h2>
+            <p className="text-xs font-medium text-slate-500">
+              {selectedEmployee?.emp_id} • {selectedEmployee?.department}
+            </p>
           </div>
-        </form>
-      </Modal>
-
-      <Modal
-        isOpen={!!viewSubmission}
-        onClose={() => setViewSubmission(null)}
-        title="Submission details"
-        size="lg"
+        }
       >
-        {viewSubmission && (
-          <div className="space-y-2 py-4 text-sm text-gray-700">
-            <p>
-              <span className="font-semibold text-gray-900">{viewSubmission.employee}</span> ({viewSubmission.empId})
-            </p>
-            <p>Department: {viewSubmission.department}</p>
-            <p>Type: {viewSubmission.docType}</p>
-            <p>Version: v{viewSubmission.version}</p>
-            <p>Status: {viewSubmission.status}</p>
-            <p>Submitted: {viewSubmission.submittedDate}</p>
-            <p>Updated: {viewSubmission.updated}</p>
-            <p className="pt-2 text-xs text-gray-600">
-              HR comment:{' '}
-              <span className="font-medium text-gray-900">{viewSubmission.hrComments || '—'}</span>
-            </p>
-          </div>
-        )}
+        <div className="pt-4 pb-2">
+           <div className="overflow-x-auto rounded-none border border-slate-200">
+             <table className="w-full text-left text-sm min-w-[700px]">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                   <tr>
+                      <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Document</th>
+                      <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date / Expiry</th>
+                      <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                      <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                   {selectedEmployee?.docs?.length === 0 && (
+                      <tr>
+                         <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-400">
+                            No documents found for this employee.
+                         </td>
+                      </tr>
+                   )}
+                   {selectedEmployee?.docs?.map(doc => (
+                      <tr key={doc.id} className="hover:bg-slate-50/50">
+                         <td className="px-4 py-3">
+                            <p className="font-bold text-slate-800 text-xs">{doc.document_title || doc.document_type}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{doc.document_type}</p>
+                            {doc.rejection_reason && doc.status === 'Rejected' && (
+                              <p className="text-[9px] text-red-500 font-semibold mt-1">Rejection Reason: {doc.rejection_reason}</p>
+                            )}
+                         </td>
+                         <td className="px-4 py-3">
+                            <p className="text-[11px] text-slate-600 font-semibold">Sub: {doc.submitted_date || '—'}</p>
+                            {doc.expiry_date && <p className="text-[10px] text-rose-500 font-bold mt-0.5">Exp: {doc.expiry_date}</p>}
+                         </td>
+                         <td className="px-4 py-3">
+                            <Badge label={doc.status} color={statusColor(doc.status).includes('green') ? 'green' : statusColor(doc.status).includes('red') ? 'red' : 'orange'} variant="soft" className="font-black text-[9px] tracking-widest" />
+                         </td>
+                         <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                               <button type="button" onClick={() => handlePreview(doc)} className="inline-flex h-7 items-center justify-center rounded-none border border-slate-200 bg-white px-2 text-[9px] font-bold text-slate-700 transition-colors hover:bg-slate-50" aria-label="Preview">
+                                  VIEW
+                               </button>
+                               {doc.status === 'Pending' && (
+                                  <>
+                                     <button type="button" onClick={() => handleAction(doc, 'Approve')} className="inline-flex h-7 items-center justify-center rounded-none border border-emerald-200 bg-emerald-50 px-2 text-[9px] font-bold text-emerald-700 transition-colors hover:bg-emerald-100" aria-label="Approve">
+                                        APPROVE
+                                     </button>
+                                     <button type="button" onClick={() => handleAction(doc, 'Reject')} className="inline-flex h-7 items-center justify-center rounded-none border border-rose-200 bg-rose-50 px-2 text-[9px] font-bold text-rose-700 transition-colors hover:bg-rose-100" aria-label="Reject">
+                                        REJECT
+                                     </button>
+                                  </>
+                               )}
+                            </div>
+                         </td>
+                      </tr>
+                   ))}
+                </tbody>
+             </table>
+           </div>
+        </div>
       </Modal>
 
-      <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)} title="Reject document" size="lg">
-        {rejectTargetRow && (
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-gray-600">
-              {rejectTargetRow.employee} — {rejectTargetRow.docType} v{rejectTargetRow.version}
+      {/* Action Modal: Verification Control */}
+      <Modal 
+        isOpen={actionModalOpen} 
+        onClose={() => setActionModalOpen(false)} 
+        showClose
+        size="md"
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
+              Verification: {actionType}
+            </h2>
+            <p className="text-xs font-medium text-slate-500">
+              {selectedDoc?.employee_name} - {selectedDoc?.document_type}
             </p>
-            <div>
-              <label htmlFor="reject-comment" className="mb-1 block text-sm font-medium text-gray-700">
-                Reason for rejection (shown to employee)
-              </label>
-              <textarea
-                id="reject-comment"
-                value={rejectComment}
-                onChange={(e) => setRejectComment(e.target.value)}
-                className={textareaClass}
-                rows={4}
-                placeholder="Minimum 8 characters"
-              />
-              {rejectComment.trim().length > 0 && rejectComment.trim().length < 8 && (
-                <p className="mt-1 text-xs text-red-600">Provide a clear HR comment (at least 8 characters).</p>
-              )}
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" label="Cancel" variant="ghost" onClick={() => setRejectModalOpen(false)} />
-              <Button
-                type="button"
-                label="Confirm rejection"
-                variant="primary"
-                onClick={confirmReject}
-                disabled={rejectComment.trim().length < 8}
-              />
-            </div>
           </div>
-        )}
+        }
+      >
+        <div className="space-y-4 pt-4">
+           <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">
+                Administrative Audit Remarks<span className="text-red-500"> *</span>
+              </label>
+              <textarea 
+                className={basicFieldClass}
+                rows={4}
+                value={actionReason}
+                onChange={e => setActionReason(e.target.value)}
+                placeholder={actionType === 'Approve' ? 'Optional verification notes...' : 'Required justification for policy rejection...'}
+              />
+           </div>
+
+           <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setActionModalOpen(false)}
+                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmAction}
+                disabled={actionType !== 'Approve' && !actionReason.trim()}
+                className={`rounded-md px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50 ${actionType === 'Approve' ? 'bg-[#10B981] hover:bg-[#059669]' : 'bg-[#EF4444] hover:bg-[#DC2626]'}`}
+              >
+                Confirm {actionType}
+              </button>
+           </div>
+        </div>
       </Modal>
+
+      {/* Preview Modal */}
+      <Modal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        showClose
+        size="xl"
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
+              Document Preview
+            </h2>
+            <p className="text-xs font-medium text-slate-500">
+              {selectedDoc?.employee_name} - {selectedDoc?.document_type}
+            </p>
+          </div>
+        }
+      >
+        <div className="flex flex-col lg:flex-row gap-6 py-4">
+          <div className="flex-1 bg-slate-50 rounded-md border border-slate-200 min-h-[400px] flex items-center justify-center overflow-hidden">
+             {selectedDoc?.file_url ? (
+               selectedDoc.file_url.toLowerCase().endsWith('.pdf') ? (
+                 <iframe src={resolveDocFileUrl(selectedDoc.file_url)} className="w-full h-full min-h-[400px]" title="PDF Preview" />
+               ) : (
+                 <img src={resolveDocFileUrl(selectedDoc.file_url)} alt="Document Preview" className="max-w-full max-h-[500px] object-contain" />
+               )
+             ) : (
+               <div className="text-center text-slate-400">
+                  <HiShieldCheck className="mx-auto h-16 w-16 mb-2 text-slate-300" />
+                  <p className="text-sm font-medium">No file available for preview</p>
+               </div>
+             )}
+          </div>
+          <div className="w-full lg:w-72 space-y-4">
+             <div className="bg-white p-4 rounded-md border border-slate-200">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-3">Metadata</h4>
+                <div className="space-y-3">
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Employee</p>
+                      <p className="text-sm font-semibold text-slate-900">{selectedDoc?.employee_name}</p>
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Document Class</p>
+                      <p className="text-sm font-semibold text-slate-900">{selectedDoc?.document_type}</p>
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Status</p>
+                      <Badge label={selectedDoc?.status} color={statusColor(selectedDoc?.status || '').includes('green') ? 'green' : statusColor(selectedDoc?.status || '').includes('red') ? 'red' : 'orange'} variant="soft" className="font-black text-[10px] mt-1 tracking-widest" />
+                   </div>
+                   {selectedDoc?.rejection_reason && (
+                     <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase">Rejection Reason</p>
+                        <p className="text-xs font-medium text-slate-700 italic">{selectedDoc.rejection_reason}</p>
+                     </div>
+                   )}
+                </div>
+             </div>
+             {selectedDoc?.file_url && (
+               <a
+                 href={resolveDocFileUrl(selectedDoc.file_url)}
+                 download
+                 target="_blank"
+                 rel="noreferrer"
+                 className="w-full rounded-md border border-[#0F766E] bg-white px-4 py-2 text-sm font-bold text-[#0F766E] hover:bg-[#0F766E] hover:text-white transition flex justify-center items-center gap-2"
+               >
+                 <HiArrowDownTray className="h-4 w-4" /> Download
+               </a>
+             )}
+          </div>
+        </div>
+      </Modal>
+
     </div>
-  )
+  );
 }
