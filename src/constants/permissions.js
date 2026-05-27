@@ -82,6 +82,7 @@ export function expandModuleKeysForGate(allowedModules) {
 export function hasModuleAccess(allowedModules, key, userRole) {
   if (key === 'dashboard') return true
   if (!key) return true
+  if (key === 'messages') return true
 
   const privileged = ['admin', 'hr_admin', 'hr_executive', 'manager'].includes(userRole)
   if (key === 'system-settings' && privileged) return true

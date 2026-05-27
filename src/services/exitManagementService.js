@@ -168,3 +168,31 @@ export const deleteClearanceTemplate = async (id) => {
   const { data } = await api.delete(`/admin/settings/termination-types/clearance-templates/${id}`)
   return data.data
 }
+
+// Resignation Withdrawal Workflow
+export const requestResignationWithdrawal = async (id, payload) => {
+  const { data } = await api.post(`/exit-management/${id}/withdraw`, payload)
+  return data.data
+}
+
+export const approveResignationWithdrawal = async (id) => {
+  const { data } = await api.put(`/exit-management/${id}/withdraw/approve`)
+  return data.data
+}
+
+export const rejectResignationWithdrawal = async (id, payload) => {
+  const { data } = await api.put(`/exit-management/${id}/withdraw/reject`, payload)
+  return data.data
+}
+
+// Clearance Task Upload Proof
+export const uploadClearanceProof = async (id, taskId, file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await api.post(`/exit-management/${id}/clearance/${taskId}/upload`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return data.data
+}

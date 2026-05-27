@@ -10,7 +10,9 @@ import {
 } from 'react-icons/hi2'
 import { Button } from '../../components/ui/Button.jsx'
 import { Input } from '../../components/ui/Input.jsx'
+import { parseTenantSlugFromHostname } from '../../utils/tenantSlug.js'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const labelUpper = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500'
 
 export default function ForgotPassword() {
@@ -23,6 +25,9 @@ export default function ForgotPassword() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const tenantSlugFromHost =
+    typeof window !== 'undefined' ? parseTenantSlugFromHostname(window.location.hostname) : null
+
   const handleSendOTP = async () => {
     if (!email) {
       setError('Please enter your registered email address.')
@@ -31,10 +36,10 @@ export default function ForgotPassword() {
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/forgot-password', {
+      const response = await fetch(`${API_URL}/api/v1/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, tenantSlug: tenantSlugFromHost })
       })
       const result = await response.json()
       if (!result.success) throw new Error(result.message)
@@ -55,10 +60,10 @@ export default function ForgotPassword() {
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/verify-otp', {
+      const response = await fetch(`${API_URL}/api/v1/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp: fullOtp })
+        body: JSON.stringify({ email, otp: fullOtp, tenantSlug: tenantSlugFromHost })
       })
       const result = await response.json()
       if (!result.success) throw new Error(result.message)
@@ -82,10 +87,10 @@ export default function ForgotPassword() {
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/reset-password', {
+      const response = await fetch(`${API_URL}/api/v1/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp: otp.join(''), newPassword: password })
+        body: JSON.stringify({ email, otp: otp.join(''), newPassword: password, tenantSlug: tenantSlugFromHost })
       })
       const result = await response.json()
       if (!result.success) throw new Error(result.message)

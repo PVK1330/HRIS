@@ -397,7 +397,7 @@ export default function AdminLayout() {
           }
 
           if (user?.role === "admin" || user?.role === "employee") {
-            const alwaysShowPaths = ["/admin/dashboard", "/admin/settings"];
+            const alwaysShowPaths = ["/admin/dashboard", "/admin/settings", "/admin/messages"];
             if (
               hasAssignedFeatures &&
               !alwaysShowPaths.includes(item.path)
