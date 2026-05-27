@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { HiChevronRight } from "react-icons/hi2";
-import SettingsTabs, { settingsTabs } from "../../components/admin/settings/SettingsTabs.jsx";
-import GeneralSection from "./settings/sections/GeneralSection.jsx";
-import RolesPermissions from "./settings/RolesPermissions.jsx";
-import SensitiveData from "./settings/SensitiveData.jsx";
-import PasswordSecurity from "./settings/PasswordSecurity.jsx";
-import NotificationSettings from "./settings/NotificationSettings.jsx";
-import EmailSettings from "./settings/sections/EmailSettings.jsx";
-import IntegrationSettings from "./settings/sections/IntegrationSettings.jsx";
-import BillingSettings from "./settings/sections/BillingSettings.jsx";
-import AuditLogs from "./settings/sections/AuditLogs.jsx";
-import BackupRestore from "./settings/sections/BackupRestore.jsx";
+import SettingsTabs, { settingsTabs } from "../../../components/admin/settings/SettingsTabs.jsx";
+import GeneralSection from "./sections/GeneralSection.jsx";
+import RolesPermissions from "./RolesPermissions.jsx";
+import SensitiveData from "./SensitiveData.jsx";
+import PasswordSecurity from "./PasswordSecurity.jsx";
+import NotificationSettings from "./NotificationSettings.jsx";
+import EmailSettings from "./sections/EmailSettings.jsx";
+import IntegrationSettings from "./sections/IntegrationSettings.jsx";
+import BillingSettings from "./sections/BillingSettings.jsx";
+import AuditLogs from "./sections/AuditLogs.jsx";
+import BackupRestore from "./sections/BackupRestore.jsx";
 
 function ActiveSection({
   active,

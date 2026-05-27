@@ -12,6 +12,7 @@ import AdminLayout from "../layouts/AdminLayout.jsx";
 import SuperAdminLayout from "../layouts/SuperAdminLayout.jsx";
 const Login = lazy(() => import("../pages/auth/Login.jsx"));
 
+
 const AdminDashboard = lazy(() => import("../pages/admin/Dashboard.jsx"));
 const EmployeeDirectory = lazy(() => import("../pages/admin/employees/EmployeeDirectory.jsx"));
 const EmployeeGrid = lazy(() => import("../pages/admin/employees/EmployeeGrid.jsx"));
@@ -33,7 +34,7 @@ const EmployeeExit = lazy(() => import("../pages/exit/EmployeeExit.jsx"));
 const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemplates.jsx"));
 const LetterBuilder = lazy(() => import("../pages/admin/documents/LetterBuilder.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
-const AdminSettings = lazy(() => import("../pages/admin/settings/Settings.jsx"));
+const AdminSettings = lazy(() => import("../pages/admin/settings/AdminSettings.jsx"));
 const RolesPermissions = lazy(() => import("../pages/admin/settings/RolesPermissions.jsx"));
 const DepartmentManagement = lazy(() => import("../pages/admin/settings/Departments.jsx"));
 const DesignationsManagement = lazy(() => import("../pages/admin/settings/Designations.jsx"));
@@ -44,6 +45,7 @@ const AssetManagement = lazy(() => import("../pages/admin/assets/AssetManagement
 const Reports = lazy(() => import("../pages/admin/reports/Reports.jsx"));
 const AnnouncementsPage = lazy(() => import("../pages/admin/Announcements.jsx"));
 const Payroll = lazy(() => import("../pages/admin/finance/Payroll.jsx"));
+const SupportManagement = lazy(() => import("../pages/admin/support/Support.jsx"));
 
 const PlatformDashboard = lazy(() => import("../pages/superadmin/platform/Dashboard.jsx"));
 const TenantManagement = lazy(() => import("../pages/superadmin/tenants/TenantManagement.jsx"));
@@ -389,6 +391,10 @@ export const router = createBrowserRouter([
                 <AnnouncementsPage />
               </AdminModuleGate>
             ),
+          },
+          {
+            path: "support",
+            element: <SupportManagement />,
           },
           {
             path: "payroll",

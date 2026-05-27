@@ -1,124 +1,124 @@
-import { useState } from "react";
+import { useState } from 'react'
 import {
   HiArrowRightOnRectangle,
   HiBell,
   HiBriefcase,
   HiBuildingOffice2,
   HiCalendar,
-  HiChevronRight,
   HiClock,
   HiCog6Tooth,
   HiDocumentText,
   HiKey,
   HiLockClosed,
   HiShieldCheck,
-  HiSquares2X2,
-} from "react-icons/hi2";
-import GeneralSection from "./sections/GeneralSection.jsx";
-import AttendanceSection from "./sections/AttendanceSection.jsx";
-import LeaveSettings from "./LeaveSettings.jsx";
-import { ModulesSection } from "./sections/PlaceholderSections.jsx";
-import AssetSettingsSection from "./sections/AssetSettingsSection.jsx";
-import DocumentSettings from "./DocumentSettings.jsx";
-import NotificationSettings from "./NotificationSettings.jsx";
-import PasswordSecurity from "./PasswordSecurity.jsx";
-import RolesPermissions from "./RolesPermissions.jsx";
-import SensitiveData from "./SensitiveData.jsx";
-import TerminationTypes from "./TerminationTypes.jsx";
-import ClearanceChecklistSettings from "./ClearanceChecklist.jsx";
+  HiWrenchScrewdriver,
+} from 'react-icons/hi2'
+import GeneralSection from './sections/GeneralSection.jsx'
+import AttendanceSection from './sections/AttendanceSection.jsx'
+import LeaveSettings from './LeaveSettings.jsx'
+import { ModulesSection } from './sections/PlaceholderSections.jsx'
+import AssetSettingsSection from './sections/AssetSettingsSection.jsx'
+import DocumentSettings from './DocumentSettings.jsx'
+import NotificationSettings from './NotificationSettings.jsx'
+import PasswordSecurity from './PasswordSecurity.jsx'
+import RolesPermissions from './RolesPermissions.jsx'
+import SensitiveData from './SensitiveData.jsx'
+import TerminationTypes from './TerminationTypes.jsx'
+import ClearanceChecklistSettings from './ClearanceChecklist.jsx'
 
 const navItems = [
-  {
-    id: "general",
-    label: "General",
-    Icon: HiBuildingOffice2,
-    desc: "Company & policies",
+  { id: 'general',       label: 'General',              Icon: HiBuildingOffice2    },
+  { id: 'roles',         label: 'Roles & Permissions',  Icon: HiShieldCheck        },
+  { id: 'sensitive',     label: 'Sensitive Data',        Icon: HiLockClosed         },
+  { id: 'attendance',    label: 'Attendance & Time',     Icon: HiClock              },
+  { id: 'leave',         label: 'Leave Settings',        Icon: HiCalendar           },
+  { id: 'documents',     label: 'Document Settings',     Icon: HiDocumentText       },
+  { id: 'assets',        label: 'Asset Settings',        Icon: HiBriefcase          },
+  { id: 'exit',          label: 'Exit Settings',         Icon: HiArrowRightOnRectangle },
+  { id: 'notifications', label: 'Notifications',         Icon: HiBell               },
+  { id: 'security',      label: 'Password & Security',   Icon: HiKey                },
+]
+
+const sectionMeta = {
+  general: {
+    title: 'General',
+    subtitle: 'Company profile, working calendar, and default HR policies.',
   },
-  {
-    id: "roles",
-    label: "Roles & Permissions",
-    Icon: HiShieldCheck,
-    desc: "Access control",
+  roles: {
+    title: 'Roles & Permissions',
+    subtitle: 'Control module access and which employee records each role can view.',
   },
-  // { id: 'modules', label: 'Module Visibility', Icon: HiSquares2X2, desc: 'Role-based views' },
-  {
-    id: "sensitive",
-    label: "Sensitive Data",
-    Icon: HiLockClosed,
-    desc: "Data permissions",
+  sensitive: {
+    title: 'Sensitive Data',
+    subtitle: 'Control who can view salary, documents, and confidential employee data.',
   },
-  {
-    id: "attendance",
-    label: "Attendance & Time",
-    Icon: HiClock,
-    desc: "Work hours & rules",
+  attendance: {
+    title: 'Attendance & Time',
+    subtitle: 'Work hours, punctuality rules, regularization, and overtime policies.',
   },
-  {
-    id: "leave",
-    label: "Leave Settings",
-    Icon: HiCalendar,
-    desc: "Leave types & rules",
+  leave: {
+    title: 'Leave Settings',
+    subtitle: 'Configure leave types, entitlements, and approval rules.',
   },
-  {
-    id: "documents",
-    label: "Document Settings",
-    Icon: HiDocumentText,
-    desc: "Upload & tracking",
+  documents: {
+    title: 'Document Settings',
+    subtitle: 'Required document types, upload rules, and visibility per classification.',
   },
-  {
-    id: "assets",
-    label: "Asset Settings",
-    Icon: HiBriefcase,
-    desc: "Categories & rules",
+  assets: {
+    title: 'Asset Settings',
+    subtitle: 'Asset categories, assignment rules, and approval workflows.',
   },
-  {
-    id: "exit",
-    label: "Exit Settings",
-    Icon: HiArrowRightOnRectangle,
-    desc: "Termination & clearance",
+  exit: {
+    title: 'Exit Settings',
+    subtitle: 'Termination types and clearance checklist templates for employee exits.',
   },
-  {
-    id: "notifications",
-    label: "Notifications",
-    Icon: HiBell,
-    desc: "Alerts & channels",
+  notifications: {
+    title: 'Notifications',
+    subtitle: 'Enable channels and assign alerts to email, SMS, and in-app delivery.',
   },
-  {
-    id: "security",
-    label: "Password & Security",
-    Icon: HiKey,
-    desc: "Auth & policies",
+  security: {
+    title: 'Password & Security',
+    subtitle: 'Password rules, session timeouts, and account recovery options.',
   },
-];
+}
 
 const EXIT_TABS = [
-  { id: "termination", label: "Termination Types" },
-  { id: "clearance", label: "Clearance Checklist" },
-];
+  { id: 'termination', label: 'Termination Types',   Icon: HiArrowRightOnRectangle },
+  { id: 'clearance',   label: 'Clearance Checklist', Icon: HiWrenchScrewdriver     },
+]
 
 function ExitSettingsSection() {
-  const [exitTab, setExitTab] = useState("termination");
+  const [exitTab, setExitTab] = useState('termination')
   return (
-    <div className="space-y-0 min-w-0">
-      <div className="flex items-center gap-0 border-b border-slate-200 mb-6">
-        {EXIT_TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setExitTab(t.id)}
-            className={`relative px-5 py-2.5 text-sm font-semibold transition-colors ${
-              exitTab === t.id
-                ? "text-[#0F766E] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#0F766E]"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="space-y-6 min-w-0">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {EXIT_TABS.map((t) => {
+          const Icon = t.Icon
+          const isActive = exitTab === t.id
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setExitTab(t.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all ${
+                isActive
+                  ? 'bg-[#0F766E] text-white shadow-2xs'
+                  : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+              <span>{t.label}</span>
+            </button>
+          )
+        })}
       </div>
-      {exitTab === "termination" ? <TerminationTypes /> : <ClearanceChecklistSettings />}
+      {exitTab === 'termination' ? (
+        <TerminationTypes embedded />
+      ) : (
+        <ClearanceChecklistSettings embedded />
+      )}
     </div>
-  );
+  )
 }
 
 function ActiveSection({
@@ -127,167 +127,186 @@ function ActiveSection({
   registerAttendanceToolbar,
   registerAssetsToolbar,
   registerLeaveToolbar,
+  registerSensitiveToolbar,
+  registerSecurityToolbar,
+  registerNotificationsToolbar,
+  registerRolesToolbar,
 }) {
   switch (active) {
-    case "general":
-      return <GeneralSection registerToolbar={registerGeneralToolbar} />;
-    case "roles":
-      return <RolesPermissions />;
-    case "modules":
-      return <ModulesSection />;
-    case "sensitive":
-      return <SensitiveData />;
-    case "attendance":
-      return <AttendanceSection registerToolbar={registerAttendanceToolbar} />;
-    case "leave":
-      return <LeaveSettings registerToolbar={registerLeaveToolbar} />;
-    case "documents":
-      return <DocumentSettings />;
-    case "assets":
-      return <AssetSettingsSection registerToolbar={registerAssetsToolbar} />;
-    case "exit":
-      return <ExitSettingsSection />;
-    case "notifications":
-      return <NotificationSettings />;
-    case "security":
-      return <PasswordSecurity />;
+    case 'general':
+      return <GeneralSection registerToolbar={registerGeneralToolbar} />
+    case 'roles':
+      return <RolesPermissions registerToolbar={registerRolesToolbar} />
+    case 'modules':
+      return <ModulesSection />
+    case 'sensitive':
+      return <SensitiveData registerToolbar={registerSensitiveToolbar} />
+    case 'attendance':
+      return <AttendanceSection registerToolbar={registerAttendanceToolbar} />
+    case 'leave':
+      return <LeaveSettings registerToolbar={registerLeaveToolbar} />
+    case 'documents':
+      return <DocumentSettings />
+    case 'assets':
+      return <AssetSettingsSection registerToolbar={registerAssetsToolbar} />
+    case 'exit':
+      return <ExitSettingsSection />
+    case 'notifications':
+      return <NotificationSettings registerToolbar={registerNotificationsToolbar} />
+    case 'security':
+      return <PasswordSecurity registerToolbar={registerSecurityToolbar} />
     default:
-      return null;
+      return null
   }
 }
 
 export default function HRISSettings() {
-  const [active, setActive] = useState("general");
-  const [generalToolbar, setGeneralToolbar] = useState(null);
-  const [attendanceToolbar, setAttendanceToolbar] = useState(null);
-  const [assetsToolbar, setAssetsToolbar] = useState(null);
-  const [leaveToolbar, setLeaveToolbar] = useState(null);
-
-  const current = navItems.find((n) => n.id === active);
+  const [active, setActive] = useState('general')
+  const [generalToolbar, setGeneralToolbar] = useState(null)
+  const [attendanceToolbar, setAttendanceToolbar] = useState(null)
+  const [assetsToolbar, setAssetsToolbar] = useState(null)
+  const [leaveToolbar, setLeaveToolbar] = useState(null)
+  const [sensitiveToolbar, setSensitiveToolbar] = useState(null)
+  const [securityToolbar, setSecurityToolbar] = useState(null)
+  const [notificationsToolbar, setNotificationsToolbar] = useState(null)
+  const [rolesToolbar, setRolesToolbar] = useState(null)
 
   const toolbar =
-    active === "general"
-      ? generalToolbar
-      : active === "attendance"
-        ? attendanceToolbar
-        : active === "assets"
-          ? assetsToolbar
-          : active === "leave"
-            ? leaveToolbar
-            : null;
+    active === 'general'        ? generalToolbar        :
+    active === 'attendance'     ? attendanceToolbar     :
+    active === 'assets'         ? assetsToolbar         :
+    active === 'leave'          ? leaveToolbar          :
+    active === 'sensitive'      ? sensitiveToolbar      :
+    active === 'security'       ? securityToolbar       :
+    active === 'notifications'  ? notificationsToolbar  :
+    active === 'roles'          ? rolesToolbar          :
+    null
+
+  const activeMeta = navItems.find((n) => n.id === active)
+  const meta = sectionMeta[active]
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
-      <aside className="flex w-64 shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-200 px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-[#0F766E] text-white shadow-sm">
-              <HiCog6Tooth className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-gray-900">
-                Settings
-              </p>
-              <p className="truncate text-[11px] font-medium uppercase tracking-wide text-gray-400">
-                System configuration
-              </p>
-            </div>
+    <div className="space-y-6 pb-12 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar — matches Employee Profile */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">System Settings Portal</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Administration</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Organization Configuration</span>
           </div>
         </div>
-        <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
-          {navItems.map((item) => {
-            const isActive = active === item.id;
-            const Icon = item.Icon;
-            return (
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 shrink-0">
+          {toolbar ? (
+            <>
               <button
-                key={item.id}
                 type="button"
-                onClick={() => setActive(item.id)}
-                className={`group relative mx-0.5 flex w-full items-center gap-3 rounded-none px-3 py-2.5 text-left text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-[#0F766E] text-white shadow-sm"
-                    : "text-slate-700 hover:bg-gray-50 hover:text-[#0F766E]"
-                }`}
+                disabled={!toolbar.dirty || toolbar.saving}
+                onClick={() => toolbar?.onDiscard?.()}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#0F766E] transition-colors shadow-2xs shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Icon
-                  className={`h-5 w-5 shrink-0 ${
-                    isActive
-                      ? "opacity-100"
-                      : "opacity-70 group-hover:opacity-100"
-                  }`}
-                  aria-hidden
-                />
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`truncate ${isActive ? "text-white" : "text-slate-800"}`}
-                  >
-                    {item.label}
-                  </p>
-                  <p
-                    className={`truncate text-[11px] font-normal ${
-                      isActive
-                        ? "text-teal-100/90"
-                        : "text-gray-400 group-hover:text-gray-500"
-                    }`}
-                  >
-                    {item.desc}
-                  </p>
-                </div>
+                Discard
               </button>
-            );
-          })}
-        </nav>
-      </aside>
+              <button
+                type="button"
+                disabled={toolbar.disableSave}
+                onClick={() => toolbar?.onSave?.()}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-none bg-[#0F766E] px-3 text-xs font-bold text-white hover:bg-[#0c6b64] transition-colors shadow-2xs shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {toolbar?.saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </>
+          ) : (
+            <span className="text-xs font-medium text-slate-400 hidden sm:inline">Auto-saved or read-only</span>
+          )}
+        </div>
+      </div>
 
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 py-4 sm:px-8">
-          <div className="min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight text-gray-900 sm:text-xl">
-              {current.label}
-            </h1>
-            <p className="mt-0.5 text-sm text-gray-500">{current.desc}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              disabled={!toolbar || !toolbar.dirty || toolbar.saving}
-              onClick={() => toolbar?.onDiscard?.()}
-              className="h-9 rounded-none border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+      {/* Context header panel — matches Employee Profile identity card */}
+      <div className="relative overflow-hidden rounded-none border border-slate-200 bg-white p-4 shadow-2xs min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="relative shrink-0">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-emerald-50 text-[#0F766E] shadow-2xs">
+              <HiCog6Tooth className="h-6 w-6" aria-hidden />
+            </div>
+            <div
+              className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-white"
+              title="Active configuration"
             >
-              Discard
-            </button>
-            <button
-              type="button"
-              disabled={!toolbar || toolbar.disableSave}
-              onClick={() => toolbar?.onSave?.()}
-              className="h-9 rounded-none bg-[#0F766E] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0c6d66] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {toolbar?.saving ? "Saving…" : "Save changes"}
-            </button>
+              <span className="h-1 w-1 rounded-full bg-white" />
+            </div>
           </div>
-        </header>
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 flex items-center gap-1.5">
+              <HiCog6Tooth className="h-3.5 w-3.5 shrink-0 text-[#0F766E]" aria-hidden />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F766E] leading-none">System Settings</span>
+            </div>
+            <h2 className="mb-1.5 truncate text-xl font-black uppercase leading-none tracking-tight text-slate-900">
+              {meta?.title || 'General'}
+            </h2>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-black leading-none rounded-none border border-slate-200 bg-slate-100 px-2 py-0.5 text-slate-700">
+                {activeMeta?.label || '—'}
+              </span>
+              {meta?.subtitle ? (
+                <span className="text-xs font-semibold leading-none text-slate-600 truncate max-w-xl">
+                  • {meta.subtitle}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-6 py-2.5 text-xs text-gray-500 sm:px-8">
-          <span className="font-medium text-gray-600">Settings</span>
-          <HiChevronRight
-            className="h-3.5 w-3.5 shrink-0 text-gray-300"
-            aria-hidden
+      {/* Tab card — matches Employee Profile tab strip */}
+      <div className="rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:p-5 min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {navItems.map((item) => {
+              const isActive = active === item.id
+              const Icon = item.Icon
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActive(item.id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-[#0F766E] text-white shadow-2xs'
+                      : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                  <span>{item.label}</span>
+                </button>
+              )
+            })}
+          </div>
+          <div className="flex items-center gap-1.5 border-t border-slate-100 pt-2.5 text-xs text-slate-400">
+            <HiClock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span className="truncate">
+              <span className="font-medium">Active module </span>
+              <span className="font-bold text-slate-600">{activeMeta?.label || '—'}</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="min-w-0 p-4 sm:p-6">
+          <ActiveSection
+            active={active}
+            registerGeneralToolbar={setGeneralToolbar}
+            registerAttendanceToolbar={setAttendanceToolbar}
+            registerAssetsToolbar={setAssetsToolbar}
+            registerLeaveToolbar={setLeaveToolbar}
+            registerSensitiveToolbar={setSensitiveToolbar}
+            registerSecurityToolbar={setSecurityToolbar}
+            registerNotificationsToolbar={setNotificationsToolbar}
+            registerRolesToolbar={setRolesToolbar}
           />
-          <span className="font-medium text-[#0F766E]">{current.label}</span>
         </div>
-
-        <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-8">
-          <div className="mx-auto max-w-4xl">
-            <ActiveSection
-              active={active}
-              registerGeneralToolbar={setGeneralToolbar}
-              registerAttendanceToolbar={setAttendanceToolbar}
-              registerAssetsToolbar={setAssetsToolbar}
-              registerLeaveToolbar={setLeaveToolbar}
-            />
-          </div>
-        </div>
-      </main>
+      </div>
     </div>
-  );
+  )
 }

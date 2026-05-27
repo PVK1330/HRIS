@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   HiArrowPath,
   HiBuildingOffice2,
@@ -22,7 +22,7 @@ const SCOPE_ICONS = {
   globe: HiGlobeAlt,
 }
 
-export default function RolesPermissions() {
+export default function RolesPermissions({ registerToolbar }) {
   const {
     roles,
     availablePermissions,
@@ -86,6 +86,33 @@ export default function RolesPermissions() {
     (p) => !isPermissionAvailable(p),
   )
 
+  useEffect(() => {
+    if (!registerToolbar) return undefined
+    registerToolbar({
+      dirty: isDirty || scopeDirty,
+      saving: saving || savingPermissionId != null,
+      onSave: () => saveRolePermissions(),
+      onDiscard: () => {
+        if (window.confirm('Discard unsaved changes?')) discardChanges()
+      },
+      disableSave:
+        saving ||
+        savingPermissionId != null ||
+        selectedRoleId == null ||
+        (!isDirty && !scopeDirty),
+    })
+    return () => registerToolbar(null)
+  }, [
+    registerToolbar,
+    isDirty,
+    scopeDirty,
+    saving,
+    savingPermissionId,
+    selectedRoleId,
+    saveRolePermissions,
+    discardChanges,
+  ])
+
   async function handleSubmitNewRole(e) {
     e.preventDefault()
     const ok = await createRole({
@@ -111,55 +138,16 @@ export default function RolesPermissions() {
   }
 
   return (
-    <div className="animate-in fade-in font-sans text-slate-900 duration-300">
-      <header className="mb-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#0F766E]/10 text-[#0F766E]">
-            <HiShieldCheck className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              Roles & permissions
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Control who can open each module and which employee records they can see.
-            </p>
-            <p className="mt-2 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-900">
-              <strong>Organization Admin</strong> controls your own admin menu when you are logged in as tenant admin.
-              Other roles apply only to portal users with that role on their employee profile — then they must sign in again (or wait a few minutes).
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={!isDirty || saving}
-            onClick={() => {
-              if (window.confirm('Discard unsaved changes?')) discardChanges()
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-          >
-            Discard
-          </button>
-          <button
-            type="button"
-            disabled={!scopeDirty || saving || savingPermissionId != null || selectedRoleId == null}
-            onClick={() => saveRolePermissions()}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#0F766E] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#0c6b64] disabled:opacity-40"
-          >
-            {saving ? (
-              <>
-                <HiArrowPath className="h-4 w-4 animate-spin" />
-                Saving…
-              </>
-            ) : scopeDirty ? (
-              'Save scope'
-            ) : (
-              'Save changes'
-            )}
-          </button>
-        </div>
-      </header>
+    <div className="animate-in fade-in duration-300">
+      <div className="mb-6 border-b border-gray-100 pb-4">
+        <h2 className="text-base font-semibold text-gray-900">Roles & Permissions</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Control module access and which employee records each role can view.
+        </p>
+        <p className="mt-3 rounded-none border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+          <strong>Organization Admin</strong> applies to your tenant admin menu. Other roles apply to portal users with that role on their profile.
+        </p>
+      </div>
 
       <div className="flex flex-col gap-6 lg:flex-row">
         <aside className="w-full shrink-0 lg:w-72">

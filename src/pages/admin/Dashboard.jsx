@@ -1,64 +1,98 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  HiUsers,
-  HiClock,
-  HiCalendar,
-  HiDocument,
-  HiCreditCard,
-  HiClipboardDocumentCheck,
-  HiChartBar,
-  HiBuildingOffice,
-  HiBriefcase,
-  HiMegaphone,
-  HiBellAlert,
-  HiGift,
-  HiArrowRightOnRectangle,
+  HiArrowPath,
   HiArrowTrendingUp,
-  HiBolt,
-  HiShieldCheck,
-  HiFlag,
-  HiCog6Tooth,
-  HiIdentification,
+  HiBellAlert,
+  HiBriefcase,
+  HiCalendarDays,
+  HiChartBar,
+  HiCheckCircle,
+  HiClock,
+  HiCreditCard,
+  HiDocumentArrowDown,
+  HiMegaphone,
   HiUserGroup,
-  HiArrowPath
+  HiArrowPath,
+  HiQuestionMarkCircle
+  HiUsers,
 } from 'react-icons/hi2'
 import {
-  AreaChart,
   Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
 } from 'recharts'
-import { Badge } from '../../components/ui/Badge.jsx'
-import { StatCard } from '../../components/ui/StatCard.jsx'
-import { Modal } from '../../components/ui/Modal.jsx'
 import { Avatar } from '../../components/ui/Avatar.jsx'
+import { Badge } from '../../components/ui/Badge.jsx'
+import { Modal } from '../../components/ui/Modal.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { dashboardStats } from '../../data/mockData.js'
-import api from '../../services/api.js'
 import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
+import { fetchAdminDashboard, fetchEmployeeDashboard } from '../../services/dashboardService.js'
 
-const growthData = [
-  { name: 'JAN', headcount: 45 },
-  { name: 'FEB', headcount: 52 },
-  { name: 'MAR', headcount: 48 },
-  { name: 'APR', headcount: 61 },
-  { name: 'MAY', headcount: 55 },
-  { name: 'JUN', headcount: 67 },
-  { name: 'JUL', headcount: 75 },
+const FALLBACK_ANNOUNCEMENTS = [
+  {
+    id: 1,
+    title: 'Annual General Meeting 2026',
+    content: 'The annual general meeting for all shareholders and employees will be held in the main auditorium.',
+    priority: 'High',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    title: 'New Health Insurance Policy',
+    content: 'We have updated our health insurance provider to ensure better coverage for all employees.',
+    priority: 'Standard',
+    created_at: new Date().toISOString(),
+  },
 ]
+
+const EMPTY_STATS = {
+  employees: { total: 0, active: 0, probation: 0, notice: 0 },
+  attendance: { present: 0, remote: 0, onLeave: 0, absent: 0 },
+  pending: { leaves: 0, documents: 0, expenses: 0 },
+  personal: { leaveBalance: 0, attendanceRate: '—', pendingTasks: 0 },
+  growthData: [],
+  celebrations: [],
+  expiryAlerts: [],
+  joinersExits: { newJoiners: [], exits: [] },
+  announcements: [],
+}
+
+function MetricCard({ label, value, subtitle, tone = 'slate' }) {
+  const tones = {
+    slate: 'from-slate-900 to-slate-800',
+    blue: 'from-blue-600 to-blue-500',
+    emerald: 'from-emerald-600 to-emerald-500',
+    amber: 'from-amber-600 to-amber-500',
+  }
+  return (
+    <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+        <span className={`h-2 w-2 rounded-full bg-gradient-to-r ${tones[tone] || tones.slate}`} />
+      </div>
+      <p className="mt-2 text-2xl font-black text-slate-900">{value}</p>
+      <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
-  const [liveAnnouncements, setLiveAnnouncements] = useState([])
+  const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
+
+  const isManager = user?.role === 'manager'
+  const isEmployee = user?.role === 'employee'
+  const isHrView = user?.role === 'admin' || user?.role === 'hr_admin' || user?.role === 'hr_executive'
 
   const todayLabel = useMemo(
     () =>
@@ -67,223 +101,272 @@ export default function Dashboard() {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-      }).toUpperCase(),
+      }),
     [],
   )
 
-  const fetchLiveAnnouncements = async () => {
+  const loadDashboardData = async () => {
+    setIsLoading(true)
     try {
-      const res = await api.get('/admin/announcements')
-      const allAnns = res.data?.data || []
-      setLiveAnnouncements(
-        allAnns
-          .filter(a => a.status === 'Published' && (!a.dispatch_channels || a.dispatch_channels === 'In App' || a.dispatch_channels === 'Both'))
-          .slice(0, 4)
-      )
-    } catch (e) {
-      console.warn('Could not pull live broadcasts:', e)
+      if (isEmployee) {
+        const employeeId = user?.employeeId || user?.id
+        if (employeeId) {
+          const data = await fetchEmployeeDashboard(employeeId)
+          setDashboardData((prev) => ({ ...prev, ...data }))
+        }
+      } else {
+        const data = await fetchAdminDashboard()
+        setDashboardData(data)
+      }
+    } catch (err) {
+      console.error('Dashboard load failed:', err)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchLiveAnnouncements()
-    setIsLoading(false)
-  }, [])
-
-  const loadDashboardData = () => {
-    setIsLoading(true)
-    fetchLiveAnnouncements()
-    setTimeout(() => setIsLoading(false), 800)
-  }
-
-  const isHRAdmin = user?.role === 'hr_admin' || user?.role === 'admin'
-  const isManager = user?.role === 'manager'
-  const isEmployee = user?.role === 'employee'
-
-  const stats = {
-    employees: {
-      total: dashboardStats.totalEmployees,
-      active: dashboardStats.activeEmployees,
-      probation: dashboardStats.onProbation,
-      notice: dashboardStats.inNotice
-    },
-    attendance: {
-      present: dashboardStats.todayInOffice,
-      remote: dashboardStats.todayRemote,
-      absent: dashboardStats.todayAbsent
-    },
-    pending: {
-      leaves: dashboardStats.pendingLeaves,
-      documents: dashboardStats.pendingDocuments,
-      expenses: dashboardStats.pendingExpenses
-    },
-    personal: {
-       leaveBalance: 14,
-       attendanceRate: '98%',
-       pendingTasks: 3
-    }
-  }
-
-  const announcements = liveAnnouncements.length > 0 ? liveAnnouncements : [
-    { id: 1, title: 'Annual General Meeting 2026', content: 'The annual general meeting for all shareholders and employees will be held in the main auditorium.', priority: 'High', created_at: new Date().toISOString() },
-    { id: 2, title: 'New Health Insurance Policy', content: 'We have updated our health insurance provider to ensure better coverage for all employees.', priority: 'Standard', created_at: new Date().toISOString() },
-  ]
-
-  const birthdays = [
-    { name: 'Sarah Ahmed', type: 'Birthday', icon: '🎂', date: 'Today', dept: 'Engineering' },
-    { name: 'Omar Hassan', type: 'Anniversary', icon: '🎉', date: 'Tomorrow', dept: 'Marketing' },
-  ]
-
-  const expiryAlerts = [
-     { name: 'PASSPORT_EXPIRY', count: 3, items: ['John Doe', 'Jane Smith', 'Mike Ross'], color: 'rose' },
-     { name: 'VISA_EXPIRY', count: 5, items: ['Ali Khan', 'Sara Lee', 'David B.'], color: 'amber' },
-  ]
-
-  const joinersExits = {
-     newJoiners: [
-        { name: 'Alice Wong', dept: 'IT', date: '01 May' },
-        { name: 'Bob Saget', dept: 'Sales', date: '03 May' },
-     ],
-     exits: [
-        { name: 'Charlie Sheen', dept: 'Legal', date: '15 May' },
-     ]
-  }
+    loadDashboardData()
+  }, [user?.id, user?.employeeId, user?.role])
 
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin border-4 border-[#0F766E] border-t-transparent" />
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Synchronizing Intelligence...</p>
+          <HiArrowPath className="h-8 w-8 animate-spin text-[#0F766E]" />
+          <p className="text-xs font-semibold text-slate-500">Loading dashboard…</p>
         </div>
       </div>
     )
   }
 
-  // Render Manager Dashboard for managers
-  if (isManager) {
-    return <ManagerDashboard />
-  }
+  if (isManager) return <ManagerDashboard />
+
+  const announcements = dashboardData.announcements?.length
+    ? dashboardData.announcements
+    : FALLBACK_ANNOUNCEMENTS
+
+  const attendancePieData = [
+    { name: 'In Office', value: dashboardData.attendance.present },
+    { name: 'Remote', value: dashboardData.attendance.remote },
+    { name: 'On Leave', value: dashboardData.attendance.onLeave },
+  ]
+
+  const growthData = dashboardData.growthData?.length
+    ? dashboardData.growthData
+    : [{ name: 'NOW', headcount: dashboardData.employees.total }]
+
+  const events = dashboardData.celebrations?.length
+    ? dashboardData.celebrations
+    : [{ name: 'No upcoming events', type: 'Event', date: '—', dept: '—', icon: '📅' }]
 
   return (
-    <div className="space-y-8 pb-12 animate-in fade-in duration-500 min-w-0">
-      {/* SaaS Premium Hero Orchestrator - Industrial Refactor */}
-      <div className="relative overflow-hidden border border-slate-200 bg-white p-10 shadow-sm">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-slate-400">
-               <HiBolt className="w-4 h-4 text-[#0F766E]" />
-               <span className="text-[10px] font-black uppercase tracking-[0.4em]">
-                  {isHRAdmin ? 'Corporate Command Center' : isManager ? 'Team Orchestrator' : 'Identity Portal'}
-               </span>
-            </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase leading-none">
-               {isEmployee ? 'Identity Overview,' : 'System Authorization,'} <br/>
-               <span className="text-[#0F766E]">{user?.name?.split(' ')[0] ?? 'Admin'}</span>
-            </h1>
-            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
-               SECURE ACCESS FOR <span className="text-slate-900">{user?.tenantName?.toUpperCase() || 'MICROLAN IT'}</span> • <span className="text-emerald-700">{user?.role?.replace('_', ' ').toUpperCase()}</span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-6 border-l border-slate-100 pl-10">
-             <div className="text-right">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">System Time</p>
-                <p className="text-sm font-black text-slate-900 leading-none">{todayLabel}</p>
-             </div>
-             <button 
-                onClick={loadDashboardData}
-                className="flex h-12 w-12 items-center justify-center rounded-none bg-slate-900 text-white transition-all hover:bg-black active:scale-95 shadow-xl shadow-slate-900/10"
-             >
-                <HiArrowPath className="h-5 w-5" />
-             </button>
-          </div>
+    <div className="space-y-6 pb-12 animate-in fade-in duration-500 min-w-0">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            {isHrView ? 'HR Dashboard' : 'Employee Dashboard'}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">{todayLabel}</p>
         </div>
-        <div className="absolute right-0 top-0 h-full w-1/3 bg-slate-50 -z-10 skew-x-12 translate-x-1/2" />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={loadDashboardData}
+            className="inline-flex h-9 items-center gap-2 rounded-none border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            <HiArrowPath className="h-4 w-4" />
+            Refresh
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-9 items-center gap-2 rounded-none border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            <HiDocumentArrowDown className="h-4 w-4" />
+            Export
+          </button>
+        </div>
       </div>
 
-      {/* RBAC Stats Registry */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-         {isHRAdmin ? (
-            <>
-               <StatCard title="TOTAL HEADCOUNT" value={stats.employees.total} subtitle="Global Identity" color="slate" icon={HiUsers} square />
-               <StatCard title="ACTIVE TALENT" value={stats.employees.active} subtitle="Operational" color="emerald" icon={HiBriefcase} square />
-               <StatCard title="EVALUATION" value={stats.employees.probation} subtitle="In Probation" color="amber" icon={HiClock} square />
-               <StatCard title="EXIT RISK" value={stats.employees.notice} subtitle="Notice Period" color="rose" icon={HiArrowRightOnRectangle} square />
-            </>
-         ) : isManager ? (
-            <>
-               <StatCard title="TEAM COUNT" value="12" subtitle="Direct Reports" color="slate" icon={HiUserGroup} square />
-               <StatCard title="PRESENCE" value="10" subtitle="In-Office Today" color="emerald" icon={HiBuildingOffice} square />
-               <StatCard title="LEAVES" value="2" subtitle="Active Absence" color="amber" icon={HiCalendar} square />
-               <StatCard title="PERFORMANCE" value="4.2" subtitle="Avg Team Score" color="indigo" icon={HiChartBar} square />
-            </>
-         ) : (
-            <>
-               <StatCard title="LEAVE BALANCE" value={stats.personal.leaveBalance} subtitle="Available Days" color="emerald" icon={HiCalendar} square />
-               <StatCard title="PRESENCE RATE" value={stats.personal.attendanceRate} subtitle="Last 30 Days" color="slate" icon={HiClock} square />
-               <StatCard title="PENDING TASKS" value={stats.personal.pendingTasks} subtitle="Action Required" color="amber" icon={HiClipboardDocumentCheck} square />
-               <StatCard title="PAYSLIP" value="VIEW" subtitle="Last Generated" color="indigo" icon={HiCreditCard} square />
-            </>
-         )}
-      </div>
+      {isHrView ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard label="Total Employees" value={dashboardData.employees.total} subtitle="Headcount overview" />
+            <MetricCard label="Active Employees" value={dashboardData.employees.active} subtitle="Currently active" tone="emerald" />
+            <MetricCard label="On Probation" value={dashboardData.employees.probation} subtitle="Under evaluation" tone="amber" />
+            <MetricCard label="Notice Period" value={dashboardData.employees.notice} subtitle="Potential exits" tone="blue" />
+          </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Main Intelligence Section */}
-        <div className="lg:col-span-2 space-y-8">
-           {/* Operational Audit & Distribution */}
-           <div className="grid gap-8 md:grid-cols-2">
-              <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
-                 <div className="flex items-center justify-between mb-8">
-                    <div>
-                       <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Operational Audit</h2>
-                       <h3 className="text-xl font-black text-slate-900 leading-none uppercase">Work Distribution</h3>
-                    </div>
-                    <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                 </div>
-                 <div className="space-y-4">
-                    {[
-                        { label: 'IN OFFICE', count: stats.attendance.present, color: 'bg-[#0F766E]' },
-                        { label: 'REMOTE', count: stats.attendance.remote, color: 'bg-blue-500' },
-                        { label: 'ON LEAVE', count: stats.attendance.absent, color: 'bg-rose-500' }
-                    ].map(item => (
-                        <div key={item.label} className="flex items-center justify-between p-4 border border-slate-100 bg-slate-50/50">
-                            <div className="flex items-center gap-4">
-                                <div className={`h-1.5 w-6 ${item.color}`} />
-                                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{item.label}</span>
-                            </div>
-                            <span className="text-sm font-black text-slate-900">{item.count}</span>
-                        </div>
-                    ))}
-                 </div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Attendance Trend</h3>
+                  <HiArrowTrendingUp className="h-4 w-4 text-[#0F766E]" />
+                </div>
+                <div className="h-60">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={growthData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="headcount" stroke="#0F766E" fill="#0F766E" fillOpacity={0.12} strokeWidth={2.5} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
-              <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm flex flex-col items-center justify-center">
-                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 w-full text-center">ANALYTIC_SCHEMA</h3>
-                 <div className="h-44 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                       <PieChart>
-                          <Pie
-                             data={[
-                                { name: 'Office', value: stats.attendance.present },
-                                { name: 'Remote', value: stats.attendance.remote },
-                                { name: 'Leave', value: stats.attendance.absent },
-                             ]}
-                             cx="50%"
-                             cy="50%"
-                             innerRadius={50}
-                             outerRadius={65}
-                             paddingAngle={4}
-                             dataKey="value"
-                          >
-                             <Cell fill="#0F766E" strokeWidth={0} />
-                             <Cell fill="#3B82F6" strokeWidth={0} />
-                             <Cell fill="#EF4444" strokeWidth={0} />
-                          </Pie>
-                          <Tooltip contentStyle={{ border: '1px solid #f1f5f9', borderRadius: '0px' }} />
-                       </PieChart>
-                    </ResponsiveContainer>
-                 </div>
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-sm font-semibold text-slate-900">Pending Approvals</h3>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Link to="/admin/leave" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
+                    <p className="text-xs font-semibold text-slate-500">Leave Requests</p>
+                    <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.leaves}</p>
+                  </Link>
+                  <Link to="/admin/expenses" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
+                    <p className="text-xs font-semibold text-slate-500">Expense Claims</p>
+                    <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.expenses}</p>
+                  </Link>
+                  <Link to="/admin/attendance" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
+                    <p className="text-xs font-semibold text-slate-500">Regularizations</p>
+                    <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.documents}</p>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-sm font-semibold text-slate-900">Employee Status</h3>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={attendancePieData} dataKey="value" innerRadius={45} outerRadius={70} paddingAngle={3}>
+                        <Cell fill="#0F766E" />
+                        <Cell fill="#3B82F6" />
+                        <Cell fill="#F59E0B" />
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Announcements</h3>
+                  <HiMegaphone className="h-4 w-4 text-[#0F766E]" />
+                </div>
+                <div className="space-y-3">
+                  {announcements.slice(0, 3).map((ann) => (
+                    <button
+                      key={ann.id}
+                      type="button"
+                      onClick={() => setSelectedAnnouncement(ann)}
+                      className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
+                    >
+                      <p className="text-xs font-semibold text-slate-900">{ann.title}</p>
+                      <p className="mt-1 line-clamp-1 text-xs text-slate-500">{ann.content}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <Avatar name={user?.name || 'Employee'} size="lg" />
+                <div>
+                  <p className="text-lg font-bold text-slate-900">{user?.name || 'Employee'}</p>
+                  <p className="text-sm text-slate-500">{user?.role?.replace('_', ' ') || 'Employee'}</p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2 text-sm text-slate-600">
+                <p><span className="font-medium">Email:</span> {user?.email || '—'}</p>
+                <p><span className="font-medium">Department:</span> {user?.department || '—'}</p>
+              </div>
+            </div>
+
+            <MetricCard label="Leave Balance" value={dashboardData.personal.leaveBalance} subtitle="Available days" tone="emerald" />
+            <MetricCard label="Attendance Rate" value={dashboardData.personal.attendanceRate} subtitle="This month" tone="blue" />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">My Attendance</h3>
+                  <HiClock className="h-4 w-4 text-[#0F766E]" />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <MetricCard label="In Office" value={dashboardData.attendance.present} subtitle="Today" />
+                  <MetricCard label="Remote" value={dashboardData.attendance.remote} subtitle="Today" tone="blue" />
+                  <MetricCard label="On Leave" value={dashboardData.attendance.onLeave} subtitle="Today" tone="amber" />
+                  <MetricCard label="Pending Tasks" value={dashboardData.personal.pendingTasks} subtitle="Claims pending" />
+                </div>
+              </div>
+
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-sm font-semibold text-slate-900">My Announcements</h3>
+                <div className="space-y-3">
+                  {announcements.map((ann) => (
+                    <button
+                      key={ann.id}
+                      type="button"
+                      onClick={() => setSelectedAnnouncement(ann)}
+                      className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge label={ann.priority || 'Standard'} color={ann.priority === 'High' ? 'red' : 'blue'} />
+                        <span className="text-xs text-slate-400">{new Date(ann.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">{ann.title}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Team Events</h3>
+                  <HiCalendarDays className="h-4 w-4 text-[#0F766E]" />
+                </div>
+                <div className="space-y-3">
+                  {events.slice(0, 5).map((event, i) => (
+                    <div key={`${event.name}-${i}`} className="flex items-center gap-3 rounded-none border border-slate-200 bg-slate-50/60 p-3">
+                      <Avatar name={event.name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">{event.name}</p>
+                        <p className="text-xs text-slate-500">{event.type} • {event.date}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-sm font-semibold text-slate-900">Quick Links</h3>
+                <div className="space-y-2">
+                  <Link to="/admin/leave" className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
+                    <HiCalendarDays className="h-4 w-4" />
+                    Apply Leave
+                  </Link>
+                  <Link to="/admin/attendance" className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
+                    <HiClock className="h-4 w-4" />
+                    View Attendance
+                  </Link>
+                  <Link to="/admin/employee-profile" className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
+                    <HiUsers className="h-4 w-4" />
+                    My Profile
+                  </Link>
+                </div>
               </div>
            </div>
 
@@ -321,6 +404,7 @@ export default function Dashboard() {
                     { label: 'Visa/Nat', icon: HiCreditCard, path: '/admin/visa', color: 'purple' },
                     { label: 'Policies', icon: HiClipboardDocumentCheck, path: '/admin/policies', color: 'emerald' },
                     { label: 'Performance', icon: HiChartBar, path: '/admin/performance', color: 'blue' },
+                    { label: 'Support', icon: HiQuestionMarkCircle, path: '/admin/support', color: 'slate' },
                     ...(isHRAdmin ? [{ label: 'Settings', icon: HiCog6Tooth, path: '/admin/settings', color: 'slate' }] : [])
                  ].map((mod) => (
                     <Link key={mod.label} to={mod.path} className="flex flex-col items-center p-4 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E] transition-all group">
@@ -429,96 +513,31 @@ export default function Dashboard() {
                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Broadcast Repository</h3>
                <HiMegaphone className="h-5 w-5 text-[#0F766E]" />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-               {announcements.map((ann) => (
-                  <button
-                     key={ann.id}
-                     onClick={() => setSelectedAnnouncement(ann)}
-                     className="w-full text-left p-6 border border-slate-100 bg-slate-50/50 transition-all hover:bg-white hover:border-[#0F766E] group"
-                  >
-                     <div className="flex items-center gap-3 mb-3">
-                        <Badge label={ann.priority} color={ann.priority === 'High' ? 'red' : 'emerald'} variant="soft" className="text-[9px] font-black" />
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{new Date(ann.created_at).toLocaleDateString()}</span>
-                     </div>
-                     <h3 className="font-black text-slate-900 group-hover:text-[#0F766E] transition-colors text-sm uppercase mb-2 leading-tight">{ann.title}</h3>
-                     <p className="text-[10px] text-slate-500 line-clamp-1 font-bold uppercase tracking-tight">{ann.content}</p>
-                  </button>
-               ))}
-            </div>
-         </div>
+          </div>
+        </>
+      )}
 
-         <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">TALENT_PIPELINE</h3>
-            <div className="space-y-8">
-               <div>
-                  <p className="text-[9px] font-black text-emerald-700 uppercase tracking-[0.3em] mb-4">INDUCTION_AUDIT</p>
-                  <div className="space-y-4">
-                     {joinersExits.newJoiners.map(j => (
-                        <div key={j.name} className="flex items-center justify-between">
-                           <div className="flex items-center gap-3">
-                              <Avatar name={j.name} size="xs" className="rounded-none" />
-                              <div>
-                                 <p className="text-[10px] font-black text-slate-900 leading-none uppercase">{j.name}</p>
-                                 <p className="text-[8px] text-slate-400 uppercase font-black tracking-widest">{j.dept}</p>
-                              </div>
-                           </div>
-                           <span className="text-[9px] font-black text-slate-900">{j.date}</span>
-                        </div>
-                     ))}
-                  </div>
-               </div>
-               <div className="pt-6 border-t border-slate-100">
-                  <p className="text-[9px] font-black text-rose-700 uppercase tracking-[0.3em] mb-4">TERMINATION_AUDIT</p>
-                  <div className="space-y-4">
-                     {joinersExits.exits.map(e => (
-                        <div key={e.name} className="flex items-center justify-between">
-                           <div className="flex items-center gap-3">
-                              <Avatar name={e.name} size="xs" className="rounded-none" />
-                              <div>
-                                 <p className="text-[10px] font-black text-slate-900 leading-none uppercase">{e.name}</p>
-                                 <p className="text-[8px] text-slate-400 uppercase font-black tracking-widest">{e.dept}</p>
-                              </div>
-                           </div>
-                           <span className="text-[9px] font-black text-slate-900">{e.date}</span>
-                        </div>
-                     ))}
-                  </div>
-               </div>
+      {selectedAnnouncement ? (
+        <Modal title="Announcement" isOpen onClose={() => setSelectedAnnouncement(null)} size="lg">
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-2">
+              <Badge label={selectedAnnouncement.priority || 'Standard'} color={selectedAnnouncement.priority === 'High' ? 'red' : 'blue'} />
+              <span className="text-xs text-slate-500">{new Date(selectedAnnouncement.created_at).toLocaleString()}</span>
             </div>
-         </div>
-      </div>
-
-      {/* Modal */}
-      {selectedAnnouncement && (
-        <Modal title="BROADCAST_ANALYSIS" isOpen={true} onClose={() => setSelectedAnnouncement(null)} size="lg">
-          <div className="space-y-8 pt-4">
-            <div className="border border-slate-100 bg-slate-50 p-10">
-               <div className="flex items-center gap-4 mb-6">
-                 <Badge label={selectedAnnouncement.priority} color={selectedAnnouncement.priority === 'High' ? 'red' : 'emerald'} className="text-[10px] font-black px-6" />
-                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(selectedAnnouncement.created_at).toLocaleString().toUpperCase()}</span>
-               </div>
-               <h2 className="text-3xl font-black text-slate-900 uppercase mb-6 leading-tight tracking-tighter">{selectedAnnouncement.title}</h2>
-               <div className="text-slate-600 text-sm font-bold leading-relaxed bg-white p-8 border border-slate-200">
-                 {selectedAnnouncement.content}
-               </div>
-            </div>
-            <div className="flex gap-4">
-               <button 
-                  onClick={() => setSelectedAnnouncement(null)} 
-                  className="flex-1 h-14 bg-slate-900 text-white uppercase font-black text-[11px] tracking-[0.3em] hover:bg-black transition-all shadow-xl shadow-slate-900/10"
-               >
-                  ACKNOWLEDGE_PROTOCOL
-               </button>
-               <button 
-                  onClick={() => setSelectedAnnouncement(null)} 
-                  className="px-10 h-14 border border-slate-200 text-slate-400 uppercase font-black text-[11px] tracking-widest hover:text-slate-600 transition-all"
-               >
-                  ARCHIVE
-               </button>
+            <h3 className="text-xl font-semibold text-slate-900">{selectedAnnouncement.title}</h3>
+            <p className="text-sm leading-relaxed text-slate-600">{selectedAnnouncement.content}</p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedAnnouncement(null)}
+                className="h-9 rounded-none bg-[#0F766E] px-4 text-sm font-semibold text-white hover:bg-[#0c6b64]"
+              >
+                Close
+              </button>
             </div>
           </div>
         </Modal>
-      )}
+      ) : null}
     </div>
   )
 }

@@ -16,6 +16,7 @@ import { Table } from '../../components/ui/Table.jsx'
 import { StatCard } from '../../components/ui/StatCard.jsx'
 import { Input } from '../../components/ui/Input.jsx'
 import { getManagerDepartment, getManagerEmployees } from '../../services/managerDashboardService'
+import { listAttendance } from '../../services/attendanceService'
 
 const statusColor = (status) => {
   if (status === 'Active') return 'green'
@@ -33,6 +34,7 @@ export default function ManagerDashboard() {
   const [page, setPage] = useState(1)
   const [totalEmployees, setTotalEmployees] = useState(0)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [teamStats, setTeamStats] = useState({ active: 0, probation: 0, present: 0, onLeave: 0 })
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 350)
@@ -46,18 +48,34 @@ export default function ManagerDashboard() {
   const fetchManagerData = async () => {
     setLoading(true)
     try {
-      const [deptData, empData] = await Promise.all([
-        getManagerDepartment(),
+      const deptData = await getManagerDepartment()
+      const deptId = deptData?.id
+      const today = new Date().toISOString().split('T')[0]
+
+      const [empData, attendanceData] = await Promise.all([
         getManagerEmployees({
           page,
           limit: 10,
           search: debouncedSearch,
+          ...(deptId ? { department_id: deptId } : {}),
         }),
+        deptId
+          ? listAttendance({ date: today, department: deptData?.name || '', limit: 1, page: 1 }).catch(() => null)
+          : Promise.resolve(null),
       ])
 
       setDepartment(deptData)
-      setEmployees(empData?.employees || empData?.records || [])
-      setTotalEmployees(empData?.total || empData?.pagination?.total || 0)
+      const rows = empData?.employees || empData?.records || []
+      setEmployees(rows)
+      setTotalEmployees(empData?.total || empData?.pagination?.total || deptData?.employeeCount || rows.length)
+
+      const summary = attendanceData?.summary || {}
+      setTeamStats({
+        active: rows.filter((e) => e.employment_status === 'Active').length,
+        probation: rows.filter((e) => e.employment_status === 'Probation').length,
+        present: summary.in_office ?? summary.present ?? 0,
+        onLeave: summary.on_leave ?? rows.filter((e) => e.employment_status === 'On Leave').length,
+      })
     } catch (err) {
       console.error('Error fetching manager data:', err)
       toast.error('Failed to load department and employee data')
@@ -84,8 +102,8 @@ export default function ManagerDashboard() {
     profileImageUrl: e.profile_image_url || '',
   })
 
-  const activeCount = employees.filter(e => e.employment_status === 'Active').length
-  const probationCount = employees.filter(e => e.employment_status === 'Probation').length
+  const activeCount = teamStats.active
+  const probationCount = teamStats.probation
 
   const columns = [
     {
@@ -183,7 +201,6 @@ export default function ManagerDashboard() {
           count={totalEmployees}
           bgColor="bg-slate-900"
           icon={HiUserGroup}
-          trend={{ value: '+2', direction: 'up' }}
         />
         <StatCard
           label="Active"
@@ -193,18 +210,18 @@ export default function ManagerDashboard() {
           subtext={`${activeCount}/${totalEmployees}`}
         />
         <StatCard
-          label="On Probation"
-          count={probationCount}
+          label="In Office Today"
+          count={teamStats.present}
           bgColor="bg-blue-600"
-          icon={HiClock}
-          subtext={`${probationCount}/${totalEmployees}`}
+          icon={HiBuildingOffice}
+          subtext="From attendance"
         />
         <StatCard
-          label="Team Health"
-          count={totalEmployees > 0 ? Math.round((activeCount / totalEmployees) * 100) : 0}
-          bgColor="bg-[#0F766E]"
-          icon={HiCheckBadge}
-          subtext="% active"
+          label="On Leave"
+          count={teamStats.onLeave}
+          bgColor="bg-amber-500"
+          icon={HiExclamationTriangle}
+          subtext="Today"
         />
       </div>
 

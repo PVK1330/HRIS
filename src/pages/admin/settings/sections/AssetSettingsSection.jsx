@@ -7,7 +7,15 @@ import {
   LOST_DAMAGED_OPTIONS,
   RETURN_RULE_OPTIONS,
 } from '../assetConstants'
-import { FieldRow, SectionCard, SelectInput, TextInput, Toggle } from '../components/ui'
+import {
+  FieldRow,
+  SectionCard,
+  SelectInput,
+  SettingsBanner,
+  SettingsLoading,
+  SettingsSection,
+  TextInput,
+} from '../components/ui'
 
 function buildRulesDraft(r) {
   if (!r) return null
@@ -174,28 +182,18 @@ export default function AssetSettingsSection({ registerToolbar }) {
   }
 
   if (loading && categories.length === 0 && !rules) {
-    return (
-      <div className="rounded-none border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm font-bold uppercase tracking-widest">
-        Syncing Inventory Classification Protocols…
-      </div>
-    )
+    return <SettingsLoading message="Loading asset settings…" />
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <SettingsSection>
       {(error || rulesBanner) && (
-        <div
-          className={`rounded-none px-4 py-3 text-[11px] font-bold uppercase tracking-widest ${
-            rulesBanner?.type === 'ok'
-              ? 'border border-emerald-100 bg-emerald-50 text-emerald-800'
-              : 'border border-red-100 bg-red-50 text-red-700'
-          }`}
-        >
+        <SettingsBanner type={rulesBanner?.type === 'ok' ? 'ok' : 'error'}>
           {rulesBanner?.type === 'ok' ? rulesBanner.text : error}
-        </div>
+        </SettingsBanner>
       )}
 
-      <SectionCard title="Asset Classification Matrix">
+      <SectionCard title="Asset categories" noTable>
         <div className="mb-8 rounded-none border border-dashed border-slate-200 bg-slate-50/30 p-5">
           <p className="mb-4 text-[11px] font-black uppercase tracking-widest text-slate-900">
             {editingId ? 'Modify Inventory Identifier' : 'Register New Asset Classification'}
@@ -343,59 +341,54 @@ export default function AssetSettingsSection({ registerToolbar }) {
       </SectionCard>
 
       {rulesDraft ? (
-        <SectionCard title="Global Stewardship Protocols">
-          <div className="divide-y divide-slate-50">
-            <FieldRow label="Allocation Logic">
-              <SelectInput
-                options={ASSIGNING_RULE_OPTIONS}
-                value={rulesDraft.assigningRule}
-                onChange={(e) =>
-                  setRulesDraft((r) => (r ? { ...r, assigningRule: e.target.value } : r))
-                }
-              />
-            </FieldRow>
-            <FieldRow label="De-provisioning Trigger">
-              <SelectInput
-                options={RETURN_RULE_OPTIONS}
-                value={rulesDraft.returnRule}
-                onChange={(e) =>
-                  setRulesDraft((r) => (r ? { ...r, returnRule: e.target.value } : r))
-                }
-              />
-            </FieldRow>
-            <FieldRow label="Liability Architecture">
-              <SelectInput
-                options={LOST_DAMAGED_OPTIONS}
-                value={rulesDraft.lostDamagedPolicy}
-                onChange={(e) =>
-                  setRulesDraft((r) => (r ? { ...r, lostDamagedPolicy: e.target.value } : r))
-                }
-              />
-            </FieldRow>
-            <FieldRow label="Authorization Pipeline">
-              <SelectInput
-                options={APPROVAL_WORKFLOW_OPTIONS}
-                value={rulesDraft.approvalWorkflow}
-                onChange={(e) =>
-                  setRulesDraft((r) => (r ? { ...r, approvalWorkflow: e.target.value } : r))
-                }
-              />
-            </FieldRow>
-          </div>
-          <div className="mt-4 flex items-center gap-3 rounded-none border border-emerald-50 bg-emerald-50/20 p-3">
-             <div className="h-4 w-1 bg-[#0F766E]" />
-             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-               Modifications require a commit via the global stewardship toolbar.
-             </p>
-          </div>
+        <SectionCard title="Assignment & return rules">
+          <FieldRow label="Who can assign assets">
+            <SelectInput
+              options={ASSIGNING_RULE_OPTIONS}
+              value={rulesDraft.assigningRule}
+              onChange={(e) =>
+                setRulesDraft((r) => (r ? { ...r, assigningRule: e.target.value } : r))
+              }
+            />
+          </FieldRow>
+          <FieldRow label="Return rule">
+            <SelectInput
+              options={RETURN_RULE_OPTIONS}
+              value={rulesDraft.returnRule}
+              onChange={(e) =>
+                setRulesDraft((r) => (r ? { ...r, returnRule: e.target.value } : r))
+              }
+            />
+          </FieldRow>
+          <FieldRow label="Lost or damaged policy">
+            <SelectInput
+              options={LOST_DAMAGED_OPTIONS}
+              value={rulesDraft.lostDamagedPolicy}
+              onChange={(e) =>
+                setRulesDraft((r) => (r ? { ...r, lostDamagedPolicy: e.target.value } : r))
+              }
+            />
+          </FieldRow>
+          <FieldRow label="Approval workflow">
+            <SelectInput
+              options={APPROVAL_WORKFLOW_OPTIONS}
+              value={rulesDraft.approvalWorkflow}
+              onChange={(e) =>
+                setRulesDraft((r) => (r ? { ...r, approvalWorkflow: e.target.value } : r))
+              }
+            />
+          </FieldRow>
+          <FieldRow colSpan={2}>
+            <p className="text-xs text-slate-500">
+              Use Save changes in the settings toolbar to apply rule updates.
+            </p>
+          </FieldRow>
         </SectionCard>
       ) : (
-        <SectionCard title="Global Stewardship Protocols">
-          <div className="flex items-center justify-center py-10">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Synchronizing protocols…</p>
-          </div>
+        <SectionCard title="Assignment & return rules" noTable>
+          <p className="text-sm text-gray-500 py-6 text-center">Loading rules…</p>
         </SectionCard>
       )}
-    </div>
+    </SettingsSection>
   )
 }
