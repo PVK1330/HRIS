@@ -12,6 +12,7 @@ import AdminLayout from "../layouts/AdminLayout.jsx";
 import SuperAdminLayout from "../layouts/SuperAdminLayout.jsx";
 const Login = lazy(() => import("../pages/auth/Login.jsx"));
 
+
 const AdminDashboard = lazy(() => import("../pages/admin/Dashboard.jsx"));
 const EmployeeDirectory = lazy(() => import("../pages/admin/employees/EmployeeDirectory.jsx"));
 const EmployeeGrid = lazy(() => import("../pages/admin/employees/EmployeeGrid.jsx"));
@@ -32,7 +33,7 @@ const ManagerExitApprovals = lazy(() => import("../pages/exit/ManagerExitApprova
 const EmployeeExit = lazy(() => import("../pages/exit/EmployeeExit.jsx"));
 const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemplates.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
-const AdminSettings = lazy(() => import("../pages/admin/settings/Settings.jsx"));
+const AdminSettings = lazy(() => import("../pages/admin/settings/AdminSettings.jsx"));
 const RolesPermissions = lazy(() => import("../pages/admin/settings/RolesPermissions.jsx"));
 const DepartmentManagement = lazy(() => import("../pages/admin/settings/Departments.jsx"));
 const DesignationsManagement = lazy(() => import("../pages/admin/settings/Designations.jsx"));
