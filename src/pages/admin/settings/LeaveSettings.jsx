@@ -82,10 +82,10 @@ export default function LeaveSettings({ registerToolbar }) {
   }
 
   return (
-    <div className="min-h-full space-y-6 bg-slate-50 pb-8 animate-in fade-in duration-500">
-      <div>
-        <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Leave Configuration</h2>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Leave Types & Rules</p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="border-b border-gray-100 pb-4">
+        <h2 className="text-base font-semibold text-gray-900">Leave Settings</h2>
+        <p className="mt-1 text-sm text-gray-500">Configure leave types, entitlements, and approval rules.</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">

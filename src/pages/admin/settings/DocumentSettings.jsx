@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Badge, FieldRow, SectionCard, SelectInput, TextInput, Toggle } from './components/ui'
+import { Badge, FieldRow, SectionCard, SelectInput, SettingsPageHeader, TextInput, Toggle } from './components/ui'
 import { useDocumentSettings } from '../../../hooks/settings/useDocumentSettings'
 
 const MANDATORY_OPTS = ['Mandatory', 'Optional']
@@ -101,7 +101,12 @@ export default function DocumentSettings() {
         </div>
       ) : null}
 
-      <SectionCard title="Required Documentation Catalog">
+      <SettingsPageHeader
+        title="Document Settings"
+        subtitle="Required document types, upload rules, and visibility per classification."
+      />
+
+      <SectionCard title="Document types" noTable>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {list.map((doc) => {
             const selected = doc.id === selectedDocId
@@ -178,23 +183,23 @@ export default function DocumentSettings() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Global Governance Overview">
+      <SectionCard title="Overview" noTable>
         {list.length === 0 ? (
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-8">No document classifications configured.</p>
+          <p className="text-sm text-gray-500 text-center py-8">No document types configured.</p>
         ) : (
-          <div className="overflow-x-auto -mx-5 sm:mx-0">
-            <table className="w-full border-collapse text-left text-[11px] font-bold uppercase tracking-wide">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-400">
-                  <th className="py-3 px-4">Identifier</th>
-                  <th className="py-3 px-4">Mandatory</th>
-                  <th className="py-3 px-4">Custodian</th>
-                  <th className="py-3 px-4">Expiry Cycle</th>
-                  <th className="py-3 px-4">Verification</th>
-                  <th className="py-3 px-4">Visibility</th>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Document</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Mandatory</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Uploaded by</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Expiry</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">HR approval</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Visibility</th>
                 </tr>
               </thead>
-              <tbody className="text-slate-700">
+              <tbody className="divide-y divide-gray-100 bg-white text-gray-700">
                 {list.map((doc) => (
                   <tr key={doc.id} className="border-b border-slate-50 hover:bg-slate-50/30 transition-colors">
                     <td className="py-3 px-4 font-black text-slate-900">{doc.name}</td>

@@ -8,7 +8,17 @@ import {
   OVERTIME_CALC_RULES,
   WHO_CAN_SUBMIT,
 } from '../attendanceConstants'
-import { FieldRow, SectionCard, SelectInput, TextInput, Toggle } from '../components/ui'
+import {
+  FieldRow,
+  SectionCard,
+  SelectInput,
+  SettingsBanner,
+  SettingsError,
+  SettingsLoading,
+  SettingsPageHeader,
+  TextInput,
+  Toggle,
+} from '../components/ui'
 
 function buildDraft(data) {
   if (!data) return null
@@ -114,48 +124,33 @@ export default function AttendanceSection({ registerToolbar }) {
     setDraft((p) => (p ? { ...p, overtimeSettings: { ...p.overtimeSettings, ...partial } } : p))
 
   if (loading && !draft) {
-    return (
-      <div className="rounded-none border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm font-bold uppercase tracking-widest">
-        Syncing Attendance Protocols…
-      </div>
-    )
+    return <SettingsLoading message="Loading attendance settings…" />
   }
 
   if (!draft) {
-    return (
-      <div className="rounded-none border border-red-100 bg-red-50 p-6 text-sm text-red-700 shadow-sm font-medium">
-        {error || 'Could not load attendance settings.'}
-      </div>
-    )
+    return <SettingsError message={error || 'Could not load attendance settings.'} />
   }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {(banner?.type === 'ok' || error) && (
-        <div
-          className={`rounded-none px-4 py-3 text-[11px] font-bold uppercase tracking-widest ${
-            banner?.type === 'ok'
-              ? 'border border-emerald-100 bg-emerald-50 text-emerald-800'
-              : 'border border-red-100 bg-red-50 text-red-700'
-          }`}
-        >
+        <SettingsBanner type={banner?.type === 'ok' ? 'ok' : 'error'}>
           {banner?.type === 'ok' ? banner.text : error}
-        </div>
+        </SettingsBanner>
       )}
 
-      <div>
-         <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Time & Attendance Governance</h2>
-         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Operational Shifts & Compliance Rules</p>
-      </div>
+      <SettingsPageHeader
+        title="Attendance & Time"
+        subtitle="Work hours, punctuality rules, regularization, and overtime policies."
+      />
 
-      <SectionCard title="A. Core Work Architecture">
-        <div className="divide-y divide-slate-50">
+      <SectionCard title="Work hours">
           <FieldRow label="Operational Start">
             <TextInput
               type="time"
               value={draft.workHours.startTime}
               onChange={(e) => updateWorkHours({ startTime: e.target.value })}
-              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+              className="max-w-[140px]"
             />
           </FieldRow>
           <FieldRow label="Operational End">
@@ -163,7 +158,7 @@ export default function AttendanceSection({ registerToolbar }) {
               type="time"
               value={draft.workHours.endTime}
               onChange={(e) => updateWorkHours({ endTime: e.target.value })}
-              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+              className="max-w-[140px]"
             />
           </FieldRow>
           <FieldRow label="Rest Interval (Minutes)">
@@ -172,7 +167,7 @@ export default function AttendanceSection({ registerToolbar }) {
               onChange={(e) =>
                 updateWorkHours({ breakDurationMinutes: parseInt(e.target.value, 10) })
               }
-              className="h-10 w-full max-w-[200px] rounded-none border border-slate-200 bg-white px-3 text-[11px] font-bold uppercase tracking-widest text-slate-700 focus:border-[#0F766E] focus:outline-none focus:ring-0"
+              className="h-10 w-full max-w-[200px] rounded-none border border-gray-200 bg-white px-3 text-sm text-gray-800 shadow-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15"
             >
               {BREAK_DURATION_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -191,7 +186,7 @@ export default function AttendanceSection({ registerToolbar }) {
               onChange={(e) =>
                 updateWorkHours({ totalRequiredHours: parseFloat(e.target.value) || 0 })
               }
-              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+              className="max-w-[140px]"
             />
           </FieldRow>
           <FieldRow label="Automated Quota Calculus">
@@ -202,11 +197,9 @@ export default function AttendanceSection({ registerToolbar }) {
               />
             </div>
           </FieldRow>
-        </div>
       </SectionCard>
 
-      <SectionCard title="B. Punctuality Protocols">
-        <div className="divide-y divide-slate-50">
+      <SectionCard title="Punctuality & presence">
           <FieldRow label="Presence Threshold (Hours)">
             <TextInput
               type="number"
@@ -217,7 +210,7 @@ export default function AttendanceSection({ registerToolbar }) {
               onChange={(e) =>
                 updateAttendanceRules({ minHoursForPresent: parseFloat(e.target.value) || 0 })
               }
-              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+              className="max-w-[140px]"
             />
           </FieldRow>
           <FieldRow label="Chronological Grace (10M)" hint="Late mark buffer">
@@ -245,7 +238,7 @@ export default function AttendanceSection({ registerToolbar }) {
               onChange={(e) =>
                 updateAttendanceRules({ graceDaysPerMonth: parseInt(e.target.value, 10) || 0 })
               }
-              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+              className="max-w-[140px]"
             />
           </FieldRow>
           <FieldRow label="Early Exit Compliance">
@@ -255,11 +248,9 @@ export default function AttendanceSection({ registerToolbar }) {
               onChange={(e) => updateAttendanceRules({ earlyDepartureRule: e.target.value })}
             />
           </FieldRow>
-        </div>
       </SectionCard>
 
-      <SectionCard title="C. Regularization Pipeline">
-        <div className="divide-y divide-slate-50">
+      <SectionCard title="Attendance regularization">
           <FieldRow label="Originating Authority">
             <SelectInput
               options={WHO_CAN_SUBMIT}
@@ -287,14 +278,12 @@ export default function AttendanceSection({ registerToolbar }) {
                   autoRejectionAfterDays: parseInt(e.target.value, 10) || 1,
                 })
               }
-              className="max-w-[140px] font-bold h-10 rounded-none border-slate-200"
+              className="max-w-[140px]"
             />
           </FieldRow>
-        </div>
       </SectionCard>
 
-      <SectionCard title="D. Auxiliary Overtime Framework">
-        <div className="divide-y divide-slate-50">
+      <SectionCard title="Overtime">
           <FieldRow label="OT Eligibility Enablement">
             <div className="flex h-10 items-center">
               <Toggle
@@ -317,7 +306,6 @@ export default function AttendanceSection({ registerToolbar }) {
               onChange={(e) => updateOvertime({ approvalWorkflow: e.target.value })}
             />
           </FieldRow>
-        </div>
       </SectionCard>
     </div>
   )
