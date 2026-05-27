@@ -44,6 +44,7 @@ const AssetManagement = lazy(() => import("../pages/admin/assets/AssetManagement
 const Reports = lazy(() => import("../pages/admin/reports/Reports.jsx"));
 const AnnouncementsPage = lazy(() => import("../pages/admin/Announcements.jsx"));
 const Payroll = lazy(() => import("../pages/admin/finance/Payroll.jsx"));
+const SupportManagement = lazy(() => import("../pages/admin/support/Support.jsx"));
 
 const PlatformDashboard = lazy(() => import("../pages/superadmin/platform/Dashboard.jsx"));
 const TenantManagement = lazy(() => import("../pages/superadmin/tenants/TenantManagement.jsx"));
@@ -381,6 +382,10 @@ export const router = createBrowserRouter([
                 <AnnouncementsPage />
               </AdminModuleGate>
             ),
+          },
+          {
+            path: "support",
+            element: <SupportManagement />,
           },
           {
             path: "payroll",

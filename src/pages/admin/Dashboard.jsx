@@ -21,7 +21,8 @@ import {
   HiCog6Tooth,
   HiIdentification,
   HiUserGroup,
-  HiArrowPath
+  HiArrowPath,
+  HiQuestionMarkCircle
 } from 'react-icons/hi2'
 import {
   AreaChart,
@@ -321,6 +322,7 @@ export default function Dashboard() {
                     { label: 'Visa/Nat', icon: HiCreditCard, path: '/admin/visa', color: 'purple' },
                     { label: 'Policies', icon: HiClipboardDocumentCheck, path: '/admin/policies', color: 'emerald' },
                     { label: 'Performance', icon: HiChartBar, path: '/admin/performance', color: 'blue' },
+                    { label: 'Support', icon: HiQuestionMarkCircle, path: '/admin/support', color: 'slate' },
                     ...(isHRAdmin ? [{ label: 'Settings', icon: HiCog6Tooth, path: '/admin/settings', color: 'slate' }] : [])
                  ].map((mod) => (
                     <Link key={mod.label} to={mod.path} className="flex flex-col items-center p-4 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E] transition-all group">
