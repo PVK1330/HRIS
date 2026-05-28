@@ -48,7 +48,7 @@ export function Modal({
   const maxW = sizeClasses[size] ?? sizeClasses.md
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden overflow-x-hidden p-4 sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden overflow-x-hidden p-4 sm:p-6">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300"
@@ -58,7 +58,7 @@ export function Modal({
 
       {/* Modal Box */}
       <div
-        className={`relative w-full ${maxW} h-full transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} max-h-full flex flex-col transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
       >
@@ -101,7 +101,7 @@ export function Modal({
           </div>
 
           {/* Body */}
-          <div className="px-5 py-1 sm:px-6 max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar">
+          <div className="flex-1 px-5 py-1 sm:px-6 overflow-y-auto custom-scrollbar">
             <div className="pb-8">
               {children}
             </div>

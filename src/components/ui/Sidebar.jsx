@@ -13,7 +13,7 @@ function roleSubtitle(role) {
   if (role === 'admin') return 'ADMIN'
   if (role === 'hr') return 'HR ADMIN'
   if (role === 'employee') return 'EMPLOYEE'
-  return (role ?? '').toUpperCase()
+  return (role ?? '').replace(/_/g, ' ').toUpperCase()
 }
 
 function panelName(role) {

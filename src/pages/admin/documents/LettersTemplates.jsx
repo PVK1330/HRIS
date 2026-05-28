@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   HiPlus,
   HiMagnifyingGlass,
@@ -21,6 +22,9 @@ import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import api from '../../../services/api.js'
 import { listEmployees } from '../../../services/employeeService.js'
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+import { useAuth } from '../../../context/AuthContext.jsx'
 
 const CATEGORIES  = ['Recruitment', 'Compliance', 'Performance', 'Exit', 'HR', 'Finance', 'Leave', 'Disciplinary']
 const TYPES       = ['Letter', 'Form', 'Certificate', 'Report']
@@ -108,6 +112,8 @@ function TagPicker({ open, onClose, tags, bodyRef, bodyValue, setter }) {
 }
 
 export default function LettersTemplates() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   // ── UI state ──────────────────────────────────────────────────────────────
   const [q, setQ]                         = useState('')
   const [activeTab, setActiveTab]         = useState('Templates')
@@ -258,32 +264,8 @@ export default function LettersTemplates() {
   }
 
   const openEdit = (row) => {
-    setSelectedTemplate(row)
-    setEditForm({
-      name: row.name,
-      type: row.type || 'Letter',
-      category: row.category,
-      description: row.description || '',
-      body: row.body || '',
-      status: row.status,
-    })
-    setEditModalOpen(true)
+    navigate(`/admin/letters/builder/${row.id}`)
   }
-
-  const handleUpdate = async (e) => {
-    e.preventDefault()
-    setSubmitting(true)
-    try {
-      await api.patch(`/letters/templates/${selectedTemplate.id}`, editForm)
-      setEditModalOpen(false)
-      await Promise.all([fetchTemplates(), fetchKpis()])
-    } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to update template')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   const handleDelete = async (row) => {
     if (!window.confirm(`Delete template "${row.name}"?`)) return
     try {
@@ -692,12 +674,8 @@ export default function LettersTemplates() {
                 onChange={(e) => setForm(f => ({ ...f, body: e.target.value }))}
               />
               <div className="absolute right-6 bottom-6 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTagPickerOpen(o => !o)}
-                  className="h-10 px-4 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all flex items-center gap-2"
-                >
-                  <HiCodeBracket className="h-4 w-4" /> INJECT_TAG
+                <button onClick={() => navigate('/admin/letters/builder/new')} className="h-11 px-8 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all shadow-xl shadow-slate-900/10 flex items-center gap-2">
+                  <HiPlus className="h-4 w-4" /> DRAFT_PROTOCOL
                 </button>
                 <TagPicker
                   open={tagPickerOpen}
@@ -728,7 +706,7 @@ export default function LettersTemplates() {
 
       {/* ── Edit Template Modal ───────────────────────────────────────────── */}
       <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="GOVERNANCE_TEMPLATE_MODIFICATION" size="xl">
-        <form onSubmit={handleUpdate} className="animate-in fade-in duration-500 space-y-6 p-2">
+        <form onSubmit={(e) => e.preventDefault()} className="animate-in fade-in duration-500 space-y-6 p-2">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Protocol Identifier</label>
             <input
@@ -874,16 +852,13 @@ export default function LettersTemplates() {
                       <div className="h-5 w-5 rounded-none border-2 border-[#0F766E] border-t-transparent animate-spin" />
                     </div>
                   ) : empListError ? (
-                    <div className="text-center py-6 space-y-3">
-                      <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">{empListError}</p>
-                      <button
-                        type="button"
-                        onClick={() => { empListFetched.current = false; fetchEmpList() }}
-                        className="text-[9px] font-black text-[#0F766E] hover:underline uppercase tracking-widest"
-                      >
-                        RETRY_SYNC
-                      </button>
+                  <div className="flex items-center gap-4">
+                    <img src={user?.company_logo || '/HRIS_Logo.png'} alt="Logo" className="max-h-14 w-auto object-contain" />
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">{user?.company_name || 'ORGANIZATION'}</h3>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Official Document</p>
                     </div>
+                  </div>
                   ) : empList.length === 0 ? (
                     <p className="text-center text-[10px] font-black text-slate-400 uppercase py-10 tracking-widest">EMPTY_DIRECTORY</p>
                   ) : (
@@ -990,12 +965,14 @@ export default function LettersTemplates() {
 
                 {selectedTemplate?.body ? (
                   <div className="px-12 py-10 flex-1 bg-white">
-                    <pre className="text-[13px] text-slate-800 font-mono leading-relaxed whitespace-pre-wrap break-words">
-                      {dispatchEmployeeId
-                        ? renderBody(selectedTemplate.body, empList.find(e => String(e.id) === String(dispatchEmployeeId)))
-                        : selectedTemplate.body
-                      }
-                    </pre>
+                    <div 
+                      className="text-[13px] text-slate-800 leading-relaxed max-w-none font-sans [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-6 [&_h2]:text-center [&_h2]:text-[#0F766E] [&_p]:mb-4 [&_p]:leading-relaxed [&_strong]:font-bold [&_em]:italic [&_table]:w-full [&_table]:border-collapse [&_table]:my-6 [&_td]:border-b [&_td]:border-slate-200 [&_td]:py-3 [&_td]:px-4"
+                      dangerouslySetInnerHTML={{
+                        __html: dispatchEmployeeId
+                          ? renderBody(selectedTemplate.body, empList.find(e => String(e.id) === String(dispatchEmployeeId)))
+                          : selectedTemplate.body
+                      }}
+                    />
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center flex-1 text-slate-300 py-20">
@@ -1014,7 +991,7 @@ export default function LettersTemplates() {
                 {/* Letter paper footer */}
                 <div className="border-t border-slate-50 px-10 py-6 bg-slate-50/30">
                    <div className="h-px w-32 bg-slate-200 mb-2" />
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">AUTHORIZED_SIGNATORY</p>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{user?.company_name ? user.company_name + " SIGNATORY" : "AUTHORIZED SIGNATORY"}</p>
                 </div>
               </div>
 

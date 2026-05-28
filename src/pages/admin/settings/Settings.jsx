@@ -25,6 +25,7 @@ import RolesPermissions from './RolesPermissions.jsx'
 import SensitiveData from './SensitiveData.jsx'
 import TerminationTypes from './TerminationTypes.jsx'
 import ClearanceChecklistSettings from './ClearanceChecklist.jsx'
+import ExitWorkflowSettings from './ExitWorkflowSettings.jsx'
 
 const navItems = [
   { id: 'general',       label: 'General',              Icon: HiBuildingOffice2    },
@@ -85,6 +86,7 @@ const sectionMeta = {
 const EXIT_TABS = [
   { id: 'termination', label: 'Termination Types',   Icon: HiArrowRightOnRectangle },
   { id: 'clearance',   label: 'Clearance Checklist', Icon: HiWrenchScrewdriver     },
+  { id: 'workflow',    label: 'Exit Workflow',       Icon: HiCog6Tooth             },
 ]
 
 function ExitSettingsSection() {
@@ -114,8 +116,10 @@ function ExitSettingsSection() {
       </div>
       {exitTab === 'termination' ? (
         <TerminationTypes embedded />
-      ) : (
+      ) : exitTab === 'clearance' ? (
         <ClearanceChecklistSettings embedded />
+      ) : (
+        <ExitWorkflowSettings embedded />
       )}
     </div>
   )

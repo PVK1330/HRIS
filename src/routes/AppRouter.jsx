@@ -32,6 +32,7 @@ const ExitDetail = lazy(() => import("../pages/exit/ExitDetail.jsx"));
 const ManagerExitApprovals = lazy(() => import("../pages/exit/ManagerExitApprovals.jsx"));
 const EmployeeExit = lazy(() => import("../pages/exit/EmployeeExit.jsx"));
 const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemplates.jsx"));
+const LetterBuilder = lazy(() => import("../pages/admin/documents/LetterBuilder.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
 const AdminSettings = lazy(() => import("../pages/admin/settings/AdminSettings.jsx"));
 const RolesPermissions = lazy(() => import("../pages/admin/settings/RolesPermissions.jsx"));
@@ -292,6 +293,14 @@ export const router = createBrowserRouter([
             element: (
               <AdminModuleGate moduleKey="letter-templates">
                 <LettersTemplates />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "letters/builder/:id",
+            element: (
+              <AdminModuleGate moduleKey="letter-templates">
+                <LetterBuilder />
               </AdminModuleGate>
             ),
           },

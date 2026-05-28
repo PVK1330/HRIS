@@ -768,7 +768,7 @@ export default function Onboarding() {
         <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
           <h2 className="text-sm font-semibold uppercase tracking-wider truncate">Onboarding Registry</h2>
           <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">
-            {loading ? 'Loading¦' : `${filtered.length} records`}
+            {loading ? 'Loading' : `${filtered.length} records`}
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
@@ -793,7 +793,7 @@ export default function Onboarding() {
           )}
         </div>
         {loading ? (
-          <p className="px-6 py-12 text-center text-sm text-slate-500">Loading onboarding employees¦</p>
+          <p className="px-6 py-12 text-center text-sm text-slate-500">Loading onboarding employees</p>
         ) : filtered.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <p className="text-sm font-medium text-slate-600">No employees in onboarding.</p>
@@ -867,7 +867,7 @@ export default function Onboarding() {
               onClick={handleCompleteActivation}
               className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {activating ? 'Completing¦' : 'Complete onboarding (Step 3)'}
+              {activating ? 'Completing' : 'Complete onboarding (Step 3)'}
             </button>
           </div>
         </div>
@@ -1013,7 +1013,7 @@ export default function Onboarding() {
                           {!wizardForm.department
                             ? 'Select department first'
                             : loadingDeptDesignations
-                              ? 'Loading designations¦'
+                              ? 'Loading designations'
                               : designationRowsForDept.length
                                 ? 'Select Designation'
                                 : 'No designations for this department'}
@@ -1042,10 +1042,10 @@ export default function Onboarding() {
                         </span>
                       </label>
                       <select value={wizardForm.rbacRoleId} onChange={(e) => fw({ rbacRoleId: e.target.value })} className={selectCls}>
-                        <option value="">Select System Role¦</option>
+                        <option value="">Select System Role</option>
                         {tenantRoles.length > 0
                           ? tenantRoles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)
-                          : <option disabled>Loading roles¦</option>
+                          : <option disabled>Loading roles</option>
                         }
                       </select>
                     </div>
@@ -1185,7 +1185,7 @@ export default function Onboarding() {
             <div className="pt-5 mt-4 border-t border-slate-200 flex justify-between items-center gap-4">
               <button type="button" onClick={() => { setModalOpen(false); setOnboardingMode('create'); setWizardForm(INITIAL_FORM) }} className="h-11 px-6 rounded-lg border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors shadow-sm">Cancel</button>
               <button type="submit" disabled={initLoading} className="h-11 px-10 rounded-lg bg-[#0F766E] hover:bg-[#0c6b64] shadow-lg shadow-emerald-950/10 text-[10px] font-black uppercase tracking-widest text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                {initLoading ? (<><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving¦</>) : 'Submit & send offer (Step 1)'}
+                {initLoading ? (<><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving</>) : 'Submit & send offer (Step 1)'}
               </button>
             </div>
           </form>
@@ -1210,7 +1210,7 @@ export default function Onboarding() {
                 }}
                 className="w-full rounded-lg border border-slate-200 bg-white h-12 px-4 text-sm focus:border-[#0F766E] outline-none transition-all"
               >
-                <option value="">Select employee¦</option>
+                <option value="">Select employee</option>
                 {directoryOptions.map((emp) => (
                   <option key={emp.id} value={emp.id}>
                     {(emp.full_name || emp.fullName) ?? 'Employee'} — {emp.emp_id || emp.empId}
@@ -1290,7 +1290,7 @@ export default function Onboarding() {
                 }}
                 className="w-full rounded-lg border border-slate-200 bg-white h-12 px-4 text-sm focus:border-[#0F766E] outline-none transition-all"
               >
-                <option value="">Select employee¦</option>
+                <option value="">Select employee</option>
                 {directoryOptions.map((e) => (
                   <option key={e.id} value={e.id}>
                     {(e.full_name || e.fullName) ?? 'Employee'} — {e.emp_id || e.empId}

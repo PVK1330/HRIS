@@ -1,261 +1,411 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '../../../components/ui/Badge.jsx'
-import { Button } from '../../../components/ui/Button.jsx'
-import { StatCard } from '../../../components/ui/StatCard.jsx'
-import { Table } from '../../../components/ui/Table.jsx'
-import api from '../../../services/api'
 import { superadminService } from '../../../services/superadminService.js'
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as ChartTooltip,
   ResponsiveContainer,
+  Tooltip as ChartTooltip,
   BarChart,
   Bar,
-  Cell
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts'
 import {
-  HiExclamationTriangle,
-  HiGlobeAlt,
+  HiArrowPath,
+  HiBuildingOffice,
+  HiDocumentArrowDown,
   HiUsers,
-  HiSignal,
-  HiServerStack,
-  HiSparkles,
-  HiShieldCheck,
-  HiCurrencyDollar
+  HiCurrencyDollar,
 } from 'react-icons/hi2'
 
 const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const weekOrder = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+
+function toNumber(v) {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : 0
+}
+
+function cap(v) {
+  return `${String(v || '').charAt(0).toUpperCase()}${String(v || '').slice(1)}`
+}
+
+function formatDate(v) {
+  if (!v) return '-'
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function MetricTile({ icon: Icon, label, value, tone = 'slate' }) {
+  const tones = {
+    slate: 'from-slate-900 to-slate-700',
+    green: 'from-[#0F766E] to-[#0c6b64]',
+    blue: 'from-blue-600 to-blue-500',
+    emerald: 'from-emerald-600 to-emerald-500',
+  }
+  return (
+    <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
+        </div>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-none bg-gradient-to-r text-white shadow-sm ${tones[tone] || tones.slate}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate()
-  const [platformStatus, setPlatformStatus] = useState({ api: 'Checking...', database: 'Checking...', storage: 'Checking...', uptime: 'N/A' })
-  const [stats, setStats] = useState({ monthlyRevenue: 0, activeOrganizations: 0, totalUsers: 0 })
-  const [recentOrganizations, setRecentOrganizations] = useState([])
-  const [recentActivity, setRecentActivity] = useState([])
-  const [revenueData, setRevenueData] = useState([{ month: 'N/A', amount: 0 }])
-  const [growthData, setGrowthData] = useState([{ name: 'N/A', value: 0 }])
-  const [sslAlerts, setSslAlerts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalCompanies: 0,
+    activeCompanies: 0,
+    totalSubscribers: 0,
+    totalEarnings: 0,
+  })
+  const [weeklyCompanies, setWeeklyCompanies] = useState(weekOrder.map((d) => ({ day: d, companies: 0 })))
+  const [revenueData, setRevenueData] = useState(monthOrder.map((m) => ({ month: m, amount: 0 })))
+  const [topPlans, setTopPlans] = useState([
+    { name: 'Basic', value: 0, color: '#f97316' },
+    { name: 'Premium', value: 0, color: '#3b82f6' },
+    { name: 'Enterprise', value: 0, color: '#facc15' },
+  ])
+  const [recentTransactions, setRecentTransactions] = useState([])
+  const [recentlyRegistered, setRecentlyRegistered] = useState([])
+  const [recentPlanExpired, setRecentPlanExpired] = useState([])
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const [tenantsRes, paymentsRes, paymentStatsRes] = await Promise.all([
+        superadminService.getTenants(),
+        superadminService.getPayments({ page: 1, limit: 200 }),
+        superadminService.getPaymentStats(),
+      ])
+
+      const tenants = tenantsRes?.data?.data?.tenants || []
+      const payments = paymentsRes?.data?.data?.payments || []
+      const paymentStats = paymentStatsRes?.data?.data || {}
+
+      const activeCompanies = tenants.filter((t) => String(t.status || '').toLowerCase() === 'active').length
+      const totalEarnings =
+        toNumber(paymentStats.total_revenue) ||
+        toNumber(paymentStats.monthly_revenue) ||
+        payments.reduce((sum, p) => sum + toNumber(p.amount), 0)
+
+      setStats({
+        totalCompanies: tenants.length,
+        activeCompanies,
+        totalSubscribers: payments.length,
+        totalEarnings,
+      })
+
+      // Weekly company registration bars
+      const dayCounts = { SUN: 0, MON: 0, TUE: 0, WED: 0, THU: 0, FRI: 0, SAT: 0 }
+      tenants.forEach((t) => {
+        if (!t.created_at) return
+        const d = new Date(t.created_at)
+        if (Number.isNaN(d.getTime())) return
+        const key = weekOrder[d.getDay()]
+        dayCounts[key] += 1
+      })
+      setWeeklyCompanies(weekOrder.map((day) => ({ day, companies: dayCounts[day] || 0 })))
+
+      // Monthly revenue bars
+      const monthRevenue = {}
+      payments.forEach((p) => {
+        if (!p.created_at) return
+        const month = new Date(p.created_at).toLocaleString('en-US', { month: 'short' })
+        monthRevenue[month] = (monthRevenue[month] || 0) + toNumber(p.amount)
+      })
+      setRevenueData(monthOrder.map((month) => ({ month, amount: monthRevenue[month] || 0 })))
+
+      // Top plans donut
+      const planCounts = { Basic: 0, Premium: 0, Enterprise: 0 }
+      tenants.forEach((t) => {
+        const plan = String(t.plan || t.plan_name || '').toLowerCase()
+        if (plan.includes('enterprise')) planCounts.Enterprise += 1
+        else if (plan.includes('premium')) planCounts.Premium += 1
+        else planCounts.Basic += 1
+      })
+      setTopPlans([
+        { name: 'Basic', value: planCounts.Basic, color: '#f97316' },
+        { name: 'Premium', value: planCounts.Premium, color: '#3b82f6' },
+        { name: 'Enterprise', value: planCounts.Enterprise, color: '#facc15' },
+      ])
+
+      setRecentTransactions(
+        payments.slice(0, 6).map((p) => ({
+          id: p.id,
+          name: p.customer_name || p.tenant_name || `Tenant #${p.tenant_id || p.id}`,
+          code: `#${p.invoice_no || p.id}`,
+          date: formatDate(p.created_at),
+          amount: toNumber(p.amount),
+          plan: cap(p.plan_name || p.plan || p.billing_cycle || 'Subscription'),
+        })),
+      )
+
+      setRecentlyRegistered(
+        tenants.slice(0, 6).map((t) => ({
+          id: t.id,
+          name: t.name,
+          plan: cap(t.plan || t.plan_name || 'Basic'),
+          users: toNumber(t.user_count || t.users || 0),
+          domain: t.domain || t.subdomain || t.db_name || '-',
+        })),
+      )
+
+      const now = new Date()
+      const expired = tenants
+        .filter((t) => {
+          const status = String(t.status || '').toLowerCase()
+          if (status.includes('expired')) return true
+          const expiry = t.expires_at || t.expiry_date || t.plan_expiry
+          if (!expiry) return false
+          const d = new Date(expiry)
+          return !Number.isNaN(d.getTime()) && d < now
+        })
+        .slice(0, 6)
+        .map((t) => ({
+          id: t.id,
+          name: t.name,
+          expiredOn: formatDate(t.expires_at || t.expiry_date || t.plan_expiry),
+          plan: cap(t.plan || t.plan_name || 'Basic'),
+        }))
+      setRecentPlanExpired(expired)
+    } catch (error) {
+      console.error('Failed to load superadmin dashboard', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [tenantsRes, paymentStatsRes, paymentsRes, announcementsRes] = await Promise.all([
-          api.get('/tenants', { params: { page: 1, limit: 100 } }),
-          superadminService.getPaymentStats(),
-          superadminService.getPayments({ page: 1, limit: 200 }),
-          superadminService.getAnnouncements(),
-        ])
-
-        const tenants = tenantsRes?.data?.data?.tenants || []
-        const payments = paymentsRes?.data?.data?.payments || []
-        const announcements = announcementsRes?.data?.data?.announcements || []
-        const paymentStats = paymentStatsRes?.data?.data || {}
-
-        setStats({
-          monthlyRevenue: Number(paymentStats.monthly_revenue || 0),
-          activeOrganizations: tenants.filter((t) => t.status === 'active').length,
-          totalUsers: tenants.length,
-        })
-
-        setRecentOrganizations(
-          tenants.slice(0, 6).map((t) => ({
-            id: t.id,
-            name: t.name,
-            domain: t.db_name,
-            plan: t.plan || 'N/A',
-            users: 0,
-            status: `${(t.status || '').charAt(0).toUpperCase()}${(t.status || '').slice(1)}`,
-            initials: t.name.substring(0, 2).toUpperCase(),
-          }))
-        )
-
-        const monthlyRevenueMap = {}
-        payments.forEach((p) => {
-          const m = new Date(p.created_at).toLocaleString('en-US', { month: 'short' })
-          monthlyRevenueMap[m] = (monthlyRevenueMap[m] || 0) + Number(p.amount || 0)
-        })
-        const rData = monthOrder.filter((m) => monthlyRevenueMap[m] !== undefined).map((m) => ({ month: m, amount: monthlyRevenueMap[m] }))
-        setRevenueData(rData.length ? rData : [{ month: 'N/A', amount: 0 }])
-
-        const growthMap = {}
-        tenants.forEach((t) => {
-          const m = new Date(t.created_at).toLocaleString('en-US', { month: 'short' })
-          growthMap[m] = (growthMap[m] || 0) + 1
-        })
-        const gData = monthOrder.filter((m) => growthMap[m] !== undefined).map((m) => ({ name: m, value: growthMap[m] }))
-        setGrowthData(gData.length ? gData : [{ name: 'N/A', value: 0 }])
-
-        setRecentActivity(
-          announcements.slice(0, 4).map((a) => ({
-            id: a.id,
-            action: a.title,
-            detail: a.message,
-            time: a.sentDate || '-',
-            color: 'indigo'
-          }))
-        )
-
-        setSslAlerts(tenants.filter((t) => t.status === 'ssl issue' || t.status === 'ssl_issue').slice(0, 3))
-        setPlatformStatus({ api: 'Healthy', database: 'Healthy', storage: 'Healthy', uptime: 'Live' })
-      } catch (error) {
-        console.error('Failed to load dashboard data', error)
-        setPlatformStatus({ api: 'Issue', database: 'Issue', storage: 'Unknown', uptime: 'Unknown' })
-      }
-    }
     load()
   }, [])
 
+  const totalPlans = useMemo(
+    () => topPlans.reduce((sum, p) => sum + p.value, 0),
+    [topPlans],
+  )
+
   return (
-    <div className="sa-page">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-indigo-600 shadow-sm">
-              <HiSparkles className="h-4 w-4 text-white" />
-            </div>
-            <h1 className="text-lg font-semibold text-slate-900 tracking-tight">Dashboard</h1>
-          </div>
-          <p className="text-[10px] font-medium text-slate-500">Platform overview and system health.</p>
+    <div className="space-y-6 pb-12 animate-in fade-in duration-500 min-w-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="mt-1 text-xs text-slate-500">Super Admin / Dashboard</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={load}
+            className="inline-flex h-9 items-center gap-2 rounded-none border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            <HiArrowPath className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-9 items-center gap-2 rounded-none border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            <HiDocumentArrowDown className="h-4 w-4" />
+            Export
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="TOTAL REVENUE" value={`AED ${stats.monthlyRevenue.toLocaleString()}`} trendColor="green" icon={HiCurrencyDollar} />
-        <StatCard title="ACTIVE ORGANIZATIONS" value={String(stats.activeOrganizations)} trendColor="green" icon={HiGlobeAlt} />
-        <StatCard title="TOTAL USERS" value={String(stats.totalUsers)} trendColor="blue" icon={HiUsers} />
-        <StatCard title="SYSTEM UPTIME" value={platformStatus.uptime} trendColor="green" icon={HiSignal} />
+      <div className="rounded-none border border-slate-200 bg-gradient-to-r from-[#0F766E] to-[#0c6b64] p-5 text-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-2xl font-bold">Welcome Back, Super Admin</p>
+            <p className="mt-1 text-sm text-emerald-50">
+              {stats.totalCompanies} companies tracked across the platform.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="h-8 rounded-none bg-slate-900 px-4 text-xs font-semibold text-white">Companies</button>
+            <button className="h-8 rounded-none bg-white px-4 text-xs font-semibold text-slate-900">All Packages</button>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="sa-card lg:col-span-2 p-3.5">
-          <h3 className="text-xs font-bold text-slate-900 mb-3">Revenue Performance</h3>
-          <div className="h-[280px] w-full">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricTile icon={HiBuildingOffice} label="Total Companies" value={stats.totalCompanies} />
+        <MetricTile icon={HiUsers} label="Active Companies" value={stats.activeCompanies} tone="blue" />
+        <MetricTile icon={HiUsers} label="Total Subscribers" value={stats.totalSubscribers} tone="emerald" />
+        <MetricTile icon={HiCurrencyDollar} label="Total Earnings" value={`$${stats.totalEarnings.toLocaleString()}`} tone="green" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">Companies</h3>
+            <span className="text-xs text-slate-400">This week</span>
+          </div>
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 500 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 500 }} />
+              <BarChart data={weeklyCompanies}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f7" />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
                 <ChartTooltip />
-                <Area type="monotone" dataKey="amount" stroke="#4f46e5" strokeWidth={2.5} fill="#e0e7ff" />
-              </AreaChart>
+                <Bar dataKey="companies" radius={[6, 6, 0, 0]} fill="#111827" />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="sa-card p-3.5">
-          <h3 className="text-xs font-bold text-slate-900 mb-3">Organization Growth</h3>
-          <div className="h-[280px] w-full">
+        <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">Revenue</h3>
+            <span className="text-xs text-slate-400">{new Date().getFullYear()}</span>
+          </div>
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={growthData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 500 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 500 }} />
+              <BarChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f7" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
                 <ChartTooltip />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {growthData.map((_, index) => <Cell key={`cell-${index}`} fill={index === growthData.length - 1 ? '#4f46e5' : '#f1f5f9'} />)}
-                </Bar>
+                <Bar dataKey="amount" radius={[4, 4, 0, 0]} fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="sa-card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-50 p-3 bg-slate-50/30">
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 shadow-sm">
-                  <HiShieldCheck className="h-3.5 w-3.5" />
-                </div>
-                <h2 className="text-xs font-bold text-slate-900 tracking-tight">Recent Organizations</h2>
-              </div>
-              <Button label="View All" variant="ghost" size="sm" className="text-[10px]" onClick={() => navigate('/superadmin/tenants')} />
-            </div>
-            <Table
-              columns={[
-                { key: 'tenant', label: 'Organization' },
-                { key: 'plan', label: 'Plan' },
-                { key: 'users', label: 'Users' },
-                { key: 'status', label: 'Status' },
-              ]}
-              data={recentOrganizations.map((org) => ({
-                tenant: (
-                  <div className="flex items-center gap-3 py-0.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-[10px] font-bold text-indigo-600 border border-indigo-100">{org.initials}</div>
-                    <div>
-                      <div className="text-sm font-bold text-slate-900 tracking-tight">{org.name}</div>
-                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{org.domain}</div>
-                    </div>
-                  </div>
-                ),
-                plan: <Badge label={org.plan} color={org.plan === 'Enterprise' ? 'amber' : 'blue'} variant="glass" />,
-                users: <span className="text-sm font-bold text-slate-700">{org.users}</span>,
-                status: <Badge label={org.status} color={org.status === 'Active' ? 'green' : org.status === 'Trial' ? 'amber' : 'gray'} />,
-              }))}
-            />
+      <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-900">Top Plans</h3>
+          <span className="text-xs text-slate-400">This month</span>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={topPlans} dataKey="value" innerRadius={52} outerRadius={84} paddingAngle={2}>
+                  {topPlans.map((p) => (
+                    <Cell key={p.name} fill={p.color} />
+                  ))}
+                </Pie>
+                <ChartTooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-
-          <div className="sa-card p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-                  <HiServerStack className="h-3.5 w-3.5" />
+          <div className="space-y-3 self-center">
+            {topPlans.map((plan) => {
+              const percent = totalPlans ? Math.round((plan.value / totalPlans) * 100) : 0
+              return (
+                <div key={plan.name} className="flex items-center justify-between border-b border-slate-100 py-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: plan.color }} />
+                    <span className="text-sm text-slate-700">{plan.name}</span>
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">{percent}%</span>
                 </div>
-                <h2 className="text-xs font-bold text-slate-900 tracking-tight">Server Health</h2>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-900">Recent Transactions</h3>
+          <button
+            type="button"
+            onClick={() => navigate('/superadmin/payments')}
+            className="text-xs font-medium text-slate-500 hover:text-slate-900"
+          >
+            View all
+          </button>
+        </div>
+        <div className="space-y-3">
+          {recentTransactions.length ? recentTransactions.map((tx) => (
+            <div key={tx.id} className="flex items-center justify-between border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900">{tx.name}</p>
+                <p className="text-xs text-slate-500">{tx.code} • {tx.date}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-semibold text-emerald-600">+${tx.amount}</p>
+                <p className="text-xs text-slate-500">{tx.plan}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-              {Object.entries(platformStatus).map(([key, status]) => (
-                <div key={key} className="p-2.5 rounded-lg border border-slate-50 bg-slate-50/50">
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{key}</p>
-                  <p className="text-xs font-bold text-slate-900 mt-1">{status}</p>
+          )) : (
+            <p className="text-sm text-slate-500">No transactions found.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">Recently Registered</h3>
+            <button
+              type="button"
+              onClick={() => navigate('/superadmin/tenants')}
+              className="text-xs font-medium text-slate-500 hover:text-slate-900"
+            >
+              View all
+            </button>
+          </div>
+          <div className="space-y-3">
+            {recentlyRegistered.length ? recentlyRegistered.map((t) => (
+              <div key={t.id} className="flex items-center justify-between border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">{t.name}</p>
+                  <p className="text-xs text-slate-500">{t.domain}</p>
                 </div>
-              ))}
-            </div>
+                <div className="text-right">
+                  <Badge label={t.plan} color={t.plan.toLowerCase().includes('enterprise') ? 'amber' : 'blue'} />
+                  <p className="mt-1 text-xs text-slate-500">{t.users} users</p>
+                </div>
+              </div>
+            )) : (
+              <p className="text-sm text-slate-500">No recent registrations.</p>
+            )}
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-red-100 bg-red-50/50 p-4 shadow-sm">
-            <h2 className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <HiExclamationTriangle className="animate-pulse" /> Important Alerts
-            </h2>
-            <div className="space-y-2.5">
-              {sslAlerts.length === 0 ? (
-                <div className="p-3 bg-white rounded-lg border border-red-50 shadow-sm">
-                  <p className="text-[10px] text-slate-500 font-medium">No SSL alerts right now.</p>
-                </div>
-              ) : sslAlerts.map((tenant) => (
-                <div key={tenant.id} className="p-3 bg-white rounded-lg border border-red-50 shadow-sm">
-                  <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest">SSL Security</p>
-                  <p className="text-xs font-bold text-slate-900 mt-0.5">{tenant.name}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5 font-medium">Status: {tenant.status}</p>
-                </div>
-              ))}
-            </div>
+        <div className="rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">Recent Plan Expired</h3>
+            <button
+              type="button"
+              onClick={() => navigate('/superadmin/tenants')}
+              className="text-xs font-medium text-slate-500 hover:text-slate-900"
+            >
+              Expired
+            </button>
           </div>
-
-          <div className="sa-card p-4">
-            <h2 className="text-xs font-bold text-slate-900 mb-4">Platform Activity</h2>
-            <div className="space-y-4 relative">
-              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-slate-100" />
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex gap-3 relative z-10">
-                  <div className="mt-1 h-3 w-3 flex-shrink-0 rounded-full border-2 border-white bg-indigo-500 shadow-sm" />
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-900 tracking-tight">{activity.action}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{activity.detail}</p>
-                    <p className="text-[9px] font-bold text-slate-300 uppercase mt-0.5 tracking-widest">{activity.time}</p>
-                  </div>
+          <div className="space-y-3">
+            {recentPlanExpired.length ? recentPlanExpired.map((t) => (
+              <div key={t.id} className="flex items-center justify-between border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">{t.name}</p>
+                  <p className="text-xs text-slate-500">Expired: {t.expiredOn}</p>
                 </div>
-              ))}
-            </div>
+                <button
+                  type="button"
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                >
+                  Send Reminder
+                </button>
+              </div>
+            )) : (
+              <p className="text-sm text-slate-500">No expired plans.</p>
+            )}
           </div>
         </div>
       </div>
