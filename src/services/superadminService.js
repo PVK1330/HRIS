@@ -14,9 +14,9 @@ export const SUPERADMIN_ENDPOINTS = {
   SUPPORT_TICKET_BY_ID: (id) => `/superadmin/support-tickets/${id}`,
   SUPPORT_TICKET_MESSAGES: (id) => `/superadmin/support-tickets/${id}/messages`,
   AUDIT_LOGS: '/superadmin/audit-logs',
-  TENANTS: '/superadmin/tenants',
-  TENANT_MODULES: (tenantId) => `/superadmin/tenants/${tenantId}/modules`,
-  TENANT_MODULE_BY_KEY: (tenantId, moduleKey) => `/superadmin/tenants/${tenantId}/modules/${moduleKey}`,
+  TENANTS: '/tenants',
+  TENANT_MODULES: (tenantId) => `/tenants/${tenantId}/features`,
+  TENANT_MODULE_BY_KEY: (tenantId, featureId) => `/tenants/${tenantId}/features/${featureId}`,
   FEATURES: '/superadmin/features',
   FEATURE_BY_ID: (id) => `/superadmin/features/${id}`,
   FEATURE_ACTIVATE: (id) => `/superadmin/features/${id}/activate`,
@@ -70,8 +70,8 @@ export const superadminService = {
   getTenantModules(tenantId) {
     return api.get(SUPERADMIN_ENDPOINTS.TENANT_MODULES(tenantId))
   },
-  updateTenantModule(tenantId, moduleKey, payload) {
-    return api.patch(SUPERADMIN_ENDPOINTS.TENANT_MODULE_BY_KEY(tenantId, moduleKey), payload)
+  updateTenantModule(tenantId, featureId, payload) {
+    return api.patch(SUPERADMIN_ENDPOINTS.TENANT_MODULE_BY_KEY(tenantId, featureId), payload)
   },
 
   // Announcements
