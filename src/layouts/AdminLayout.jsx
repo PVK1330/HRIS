@@ -24,6 +24,7 @@ import {
   HiChartPie,
   HiIdentification,
   HiChatBubbleLeftRight,
+  HiQuestionMarkCircle,
 } from "react-icons/hi2";
 import { Sidebar } from "../components/ui/Sidebar.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
@@ -340,6 +341,7 @@ const FEATURE_PATH_MAP = {
   overtime_management: ["/admin/attendance"],
   training_development: ["/admin/performance"],
   billing_invoicing: ["/admin/payroll"],
+  announcements: ["/admin/announcements", "/admin/support"],
 };
 
 function normalizeFeatureCode(code) {
@@ -390,41 +392,46 @@ export default function AdminLayout() {
             return item;
           })
           .filter((item) => {
-          const moduleKey = item.key;
+            const moduleKey = item.key;
 
-          if (moduleKey && moduleKey !== "dashboard" && !hasModule(moduleKey)) {
-            return false;
-          }
-
-          if (user?.role === "admin" || user?.role === "employee") {
-            const alwaysShowPaths = ["/admin/dashboard", "/admin/settings", "/admin/messages"];
-            if (
-              hasAssignedFeatures &&
-              !alwaysShowPaths.includes(item.path)
-            ) {
-              const normalizedItemFeature = normalizeFeatureCode(
-                item.featureCode,
-              );
-              const itemFeatureEnabled =
-                !!item.featureCode &&
-                [...enabledFeatureCodes].some(
-                  (code) =>
-                    normalizeFeatureCode(code) === normalizedItemFeature,
-                );
-
-              if (!allowedFeaturePaths.has(item.path) && !itemFeatureEnabled) {
-                return false;
-              }
+            if (moduleKey && moduleKey !== "dashboard" && !hasModule(moduleKey)) {
+              return false;
             }
+
+            if (user?.role === "admin" || user?.role === "employee") {
+              const alwaysShowPaths = [
+                "/admin/dashboard",
+                "/admin/settings",
+                "/admin/messages",
+                "/admin/support",
+              ];
+              if (
+                hasAssignedFeatures &&
+                !alwaysShowPaths.includes(item.path)
+              ) {
+                const normalizedItemFeature = normalizeFeatureCode(
+                  item.featureCode,
+                );
+                const itemFeatureEnabled =
+                  !!item.featureCode &&
+                  [...enabledFeatureCodes].some(
+                    (code) =>
+                      normalizeFeatureCode(code) === normalizedItemFeature,
+                  );
+
+                if (!allowedFeaturePaths.has(item.path) && !itemFeatureEnabled) {
+                  return false;
+                }
+              }
+              return true;
+            }
+
+            if (item.featureCode && !hasFeatureAccess(item.featureCode)) {
+              return false;
+            }
+
             return true;
-          }
-
-          if (item.featureCode && !hasFeatureAccess(item.featureCode)) {
-            return false;
-          }
-
-          return true;
-        }),
+          }),
       }))
       .filter((group) => group.items.length > 0);
   }, [user, hasModule, hasFeatureAccess]);

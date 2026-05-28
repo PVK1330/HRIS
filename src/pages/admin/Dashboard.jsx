@@ -2,10 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Building2, Package, Users } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext.jsx'
 import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
-import {
-  fetchAdminDashboard,
-  fetchEmployeeDashboard,
-} from '../../services/dashboardService.js'
+import { fetchAdminDashboard, fetchEmployeeDashboard } from '../../services/dashboardService.js'
 import CompanyGrowthChart from './dashboard/CompanyGrowthChart.jsx'
 import DashboardHeader from './dashboard/DashboardHeader.jsx'
 import DashboardStats from './dashboard/DashboardStats.jsx'
@@ -150,9 +147,7 @@ export default function Dashboard() {
   ]
 
   const companyGrowth = dashboardData.growthData?.length
-    ? dashboardData.growthData
-        .slice(-7)
-        .map((item) => ({ name: item.name, companies: item.headcount }))
+    ? dashboardData.growthData.slice(-7).map((item) => ({ name: item.name, companies: item.headcount }))
     : [{ name: 'Now', companies: dashboardData.employees.total || 0 }]
 
   const revenueSeries = companyGrowth.map((item, index) => ({
@@ -166,7 +161,7 @@ export default function Dashboard() {
     {
       name: 'Standard',
       value: Math.max(0, dashboardData.employees.active - dashboardData.employees.notice - dashboardData.employees.probation),
-      color: '#f59e0b',
+      color: '#3b82f6',
     },
   ]
 

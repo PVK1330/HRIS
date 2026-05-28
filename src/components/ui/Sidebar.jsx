@@ -4,13 +4,16 @@ import { HiArrowRightOnRectangle, HiGlobeAlt, HiQuestionMarkCircle } from 'react
 import { Avatar } from './Avatar.jsx'
 import { Button } from './Button.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
+import {useNavigate} from 'react-router-dom'
+
+
 
 function roleSubtitle(role) {
   if (role === 'superadmin') return 'SUPER ADMIN'
   if (role === 'admin') return 'ADMIN'
   if (role === 'hr') return 'HR ADMIN'
   if (role === 'employee') return 'EMPLOYEE'
-  return (role ?? '').toUpperCase()
+  return (role ?? '').replace(/_/g, ' ').toUpperCase()
 }
 
 function panelName(role) {
@@ -44,6 +47,7 @@ export function Sidebar({
     const toggleMenu = (key) => {
       setExpandedMenus(prev => ({ ...prev, [key]: !prev[key] }))
     }
+    const navigate = useNavigate()
   
     return (
       <>
@@ -201,7 +205,7 @@ export function Sidebar({
           <div className="flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
             <span className="inline-flex items-center gap-1.5">
               <HiQuestionMarkCircle className="h-4 w-4 text-gray-400" aria-hidden />
-              <a href="#support" className="hover:text-[#0F766E]" onClick={(e) => e.preventDefault()}>
+              <a href="#support" className="hover:text-[#0F766E]" onClick={(e) => e.preventDefault()} onClick={() => navigate('/admin/support')}>
                 Support
               </a>
             </span>

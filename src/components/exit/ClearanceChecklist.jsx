@@ -215,48 +215,27 @@ export default function ClearanceChecklist({ exitRequestId, tasks, onTaskUpdate,
                 </div>
 
                 {/* Task Assignment Dropdown for HR, or static assignee badge for employees */}
-                <div className="border-t border-gray-100 pt-2.5 mt-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="border-t border-gray-100 pt-2.5 mt-1">
                   {roleCanEdit ? (
-                    <>
-                      <div>
-                        <label className="block text-[9px] font-black uppercase tracking-wider text-gray-400">Assign To</label>
-                        <select
-                          value={task.assigned_to || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            onTaskUpdate(task.id, { assigned_to: val ? parseInt(val, 10) : null });
-                          }}
-                          disabled={task.is_completed}
-                          className="mt-1 block w-full text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 rounded-none py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
-                        >
-                          <option value="">-- Select Assignee --</option>
-                          {employees.map((emp) => (
-                            <option key={emp.id} value={emp.id}>
-                              {emp.full_name || [emp.first_name, emp.last_name].filter(Boolean).join(' ') || `ID: ${emp.id}`}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-black uppercase tracking-wider text-gray-400">Due Date</label>
-                        <input
-                          type="datetime-local"
-                          value={task.due_date ? new Date(new Date(task.due_date).getTime() - new Date(task.due_date).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
-                          onChange={(e) => {
-                            onTaskUpdate(task.id, { due_date: e.target.value ? new Date(e.target.value).toISOString() : null });
-                          }}
-                          disabled={task.is_completed}
-                          className="mt-1 block w-full text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 rounded-none py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
-                        />
-                      </div>
-                    </>
+                    <div>
+                      <label className="block text-[9px] font-black uppercase tracking-wider text-gray-400">Due Date</label>
+                      <input
+                        type="datetime-local"
+                        value={task.due_date ? new Date(new Date(task.due_date).getTime() - new Date(task.due_date).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                        onChange={(e) => {
+                          onTaskUpdate(task.id, { due_date: e.target.value ? new Date(e.target.value).toISOString() : null });
+                        }}
+                        disabled={task.is_completed}
+                        className="mt-1 block w-full text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 rounded-none py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                      />
+                    </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 text-xs col-span-2">
-                      <span className="text-gray-400 font-medium">Assigned to:</span>
-                      {task.assigned_to_name ? (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="text-gray-400 font-medium">Assigned Role:</span>
+                      {task.assigned_to_role || task.assigned_role ? (
                         <span className="font-bold text-gray-700 flex items-center gap-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-[#0F766E]" />
-                          {task.assigned_to_name}
+                          {task.assigned_to_role || task.assigned_role}
                         </span>
                       ) : (
                         <span className="text-gray-400 italic">Unassigned</span>

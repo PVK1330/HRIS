@@ -266,7 +266,14 @@ export function AuthProvider({ children }) {
     }
   });
 
-  const [allowedModules, setAllowedModules] = useState([]);
+  const [allowedModules, setAllowedModules] = useState(() => {
+    try {
+      const stored = localStorage.getItem("allowedModules");
+      return stored ? JSON.parse(stored) : ["dashboard"];
+    } catch {
+      return ["dashboard"];
+    }
+  });
 
   const planModuleKeys = useMemo(
     () => computePlanModuleKeysForTenantUser(user?.role, user?.tenant_features),
@@ -309,17 +316,6 @@ export function AuthProvider({ children }) {
         );
       } catch (err) {
         console.error("Global auto-login failed:", err);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("allowedModules");
-    if (stored) {
-      try {
-        setAllowedModules(JSON.parse(stored));
-      } catch {
-        setAllowedModules(["dashboard"]);
       }
     }
   }, []);

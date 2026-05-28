@@ -32,6 +32,7 @@ const ExitDetail = lazy(() => import("../pages/exit/ExitDetail.jsx"));
 const ManagerExitApprovals = lazy(() => import("../pages/exit/ManagerExitApprovals.jsx"));
 const EmployeeExit = lazy(() => import("../pages/exit/EmployeeExit.jsx"));
 const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemplates.jsx"));
+const LetterBuilder = lazy(() => import("../pages/admin/documents/LetterBuilder.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
 const AdminSettings = lazy(() => import("../pages/admin/settings/AdminSettings.jsx"));
 const RolesPermissions = lazy(() => import("../pages/admin/settings/RolesPermissions.jsx"));
@@ -44,6 +45,7 @@ const AssetManagement = lazy(() => import("../pages/admin/assets/AssetManagement
 const Reports = lazy(() => import("../pages/admin/reports/Reports.jsx"));
 const AnnouncementsPage = lazy(() => import("../pages/admin/Announcements.jsx"));
 const Payroll = lazy(() => import("../pages/admin/finance/Payroll.jsx"));
+const SupportManagement = lazy(() => import("../pages/admin/support/Support.jsx"));
 
 const PlatformDashboard = lazy(() => import("../pages/superadmin/platform/Dashboard.jsx"));
 const TenantManagement = lazy(() => import("../pages/superadmin/tenants/TenantManagement.jsx"));
@@ -295,6 +297,14 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: "letters/builder/:id",
+            element: (
+              <AdminModuleGate moduleKey="letter-templates">
+                <LetterBuilder />
+              </AdminModuleGate>
+            ),
+          },
+          {
             path: "templates",
             element: (
               <AdminModuleGate moduleKey="letter-templates">
@@ -381,6 +391,10 @@ export const router = createBrowserRouter([
                 <AnnouncementsPage />
               </AdminModuleGate>
             ),
+          },
+          {
+            path: "support",
+            element: <SupportManagement />,
           },
           {
             path: "payroll",

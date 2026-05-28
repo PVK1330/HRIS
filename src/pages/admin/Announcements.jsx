@@ -200,10 +200,10 @@ export default function Announcements() {
       cancelButtonColor: '#d33',
       confirmButtonText: 'Yes, delete it!',
       customClass: {
-        container: 'rounded-none',
-        popup: 'rounded-none',
-        confirmButton: 'rounded-none px-6 py-2 uppercase text-xs font-black tracking-widest',
-        cancelButton: 'rounded-none px-6 py-2 uppercase text-xs font-black tracking-widest'
+        container: 'rounded-xl',
+        popup: 'rounded-xl',
+        confirmButton: 'rounded-xl px-6 py-2  text-xs font-semibold tracking-widest',
+        cancelButton: 'rounded-xl px-6 py-2  text-xs font-semibold tracking-widest'
       }
     });
 
@@ -222,39 +222,39 @@ export default function Announcements() {
   const columns = [
     {
       key: 'title',
-      label: 'TRANSMISSION_SUBJECT',
+      label: 'Subject',
       render: (v, row) => (
          <div className="flex flex-col gap-0.5 py-1">
-            <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-tight">{row.title}</span>
+            <span className="text-sm font-semibold text-slate-900  tracking-tight leading-tight">{row.title}</span>
             <div className="flex items-center gap-1.5 mt-0.5">
-               <span className="text-[9px] font-black text-[#0F766E] uppercase tracking-widest">{row.category}</span>
+               <span className="text-xs font-semibold text-[#0F766E] ">{row.category}</span>
                <span className="text-slate-200">•</span>
-               <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">
+               <span className="text-[8px] font-semibold text-slate-400 ">
                   {row.dispatch_channels || 'Both'}
                </span>
             </div>
          </div>
       )
     },
-    { key: 'posted_by_name', label: 'AUTHOR_ID', render: (v) => <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{v || 'SYSTEM_CORE'}</span> },
+    { key: 'posted_by_name', label: 'Author', render: (v) => <span className="text-sm font-semibold text-slate-600 ">{v || 'System'}</span> },
     { 
       key: 'created_at', 
-      label: 'TIMESTAMP', 
-      render: (v) => <span className="text-[10px] font-bold text-slate-500">{new Date(v).toLocaleDateString()}</span>
+      label: 'Date', 
+      render: (v) => <span className="text-sm font-bold text-slate-500">{new Date(v).toLocaleDateString()}</span>
     },
     {
       key: 'visibility',
-      label: 'AUDIENCE_INDEX',
+      label: 'Audience',
       render: (v) => {
-         let label = v === 'all' ? 'ALL_EMPLOYEES' : v.toUpperCase();
+         let label = v === 'all' ? 'All Employees' : v.toUpperCase();
          if (v?.startsWith('[')) {
            try {
              const ids = JSON.parse(v);
-             label = `${ids.length}_TARGETS`;
+             label = `${ids.length} Employees`;
            } catch(e) {}
          }
          return (
-           <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+           <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 ">
               <HiUsers className="h-3.5 w-3.5 opacity-50" />
               <span>{label}</span>
            </div>
@@ -263,11 +263,11 @@ export default function Announcements() {
     },
     {
       key: 'priority',
-      label: 'PRIORITY_LEVEL',
+      label: 'Priority',
       render: (v) => {
          const color = v === 'High' ? 'bg-red-50 text-red-700 border-red-100' : v === 'Medium' ? 'bg-orange-50 text-orange-700 border-orange-100' : 'bg-blue-50 text-blue-700 border-blue-100';
          return (
-            <span className={`inline-flex items-center rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border ${color}`}>
+            <span className={`inline-flex items-center rounded-xl px-2 py-0.5 text-xs font-semibold  border ${color}`}>
                {v}
             </span>
          );
@@ -275,11 +275,11 @@ export default function Announcements() {
     },
     {
       key: 'status',
-      label: 'LIFECYCLE',
+      label: 'Status',
       render: (v) => {
          const color = v === 'Published' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : v === 'Scheduled' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-100';
          return (
-            <span className={`inline-flex items-center rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border ${color}`}>
+            <span className={`inline-flex items-center rounded-xl px-2 py-0.5 text-xs font-semibold  border ${color}`}>
                {v}
             </span>
          );
@@ -287,18 +287,18 @@ export default function Announcements() {
     },
     {
       key: 'actions',
-      label: 'COMMAND',
+      label: 'Actions',
       render: (_, row) => (
          <div className="flex items-center gap-1.5">
             <button 
                onClick={() => handleOpenModal(row)}
-               className="h-8 w-8 flex items-center justify-center rounded-none border border-slate-200 bg-white text-slate-400 hover:text-[#0F766E] transition-all shadow-sm"
+               className="h-8 w-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-[#0F766E] transition-all shadow-md"
             >
                <HiPencilSquare className="h-4 w-4" />
             </button>
             <button 
                onClick={() => handleDelete(row.id)}
-               className="h-8 w-8 flex items-center justify-center rounded-none border border-slate-200 bg-white text-slate-400 hover:text-red-600 transition-all shadow-sm"
+               className="h-8 w-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-red-600 transition-all shadow-md"
             >
                <HiTrash className="h-4 w-4" />
             </button>
@@ -313,15 +313,15 @@ export default function Announcements() {
       {/* Top Title Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between min-w-0 border-b border-slate-100 pb-6">
         <div className="min-w-0">
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">Announcement Intelligence</h1>
-          <p className="mt-1 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Corporate Communications & Broadcast Governance</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 ">Company Announcements</h1>
+          <p className="mt-1 text-sm font-bold text-slate-400 ">Manage corporate announcements and broadcasts.</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {isHrAdmin && (
             <button
               type="button"
               onClick={() => handleOpenModal()}
-              className="h-10 inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-8 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#0c6b64] shadow-lg shadow-emerald-900/10"
+              className="h-10 inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F766E] px-8 text-sm font-semibold  text-white transition-all hover:bg-[#0c6b64] shadow-lg shadow-emerald-900/10"
             >
               <HiPlus className="h-4 w-4" /> Create Announcement
             </button>
@@ -333,28 +333,28 @@ export default function Announcements() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
           {
-            label: 'TOTAL BROADCASTS',
+            label: 'Total Announcements',
             count: stats.total || announcements.length || 0,
             bgColor: 'bg-slate-900',
             icon: HiMegaphone,
             onClickFilter: () => setActiveStatus('All')
           },
           {
-            label: 'PUBLISHED_ACTIVE',
+            label: 'Published',
             count: stats.published || announcements.filter(a => a.status === 'Published').length || 0,
             bgColor: 'bg-[#10B981]',
             icon: HiCheckCircle,
             onClickFilter: () => setActiveStatus('Published')
           },
           {
-            label: 'DRAFT_STAGING',
+            label: 'Drafts',
             count: stats.drafts || announcements.filter(a => a.status === 'Draft').length || 0,
             bgColor: 'bg-[#F59E0B]',
             icon: HiPencilSquare,
             onClickFilter: () => setActiveStatus('Draft')
           },
           {
-            label: 'SCHEDULED_QUEUE',
+            label: 'Scheduled',
             count: stats.scheduled || announcements.filter(a => a.status === 'Scheduled').length || 0,
             bgColor: 'bg-[#3B82F6]',
             icon: HiClock,
@@ -362,30 +362,30 @@ export default function Announcements() {
           }
         ].map((card, idx) => {
           const isActiveFilter = 
-            (card.label === 'TOTAL BROADCASTS' && activeStatus === 'All') ||
-            (card.label === 'PUBLISHED_ACTIVE' && activeStatus === 'Published') ||
-            (card.label === 'DRAFT_STAGING' && activeStatus === 'Draft') ||
-            (card.label === 'SCHEDULED_QUEUE' && activeStatus === 'Scheduled');
+            (card.label === 'Total Announcements' && activeStatus === 'All') ||
+            (card.label === 'Published' && activeStatus === 'Published') ||
+            (card.label === 'Drafts' && activeStatus === 'Draft') ||
+            (card.label === 'Scheduled' && activeStatus === 'Scheduled');
 
           return (
             <button
               key={idx}
               type="button"
               onClick={card.onClickFilter}
-              className={`group flex items-center gap-4 rounded-none border p-5 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${
+              className={`group flex items-center gap-4 rounded-xl border p-5 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-md ${
                 isActiveFilter
                   ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]'
                   : 'border-slate-200 bg-white hover:border-slate-300'
               }`}
             >
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${card.bgColor} text-white shadow-md`}>
                 <card.icon className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className={`text-[10px] font-black uppercase tracking-widest truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
+                <div className={`text-sm font-semibold  truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>
                   {card.label}
                 </div>
-                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+                <div className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-900 leading-none">{card.count}</div>
               </div>
             </button>
           );
@@ -393,10 +393,10 @@ export default function Announcements() {
       </div>
 
       {/* Filters + Table Registry */}
-      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md min-w-0">
         <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
-          <h2 className="text-sm font-semibold uppercase tracking-wider truncate">Broadcast Structural Log</h2>
-          <div className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shrink-0">Security Level: Admin</div>
+          <h2 className="text-sm font-semibold  tracking-wider truncate">Announcement History</h2>
+          <div className="text-sm font-semibold text-white/60  shrink-0">Security Level: Admin</div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
@@ -407,7 +407,7 @@ export default function Announcements() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search subject, category or author..."
-              className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium"
             />
           </div>
           <div className="flex items-center gap-3">
@@ -419,7 +419,7 @@ export default function Announcements() {
                   setQ('');
                   setActiveStatus('All');
                 }}
-                className="h-10 px-4 rounded-none border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                className="h-10 px-4 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 Reset Filters
               </button>
@@ -427,14 +427,14 @@ export default function Announcements() {
           </div>
         </div>
 
-        <Table columns={columns} data={filtered} pageSize={8} square className="rounded-none" />
+        <Table columns={columns} data={filtered} pageSize={8} square className="rounded-xl" />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="BROADCAST_CONFIGURATION_INTERFACE" size="xl">
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Announcement Editor" size="xl">
         <form className="animate-in fade-in duration-500 space-y-10 p-2" onSubmit={(e) => e.preventDefault()}>
           <div className="grid gap-10 md:grid-cols-2">
              <div className="col-span-2 space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Transmission Subject <span className="text-red-500">*</span></label>
+                <label className="text-sm font-semibold text-slate-400  ml-1">Transmission Subject <span className="text-red-500">*</span></label>
                 <input 
                    type="text" 
                    name="title" 
@@ -442,14 +442,14 @@ export default function Announcements() {
                    onChange={handleInputChange} 
                    required 
                    placeholder="ENTER ANNOUNCEMENT TITLE..."
-                   className="w-full h-12 rounded-none border border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none" 
+                   className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold  focus:border-[#0F766E] outline-none" 
                 />
              </div>
              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Subject Classification</label>
+                <label className="text-sm font-semibold text-slate-400  ml-1">Subject Classification</label>
                 <select 
                    name="category"
-                   className="w-full h-12 rounded-none border border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
+                   className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold  focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
                    value={formData.category} 
                    onChange={handleInputChange}
                 >
@@ -460,10 +460,10 @@ export default function Announcements() {
                 </select>
              </div>
              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Priority Protocol</label>
+                <label className="text-sm font-semibold text-slate-400  ml-1">Priority Protocol</label>
                 <select 
                    name="priority"
-                   className="w-full h-12 rounded-none border border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
+                   className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold  focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
                    value={formData.priority} 
                    onChange={handleInputChange}
                 >
@@ -475,10 +475,10 @@ export default function Announcements() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Transmission Content <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold text-slate-400  ml-1">Transmission Content <span className="text-red-500">*</span></label>
             <textarea 
               name="content"
-              className="w-full rounded-none border border-slate-200 bg-white p-5 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] outline-none transition-all min-h-[180px] placeholder:text-slate-200"
+              className="w-full rounded-xl border border-slate-200 bg-white p-5 text-sm font-bold  focus:border-[#0F766E] outline-none transition-all min-h-[180px] placeholder:text-slate-200"
               placeholder="DEFINE BROADCAST MESSAGE PARAMETERS..."
               value={formData.content}
               onChange={handleInputChange}
@@ -490,15 +490,15 @@ export default function Announcements() {
           <div className="grid gap-10 md:grid-cols-2">
              <div className="space-y-4">
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Target Audience</label>
+                    <label className="text-sm font-semibold text-slate-400  ml-1">Target Audience</label>
                     <select 
                     name="visibility"
-                    className="w-full h-12 rounded-none border border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-widest focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
+                    className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold  focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
                     value={formData.visibility} 
                     onChange={handleInputChange}
                     >
-                    <option value="All Employees">ALL_EMPLOYEES</option>
-                    <option value="Selected Employees">SELECTED_TARGETS</option>
+                    <option value="All Employees">All Employees</option>
+                    <option value="Selected Employees">Selected Employees</option>
                     {departments.map((d, i) => (
                         <option key={i} value={d.name || d.department}>{(d.name || d.department).toUpperCase()}</option>
                     ))}
@@ -506,25 +506,25 @@ export default function Announcements() {
                 </div>
                 
                 {formData.visibility === 'Selected Employees' && (
-                  <div className="border border-slate-200 rounded-none p-4 bg-slate-50/50">
+                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ASSET_SELECTOR</p>
+                      <p className="text-xs font-semibold text-slate-400 ">Employee Selector</p>
                       {selectedEmployees.length > 0 && (
                         <button 
                           type="button" 
                           onClick={() => setSelectedEmployees([])}
-                          className="text-[9px] text-red-600 font-black uppercase tracking-widest hover:underline"
+                          className="text-xs text-red-600 font-semibold  hover:underline"
                         >
-                          CLEAR_ALL
+                          Clear All
                         </button>
                       )}
                     </div>
                     <input 
                       type="text"
-                      placeholder="SEARCH_BY_IDENTITY..."
+                      placeholder="Search by name or email..."
                       value={employeeSearch}
                       onChange={(e) => setEmployeeSearch(e.target.value)}
-                      className="w-full h-10 px-3 mb-4 border border-slate-200 rounded-none bg-white text-[10px] font-bold uppercase tracking-widest focus:border-[#0F766E] outline-none"
+                      className="w-full h-10 px-3 mb-4 border border-slate-200 rounded-xl bg-white text-sm font-bold  focus:border-[#0F766E] outline-none"
                     />
                     <div className="max-h-48 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                       {employees
@@ -536,7 +536,7 @@ export default function Announcements() {
                           <label key={emp.id} className="flex items-center gap-3 p-2 bg-white border border-slate-100 hover:border-[#0F766E] transition-all cursor-pointer group">
                             <input 
                               type="checkbox" 
-                              className="h-4 w-4 rounded-none border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                              className="h-4 w-4 rounded-xl border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
                               checked={selectedEmployees.includes(emp.id)}
                               onChange={(e) => {
                                 if (e.target.checked) {
@@ -547,10 +547,10 @@ export default function Announcements() {
                               }}
                             />
                             <div className="min-w-0">
-                                <span className="block text-[10px] font-black text-slate-900 uppercase truncate">
-                                {emp.full_name || `${emp.first_name || emp.name || ''} ${emp.last_name || ''}`.trim() || 'UNKNOWN_ASSET'} 
+                                <span className="block text-sm font-semibold text-slate-900  truncate">
+                                {emp.full_name || `${emp.first_name || emp.name || ''} ${emp.last_name || ''}`.trim() || 'Unknown Employee'} 
                                 </span>
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest truncate block">{(emp.work_email || emp.email || '').toLowerCase()}</span>
+                                <span className="text-[8px] font-semibold text-slate-400  truncate block">{(emp.work_email || emp.email || '').toLowerCase()}</span>
                             </div>
                           </label>
                         ))}
@@ -560,35 +560,35 @@ export default function Announcements() {
              </div>
              <div className="space-y-8">
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Scheduled Inception (Optional)</label>
+                   <label className="text-sm font-semibold text-slate-400  ml-1">Scheduled Inception (Optional)</label>
                    <input 
                       type="datetime-local" 
                       name="scheduleDate" 
                       value={formData.scheduleDate} 
                       onChange={handleInputChange} 
-                      className="w-full h-12 rounded-none border border-slate-200 bg-white px-4 text-[11px] font-bold focus:border-[#0F766E] outline-none"
+                      className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold focus:border-[#0F766E] outline-none"
                    />
                 </div>
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Dispatch Channels</label>
-                   <div className="grid grid-cols-2 gap-4 border border-slate-200 bg-slate-50/50 p-5 rounded-none">
+                   <label className="text-sm font-semibold text-slate-400  ml-1">Dispatch Channels</label>
+                   <div className="grid grid-cols-2 gap-4 border border-slate-200 bg-slate-50/50 p-5 rounded-xl">
                       <label className="flex items-center gap-3 cursor-pointer group">
                          <input 
                             type="checkbox" 
-                            className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                            className="h-5 w-5 rounded-xl border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
                             checked={isInAppChecked}
                             onChange={(e) => handleDispatchChange('In App', e.target.checked)}
                          />
-                         <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest group-hover:text-[#0F766E]">IN_APP_FEED</span>
+                         <span className="text-sm font-semibold text-slate-600  group-hover:text-[#0F766E]">In-App Notification</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer group">
                          <input 
                             type="checkbox" 
-                            className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                            className="h-5 w-5 rounded-xl border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
                             checked={isEmailChecked}
                             onChange={(e) => handleDispatchChange('Email', e.target.checked)}
                          />
-                         <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest group-hover:text-[#0F766E]">EMAIL_NOTICE</span>
+                         <span className="text-sm font-semibold text-slate-600  group-hover:text-[#0F766E]">Email Notification</span>
                       </label>
                    </div>
                 </div>
@@ -600,26 +600,26 @@ export default function Announcements() {
               type="button" 
               disabled={isSubmitting} 
               onClick={handleCloseModal}
-              className="h-12 px-10 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+              className="h-12 px-10 rounded-xl border border-slate-200 text-sm font-semibold  text-slate-400 hover:text-slate-600 transition-colors"
             >
-              ABORT_INTERFACE
+              Cancel
             </button>
             <button 
               type="button" 
               disabled={isSubmitting} 
               onClick={() => handleSave('Draft')}
-              className="h-12 px-10 rounded-none border border-slate-300 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all"
+              className="h-12 px-10 rounded-xl border border-slate-300 text-sm font-semibold  text-slate-700 hover:bg-slate-50 transition-all"
             >
-              SAVE_STAGING_DRAFT
+              Save Draft
             </button>
             <button 
               type="button" 
               disabled={isSubmitting} 
               onClick={() => handleSave('Published')}
-              className="h-12 px-16 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all shadow-xl shadow-slate-900/10 flex items-center gap-3"
+              className="h-12 px-16 rounded-xl bg-slate-900 text-sm font-semibold  text-white hover:bg-black transition-all shadow-xl shadow-slate-900/10 flex items-center gap-3"
             >
               <HiEnvelope className="h-4 w-4" />
-              {isSubmitting ? "TRANSMITTING..." : "EXECUTE_BROADCAST"}
+              {isSubmitting ? "Saving..." : "Publish"}
             </button>
           </div>
         </form>
