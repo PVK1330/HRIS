@@ -1,4 +1,19 @@
 import api from './api'
+import axios from 'axios'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+const supportApi = axios.create({
+  baseURL: `${API_URL}/api/superadmin/support`,
+})
+
+supportApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('hris_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
 
 // Superadmin API endpoints used by frontend pages.
 export const SUPERADMIN_ENDPOINTS = {
@@ -10,9 +25,11 @@ export const SUPERADMIN_ENDPOINTS = {
   MODULE_BY_KEY: (moduleKey) => `/superadmin/modules/${moduleKey}`,
   ANNOUNCEMENTS: '/superadmin/announcements',
   ANNOUNCEMENT_BY_ID: (id) => `/superadmin/announcements/${id}`,
-  SUPPORT_TICKETS: '/superadmin/support-tickets',
-  SUPPORT_TICKET_BY_ID: (id) => `/superadmin/support-tickets/${id}`,
-  SUPPORT_TICKET_MESSAGES: (id) => `/superadmin/support-tickets/${id}/messages`,
+  SUPPORT_TICKETS: '/tickets',
+  SUPPORT_TICKET_BY_ID: (id) => `/tickets/${id}`,
+  SUPPORT_TICKET_UPDATE: (id) => `/tickets/${id}`,
+  SUPPORT_TICKET_STATUS: (id) => `/tickets/${id}/status`,
+  SUPPORT_TICKET_REPLY: (id) => `/tickets/${id}/reply`,
   AUDIT_LOGS: '/superadmin/audit-logs',
   TENANTS: '/superadmin/tenants',
   TENANT_MODULES: (tenantId) => `/superadmin/tenants/${tenantId}/modules`,
@@ -91,13 +108,41 @@ export const superadminService = {
     return api.get(`${SUPERADMIN_ENDPOINTS.ANNOUNCEMENT_BY_ID(id)}/report`)
   },
   getSupportTickets() {
-    return api.get(SUPERADMIN_ENDPOINTS.SUPPORT_TICKETS)
+    return supportApi.get(SUPERADMIN_ENDPOINTS.SUPPORT_TICKETS)
+  },
+  getSupportTicketById(id) {
+    return supportApi.get(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_BY_ID(id))
   },
   updateSupportTicket(id, payload) {
-    return api.patch(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_BY_ID(id), payload)
+    const body = {}
+    if (payload.status != null) {
+      body.status = payload.status
+    }
+    if (payload.reply != null) {
+      body.reply = payload.reply
+    }
+    if (payload.superAdminDescription != null) {
+      body.superAdminDescription = payload.superAdminDescription
+    }
+    if (payload.internalNotes != null) {
+      body.internalNotes = payload.internalNotes
+    }
+    if (payload.assignedTo != null) {
+      body.assignedTo = payload.assignedTo
+    }
+    return supportApi.patch(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_UPDATE(id), body)
+  },
+  deleteSupportTicket(id) {
+    return supportApi.delete(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_UPDATE(id))
   },
   addSupportTicketMessage(id, payload) {
-    return api.post(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_MESSAGES(id), payload)
+    const body = {
+      message: payload.text || payload.message || '',
+    }
+    if (payload.internalNotes) {
+      body.internalNotes = payload.internalNotes
+    }
+    return supportApi.post(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_REPLY(id), body)
   },
   getAuditLogs() {
     return api.get(SUPERADMIN_ENDPOINTS.AUDIT_LOGS)

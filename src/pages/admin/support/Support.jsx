@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import io from 'socket.io-client'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import {
   HiPlus,
@@ -38,7 +39,7 @@ const CATEGORIES = [
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent']
 
-const STATUS_OPTIONS = ['Open', 'In Progress', 'Resolved', 'Closed']
+const STATUS_OPTIONS = ['Open', 'In Progress', 'Waiting for Admin', 'Resolved', 'Closed']
 
 // Get the next ticket ID
 const getNextTicketId = (tickets) => {
@@ -57,6 +58,8 @@ const getStatusColor = (status) => {
       return 'blue'
     case 'In Progress':
       return 'orange'
+    case 'Waiting for Admin':
+      return 'amber'
     case 'Resolved':
       return 'green'
     case 'Closed':
@@ -104,6 +107,7 @@ export default function SupportManagement() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -128,15 +132,18 @@ export default function SupportManagement() {
 
   const fetchTickets = async () => {
     try {
-      // Fetch latest single-tenant tickets and also pull any superadmin replies/status
-      const response = await axios.get(`${API_URL}/api/support/tickets`, {
+      setLoading(true)
+      const response = await axios.get(`${API_URL}/api/admin/support/tickets`, {
         headers: authHeaders(),
       })
       const data = (response.data.data || []).map(normalizeTicket)
       setTickets(data)
+      toast.success('Support tickets refreshed')
     } catch (err) {
       console.error('Failed to load support tickets:', err)
       toast.error('Unable to load support tickets')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -154,6 +161,58 @@ export default function SupportManagement() {
 
   useEffect(() => {
     fetchTickets()
+    const interval = setInterval(fetchTickets, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Initialize Socket.io connection for real-time updates
+  useEffect(() => {
+    const token = localStorage.getItem('hris_token')
+    if (!token) return
+
+    const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+    const socket = io(socketUrl, {
+      auth: {
+        token: `Bearer ${token}`,
+      },
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+    })
+
+    socket.on('connect', () => {
+      console.log('Socket.io connected for real-time ticket updates')
+    })
+
+    // Listen for ticket updates from Super Admin
+    socket.on('ticket:updated', (updatedTicket) => {
+      console.log('Ticket updated from Super Admin:', updatedTicket)
+      setTickets((prevTickets) =>
+        prevTickets.map((ticket) =>
+          ticket.id === updatedTicket.id
+            ? {
+                ...ticket,
+                status: updatedTicket.status,
+                superAdminDescription: updatedTicket.superAdminDescription,
+              }
+            : ticket
+        )
+      )
+      toast.info(`Ticket ${updatedTicket.ticketCode || updatedTicket.id} updated by Super Admin`)
+    })
+
+    socket.on('disconnect', () => {
+      console.log('Socket.io disconnected')
+    })
+
+    socket.on('error', (error) => {
+      console.error('Socket.io error:', error)
+    })
+
+    return () => {
+      socket.disconnect()
+    }
   }, [])
 
   // Filter and search tickets
@@ -245,7 +304,7 @@ export default function SupportManagement() {
         payload.append('attachment', formData.attachmentFile)
       }
 
-      const response = await axios.post(`${API_URL}/api/support/tickets`, payload, {
+      const response = await axios.post(`${API_URL}/api/admin/support/tickets`, payload, {
         headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' },
       })
 
@@ -266,7 +325,7 @@ export default function SupportManagement() {
 
   const handleViewTicket = async (ticket) => {
     try {
-      const response = await axios.get(`${API_URL}/api/support/tickets/${ticket.id}`, {
+      const response = await axios.get(`${API_URL}/api/admin/support/tickets/${ticket.id}`, {
         headers: authHeaders(),
       })
       if (response?.data?.success) {
@@ -275,6 +334,7 @@ export default function SupportManagement() {
           ...ticketData,
           messages: response.data.data.messages || [],
         })
+        setTickets((prev) => prev.map((t) => (t.id === ticketData.id ? ticketData : t)))
       } else {
         setSelectedTicket(ticket)
       }
@@ -299,7 +359,7 @@ export default function SupportManagement() {
     if (!result.isConfirmed) return
 
     try {
-      await axios.delete(`${API_URL}/api/support/tickets/${ticketId}`, {
+      await axios.delete(`${API_URL}/api/admin/support/tickets/${ticketId}`, {
         headers: authHeaders(),
       })
       setTickets((prev) => prev.filter((t) => t.id !== ticketId))
@@ -515,6 +575,7 @@ export default function SupportManagement() {
               <option value="all">All Status</option>
               <option value="Open">Open</option>
               <option value="In Progress">In Progress</option>
+              <option value="Waiting for Admin">Waiting for Admin</option>
               <option value="Resolved">Resolved</option>
               <option value="Closed">Closed</option>
             </select>
@@ -535,6 +596,14 @@ export default function SupportManagement() {
 
           <div className="flex items-center gap-3">
             <p className="text-xs font-medium text-slate-500">{filteredTickets.length} tickets shown</p>
+            <button
+              type="button"
+              onClick={fetchTickets}
+              disabled={loading}
+              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? 'Refreshing…' : 'Refresh'}
+            </button>
             {search || statusFilter !== 'all' || priorityFilter !== 'all' ? (
               <button
                 type="button"
@@ -556,7 +625,7 @@ export default function SupportManagement() {
           columns={columns}
           data={filteredTickets}
           pageSize={10}
-          loading={false}
+          loading={loading}
           square
           totalCount={filteredTickets.length}
           currentPage={0}
@@ -783,6 +852,26 @@ export default function SupportManagement() {
             <div className="rounded-lg bg-slate-50 p-4">
               <p className="text-xs font-medium text-slate-500 uppercase mb-2">Description</p>
               <p className="text-sm text-slate-700 leading-relaxed">{selectedTicket.description}</p>
+            </div>
+
+            {/* Ticket Conversation / Updates */}
+            <div className="rounded-lg bg-white p-4 border border-slate-100">
+              <p className="text-xs font-medium text-slate-500 uppercase mb-3">Ticket Conversation / Updates</p>
+              {selectedTicket.messages && selectedTicket.messages.length ? (
+                <div className="space-y-3">
+                  {selectedTicket.messages.map((msg) => (
+                    <div key={msg.id} className="rounded-lg p-3 bg-slate-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-[11px] font-bold text-slate-600">Super Admin</div>
+                        <div className="text-[11px] text-slate-400">{new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} · {new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+                      </div>
+                      <div className="text-sm text-slate-700">{msg.message}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400">No updates from Super Admin</p>
+              )}
             </div>
 
             {/* Attachment */}

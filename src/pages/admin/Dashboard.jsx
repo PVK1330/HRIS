@@ -13,9 +13,16 @@ import {
   HiDocumentArrowDown,
   HiMegaphone,
   HiUserGroup,
-  HiArrowPath,
-  HiQuestionMarkCircle
+  HiQuestionMarkCircle,
   HiUsers,
+  HiIdentification,
+  HiCalendar,
+  HiDocument,
+  HiCog6Tooth,
+  HiShieldCheck,
+  HiGift ,
+  HiFlag,
+  HiClipboardDocumentCheck,
 } from 'react-icons/hi2'
 import {
   Area,
@@ -89,8 +96,13 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
   const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
+  const [expiryAlerts, setExpiryAlerts] = useState([])
+  const [birthdays, setBirthdays] = useState([])
+
+
 
   const isManager = user?.role === 'manager'
+  const isHRAdmin = user?.role === 'admin' || user?.role === 'hr_admin'
   const isEmployee = user?.role === 'employee'
   const isHrView = user?.role === 'admin' || user?.role === 'hr_admin' || user?.role === 'hr_executive'
 
@@ -114,6 +126,7 @@ export default function Dashboard() {
           const data = await fetchEmployeeDashboard(employeeId)
           setDashboardData((prev) => ({ ...prev, ...data }))
         }
+
       } else {
         const data = await fetchAdminDashboard()
         setDashboardData(data)
@@ -276,7 +289,7 @@ export default function Dashboard() {
           </div>
         </>
       ) : (
-        <>
+          <>
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-center gap-3">
@@ -295,6 +308,8 @@ export default function Dashboard() {
             <MetricCard label="Leave Balance" value={dashboardData.personal.leaveBalance} subtitle="Available days" tone="emerald" />
             <MetricCard label="Attendance Rate" value={dashboardData.personal.attendanceRate} subtitle="This month" tone="blue" />
           </div>
+          </>
+      )}
 
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-6">
@@ -307,7 +322,7 @@ export default function Dashboard() {
                   <MetricCard label="In Office" value={dashboardData.attendance.present} subtitle="Today" />
                   <MetricCard label="Remote" value={dashboardData.attendance.remote} subtitle="Today" tone="blue" />
                   <MetricCard label="On Leave" value={dashboardData.attendance.onLeave} subtitle="Today" tone="amber" />
-                  <MetricCard label="Pending Tasks" value={dashboardData.personal.pendingTasks} subtitle="Claims pending" />
+                  <MetricCard label="Pending Tasks" value={dashboardData?.personal?.pendingTasks || 0} subtitle="Claims pending" />
                 </div>
               </div>
 
@@ -426,9 +441,9 @@ export default function Dashboard() {
                  </h3>
                  <div className="space-y-3">
                     {[
-                       { label: 'Leave Requests', count: stats.pending.leaves, path: '/admin/leave' },
-                       { label: 'Expense Claims', count: stats.pending.expenses, path: '/admin/expenses' },
-                       { label: 'Document Audits', count: stats.pending.documents, path: '/admin/documents' }
+                       { label: 'Leave Requests', count: dashboardData.pending.leaves, path: '/admin/leave' },
+                       { label: 'Expense Claims', count: dashboardData.pending.expenses, path: '/admin/expenses' },
+                       { label: 'Document Audits', count: dashboardData.pending.documents, path: '/admin/documents' }
                     ].map(item => (
                        <Link key={item.label} to={item.path} className="flex items-center justify-between p-4 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E] transition-all">
                           <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{item.label}</span>
@@ -505,6 +520,8 @@ export default function Dashboard() {
            </div>
         </div>
       </div>
+  )
+      
 
       {/* Broadcasts & New Talent */}
       <div className="grid gap-8 lg:grid-cols-3">
@@ -514,8 +531,7 @@ export default function Dashboard() {
                <HiMegaphone className="h-5 w-5 text-[#0F766E]" />
             </div>
           </div>
-        </>
-      )}
+            </div>
 
       {selectedAnnouncement ? (
         <Modal title="Announcement" isOpen onClose={() => setSelectedAnnouncement(null)} size="lg">
@@ -537,7 +553,10 @@ export default function Dashboard() {
             </div>
           </div>
         </Modal>
-      ) : null}
-    </div>
-  )
+      ): null}
 }
+   
+
+
+     
+
