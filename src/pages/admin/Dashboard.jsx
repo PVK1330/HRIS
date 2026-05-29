@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-<<<<<<< HEAD
+import { Building2, Package, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import {
   HiArrowPath,
@@ -40,9 +40,6 @@ import {
 import { Avatar } from '../../components/ui/Avatar.jsx'
 import { Badge } from '../../components/ui/Badge.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
-=======
-import { Building2, Package, Users } from 'lucide-react'
->>>>>>> e1261c0e32a65addbf9500a15806cd87416cd18f
 import { useAuth } from '../../context/AuthContext.jsx'
 import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
 import { fetchAdminDashboard, fetchEmployeeDashboard } from '../../services/dashboardService.js'
@@ -93,9 +90,7 @@ export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
   const [expiryAlerts, setExpiryAlerts] = useState([])
   const [birthdays, setBirthdays] = useState([])
-
-
-
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
   const isManager = user?.role === 'manager'
   const isHRAdmin = user?.role === 'admin' || user?.role === 'hr_admin'
   const isEmployee = user?.role === 'employee'
@@ -258,202 +253,10 @@ export default function Dashboard() {
       <PlanDistribution data={planDistribution} loading={false} />
       <RecentTransactions transactions={DEMO_TRANSACTIONS} loading={false} />
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">Attendance Trend</h3>
-                  <HiArrowTrendingUp className="h-4 w-4 text-[#0F766E]" />
-                </div>
-                <div className="h-60">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={growthData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                      <Tooltip />
-                      <Area type="monotone" dataKey="headcount" stroke="#0F766E" fill="#0F766E" fillOpacity={0.12} strokeWidth={2.5} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
 
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="mb-4 text-sm font-semibold text-slate-900">Pending Approvals</h3>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Link to="/admin/leave" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
-                    <p className="text-xs font-semibold text-slate-500">Leave Requests</p>
-                    <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.leaves}</p>
-                  </Link>
-                  <Link to="/admin/expenses" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
-                    <p className="text-xs font-semibold text-slate-500">Expense Claims</p>
-                    <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.expenses}</p>
-                  </Link>
-                  <Link to="/admin/attendance" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
-                    <p className="text-xs font-semibold text-slate-500">Regularizations</p>
-                    <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.documents}</p>
-                  </Link>
-                </div>
-              </div>
-            </div>
 
-            <div className="space-y-6">
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="mb-4 text-sm font-semibold text-slate-900">Employee Status</h3>
-                <div className="h-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={attendancePieData} dataKey="value" innerRadius={45} outerRadius={70} paddingAngle={3}>
-                        <Cell fill="#0F766E" />
-                        <Cell fill="#3B82F6" />
-                        <Cell fill="#F59E0B" />
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">Announcements</h3>
-                  <HiMegaphone className="h-4 w-4 text-[#0F766E]" />
-                </div>
-                <div className="space-y-3">
-                  {announcements.slice(0, 3).map((ann) => (
-                    <button
-                      key={ann.id}
-                      type="button"
-                      onClick={() => setSelectedAnnouncement(ann)}
-                      className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
-                    >
-                      <p className="text-xs font-semibold text-slate-900">{ann.title}</p>
-                      <p className="mt-1 line-clamp-1 text-xs text-slate-500">{ann.content}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-          <>
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <Avatar name={user?.name || 'Employee'} size="lg" />
-                <div>
-                  <p className="text-lg font-bold text-slate-900">{user?.name || 'Employee'}</p>
-                  <p className="text-sm text-slate-500">{user?.role?.replace('_', ' ') || 'Employee'}</p>
-                </div>
-              </div>
-              <div className="mt-4 space-y-2 text-sm text-slate-600">
-                <p><span className="font-medium">Email:</span> {user?.email || '—'}</p>
-                <p><span className="font-medium">Department:</span> {user?.department || '—'}</p>
-              </div>
-            </div>
-
-            <MetricCard label="Leave Balance" value={dashboardData.personal.leaveBalance} subtitle="Available days" tone="emerald" />
-            <MetricCard label="Attendance Rate" value={dashboardData.personal.attendanceRate} subtitle="This month" tone="blue" />
-          </div>
-          </>
-      )}
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">My Attendance</h3>
-                  <HiClock className="h-4 w-4 text-[#0F766E]" />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-4">
-                  <MetricCard label="In Office" value={dashboardData.attendance.present} subtitle="Today" />
-                  <MetricCard label="Remote" value={dashboardData.attendance.remote} subtitle="Today" tone="blue" />
-                  <MetricCard label="On Leave" value={dashboardData.attendance.onLeave} subtitle="Today" tone="amber" />
-                  <MetricCard label="Pending Tasks" value={dashboardData?.personal?.pendingTasks || 0} subtitle="Claims pending" />
-                </div>
-              </div>
-
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="mb-4 text-sm font-semibold text-slate-900">My Announcements</h3>
-                <div className="space-y-3">
-                  {announcements.map((ann) => (
-                    <button
-                      key={ann.id}
-                      type="button"
-                      onClick={() => setSelectedAnnouncement(ann)}
-                      className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge label={ann.priority || 'Standard'} color={ann.priority === 'High' ? 'red' : 'blue'} />
-                        <span className="text-xs text-slate-400">{new Date(ann.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <p className="mt-2 text-sm font-semibold text-slate-900">{ann.title}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">Team Events</h3>
-                  <HiCalendarDays className="h-4 w-4 text-[#0F766E]" />
-                </div>
-                <div className="space-y-3">
-                  {events.slice(0, 5).map((event, i) => (
-                    <div key={`${event.name}-${i}`} className="flex items-center gap-3 rounded-none border border-slate-200 bg-slate-50/60 p-3">
-                      <Avatar name={event.name} size="sm" />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">{event.name}</p>
-                        <p className="text-xs text-slate-500">{event.type} • {event.date}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="mb-4 text-sm font-semibold text-slate-900">Quick Links</h3>
-                <div className="space-y-2">
-                  <Link to="/admin/leave" className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
-                    <HiCalendarDays className="h-4 w-4" />
-                    Apply Leave
-                  </Link>
-                  <Link to="/admin/attendance" className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
-                    <HiClock className="h-4 w-4" />
-                    View Attendance
-                  </Link>
-                  <Link to="/admin/employee-profile" className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
-                    <HiUsers className="h-4 w-4" />
-                    My Profile
-                  </Link>
-                </div>
-              </div>
-           </div>
-
-           {/* Trends / Graphs */}
-           {!isEmployee && (
-              <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
-                 <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Workforce Evolution Index</h3>
-                    <HiArrowTrendingUp className="h-5 w-5 text-[#0F766E]" />
-                 </div>
-                 <div className="h-[240px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                       <AreaChart data={growthData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 9, fontWeight: 900}} />
-                          <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 9, fontWeight: 900}} />
-                          <Tooltip contentStyle={{ border: '1px solid #f1f5f9', borderRadius: '0px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                          <Area type="stepAfter" dataKey="headcount" stroke="#0F766E" strokeWidth={3} fill="#0F766E" fillOpacity={0.05} />
-                       </AreaChart>
-                    </ResponsiveContainer>
-                 </div>
-              </div>
-           )}
-
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
            {/* Quick Access Grid */}
            <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Execution Gateways</h3>
@@ -566,10 +369,8 @@ export default function Dashboard() {
                  ))}
               </div>
            </div>
-        </div>
+         </div>
       </div>
-  )
-      
 
       {/* Broadcasts & New Talent */}
       <div className="grid gap-8 lg:grid-cols-3">
