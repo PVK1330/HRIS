@@ -890,7 +890,7 @@ export default function Onboarding() {
         size={onboardingMode === 'create' ? 'xl' : 'lg'}
       >
         {/* Mode switcher tabs */}
-        <div className="flex border-b border-slate-200 -mx-6 px-6 mb-6">
+        <div className="sticky top-0 z-10 shrink-0 flex border-b border-slate-200 bg-white -mx-6 px-6 mb-6">
           {[
             { key: 'create', label: 'Step 1 — Offer' },
             { key: 'status', label: 'Step 2 — Signed offer' },
@@ -1190,8 +1190,8 @@ export default function Onboarding() {
             </div>
           </form>
         ) : onboardingMode === 'status' ? (
-          /* â”€â”€ TAB 2: ONBOARDING STATUS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-          <div className="p-2 space-y-6">
+          /* TAB 2: ONBOARDING STATUS */
+          <div className="p-2 space-y-6 max-h-[min(58vh,calc(100dvh-16rem))] overflow-y-auto pr-1">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <SectionHeader icon={HiUser} title="Select Employee" subtitle="Choose a candidate to update onboarding status (Step 2)" />
               <select
@@ -1276,8 +1276,9 @@ export default function Onboarding() {
             )}
           </div>
         ) : (
-          /* â”€â”€ TAB 3: Document checklist (candidate uploads via secure link) â”€â”€ */
-          <div className="p-2 space-y-6">
+          /* TAB 3: Document checklist (candidate uploads via secure link) */
+          <div className="flex min-h-0 flex-col p-2">
+            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pr-1 max-h-[min(58vh,calc(100dvh-16rem))]">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <SectionHeader icon={HiUser} title="Select Employee" subtitle="Review checklist uploads (Step 3)" />
               <select
@@ -1414,32 +1415,38 @@ export default function Onboarding() {
                           </div>
                         ))}
                       </div>
-                      <div className="flex justify-end mt-4">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const res = await completeOnboardingWorkflow(
-                                Number(selectedEmployeeIdForDocs),
-                              )
-                              toast.success(res.message || 'Onboarding complete')
-                              setModalOpen(false)
-                              await loadOnboarding()
-                            } catch (err) {
-                              toast.error(
-                                err.response?.data?.message || 'Could not complete onboarding',
-                              )
-                            }
-                          }}
-                          className="h-11 px-8 rounded-lg bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white"
-                        >
-                          Complete onboarding & activate
-                        </button>
-                      </div>
                     </>
                   )}
                 </div>
               </>
+            )}
+            </div>
+            {selectedEmployeeIdForDocs && checklistItems.length > 0 && (
+              <div className="sticky bottom-0 z-10 mt-4 shrink-0 border-t border-slate-200 bg-white pt-4 pb-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p className="text-xs text-slate-500">
+                  Approve all mandatory documents, then activate the employee.
+                </p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await completeOnboardingWorkflow(
+                        Number(selectedEmployeeIdForDocs),
+                      )
+                      toast.success(res.message || 'Onboarding complete')
+                      setModalOpen(false)
+                      await loadOnboarding()
+                    } catch (err) {
+                      toast.error(
+                        err.response?.data?.message || 'Could not complete onboarding',
+                      )
+                    }
+                  }}
+                  className="h-11 px-8 rounded-lg bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] shadow-md shrink-0"
+                >
+                  Complete onboarding & activate
+                </button>
+              </div>
             )}
           </div>
         )

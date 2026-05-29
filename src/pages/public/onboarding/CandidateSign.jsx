@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { signOffer } from '../../../services/candidateOnboardingService.js'
+import { candidateOnboardingPath } from '../../../utils/candidateOnboardingTenant.js'
 
 export default function CandidateSign() {
   const [searchParams] = useSearchParams()
@@ -73,7 +74,7 @@ export default function CandidateSign() {
         typedName: typedName.trim(),
       })
       toast.success(res.message || 'Offer signed')
-      navigate(`/onboarding/documents?token=${encodeURIComponent(token)}`)
+      navigate(candidateOnboardingPath('/onboarding/documents', token))
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Signing failed')
     } finally {

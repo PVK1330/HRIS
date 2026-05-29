@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { candidateOnboardingHeaders } from '../utils/candidateOnboardingTenant.js'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -6,20 +7,8 @@ const publicApi = axios.create({
   baseURL: `${API_URL}/api/v1/public/candidate-onboarding`,
 })
 
-function tenantHeaders() {
-  const host = window.location.hostname || ''
-  const parts = host.split('.')
-  if (parts.length >= 2 && (parts[parts.length - 1] === 'localhost' || parts.length > 2)) {
-    const sub = parts[0]
-    if (sub && sub !== 'www' && sub !== 'api') {
-      return { 'X-Tenant-Id': sub }
-    }
-  }
-  return {}
-}
-
 publicApi.interceptors.request.use((config) => {
-  config.headers = { ...config.headers, ...tenantHeaders() }
+  config.headers = { ...config.headers, ...candidateOnboardingHeaders() }
   return config
 })
 

@@ -56,9 +56,9 @@ export function Modal({
         aria-hidden="true"
       />
 
-      {/* Modal Box */}
+      {/* Modal Box — max height + min-h-0 so body can scroll on small screens */}
       <div
-        className={`relative w-full ${maxW} max-h-full flex flex-col transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} max-h-[min(90vh,calc(100dvh-2rem))] flex flex-col overflow-hidden transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
       >
@@ -74,9 +74,9 @@ export function Modal({
           </button>
         )}
 
-        <div className="flex flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
           {/* Header */}
-          <div className="px-5 pt-6 pb-2 sm:px-6">
+          <div className="shrink-0 px-5 pt-6 pb-2 sm:px-6">
             {header ? (
               <div className="pr-10">{header}</div>
             ) : (
@@ -101,7 +101,7 @@ export function Modal({
           </div>
 
           {/* Body */}
-          <div className="flex-1 px-5 py-1 sm:px-6 overflow-y-auto custom-scrollbar">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-1 sm:px-6 custom-scrollbar">
             <div className="pb-8">
               {children}
             </div>
