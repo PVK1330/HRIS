@@ -11,6 +11,7 @@ import IntegrationSettings from "./sections/IntegrationSettings.jsx";
 import BillingSettings from "./sections/BillingSettings.jsx";
 import AuditLogs from "./sections/AuditLogs.jsx";
 import BackupRestore from "./sections/BackupRestore.jsx";
+import ExitSettingsSection from "./sections/ExitSettingsSection.jsx";
 
 function ActiveSection({
   active,
@@ -37,6 +38,8 @@ function ActiveSection({
       return <AuditLogs />;
     case "backup":
       return <BackupRestore />;
+    case "exit":
+      return <ExitSettingsSection />;
     default:
       return null;
   }

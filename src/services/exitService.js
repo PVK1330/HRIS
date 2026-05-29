@@ -1,116 +1,49 @@
-const STORAGE_KEY = 'hris_exit_workflow_settings_v1'
+import api from './api'
 
-const DEFAULT_WORKFLOW = [
-  {
-    id: 'step-manager-clearance',
-    stepName: 'Manager Clearance',
-    department: 'Manager',
-    order: 1,
-    isParallel: false,
-  },
-  {
-    id: 'step-it-clearance',
-    stepName: 'IT Clearance',
-    department: 'IT',
-    order: 2,
-    isParallel: true,
-  },
-  {
-    id: 'step-finance-clearance',
-    stepName: 'Finance Clearance',
-    department: 'Finance',
-    order: 3,
-    isParallel: true,
-  },
-]
+const BASE_URL = '/exit-management/workflows'
 
-function readStore() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch {
-    return {}
-  }
+export async function listExitWorkflows(params = {}) {
+  const { data } = await api.get(BASE_URL, { params })
+  return data?.data || []
 }
 
-function writeStore(store) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
+export async function createExitWorkflow(payload) {
+  const { data } = await api.post(BASE_URL, payload)
+  return data?.data
 }
 
-function ensureOrdered(steps = []) {
-  return [...steps]
-    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
-    .map((step, idx) => ({ ...step, order: idx + 1 }))
+export async function getExitWorkflow(id) {
+  const { data } = await api.get(`${BASE_URL}/${id}`)
+  return data?.data
 }
 
-function cloneDefaultWorkflow() {
-  return DEFAULT_WORKFLOW.map((step, index) => ({
-    ...step,
-    id: step.id || `step-${index + 1}`,
-    order: index + 1,
-  }))
+export async function updateExitWorkflow(id, payload) {
+  const { data } = await api.put(`${BASE_URL}/${id}`, payload)
+  return data?.data
 }
 
-/**
- * Dummy API: list organizations that currently have workflow settings.
- * Useful for "each organization has separate flow" in HR admin UI.
- */
-export async function listExitWorkflowOrganizations(params = {}) {
-  const preferredOrganizationId = String(params.organizationId || 'default-org')
-  const store = readStore()
-  const keys = Object.keys(store)
-  const organizations = Array.from(new Set([preferredOrganizationId, ...keys]))
-  return {
-    organizations,
-    defaultOrganizationId: preferredOrganizationId,
-  }
+export async function publishExitWorkflow(id) {
+  const { data } = await api.put(`${BASE_URL}/${id}/publish`)
+  return data?.data
 }
 
-/**
- * Dummy API: fetch workflow settings for a specific organization.
- * @param {{ organizationId?: string }} params
- */
-export async function getExitWorkflowSettings(params = {}) {
-  const organizationId = String(params.organizationId || 'default-org')
-  const store = readStore()
-  if (!store[organizationId]) {
-    store[organizationId] = cloneDefaultWorkflow()
-    writeStore(store)
-  }
-  const steps = store[organizationId] || cloneDefaultWorkflow()
-
-  return {
-    organizationId,
-    steps: ensureOrdered(steps),
-  }
+export async function cloneExitWorkflow(id) {
+  const { data } = await api.post(`${BASE_URL}/${id}/clone`)
+  return data?.data
 }
 
-/**
- * Dummy API: update workflow settings for a specific organization.
- * @param {{ organizationId?: string, steps?: Array }} payload
- */
-export async function updateExitWorkflowSettings(payload = {}) {
-  const organizationId = String(payload.organizationId || 'default-org')
-  const incoming = Array.isArray(payload.steps) ? payload.steps : []
-  const normalized = ensureOrdered(
-    incoming.map((step, idx) => ({
-      id: step.id || `step-${Date.now()}-${idx}`,
-      stepName: String(step.stepName || '').trim(),
-      department: String(step.department || '').trim(),
-      order: Number(step.order || idx + 1),
-      isParallel: Boolean(step.isParallel),
-    })),
-  )
+export async function deleteExitWorkflow(id) {
+  const { data } = await api.delete(`${BASE_URL}/${id}`)
+  return data?.data
+}
 
-  const store = readStore()
-  store[organizationId] = normalized
-  writeStore(store)
-
-  return {
-    message: 'Exit workflow settings updated successfully',
-    organizationId,
-    steps: normalized,
-  }
+// Deprecated mock functions kept for backward compatibility
+export async function listExitWorkflowOrganizations() {
+  return { organizations: [], defaultOrganizationId: 'default' }
+}
+export async function getExitWorkflowSettings() {
+  return { steps: [] }
+}
+export async function updateExitWorkflowSettings() {
+  return { steps: [] }
 }

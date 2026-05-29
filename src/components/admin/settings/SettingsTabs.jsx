@@ -9,7 +9,8 @@ import {
   RiLinksLine,
   RiBankCardLine,
   RiHistoryLine,
-  RiDatabase2Line
+  RiDatabase2Line,
+  RiLogoutBoxRLine
 } from 'react-icons/ri';
 
 export const settingsTabs = [
@@ -72,6 +73,12 @@ export const settingsTabs = [
     label: 'Backup & Restore',
     icon: RiDatabase2Line,
     desc: 'Data backup & recovery'
+  },
+  {
+    id: 'exit',
+    label: 'Exit Management',
+    icon: RiLogoutBoxRLine,
+    desc: 'Workflows & templates'
   }
 ];
 

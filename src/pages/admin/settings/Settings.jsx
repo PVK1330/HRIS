@@ -35,7 +35,7 @@ const navItems = [
   { id: 'leave',         label: 'Leave Settings',        Icon: HiCalendar           },
   { id: 'documents',     label: 'Document Settings',     Icon: HiDocumentText       },
   { id: 'assets',        label: 'Asset Settings',        Icon: HiBriefcase          },
-  { id: 'exit',          label: 'Exit Settings',         Icon: HiArrowRightOnRectangle },
+  { id: 'exit',          label: 'Exit Management',       Icon: HiArrowRightOnRectangle },
   { id: 'notifications', label: 'Notifications',         Icon: HiBell               },
   { id: 'security',      label: 'Password & Security',   Icon: HiKey                },
 ]
@@ -70,8 +70,8 @@ const sectionMeta = {
     subtitle: 'Asset categories, assignment rules, and approval workflows.',
   },
   exit: {
-    title: 'Exit Settings',
-    subtitle: 'Termination types and clearance checklist templates for employee exits.',
+    title: 'Exit Management',
+    subtitle: 'Termination types, clearance checklist templates, and exit workflows.',
   },
   notifications: {
     title: 'Notifications',
