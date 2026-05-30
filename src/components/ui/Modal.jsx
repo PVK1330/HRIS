@@ -58,7 +58,7 @@ export function Modal({
 
       {/* Modal Box — max height + min-h-0 so body can scroll on small screens */}
       <div
-        className={`relative w-full ${maxW} max-h-[min(90vh,calc(100dvh-2rem))] flex flex-col overflow-hidden transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} max-h-[90vh] flex flex-col overflow-hidden transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
       >

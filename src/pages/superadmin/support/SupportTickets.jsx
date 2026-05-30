@@ -31,7 +31,6 @@ export default function SupportTickets() {
   const [error, setError] = useState(null)
 
   const [showReplyModal, setShowReplyModal] = useState(false)
-  const [showAssignModal, setShowAssignModal] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState(null)
   const [ticketStatus, setTicketStatus] = useState('Open')
   const [replyText, setReplyText] = useState('')
@@ -139,7 +138,6 @@ export default function SupportTickets() {
     try {
       await superadminService.updateSupportTicket(selectedTicket.id, { assignedTo: assignee, status: 'In Progress' })
       await fetchTickets()
-      setShowAssignModal(false)
       toast.success('Ticket assigned successfully')
     } catch (error) {
       console.error('Failed to assign ticket:', error)
@@ -313,6 +311,19 @@ export default function SupportTickets() {
                 )}
               </div>
               <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 md:col-span-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Assign to</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={assignee}
+                    onChange={(e) => setAssignee(e.target.value)}
+                    placeholder="Assignee name or email"
+                    className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 outline-none focus:border-emerald-500 transition-all"
+                  />
+                  <Button variant="ghost" label="Assign" icon={HiUserPlus} onClick={handleAssign} disabled={!assignee.trim()} />
+                </div>
+              </div>
+              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 md:col-span-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block">
                   Super Admin Description
                 </label>
@@ -328,8 +339,9 @@ export default function SupportTickets() {
             </div>
 
             <div className="pt-6 border-t border-slate-50">
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <Button variant="primary" label="Save" className="h-[52px] rounded-[1.25rem] bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-100 px-6" onClick={handleSaveTicket} disabled={saving || (!replyText.trim() && ticketStatus === selectedTicket.status)} />
+                <Button variant="ghost" label="Mark Resolved" icon={HiCheckCircle} className="h-[52px] rounded-[1.25rem] px-6" onClick={() => handleResolve(selectedTicket.id)} disabled={selectedTicket.status === 'Resolved'} />
               </div>
             </div>
           </div>

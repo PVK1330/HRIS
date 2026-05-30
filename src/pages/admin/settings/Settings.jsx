@@ -12,6 +12,7 @@ import {
   HiLockClosed,
   HiShieldCheck,
   HiWrenchScrewdriver,
+  HiBuildingOffice2,
 } from 'react-icons/hi2'
 import GeneralSection from './sections/GeneralSection.jsx'
 import AttendanceSection from './sections/AttendanceSection.jsx'
@@ -25,7 +26,7 @@ import RolesPermissions from './RolesPermissions.jsx'
 import SensitiveData from './SensitiveData.jsx'
 import TerminationTypes from './TerminationTypes.jsx'
 import ClearanceChecklistSettings from './ClearanceChecklist.jsx'
-import ExitWorkflowSettings from './ExitWorkflowSettings.jsx'
+import ExitDepartmentWorkflowSettings from './ExitDepartmentWorkflowSettings.jsx'
 
 const navItems = [
   { id: 'general',       label: 'General',              Icon: HiBuildingOffice2    },
@@ -71,7 +72,7 @@ const sectionMeta = {
   },
   exit: {
     title: 'Exit Management',
-    subtitle: 'Termination types, clearance checklist templates, and exit workflows.',
+    subtitle: 'Termination types and clearance checklist templates.',
   },
   notifications: {
     title: 'Notifications',
@@ -86,7 +87,7 @@ const sectionMeta = {
 const EXIT_TABS = [
   { id: 'termination', label: 'Termination Types',   Icon: HiArrowRightOnRectangle },
   { id: 'clearance',   label: 'Clearance Checklist', Icon: HiWrenchScrewdriver     },
-  { id: 'workflow',    label: 'Exit Workflow',       Icon: HiCog6Tooth             },
+  { id: 'workflow',    label: 'Department Workflow', Icon: HiBuildingOffice2       },
 ]
 
 function ExitSettingsSection() {
@@ -114,13 +115,9 @@ function ExitSettingsSection() {
           )
         })}
       </div>
-      {exitTab === 'termination' ? (
-        <TerminationTypes embedded />
-      ) : exitTab === 'clearance' ? (
-        <ClearanceChecklistSettings embedded />
-      ) : (
-        <ExitWorkflowSettings embedded />
-      )}
+      {exitTab === 'termination' && <TerminationTypes embedded />}
+      {exitTab === 'clearance' && <ClearanceChecklistSettings embedded />}
+      {exitTab === 'workflow' && <ExitDepartmentWorkflowSettings embedded />}
     </div>
   )
 }

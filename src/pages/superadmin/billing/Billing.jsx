@@ -275,7 +275,7 @@ export default function Billing() {
         fetchStats()
         setShowDetailModal(false)
       }
-    } catch (error) {
+    } catch {
       Swal.fire('Error', 'Failed to update status.', 'error')
     }
   }

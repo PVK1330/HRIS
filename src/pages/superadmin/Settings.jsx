@@ -37,7 +37,6 @@ export default function Settings() {
   const [smtpSecure, setSmtpSecure] = useState(true)
 
   const [stripeEnabled, setStripeEnabled] = useState(true)
-  const [paypalEnabled, setPaypalEnabled] = useState(false)
   const [enforceMfa, setEnforceMfa] = useState(true)
   const [auditRetention, setAuditRetention] = useState('90')
   const [sessionTimeout, setSessionTimeout] = useState('60')

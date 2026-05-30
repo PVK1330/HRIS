@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { HiEye, HiEyeSlash, HiEnvelope, HiServer, HiShieldCheck } from 'react-icons/hi2'
 import toast from 'react-hot-toast'
@@ -149,17 +149,9 @@ function TestEmailModal({ open, onClose }) {
 export default function EmailSettings() {
   const { meta } = useSettingsMeta()
   const [searchParams, setSearchParams] = useSearchParams()
-  const initialTab = searchParams.get('tab') === 'smtp' ? 'smtp' : 'email'
-  const [tab, setTab] = useState(initialTab)
+  const tab = searchParams.get('tab') === 'smtp' ? 'smtp' : 'email'
   const [showPwd, setShowPwd] = useState(false)
   const [testOpen, setTestOpen] = useState(false)
-  const [originalPasswordWasMasked, setOriginalPasswordWasMasked] = useState(false)
-
-  // Keep tab in sync with URL when sidebar links to ?tab=smtp
-  useEffect(() => {
-    const t = searchParams.get('tab') === 'smtp' ? 'smtp' : 'email'
-    setTab(t)
-  }, [searchParams])
 
   const fetchFn = useCallback(async () => {
     const res = await settingsService.getEmail()
@@ -192,18 +184,11 @@ export default function EmailSettings() {
   const { data, setData, loading, save, saving } = useSettings(fetchFn, saveFn)
   const state = data || DEFAULT_STATE
   const emailMeta = meta?.email || FALLBACK_EMAIL_META
-
-  // Track whether the loaded password is just the server-side mask
-  useEffect(() => {
-    if (data?.smtpPassword === PASSWORD_MASK) {
-      setOriginalPasswordWasMasked(true)
-    }
-  }, [data?.smtpPassword])
+  const originalPasswordWasMasked = data?.smtpPassword === PASSWORD_MASK
 
   const set = (patch) => setData((prev) => ({ ...(prev || DEFAULT_STATE), ...patch }))
 
   const switchTab = (next) => {
-    setTab(next)
     if (next === 'smtp') {
       const sp = new URLSearchParams(searchParams)
       sp.set('tab', 'smtp')

@@ -1,20 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { 
-  HiCog6Tooth,
-  HiGlobeAlt,
-  HiBuildingOffice,
-  HiEnvelope,
-  HiPhoto,
-  HiServer,
-  HiShieldCheck,
-  HiTicket,
-  HiCircleStack,
-  HiQueueList,
-  HiDocumentText,
-  HiCreditCard,
-  HiKey
-} from 'react-icons/hi2'
 import useSettingsMeta from './useSettingsMeta.js'
 
 const FALLBACK_SECTIONS = [
@@ -24,24 +9,6 @@ const FALLBACK_SECTIONS = [
 const ACTIVE_CLS = 'bg-slate-900 text-white shadow-lg shadow-slate-200'
 const INACTIVE_CLS = 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
 const DISABLED_CLS = 'cursor-not-allowed text-slate-300 opacity-60'
-
-function iconFor(label = '') {
-  const n = label.toLowerCase()
-  if (n.includes('domain')) return HiGlobeAlt
-  if (n.includes('company')) return HiBuildingOffice
-  if (n.includes('email template')) return HiDocumentText
-  if (n.includes('email')) return HiEnvelope
-  if (n.includes('smtp')) return HiServer
-  if (n.includes('logo')) return HiPhoto
-  if (n.includes('currency') || n.includes('payment')) return HiCreditCard
-  if (n.includes('trial')) return HiTicket
-  if (n.includes('captcha') || n.includes('security')) return HiShieldCheck
-  if (n.includes('role') || n.includes('permission')) return HiKey
-  if (n.includes('system')) return HiCircleStack
-  if (n.includes('account')) return HiShieldCheck
-  if (n.includes('log')) return HiQueueList
-  return HiCog6Tooth
-}
 
 function SectionLabel({ children }) {
   return (

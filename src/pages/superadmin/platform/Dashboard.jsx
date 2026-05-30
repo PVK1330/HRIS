@@ -41,7 +41,8 @@ function formatDate(v) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function MetricTile({ icon: Icon, label, value, tone = 'slate' }) {
+function MetricTile({ icon, label, value, tone = 'slate' }) {
+  const IconComponent = icon
   const tones = {
     slate: 'from-slate-900 to-slate-700',
     green: 'from-[#0F766E] to-[#0c6b64]',
@@ -56,7 +57,7 @@ function MetricTile({ icon: Icon, label, value, tone = 'slate' }) {
           <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
         </div>
         <div className={`flex h-10 w-10 items-center justify-center rounded-none bg-gradient-to-r text-white shadow-sm ${tones[tone] || tones.slate}`}>
-          <Icon className="h-5 w-5" />
+          <IconComponent className="h-5 w-5" />
         </div>
       </div>
     </div>

@@ -191,3 +191,20 @@ Build dynamic workflow configuration (HR Admin) with organization-specific flows
   - Employee: submit resignation, track status, request withdrawal
   - HR: approve, complete clearance tasks, submit interview/settlement
   - Confirm completion + document generation
+
+## 10) Exit workflow — Settings (stage → department)
+
+**Settings → Exit Management → Department Workflow**
+
+Each pipeline stage has a **Select department** dropdown (stored in `exit_pipeline_stages.department_id`):
+
+| Stage       | Settings action        |
+|------------|-------------------------|
+| Submitted  | Select department       |
+| Approved   | Select department       |
+| Clearance  | Select department       |
+| Interview  | Select department       |
+| Settlement | Select department       |
+| Exited     | Select department       |
+
+Migration: `073_exit_pipeline_stage_department.sql`

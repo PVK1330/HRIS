@@ -180,7 +180,8 @@ export default function SystemInfo() {
   )
 }
 
-function StatCard({ label, value, subValue, icon: Icon, color }) {
+function StatCard({ label, value, subValue, icon, color }) {
+  const IconComponent = icon
   const colorMap = {
     blue: 'bg-blue-600 shadow-blue-100',
     emerald: 'bg-emerald-600 shadow-emerald-100',
@@ -192,7 +193,7 @@ function StatCard({ label, value, subValue, icon: Icon, color }) {
     <div className="group relative rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md">
       <div className="mb-4 flex items-center justify-between">
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-lg ${colorMap[color] || 'bg-slate-900 shadow-slate-100'}`}>
-          <Icon className="h-5 w-5" />
+          <IconComponent className="h-5 w-5" />
         </div>
         <div className="flex items-center gap-1">
            <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />

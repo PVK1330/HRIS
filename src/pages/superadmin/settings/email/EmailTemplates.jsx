@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import SettingsCard from '../../../../components/settings/SettingsCard.jsx'
@@ -124,11 +124,6 @@ export default function EmailTemplates() {
   useEffect(() => {
     if (selectedSlug) loadTemplate(selectedSlug)
   }, [selectedSlug, loadTemplate])
-
-  const options = useMemo(
-    () => templates.map((t) => ({ value: t.slug, label: t.name })),
-    [templates]
-  )
 
   /* ---------- insert variable at caret ---------- */
   const insertVariable = (variable) => {

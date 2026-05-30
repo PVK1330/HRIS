@@ -34,7 +34,6 @@ export default function AdminUsers() {
   // Form states
   const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'Super Admin', sendEmail: true })
   const [editForm, setEditForm] = useState({ name: '', email: '', role: 'Super Admin', status: 'Active' })
-  const [errors, setErrors] = useState({})
 
   useEffect(() => {
     fetchUsers()
@@ -86,7 +85,12 @@ export default function AdminUsers() {
 
   const handleInvite = async () => {
     if (!inviteForm.name || !inviteForm.email) {
-      setErrors({ name: !inviteForm.name, email: !inviteForm.email })
+      Swal.fire({
+        icon: 'warning',
+        title: 'Required fields',
+        text: 'Name and email are required.',
+        confirmButtonColor: '#0F766E',
+      })
       return
     }
 
@@ -102,7 +106,6 @@ export default function AdminUsers() {
       await fetchUsers()
       setShowInviteModal(false)
       setInviteForm({ name: '', email: '', role: 'Super Admin', sendEmail: true })
-      setErrors({})
       Swal.fire({
         icon: 'success',
         title: 'User Invited',
@@ -128,7 +131,12 @@ export default function AdminUsers() {
 
   const handleSaveEdit = async () => {
     if (!editForm.name) {
-      setErrors({ name: true })
+      Swal.fire({
+        icon: 'warning',
+        title: 'Required field',
+        text: 'Name is required.',
+        confirmButtonColor: '#0F766E',
+      })
       return
     }
     try {
@@ -139,7 +147,6 @@ export default function AdminUsers() {
       })
       await fetchUsers()
       setShowEditModal(false)
-      setErrors({})
       Swal.fire({
         icon: 'success',
         title: 'User Updated',

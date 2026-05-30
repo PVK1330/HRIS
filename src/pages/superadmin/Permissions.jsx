@@ -19,7 +19,6 @@ import {
   HiFingerPrint,
   HiCheck,
   HiPencil,
-  HiTrash,
   HiXMark
 } from 'react-icons/hi2'
 import { Modal } from '../../components/ui/Modal.jsx'
@@ -152,39 +151,6 @@ export default function Permissions() {
     }
   }
 
-  const toggleNewRolePerm = (key) => {
-    setNewRole({
-      ...newRole,
-      permissions: {
-        ...newRole.permissions,
-        [key]: !newRole.permissions[key]
-      }
-    })
-  }
-
-  const toggleEditRolePerm = (key) => {
-    setEditRole({
-      ...editRole,
-      permissions: {
-        ...editRole.permissions,
-        [key]: !editRole.permissions[key]
-      }
-    })
-  }
-
-  const toggleAll = (type) => {
-    const roleToUpdate = type === 'new' ? newRole : editRole
-    const setter = type === 'new' ? setNewRole : setEditRole
-    const allOn = Object.values(roleToUpdate.permissions).every(v => v === true)
-
-    const nextPerms = {}
-    Object.keys(initialPermissions).forEach(key => {
-      nextPerms[key] = !allOn
-    })
-
-    setter({ ...roleToUpdate, permissions: nextPerms })
-  }
-
   const handleToggle = async (roleId, permKey) => {
     // Prevent modifying Super Admin for safety in this mock
     if (roleId === 'superadmin') return
@@ -228,38 +194,6 @@ export default function Permissions() {
     setShowEditModal(true)
   }
 
-  const handleDeleteRole = async (roleId) => {
-    const result = await Swal.fire({
-      title: 'Delete Role?',
-      text: "This will revoke access for all users assigned to this role. This action cannot be undone.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#e11d48',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Yes, delete it'
-    })
-
-    if (result.isConfirmed) {
-      try {
-        await superadminService.deleteRole(roleId)
-        await fetchRoles()
-        Swal.fire({
-          icon: 'success',
-          title: 'Deleted!',
-          text: 'Role has been removed.',
-          timer: 1500,
-          showConfirmButton: false
-        })
-      } catch (error) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Failed',
-          text: error.response?.data?.message || 'Failed to delete role.'
-        })
-      }
-    }
-  }
-
   const handleUpdateRole = async () => {
     try {
       await superadminService.updateRole(selectedRole.id, {
@@ -282,26 +216,6 @@ export default function Permissions() {
         icon: 'error',
         title: 'Update Failed',
         text: error.response?.data?.message || 'Failed to update role.'
-      })
-    }
-  }
-
-  const handleToggleActive = async (roleId, currentStatus) => {
-    if (roleId === 'superadmin') return
-    try {
-      await superadminService.updateRole(roleId, { isActive: !currentStatus })
-      await fetchRoles()
-      Swal.fire({
-        icon: 'success',
-        title: 'Status Updated',
-        timer: 900,
-        showConfirmButton: false,
-      })
-    } catch (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Update Failed',
-        text: error.response?.data?.message || 'Failed to update role status.'
       })
     }
   }
