@@ -12,6 +12,7 @@ import api from "../services/api";
 import {
   hasModuleAccess,
   resolvePlanFeatureKey,
+  expandModuleKeysForGate,
 } from "../constants/permissions.js";
 
 const STORAGE_KEY = "hris_auth_user";
@@ -275,10 +276,17 @@ export function AuthProvider({ children }) {
     }
   });
 
-  const planModuleKeys = useMemo(
-    () => computePlanModuleKeysForTenantUser(user?.role, user?.tenant_features),
-    [user?.role, user?.tenant_features],
-  );
+  const planModuleKeys = useMemo(() => {
+    const keys = computePlanModuleKeysForTenantUser(
+      user?.role,
+      user?.tenant_features,
+    );
+    if (keys instanceof Set) {
+      const mods = expandModuleKeysForGate(allowedModules);
+      if (mods.has("system-settings")) keys.add("system-settings");
+    }
+    return keys;
+  }, [user?.role, user?.tenant_features, allowedModules]);
 
   const userRef = useRef(user);
   useEffect(() => {
@@ -348,11 +356,8 @@ export function AuthProvider({ children }) {
       if (!hasModuleAccess(allowedModules, key, user?.role)) {
         return false;
       }
-      /* Tenant admin always needs the settings shell (not tied to a subscription feature row) */
-      if (key === "system-settings" && user?.role === "admin") {
-        return true;
-      }
-      if (key === "messages") {
+      /* Settings + messages are RBAC-driven, not subscription-gated */
+      if (key === "system-settings" || key === "messages") {
         return true;
       }
       if (
