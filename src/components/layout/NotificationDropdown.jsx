@@ -11,6 +11,11 @@ import {
   HiArrowLeftOnRectangle
 } from 'react-icons/hi2';
 import api from '../../services/api.js';
+import { useSocket } from '../../hooks/useSocket.js';
+
+function isNotificationUnread(n) {
+  return !(n?.isRead ?? n?.read);
+}
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +23,7 @@ export default function NotificationDropdown() {
   const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
   const [selectedNotification, setSelectedNotification] = useState(null);
   const dropdownRef = useRef(null);
+  const { socket, connected } = useSocket();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -49,13 +55,20 @@ export default function NotificationDropdown() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!socket || !connected) return;
+    const onNewNotification = () => fetchNotifications();
+    socket.on('notification:new', onNewNotification);
+    return () => socket.off('notification:new', onNewNotification);
+  }, [socket, connected]);
+
   const allCount = notifications.length;
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const readCount = notifications.filter(n => n.read).length;
+  const unreadCount = notifications.filter((n) => isNotificationUnread(n)).length;
+  const readCount = notifications.filter((n) => !isNotificationUnread(n)).length;
 
   const filteredNotifications = notifications.filter(n => {
-    if (filter === 'unread') return !n.read;
-    if (filter === 'read') return n.read;
+    if (filter === 'unread') return isNotificationUnread(n);
+    if (filter === 'read') return !isNotificationUnread(n);
     return true;
   });
 
@@ -68,14 +81,14 @@ export default function NotificationDropdown() {
   };
   
   const markAsRead = async (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true, read: true } : n));
     try {
       await api.patch(`/notifications/${id}/read`);
     } catch (err) {}
   };
 
   const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true, read: true })));
     try {
       await api.patch('/notifications/mark-all-read');
     } catch (err) {}
@@ -172,7 +185,7 @@ export default function NotificationDropdown() {
                   {filteredNotifications.map((n) => (
                     <div 
                       key={n.id} 
-                      className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}
+                      className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${isNotificationUnread(n) ? 'bg-primary/5' : ''}`}
                       onClick={() => {
                         markAsRead(n.id);
                         setSelectedNotification(n);
@@ -182,7 +195,7 @@ export default function NotificationDropdown() {
                       <div className="flex gap-3">
                         <div className="mt-0.5">{getIcon(n.type)}</div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm truncate ${!n.read ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
+                          <p className={`text-sm truncate ${isNotificationUnread(n) ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
                             {n.title}
                           </p>
                           <p className="text-xs text-text-tertiary mt-1 line-clamp-2 leading-relaxed">
@@ -199,7 +212,7 @@ export default function NotificationDropdown() {
                           <HiTrash className="h-4 w-4" />
                         </button>
                       </div>
-                      {!n.read && (
+                      {isNotificationUnread(n) && (
                         <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary" />
                       )}
                     </div>

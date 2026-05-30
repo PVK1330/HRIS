@@ -365,8 +365,11 @@ export default function ExitManagement() {
   // Generate exit document
   const handleGenerateDoc = async (docType) => {
     try {
-      await generateExitDocument(exitDetails.id, { document_type: docType })
-      toast.success(`${docType} generated`)
+      const result = await generateExitDocument(exitDetails.id, { document_type: docType })
+      const parts = [`${docType} generated`]
+      if (result?.email_sent) parts.push('emailed to employee')
+      if (result?.notification_sent) parts.push('notification sent')
+      toast.success(parts.join(' · '))
       const docs = await listExitDocuments(exitDetails.id)
       setExitDocuments(Array.isArray(docs) ? docs : docs?.documents || [])
     } catch (err) {

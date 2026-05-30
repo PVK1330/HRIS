@@ -635,13 +635,13 @@ export default function ExitManagement() {
         onClose={() => { setViewModalOpen(false); setViewRecord(null); setViewAuditLogs([]) }}
         title={viewRecord?.employee_name || 'Exit Details'}
         description="Exit process status and details"
-        size="xl"
+        size="exit"
         icon={HiEye}
       >
         {viewLoading ? (
-          <div className="space-y-4 mt-4">
-            <div className="h-16 bg-slate-100 animate-pulse rounded-none" />
-            <div className="h-40 bg-slate-100 animate-pulse rounded-none" />
+          <div className="space-y-3 mt-2">
+            <div className="h-12 bg-slate-100 animate-pulse rounded-none" />
+            <div className="h-32 bg-slate-100 animate-pulse rounded-none" />
           </div>
         ) : viewRecord ? (
           <ViewModalContent
@@ -700,17 +700,17 @@ function ViewModalContent({
   const navigate = useNavigate()
 
   return (
-    <div className="space-y-4 mt-4">
+    <div className="space-y-3 mt-2">
       {/* Employee Header */}
-      <div className="flex items-center gap-4 p-4 border border-slate-200 rounded-none bg-slate-50/50 flex-wrap sm:flex-nowrap">
-        <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#004CA5] to-[#0F766E] flex items-center justify-center text-white text-xl font-black shrink-0">
+      <div className="flex items-center gap-3 p-3 border border-slate-200 rounded-none bg-slate-50/50 flex-wrap sm:flex-nowrap">
+        <div className="h-11 w-11 rounded-full bg-gradient-to-br from-[#004CA5] to-[#0F766E] flex items-center justify-center text-white text-base font-black shrink-0">
           {(record.employee_name || 'U')[0].toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-black text-slate-900">{record.employee_name}</h3>
-          <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
-            {record.department && <span className="flex items-center gap-1"><HiBriefcase className="h-3.5 w-3.5" /> {record.department}</span>}
-            {record.job_title && <span className="flex items-center gap-1"><HiMapPin className="h-3.5 w-3.5" /> {record.job_title}</span>}
+          <h3 className="text-base font-black text-slate-900">{record.employee_name}</h3>
+          <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500">
+            {record.department && <span className="flex items-center gap-1"><HiBriefcase className="h-3 w-3" /> {record.department}</span>}
+            {record.job_title && <span className="flex items-center gap-1"><HiMapPin className="h-3 w-3" /> {record.job_title}</span>}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
@@ -719,7 +719,7 @@ function ViewModalContent({
           <button
             type="button"
             onClick={() => navigate(`/admin/exit-management/${record.id}`)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0c6b64] transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-white bg-[#0F766E] hover:bg-[#0c6b64] transition-colors"
           >
             Manage Detailed Page
           </button>
@@ -758,8 +758,8 @@ function ViewModalContent({
       )}
 
       {/* 6-Tab Headers */}
-      <div className="border border-slate-200 rounded-none overflow-hidden">
-        <div className="flex border-b border-slate-200 overflow-x-auto">
+      <div className="border border-slate-200 rounded-none flex flex-col min-h-0 overflow-hidden">
+        <div className="flex border-b border-slate-200 overflow-x-auto shrink-0 custom-scrollbar">
           {VIEW_TABS.map((tab) => {
             const isActive = activeTab === tab.key
             const isDone = rank > tab.rankIndex
@@ -769,7 +769,7 @@ function ViewModalContent({
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
                   isActive
                     ? 'border-[#0F766E] text-[#0F766E]'
                     : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -786,8 +786,8 @@ function ViewModalContent({
           })}
         </div>
 
-        {/* Tab Content */}
-        <div className="p-5">
+        {/* Tab Content — scrollable */}
+        <div className="p-4 overflow-y-auto overscroll-contain max-h-[min(50vh,420px)] min-h-0 custom-scrollbar">
 
           {/* Submitted */}
           {activeTab === 'submitted' && (
