@@ -8,9 +8,11 @@ const sizeClasses = {
   employee: 'max-w-[min(1000px,calc(100vw-2rem))]',
   /** Visa & nationality stepped form — compact width */
   visa: 'max-w-[min(640px,calc(100vw-1.5rem))]',
+  /** Exit management view modal */
+  exit: 'max-w-4xl',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
-  xl: 'max-w-8xl',
+  xl: 'max-w-7xl',
   '2xl': 'max-w-6xl',
   'custom': 'max-w-[1200px]'
 }
@@ -48,7 +50,7 @@ export function Modal({
   const maxW = sizeClasses[size] ?? sizeClasses.md
 
   const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden overflow-x-hidden p-4 sm:p-6">
+    <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300"
@@ -56,9 +58,10 @@ export function Modal({
         aria-hidden="true"
       />
 
+      <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
       {/* Modal Box — max height + min-h-0 so body can scroll on small screens */}
       <div
-        className={`relative w-full ${maxW} max-h-[90vh] flex flex-col overflow-hidden transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} max-h-[min(90dvh,calc(100%-2rem))] min-h-0 flex flex-col overflow-hidden transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
       >
@@ -107,6 +110,7 @@ export function Modal({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

@@ -31,11 +31,15 @@ export default function ExitDocuments({ exitRequestId, exitType, documents, onGe
   const handleGenerate = async (docType, docTitle) => {
     setGeneratingType(docType)
     try {
-      await generateExitDocument(exitRequestId, {
+      const result = await generateExitDocument(exitRequestId, {
         document_type: docType,
         document_title: docTitle,
       })
-      toast.success(`${docTitle} generated successfully`)
+      const parts = [`${docTitle} generated`]
+      if (result?.template_name) parts.push(`from template "${result.template_name}"`)
+      if (result?.email_sent) parts.push('emailed to employee')
+      if (result?.notification_sent) parts.push('in-app notification sent')
+      toast.success(parts.join(' · '))
       onGenerated?.()
     } catch (err) {
       toast.error(err?.response?.data?.message || `Failed to generate ${docTitle}`)
