@@ -353,17 +353,21 @@ export function AuthProvider({ children }) {
 
   const hasModule = useCallback(
     (key) => {
+      /* Messages: always available to logged-in tenant users */
+      if (key === "messages") return true;
+      if (key === "dashboard") return true;
+
       if (!hasModuleAccess(allowedModules, key, user?.role)) {
         return false;
       }
-      /* Settings + messages are RBAC-driven, not subscription-gated */
-      if (key === "system-settings" || key === "messages") {
+      if (key === "system-settings" && user?.role === "admin") {
         return true;
       }
-      if (
-        (user?.role === "employee" || user?.role === "admin") &&
-        planModuleKeys instanceof Set
-      ) {
+      /* Portal employees: RBAC only (no subscription plan gate) */
+      if (user?.role === "employee") {
+        return true;
+      }
+      if (user?.role === "admin" && planModuleKeys instanceof Set) {
         const planKey = resolvePlanFeatureKey(key);
         return planModuleKeys.has(planKey) || planModuleKeys.has(key);
       }

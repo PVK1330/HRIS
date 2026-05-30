@@ -314,11 +314,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "messages",
-            element: (
-              <AdminModuleGate moduleKey="messages">
-                <Messages />
-              </AdminModuleGate>
-            ),
+            element: <Messages />,
           },
           {
             path: "settings",
