@@ -27,10 +27,11 @@ const Policies = lazy(() => import("../pages/admin/compliance/Policies.jsx"));
 const MyPolicies = lazy(() => import("../pages/admin/compliance/MyPolicies.jsx"));
 const Expenses = lazy(() => import("../pages/admin/finance/Expenses.jsx"));
 const Onboarding = lazy(() => import("../pages/admin/hr/Onboarding.jsx"));
-const ExitManagement = lazy(() => import("../pages/exit/ExitManagement.jsx"));
-const ExitDetail = lazy(() => import("../pages/exit/ExitDetail.jsx"));
-const ManagerExitApprovals = lazy(() => import("../pages/exit/ManagerExitApprovals.jsx"));
-const EmployeeExit = lazy(() => import("../pages/exit/EmployeeExit.jsx"));
+// Workflow-engine exit screens (new)
+const ExitManagement = lazy(() => import("../pages/exit/ExitManagementNew.jsx"));
+const ExitDetail = lazy(() => import("../pages/exit/ExitRequestDetail.jsx"));
+const ExitWorkflowConfig = lazy(() => import("../pages/exit/ExitWorkflowConfig.jsx"));
+const EmployeeExit = lazy(() => import("../pages/exit/ExitManagementNew.jsx"));
 const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemplates.jsx"));
 const LetterBuilder = lazy(() => import("../pages/admin/documents/LetterBuilder.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
@@ -276,7 +277,15 @@ export const router = createBrowserRouter([
             path: "exit-approvals",
             element: (
               <AdminModuleGate moduleKey="exit-management">
-                <ManagerExitApprovals />
+                <ExitManagement />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "settings/exit-workflows",
+            element: (
+              <AdminModuleGate moduleKey="exit-management">
+                <ExitWorkflowConfig />
               </AdminModuleGate>
             ),
           },

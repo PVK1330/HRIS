@@ -148,6 +148,14 @@ const adminNavGroups = [
         featureCode: "onboarding_exit",
       },
       {
+        label: "Exit Workflow Setup",
+        icon: HiArrowRightOnRectangle,
+        path: "/admin/settings/exit-workflows",
+        key: "exit-management",
+        permission: "view_exit",
+        featureCode: "onboarding_exit",
+      },
+      {
         label: "Letter Templates",
         icon: HiEnvelope,
         path: "/admin/letters",
