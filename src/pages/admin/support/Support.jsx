@@ -98,11 +98,23 @@ const initialFormData = {
 
 export default function SupportManagement() {
   const { user } = useAuth()
+  const getDefaultFormData = () => {
+    const adminName = user?.name || user?.email || 'Admin'
+    const tenantName =
+      user?.companyName || user?.company_name || user?.tenant_name || user?.tenantName || 'Company'
+
+    return {
+      ...initialFormData,
+      adminName,
+      tenantName,
+    }
+  }
+
   const [tickets, setTickets] = useState([])
   const [modalOpen, setModalOpen] = useState(false)
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState(null)
-  const [formData, setFormData] = useState(initialFormData)
+  const [formData, setFormData] = useState(getDefaultFormData)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
@@ -122,7 +134,8 @@ export default function SupportManagement() {
     attachmentName: ticket.attachmentUrl ? ticket.attachmentUrl.split('/').pop() : '',
     attachmentUrl: ticket.attachmentUrl || ticket.attachment_url || null,
     attachment: ticket.attachmentUrl || ticket.attachment_url || null,
-    messages: ticket.messages || ticket.replies || [],
+    conversation: ticket.conversation || ticket.messages || ticket.replies || [],
+    messages: ticket.conversation || ticket.messages || ticket.replies || [],
   })
 
   // Get today's date in YYYY-MM-DD format
@@ -140,7 +153,7 @@ export default function SupportManagement() {
       setTickets(data)
       toast.success('Support tickets refreshed')
     } catch (err) {
-      console.error('Failed to load support tickets:', err)
+      console.error('[ADMIN SUPPORT] Failed to load support tickets:', err)
       toast.error('Unable to load support tickets')
     } finally {
       setLoading(false)
@@ -149,20 +162,13 @@ export default function SupportManagement() {
 
   useEffect(() => {
     if (user) {
-      const adminName = user.name || user.email || 'Admin'
-      const tenantName = user?.companyName || user?.company_name || user?.tenant_name || user?.tenantName || 'Company'
-      setFormData((prev) => ({
-        ...prev,
-        adminName,
-        tenantName,
-      }))
+      setFormData(getDefaultFormData())
     }
   }, [user])
 
+  // Fetch tickets on component mount
   useEffect(() => {
     fetchTickets()
-    const interval = setInterval(fetchTickets, 60000)
-    return () => clearInterval(interval)
   }, [])
 
   // Initialize Socket.io connection for real-time updates
@@ -182,12 +188,10 @@ export default function SupportManagement() {
     })
 
     socket.on('connect', () => {
-      console.log('Socket.io connected for real-time ticket updates')
-    })
+      })
 
     // Listen for ticket updates from Super Admin
     socket.on('ticket:updated', (updatedTicket) => {
-      console.log('Ticket updated from Super Admin:', updatedTicket)
       setTickets((prevTickets) =>
         prevTickets.map((ticket) =>
           ticket.id === updatedTicket.id
@@ -203,8 +207,7 @@ export default function SupportManagement() {
     })
 
     socket.on('disconnect', () => {
-      console.log('Socket.io disconnected')
-    })
+      })
 
     socket.on('error', (error) => {
       console.error('Socket.io error:', error)
@@ -259,7 +262,10 @@ export default function SupportManagement() {
 
   const handleCloseModal = () => {
     setModalOpen(false)
-    setFormData(initialFormData)
+    setFormData(getDefaultFormData())
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   const handleCloseViewModal = () => {
@@ -299,7 +305,7 @@ export default function SupportManagement() {
       payload.append('category', formData.category)
       payload.append('priority', formData.priority)
       payload.append('description', formData.description.trim())
-      payload.append('status', 'Open')
+      payload.append('status', 'Waiting')
       if (formData.attachmentFile) {
         payload.append('attachment', formData.attachmentFile)
       }
@@ -309,14 +315,15 @@ export default function SupportManagement() {
       })
 
       if (response?.data?.success) {
-        setTickets((prev) => [normalizeTicket(response.data.data), ...prev])
         toast.success('Support ticket created successfully')
         handleCloseModal()
+        // Refetch all tickets from backend to ensure sync
+        await fetchTickets()
       } else {
         throw new Error(response?.data?.message || 'Failed to create ticket')
       }
     } catch (err) {
-      console.error('Failed to create ticket:', err)
+      console.error('[ADMIN SUPPORT] Failed to create ticket:', err)
       toast.error(err?.response?.data?.message || 'Failed to create ticket')
     } finally {
       setSubmitting(false)
@@ -332,7 +339,8 @@ export default function SupportManagement() {
         const ticketData = normalizeTicket(response.data.data)
         setSelectedTicket({
           ...ticketData,
-          messages: response.data.data.messages || [],
+          conversation: response.data.data.conversation || ticketData.conversation || [],
+          messages: response.data.data.conversation || ticketData.conversation || [],
         })
         setTickets((prev) => prev.map((t) => (t.id === ticketData.id ? ticketData : t)))
       } else {
@@ -647,8 +655,8 @@ export default function SupportManagement() {
           </div>
         }
       >
-        <form onSubmit={handleSubmit} className="pt-2">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex h-full max-h-[90vh] flex-col">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
             {/* Admin Name */}
             <Input
               label="Admin Name"
@@ -754,7 +762,7 @@ export default function SupportManagement() {
           </div>
 
           {/* Modal Footer */}
-          <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-100">
+          <div className="sticky bottom-0 bg-white border-t border-slate-100 px-6 py-4 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={handleCloseModal}
@@ -856,22 +864,40 @@ export default function SupportManagement() {
 
             {/* Ticket Conversation / Updates */}
             <div className="rounded-lg bg-white p-4 border border-slate-100">
-              <p className="text-xs font-medium text-slate-500 uppercase mb-3">Ticket Conversation / Updates</p>
-              {selectedTicket.messages && selectedTicket.messages.length ? (
-                <div className="space-y-3">
-                  {selectedTicket.messages.map((msg) => (
-                    <div key={msg.id} className="rounded-lg p-3 bg-slate-50">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-[11px] font-bold text-slate-600">Super Admin</div>
-                        <div className="text-[11px] text-slate-400">{new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} · {new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.2em]">Conversation History</p>
+                <span className="text-xs text-slate-400">Scroll for older messages</span>
+              </div>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                {(selectedTicket.conversation || selectedTicket.messages || []).length ? (
+                  <div className="space-y-3">
+                    {(selectedTicket.conversation || selectedTicket.messages || []).map((msg) => (
+                      <div
+                        key={`${msg.id}-${msg.senderRole}-${msg.createdAt}`}
+                        className={`rounded-lg border-l-4 bg-slate-50 p-4 ${msg.senderRole === 'admin' ? 'border-sky-500' : 'border-emerald-500'}`}
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${msg.senderRole === 'admin' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                              {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
+                            </span>
+                            <span className="text-[11px] font-semibold text-slate-700">{msg.senderName || (msg.senderRole === 'admin' ? 'Admin' : 'Super Admin')}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <span>{msg.status}</span>
+                            <span>·</span>
+                            <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
+                            <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}</span>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{msg.message}</p>
                       </div>
-                      <div className="text-sm text-slate-700">{msg.message}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-400">No updates from Super Admin</p>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400">No conversation history available.</p>
+                )}
+              </div>
             </div>
 
             {/* Attachment */}

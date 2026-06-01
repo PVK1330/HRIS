@@ -118,11 +118,8 @@ export const superadminService = {
     if (payload.status != null) {
       body.status = payload.status
     }
-    if (payload.reply != null) {
-      body.reply = payload.reply
-    }
-    if (payload.superAdminDescription != null) {
-      body.superAdminDescription = payload.superAdminDescription
+    if (payload.message != null) {
+      body.message = payload.message
     }
     if (payload.internalNotes != null) {
       body.internalNotes = payload.internalNotes

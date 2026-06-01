@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-<<<<<<< HEAD
 import { Link } from 'react-router-dom'
 import {
   HiArrowPath,
@@ -40,9 +39,7 @@ import {
 import { Avatar } from '../../components/ui/Avatar.jsx'
 import { Badge } from '../../components/ui/Badge.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
-=======
 import { Building2, Package, Users } from 'lucide-react'
->>>>>>> e1261c0e32a65addbf9500a15806cd87416cd18f
 import { useAuth } from '../../context/AuthContext.jsx'
 import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
 import { fetchAdminDashboard, fetchEmployeeDashboard } from '../../services/dashboardService.js'
@@ -54,6 +51,23 @@ import PlanDistribution from './dashboard/PlanDistribution.jsx'
 import RecentTransactions from './dashboard/RecentTransactions.jsx'
 import RegisteredCompanies from './dashboard/RegisteredCompanies.jsx'
 import RevenueChart from './dashboard/RevenueChart.jsx'
+
+function MetricCard({ label, value, subtitle, tone = 'slate' }) {
+  const toneStyles = {
+    slate: 'text-slate-900',
+    emerald: 'text-emerald-600',
+    blue: 'text-blue-600',
+    amber: 'text-amber-600',
+  }
+
+  return (
+    <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+      <p className="text-sm font-semibold text-slate-500">{label}</p>
+      <p className={`mt-3 text-3xl font-bold ${toneStyles[tone] || toneStyles.slate}`}>{value ?? 0}</p>
+      <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
+    </div>
+  )
+}
 
 const EMPTY_STATS = {
   employees: { total: 0, active: 0, probation: 0, notice: 0 },
@@ -91,10 +105,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [dateRange, setDateRange] = useState('Last 30 days')
   const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
-  const [expiryAlerts, setExpiryAlerts] = useState([])
-  const [birthdays, setBirthdays] = useState([])
-
-
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
 
   const isManager = user?.role === 'manager'
   const isHRAdmin = user?.role === 'admin' || user?.role === 'hr_admin'
@@ -213,6 +224,26 @@ export default function Dashboard() {
       color: '#3b82f6',
     },
   ]
+
+  const growthData = dashboardData.growthData?.length
+    ? dashboardData.growthData.slice(-7)
+    : [{ name: 'Now', headcount: dashboardData.employees.total || 0 }]
+
+  const announcements = dashboardData.announcements || []
+  const events = dashboardData.events || []
+  const expiryAlertsToShow = dashboardData.expiryAlerts || []
+  const birthdays = dashboardData.celebrations || []
+
+  const attendancePieData = [
+    { name: 'Present', value: dashboardData.attendance.present || 0 },
+    { name: 'Remote', value: dashboardData.attendance.remote || 0 },
+    { name: 'On Leave', value: dashboardData.attendance.onLeave || 0 },
+  ]
+
+  const holidayColorClass = {
+    emerald: 'bg-emerald-500',
+    blue: 'bg-blue-500',
+  }
 
   return (
     <div className="space-y-6 pb-12 min-w-0">
@@ -334,30 +365,6 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          </div>
-        </>
-      ) : (
-          <>
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <Avatar name={user?.name || 'Employee'} size="lg" />
-                <div>
-                  <p className="text-lg font-bold text-slate-900">{user?.name || 'Employee'}</p>
-                  <p className="text-sm text-slate-500">{user?.role?.replace('_', ' ') || 'Employee'}</p>
-                </div>
-              </div>
-              <div className="mt-4 space-y-2 text-sm text-slate-600">
-                <p><span className="font-medium">Email:</span> {user?.email || '—'}</p>
-                <p><span className="font-medium">Department:</span> {user?.department || '—'}</p>
-              </div>
-            </div>
-
-            <MetricCard label="Leave Balance" value={dashboardData.personal.leaveBalance} subtitle="Available days" tone="emerald" />
-            <MetricCard label="Attendance Rate" value={dashboardData.personal.attendanceRate} subtitle="This month" tone="blue" />
-          </div>
-          </>
-      )}
 
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-6">
@@ -509,7 +516,7 @@ export default function Dashboard() {
                     COMPLIANCE_PROTOCOL <HiShieldCheck className="h-4 w-4 text-rose-500" />
                  </h3>
                  <div className="space-y-3">
-                    {expiryAlerts.map(alert => (
+                    {expiryAlertsToShow.map(alert => (
                        <div key={alert.name} className="p-4 border border-slate-100 bg-slate-50/50">
                           <div className="flex justify-between items-center mb-2">
                              <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">{alert.name}</span>
@@ -555,7 +562,7 @@ export default function Dashboard() {
                  ].map(h => (
                     <div key={h.name} className="flex items-center justify-between p-4 border border-slate-100 bg-slate-50/50">
                        <div className="flex items-center gap-4">
-                          <div className={`h-8 w-1 bg-${h.color}-500`} />
+                          <div className={`h-8 w-1 ${holidayColorClass[h.color] || 'bg-slate-400'}`} />
                           <div>
                              <p className="text-[10px] font-black text-slate-900 leading-none mb-1">{h.name}</p>
                              <p className="text-[8px] text-slate-400 font-black uppercase">{h.date}</p>

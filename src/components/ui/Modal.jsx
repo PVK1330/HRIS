@@ -10,6 +10,7 @@ const sizeClasses = {
   visa: 'max-w-[min(640px,calc(100vw-1.5rem))]',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
+  '3xl': 'max-w-3xl',
   xl: 'max-w-8xl',
   '2xl': 'max-w-6xl',
   'custom': 'max-w-[1200px]'
@@ -24,6 +25,7 @@ export function Modal({
   header,
   children,
   size = 'md',
+  bodyClassName = '',
   showClose = true,
   icon: Icon
 }) {
@@ -58,7 +60,7 @@ export function Modal({
 
       {/* Modal Box */}
       <div
-        className={`relative w-full ${maxW} max-h-full flex flex-col transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} max-h-[90vh] overflow-hidden flex flex-col transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
       >
@@ -74,7 +76,7 @@ export function Modal({
           </button>
         )}
 
-        <div className="flex flex-col">
+        <div className="flex flex-col h-full">
           {/* Header */}
           <div className="px-5 pt-6 pb-2 sm:px-6">
             {header ? (
@@ -101,8 +103,8 @@ export function Modal({
           </div>
 
           {/* Body */}
-          <div className="flex-1 px-5 py-1 sm:px-6 overflow-y-auto custom-scrollbar">
-            <div className="pb-8">
+          <div className={`flex-1 px-5 py-1 sm:px-6 overflow-hidden custom-scrollbar ${bodyClassName}`}>
+            <div className="pb-8 h-full">
               {children}
             </div>
           </div>
