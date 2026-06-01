@@ -248,6 +248,23 @@ export default function useRbac() {
     }
   }
 
+  const updateRole = async (id, { name, description, scope }) => {
+    try {
+      setSaving(true)
+      await adminSettingsService.updateRole(id, { name, description, scope })
+      await fetchAll()
+      toast.success('Role updated')
+      return true
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message || err?.data?.message || err?.message
+      toast.error(msg || 'Failed to update role')
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const deleteRoleById = async (id) => {
     const confirmed = window.confirm('Delete this role? This cannot be undone.')
     if (!confirmed) return
@@ -292,6 +309,7 @@ export default function useRbac() {
     saveRolePermissions,
     discardChanges,
     createRole,
+    updateRole,
     deleteRole: deleteRoleById,
   }
 }

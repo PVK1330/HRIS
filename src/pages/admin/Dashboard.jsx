@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Building2, Package, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import {
   HiArrowPath,
@@ -20,7 +21,7 @@ import {
   HiDocument,
   HiCog6Tooth,
   HiShieldCheck,
-  HiGift ,
+  HiGift,
   HiFlag,
   HiClipboardDocumentCheck,
 } from 'react-icons/hi2'
@@ -107,6 +108,8 @@ export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
 
+  const [expiryAlerts, setExpiryAlerts] = useState([])
+  const [birthdays, setBirthdays] = useState([])
   const isManager = user?.role === 'manager'
   const isHRAdmin = user?.role === 'admin' || user?.role === 'hr_admin'
   const isEmployee = user?.role === 'employee'
@@ -289,25 +292,6 @@ export default function Dashboard() {
       <PlanDistribution data={planDistribution} loading={false} />
       <RecentTransactions transactions={DEMO_TRANSACTIONS} loading={false} />
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">Attendance Trend</h3>
-                  <HiArrowTrendingUp className="h-4 w-4 text-[#0F766E]" />
-                </div>
-                <div className="h-60">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={growthData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                      <Tooltip />
-                      <Area type="monotone" dataKey="headcount" stroke="#0F766E" fill="#0F766E" fillOpacity={0.12} strokeWidth={2.5} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
 
               <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="mb-4 text-sm font-semibold text-slate-900">Pending Approvals</h3>
@@ -461,6 +445,8 @@ export default function Dashboard() {
               </div>
            )}
 
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
            {/* Quick Access Grid */}
            <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Execution Gateways</h3>
@@ -573,10 +559,8 @@ export default function Dashboard() {
                  ))}
               </div>
            </div>
-        </div>
+         </div>
       </div>
-  )
-      
 
       {/* Broadcasts & New Talent */}
       <div className="grid gap-8 lg:grid-cols-3">
@@ -616,8 +600,8 @@ export default function Dashboard() {
     </div>
   )
 }
-   
 
 
-     
+
+
 

@@ -46,7 +46,8 @@ export default function Announcements() {
     dispatch_channels: 'Both'
   });
 
-  const isHrAdmin = user?.role === 'hr_admin' || user?.role === 'admin';
+  const isCanManage = ['admin', 'hr_admin', 'hr_executive'].includes(user?.role);
+  const scheduleIsFuture = formData.scheduleDate && new Date(formData.scheduleDate).getTime() > Date.now();
 
   const fetchData = async () => {
     try {
@@ -102,7 +103,7 @@ export default function Announcements() {
       let selectedEmps = [];
       if (visibility.startsWith('[') && visibility.endsWith(']')) {
         try {
-          selectedEmps = JSON.parse(visibility);
+          selectedEmps = JSON.parse(visibility).map((id) => Number(id));
           visibility = 'Selected Employees';
         } catch (e) {}
       }
@@ -158,10 +159,35 @@ export default function Announcements() {
     setFormData(prev => ({ ...prev, dispatch_channels: nextChannels }));
   };
 
-  const handleSave = async (status) => {
+  const resolveSaveStatus = (intent) => {
+    const schedule = formData.scheduleDate ? new Date(formData.scheduleDate) : null;
+    const isFuture = schedule && !Number.isNaN(schedule.getTime()) && schedule.getTime() > Date.now();
+
+    if (intent === 'draft') return 'Draft';
+    if (intent === 'schedule') {
+      if (!formData.scheduleDate) return { error: 'Pick a date and time to schedule this announcement.' };
+      if (!isFuture) return { error: 'Scheduled time must be in the future.' };
+      return 'Scheduled';
+    }
+    if (intent === 'publish') {
+      if (isFuture) return 'Scheduled';
+      return 'Published';
+    }
+    return 'Draft';
+  };
+
+  const handleSave = async (intent) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
+      const statusResult = resolveSaveStatus(intent);
+      if (typeof statusResult === 'object' && statusResult.error) {
+        Swal.fire({ icon: 'warning', title: 'Schedule required', text: statusResult.error });
+        setIsSubmitting(false);
+        return;
+      }
+      const status = statusResult;
+
       let finalVisibility = formData.visibility;
       if (formData.visibility === 'Selected Employees') {
         if (selectedEmployees.length === 0) {
@@ -169,22 +195,32 @@ export default function Announcements() {
           setIsSubmitting(false);
           return;
         }
-        finalVisibility = JSON.stringify(selectedEmployees);
+        finalVisibility = JSON.stringify(selectedEmployees.map((id) => Number(id)));
       }
-      
-      const payload = { ...formData, status, visibility: finalVisibility };
+
+      const payload = {
+        ...formData,
+        schedule_date: formData.scheduleDate || null,
+        status,
+        visibility: finalVisibility,
+      };
+
       if (editingId) {
         await api.put(`/admin/announcements/${editingId}`, payload);
-        toast.success('Announcement updated.');
+        if (status === 'Scheduled') toast.success('Announcement scheduled.');
+        else if (status === 'Published') toast.success('Announcement published — notifications sent.');
+        else toast.success('Draft saved.');
       } else {
         await api.post('/admin/announcements', payload);
-        toast.success('Announcement created.');
+        if (status === 'Scheduled') toast.success('Announcement scheduled.');
+        else if (status === 'Published') toast.success('Announcement published — notifications sent.');
+        else toast.success('Draft saved.');
       }
       setIsModalOpen(false);
       fetchData();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to save announcement.');
+      toast.error(err.response?.data?.message || 'Failed to save announcement.');
     } finally {
       setIsSubmitting(false);
     }
@@ -276,35 +312,46 @@ export default function Announcements() {
     {
       key: 'status',
       label: 'Status',
-      render: (v) => {
+      render: (v, row) => {
          const color = v === 'Published' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : v === 'Scheduled' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-100';
          return (
-            <span className={`inline-flex items-center rounded-xl px-2 py-0.5 text-xs font-semibold  border ${color}`}>
-               {v}
-            </span>
+            <div className="flex flex-col gap-0.5">
+              <span className={`inline-flex w-fit items-center rounded-xl px-2 py-0.5 text-xs font-semibold border ${color}`}>
+                 {v}
+              </span>
+              {row.schedule_date && v === 'Scheduled' && (
+                <span className="text-[10px] font-semibold text-slate-400">
+                  {new Date(row.schedule_date).toLocaleString()}
+                </span>
+              )}
+            </div>
          );
       }
     },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (_, row) => (
-         <div className="flex items-center gap-1.5">
-            <button 
-               onClick={() => handleOpenModal(row)}
-               className="h-8 w-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-[#0F766E] transition-all shadow-md"
-            >
-               <HiPencilSquare className="h-4 w-4" />
-            </button>
-            <button 
-               onClick={() => handleDelete(row.id)}
-               className="h-8 w-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-red-600 transition-all shadow-md"
-            >
-               <HiTrash className="h-4 w-4" />
-            </button>
-         </div>
-      )
-    }
+    ...(isCanManage
+      ? [{
+          key: 'actions',
+          label: 'Actions',
+          render: (_, row) => (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleOpenModal(row)}
+                className="h-8 w-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-[#0F766E] transition-all shadow-md"
+              >
+                <HiPencilSquare className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(row.id)}
+                className="h-8 w-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-red-600 transition-all shadow-md"
+              >
+                <HiTrash className="h-4 w-4" />
+              </button>
+            </div>
+          ),
+        }]
+      : []),
   ];
 
   return (
@@ -317,7 +364,7 @@ export default function Announcements() {
           <p className="mt-1 text-sm font-bold text-slate-400 ">Manage corporate announcements and broadcasts.</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          {isHrAdmin && (
+          {isCanManage && (
             <button
               type="button"
               onClick={() => handleOpenModal()}
@@ -331,36 +378,17 @@ export default function Announcements() {
 
       {/* Metrics Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
-        {[
-          {
-            label: 'Total Announcements',
-            count: stats.total || announcements.length || 0,
-            bgColor: 'bg-slate-900',
-            icon: HiMegaphone,
-            onClickFilter: () => setActiveStatus('All')
-          },
-          {
-            label: 'Published',
-            count: stats.published || announcements.filter(a => a.status === 'Published').length || 0,
-            bgColor: 'bg-[#10B981]',
-            icon: HiCheckCircle,
-            onClickFilter: () => setActiveStatus('Published')
-          },
-          {
-            label: 'Drafts',
-            count: stats.drafts || announcements.filter(a => a.status === 'Draft').length || 0,
-            bgColor: 'bg-[#F59E0B]',
-            icon: HiPencilSquare,
-            onClickFilter: () => setActiveStatus('Draft')
-          },
-          {
-            label: 'Scheduled',
-            count: stats.scheduled || announcements.filter(a => a.status === 'Scheduled').length || 0,
-            bgColor: 'bg-[#3B82F6]',
-            icon: HiClock,
-            onClickFilter: () => setActiveStatus('Scheduled')
-          }
-        ].map((card, idx) => {
+        {(isCanManage
+          ? [
+              { label: 'Total Announcements', count: stats.total || announcements.length || 0, bgColor: 'bg-slate-900', icon: HiMegaphone, onClickFilter: () => setActiveStatus('All') },
+              { label: 'Published', count: stats.published || announcements.filter((a) => a.status === 'Published').length || 0, bgColor: 'bg-[#10B981]', icon: HiCheckCircle, onClickFilter: () => setActiveStatus('Published') },
+              { label: 'Drafts', count: stats.drafts || announcements.filter((a) => a.status === 'Draft').length || 0, bgColor: 'bg-[#F59E0B]', icon: HiPencilSquare, onClickFilter: () => setActiveStatus('Draft') },
+              { label: 'Scheduled', count: stats.scheduled || announcements.filter((a) => a.status === 'Scheduled').length || 0, bgColor: 'bg-[#3B82F6]', icon: HiClock, onClickFilter: () => setActiveStatus('Scheduled') },
+            ]
+          : [
+              { label: 'Published', count: stats.published || announcements.length || 0, bgColor: 'bg-[#10B981]', icon: HiCheckCircle, onClickFilter: () => setActiveStatus('Published') },
+            ]
+        ).map((card, idx) => {
           const isActiveFilter = 
             (card.label === 'Total Announcements' && activeStatus === 'All') ||
             (card.label === 'Published' && activeStatus === 'Published') ||
@@ -396,7 +424,7 @@ export default function Announcements() {
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md min-w-0">
         <div className="flex items-center justify-between bg-[#0F766E] px-5 py-3.5 text-white min-w-0 border-b border-[#0F766E]">
           <h2 className="text-sm font-semibold  tracking-wider truncate">Announcement History</h2>
-          <div className="text-sm font-semibold text-white/60  shrink-0">Security Level: Admin</div>
+          <div className="text-sm font-semibold text-white/60  shrink-0">{isCanManage ? 'Security Level: Admin' : 'Company Broadcasts'}</div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
@@ -430,197 +458,230 @@ export default function Announcements() {
         <Table columns={columns} data={filtered} pageSize={8} square className="rounded-xl" />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Announcement Editor" size="xl">
-        <form className="animate-in fade-in duration-500 space-y-10 p-2" onSubmit={(e) => e.preventDefault()}>
-          <div className="grid gap-10 md:grid-cols-2">
-             <div className="col-span-2 space-y-2">
-                <label className="text-sm font-semibold text-slate-400  ml-1">Transmission Subject <span className="text-red-500">*</span></label>
-                <input 
-                   type="text" 
-                   name="title" 
-                   value={formData.title} 
-                   onChange={handleInputChange} 
-                   required 
-                   placeholder="ENTER ANNOUNCEMENT TITLE..."
-                   className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold  focus:border-[#0F766E] outline-none" 
-                />
-             </div>
-             <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-400  ml-1">Subject Classification</label>
-                <select 
-                   name="category"
-                   className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold  focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
-                   value={formData.category} 
-                   onChange={handleInputChange}
-                >
-                   <option>General</option>
-                   <option>Corporate</option>
-                   <option>Benefits</option>
-                   <option>Training</option>
-                </select>
-             </div>
-             <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-400  ml-1">Priority Protocol</label>
-                <select 
-                   name="priority"
-                   className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold  focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
-                   value={formData.priority} 
-                   onChange={handleInputChange}
-                >
-                   <option>High</option>
-                   <option>Medium</option>
-                   <option>Low</option>
-                </select>
-             </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-400  ml-1">Transmission Content <span className="text-red-500">*</span></label>
-            <textarea 
-              name="content"
-              className="w-full rounded-xl border border-slate-200 bg-white p-5 text-sm font-bold  focus:border-[#0F766E] outline-none transition-all min-h-[180px] placeholder:text-slate-200"
-              placeholder="DEFINE BROADCAST MESSAGE PARAMETERS..."
-              value={formData.content}
-              onChange={handleInputChange}
-              required
-              rows={5}
-            />
-          </div>
-
-          <div className="grid gap-10 md:grid-cols-2">
-             <div className="space-y-4">
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-400  ml-1">Target Audience</label>
-                    <select 
-                    name="visibility"
-                    className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold  focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
-                    value={formData.visibility} 
-                    onChange={handleInputChange}
-                    >
-                    <option value="All Employees">All Employees</option>
-                    <option value="Selected Employees">Selected Employees</option>
-                    {departments.map((d, i) => (
-                        <option key={i} value={d.name || d.department}>{(d.name || d.department).toUpperCase()}</option>
-                    ))}
-                    </select>
-                </div>
-                
-                {formData.visibility === 'Selected Employees' && (
-                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-xs font-semibold text-slate-400 ">Employee Selector</p>
-                      {selectedEmployees.length > 0 && (
-                        <button 
-                          type="button" 
-                          onClick={() => setSelectedEmployees([])}
-                          className="text-xs text-red-600 font-semibold  hover:underline"
-                        >
-                          Clear All
-                        </button>
-                      )}
-                    </div>
-                    <input 
-                      type="text"
-                      placeholder="Search by name or email..."
-                      value={employeeSearch}
-                      onChange={(e) => setEmployeeSearch(e.target.value)}
-                      className="w-full h-10 px-3 mb-4 border border-slate-200 rounded-xl bg-white text-sm font-bold  focus:border-[#0F766E] outline-none"
-                    />
-                    <div className="max-h-48 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                      {employees
-                        .filter(emp => {
-                          const term = employeeSearch.toLowerCase();
-                          return `${emp.full_name || emp.first_name || emp.name || ''} ${emp.last_name || ''} ${emp.work_email || emp.email || ''} ${emp.emp_id || ''}`.toLowerCase().includes(term);
-                        })
-                        .map(emp => (
-                          <label key={emp.id} className="flex items-center gap-3 p-2 bg-white border border-slate-100 hover:border-[#0F766E] transition-all cursor-pointer group">
-                            <input 
-                              type="checkbox" 
-                              className="h-4 w-4 rounded-xl border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
-                              checked={selectedEmployees.includes(emp.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedEmployees([...selectedEmployees, emp.id]);
-                                } else {
-                                  setSelectedEmployees(selectedEmployees.filter(id => id !== emp.id));
-                                }
-                              }}
-                            />
-                            <div className="min-w-0">
-                                <span className="block text-sm font-semibold text-slate-900  truncate">
-                                {emp.full_name || `${emp.first_name || emp.name || ''} ${emp.last_name || ''}`.trim() || 'Unknown Employee'} 
-                                </span>
-                                <span className="text-[8px] font-semibold text-slate-400  truncate block">{(emp.work_email || emp.email || '').toLowerCase()}</span>
-                            </div>
-                          </label>
-                        ))}
-                    </div>
-                  </div>
-                )}
-             </div>
-             <div className="space-y-8">
-                <div className="space-y-2">
-                   <label className="text-sm font-semibold text-slate-400  ml-1">Scheduled Inception (Optional)</label>
-                   <input 
-                      type="datetime-local" 
-                      name="scheduleDate" 
-                      value={formData.scheduleDate} 
-                      onChange={handleInputChange} 
-                      className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold focus:border-[#0F766E] outline-none"
-                   />
-                </div>
-                <div className="space-y-2">
-                   <label className="text-sm font-semibold text-slate-400  ml-1">Dispatch Channels</label>
-                   <div className="grid grid-cols-2 gap-4 border border-slate-200 bg-slate-50/50 p-5 rounded-xl">
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                         <input 
-                            type="checkbox" 
-                            className="h-5 w-5 rounded-xl border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
-                            checked={isInAppChecked}
-                            onChange={(e) => handleDispatchChange('In App', e.target.checked)}
-                         />
-                         <span className="text-sm font-semibold text-slate-600  group-hover:text-[#0F766E]">In-App Notification</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                         <input 
-                            type="checkbox" 
-                            className="h-5 w-5 rounded-xl border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
-                            checked={isEmailChecked}
-                            onChange={(e) => handleDispatchChange('Email', e.target.checked)}
-                         />
-                         <span className="text-sm font-semibold text-slate-600  group-hover:text-[#0F766E]">Email Notification</span>
-                      </label>
-                   </div>
-                </div>
-             </div>
-          </div>
-          
-          <div className="pt-8 border-t border-slate-100 flex items-center justify-end gap-6 mt-6">
-            <button 
-              type="button" 
-              disabled={isSubmitting} 
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title="Announcement Editor"
+        description="Create or update a company broadcast"
+        size="announcement"
+        footer={
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+            <button
+              type="button"
+              disabled={isSubmitting}
               onClick={handleCloseModal}
-              className="h-12 px-10 rounded-xl border border-slate-200 text-sm font-semibold  text-slate-400 hover:text-slate-600 transition-colors"
+              className="h-10 px-5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
-            <button 
-              type="button" 
-              disabled={isSubmitting} 
-              onClick={() => handleSave('Draft')}
-              className="h-12 px-10 rounded-xl border border-slate-300 text-sm font-semibold  text-slate-700 hover:bg-slate-50 transition-all"
-            >
-              Save Draft
-            </button>
-            <button 
-              type="button" 
-              disabled={isSubmitting} 
-              onClick={() => handleSave('Published')}
-              className="h-12 px-16 rounded-xl bg-slate-900 text-sm font-semibold  text-white hover:bg-black transition-all shadow-xl shadow-slate-900/10 flex items-center gap-3"
-            >
-              <HiEnvelope className="h-4 w-4" />
-              {isSubmitting ? "Saving..." : "Publish"}
-            </button>
+            {isCanManage && (
+              <>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleSave('draft')}
+                  className="h-10 px-5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+                >
+                  Save Draft
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting || !scheduleIsFuture}
+                  onClick={() => handleSave('schedule')}
+                  className="h-10 px-5 rounded-xl border border-blue-200 bg-blue-50 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-all inline-flex items-center gap-1.5 disabled:opacity-40"
+                >
+                  <HiClock className="h-4 w-4" />
+                  {isSubmitting ? 'Saving…' : 'Schedule'}
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleSave('publish')}
+                  className="h-10 px-6 rounded-xl bg-[#0F766E] text-sm font-semibold text-white hover:bg-[#0d5c56] transition-all inline-flex items-center gap-2"
+                >
+                  <HiEnvelope className="h-4 w-4" />
+                  {isSubmitting ? 'Saving…' : scheduleIsFuture ? 'Schedule & Send Later' : 'Publish Now'}
+                </button>
+              </>
+            )}
+          </div>
+        }
+      >
+        <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 ml-0.5">
+                Subject <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                required
+                placeholder="Announcement title"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 ml-0.5">Category</label>
+              <select
+                name="category"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
+                value={formData.category}
+                onChange={handleInputChange}
+              >
+                <option>General</option>
+                <option>Corporate</option>
+                <option>Benefits</option>
+                <option>Training</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 ml-0.5">Priority</label>
+              <select
+                name="priority"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
+                value={formData.priority}
+                onChange={handleInputChange}
+              >
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 ml-0.5">
+              Content <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              name="content"
+              className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none min-h-[120px] resize-y"
+              placeholder="Write your announcement message…"
+              value={formData.content}
+              onChange={handleInputChange}
+              required
+              rows={4}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500 ml-0.5">Target Audience</label>
+                <select
+                  name="visibility"
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium focus:border-[#0F766E] outline-none appearance-none cursor-pointer"
+                  value={formData.visibility}
+                  onChange={handleInputChange}
+                >
+                  <option value="All Employees">All Employees</option>
+                  <option value="Selected Employees">Selected Employees</option>
+                  {departments.map((d, i) => (
+                    <option key={i} value={d.name || d.department}>
+                      {(d.name || d.department).toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {formData.visibility === 'Selected Employees' && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-slate-500">Select employees</p>
+                    {selectedEmployees.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEmployees([])}
+                        className="text-xs font-semibold text-red-600 hover:underline"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search by name or email…"
+                    value={employeeSearch}
+                    onChange={(e) => setEmployeeSearch(e.target.value)}
+                    className="mb-2 w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-[#0F766E] outline-none"
+                  />
+                  <div className="max-h-36 overflow-y-auto overscroll-contain space-y-1.5 pr-1 custom-scrollbar">
+                    {employees
+                      .filter((emp) => {
+                        const term = employeeSearch.toLowerCase();
+                        return `${emp.full_name || emp.first_name || emp.name || ''} ${emp.last_name || ''} ${emp.work_email || emp.email || ''} ${emp.emp_id || ''}`.toLowerCase().includes(term);
+                      })
+                      .map((emp) => (
+                        <label
+                          key={emp.id}
+                          className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-slate-100 bg-white p-2 hover:border-[#0F766E]/40 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 shrink-0 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                            checked={selectedEmployees.includes(Number(emp.id))}
+                            onChange={(e) => {
+                              const id = Number(emp.id);
+                              if (e.target.checked) {
+                                setSelectedEmployees([...selectedEmployees, id]);
+                              } else {
+                                setSelectedEmployees(selectedEmployees.filter((x) => x !== id));
+                              }
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <span className="block truncate text-sm font-medium text-slate-900">
+                              {emp.full_name || `${emp.first_name || emp.name || ''} ${emp.last_name || ''}`.trim() || 'Unknown'}
+                            </span>
+                            <span className="block truncate text-[11px] text-slate-400">
+                              {(emp.work_email || emp.email || '').toLowerCase()}
+                            </span>
+                          </div>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500 ml-0.5">Schedule (optional)</label>
+                <input
+                  type="datetime-local"
+                  name="scheduleDate"
+                  value={formData.scheduleDate}
+                  onChange={handleInputChange}
+                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-[#0F766E] outline-none"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500 ml-0.5">Dispatch channels</label>
+                <div className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-2">
+                  <label className="flex cursor-pointer items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                      checked={isInAppChecked}
+                      onChange={(e) => handleDispatchChange('In App', e.target.checked)}
+                    />
+                    <span className="text-sm font-medium text-slate-600">In-app notification</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                      checked={isEmailChecked}
+                      onChange={(e) => handleDispatchChange('Email', e.target.checked)}
+                    />
+                    <span className="text-sm font-medium text-slate-600">Email notification</span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         </form>
       </Modal>

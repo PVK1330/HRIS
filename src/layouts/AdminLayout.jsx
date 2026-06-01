@@ -31,6 +31,7 @@ import { Avatar } from "../components/ui/Avatar.jsx";
 import NotificationDropdown from "../components/layout/NotificationDropdown.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import useTenantLogo from "../hooks/useTenantLogo.js";
+import { isEmployeeUser } from "../utils/userRoles.js";
 
 const adminNavGroups = [
   {
@@ -394,11 +395,27 @@ export default function AdminLayout() {
           .filter((item) => {
             const moduleKey = item.key;
 
-            if (moduleKey && moduleKey !== "dashboard" && !hasModule(moduleKey)) {
+            /* Admin-only items (e.g. Exit Workflow Setup) never show for non-admin staff,
+               regardless of RBAC module access — configuration is org-admin only. */
+            if (item.adminOnly && user?.role !== "admin") {
               return false;
             }
 
-            if (user?.role === "admin" || user?.role === "employee") {
+            /* Messages + dashboard always visible for tenant users */
+            if (moduleKey === "messages" || moduleKey === "dashboard") {
+              return true;
+            }
+
+            if (moduleKey && !hasModule(moduleKey)) {
+              return false;
+            }
+
+            /* Employees: sidebar follows RBAC only */
+            if (isEmployeeUser(user)) {
+              return true;
+            }
+
+            if (user?.role === "admin") {
               const alwaysShowPaths = [
                 "/admin/dashboard",
                 "/admin/settings",

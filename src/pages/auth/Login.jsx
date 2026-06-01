@@ -125,7 +125,7 @@ export default function Login() {
         result.data.plan_details || [], 
         result.data.plan_features || [],
         result.data.tenant_features || [],
-        result.data.allowedModules,
+        result.data.allowedModules ?? result.data.allowed_modules,
       )
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Login failed'

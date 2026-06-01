@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
 import api from '../../../services/api'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -225,7 +225,6 @@ export default function TenantManagement() {
     paymentCollection: 'trial',
     paymentReference: '',
   })
-  const [errors, setErrors] = useState({})
 
   const filteredOrganizations = organizations; // Now filtered on the server
 
@@ -351,7 +350,12 @@ export default function TenantManagement() {
 
   const handleSaveEdit = async () => {
     if (!editForm.name || !editForm.adminEmail) {
-      setErrors({ name: !editForm.name, adminEmail: !editForm.adminEmail })
+      Swal.fire({
+        icon: 'warning',
+        title: 'Required fields',
+        text: 'Organization name and admin email are required.',
+        confirmButtonColor: '#4f46e5',
+      })
       return
     }
     try {
@@ -572,7 +576,12 @@ export default function TenantManagement() {
 
   const executeAction = async () => {
     if (confirmAction === 'delete' && confirmInput !== selectedOrg.name) {
-      setErrors({ confirm: true })
+      Swal.fire({
+        icon: 'warning',
+        title: 'Confirmation mismatch',
+        text: 'Type the organization name exactly to confirm deletion.',
+        confirmButtonColor: '#ef4444',
+      })
       return
     }
 

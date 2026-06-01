@@ -15,6 +15,11 @@ import {
   HiArrowLeftOnRectangle,
 } from 'react-icons/hi2';
 import api from '../../services/api.js';
+import { useSocket } from '../../hooks/useSocket.js';
+
+function isNotificationUnread(n) {
+  return !(n?.isRead ?? n?.read);
+}
 
 export default function NotificationDropdown() {
   const navigate = useNavigate();
@@ -24,6 +29,7 @@ export default function NotificationDropdown() {
   const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
   const [selectedNotification, setSelectedNotification] = useState(null);
   const dropdownRef = useRef(null);
+  const { socket, connected } = useSocket();
 
   // Determine if user is superadmin
   const role = String(user?.role || user?.panel || '').toLowerCase().replace(/_/g, '');
@@ -43,44 +49,44 @@ export default function NotificationDropdown() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      
+
 
       const response = await api.get('/notifications');
-      
-      
+
+
 
       // Extract notifications from various possible response structures
       const notificationsList = Array.isArray(response.data)
         ? response.data
         : Array.isArray(response.data?.notifications)
-        ? response.data.notifications
-        : Array.isArray(response.data?.data?.notifications)
-        ? response.data.data.notifications
-        : Array.isArray(response.data?.data)
-        ? response.data.data 
-        : [];
+          ? response.data.notifications
+          : Array.isArray(response.data?.data?.notifications)
+            ? response.data.data.notifications
+            : Array.isArray(response.data?.data)
+              ? response.data.data
+              : [];
 
-      
+
       const mappedNotifications = notificationsList.map((n) => {
         const mapped = {
           id: n.id ?? n.notificationId ?? n._id ?? null,
           title: n.title ?? n.subject ?? 'Notification',
           message: n.message ?? n.body ?? n.description ?? '',
           // CRITICAL: Handle both snake_case (backend) and camelCase
-          read: typeof n.read === 'boolean' 
-            ? n.read 
-            : typeof n.isRead === 'boolean' 
-            ? n.isRead 
-            : typeof n.is_read === 'boolean'
-            ? n.is_read
-            : false,
+          read: typeof n.read === 'boolean'
+            ? n.read
+            : typeof n.isRead === 'boolean'
+              ? n.isRead
+              : typeof n.is_read === 'boolean'
+                ? n.is_read
+                : false,
           isRead: typeof n.isRead === 'boolean'
             ? n.isRead
             : typeof n.is_read === 'boolean'
-            ? n.is_read
-            : typeof n.read === 'boolean'
-            ? n.read
-            : false,
+              ? n.is_read
+              : typeof n.read === 'boolean'
+                ? n.read
+                : false,
           ticketId: n.ticketId ?? n.ticket_id ?? n.relatedId ?? n.referenceId ?? null,
           relatedId: n.relatedId ?? n.ticketId ?? n.ticket_id ?? null,
           type: n.type ?? 'info',
@@ -95,12 +101,12 @@ export default function NotificationDropdown() {
               : ''),
         };
 
-        
+
 
         return mapped;
       });
 
-      
+
 
       setNotifications(mappedNotifications);
     } catch (err) {
@@ -121,14 +127,19 @@ export default function NotificationDropdown() {
   const unreadCount = notifications.filter(n => !n.read && !n.isRead).length;
   const readCount = notifications.filter(n => (n.read || n.isRead)).length;
 
-  
+
 
   const filteredNotifications = notifications.filter(n => {
     const isRead = n.read || n.isRead;
     if (filter === 'unread') return !isRead;
     if (filter === 'read') return isRead;
-    return true;
-  });
+    if (!socket || !connected) return;
+    const onNewNotification = () => fetchNotifications();
+    socket.on('notification:new', onNewNotification);
+    return () => socket.off('notification:new', onNewNotification);
+  }, [socket, connected]);
+
+
 
   useEffect(() => {
     if (!user?.id) return;
@@ -137,7 +148,7 @@ export default function NotificationDropdown() {
     const token = localStorage.getItem('hris_token');
     if (!token) return;
 
-    
+
 
     const socket = io(socketUrl, {
       auth: {
@@ -148,21 +159,21 @@ export default function NotificationDropdown() {
     });
 
     socket.on('connect', () => {
-      
+
     });
 
     socket.on('ticket:created', () => {
-      
+
       fetchNotifications();
     });
 
     socket.on('ticket:updated', () => {
-      
+
       fetchNotifications();
     });
 
     socket.on('disconnect', () => {
-      
+
     });
 
     return () => {
@@ -173,16 +184,17 @@ export default function NotificationDropdown() {
   const toggleDropdown = () => {
     const nextState = !isOpen;
     setIsOpen(nextState);
-    
+
     if (nextState) {
-      
+
       fetchNotifications();
     }
   };
-  
+
   const markAsRead = async (id) => {
-    
+
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true, isRead: true } : n));
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true, read: true } : n));
     try {
       await api.patch(`/notifications/${id}/read`);
     } catch (err) {
@@ -191,8 +203,9 @@ export default function NotificationDropdown() {
   };
 
   const markAllAsRead = async () => {
-    
+
     setNotifications(prev => prev.map(n => ({ ...n, read: true, isRead: true })));
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true, read: true })));
     try {
       await api.patch('/notifications/mark-all-read');
     } catch (err) {
@@ -201,7 +214,7 @@ export default function NotificationDropdown() {
   };
 
   const deleteNotification = async (id) => {
-    
+
     setNotifications(prev => prev.filter(n => n.id !== id));
     if (selectedNotification?.id === id) {
       setSelectedNotification(null);
@@ -215,33 +228,33 @@ export default function NotificationDropdown() {
 
   const getIcon = (type) => {
     switch (type) {
-      case 'success': 
+      case 'success':
         return <HiCheckCircle className="h-5 w-5 text-success-DEFAULT" />;
-      case 'warning': 
+      case 'warning':
         return <HiExclamationCircle className="h-5 w-5 text-warning-DEFAULT" />;
       case 'danger':
       case 'error':
         return <HiXCircle className="h-5 w-5 text-danger-DEFAULT" />;
-      case 'exit_management': 
+      case 'exit_management':
         return <HiArrowLeftOnRectangle className="h-5 w-5 text-danger-DEFAULT hover:scale-110 transition-transform" />;
       case 'support_ticket':
         return <HiTicket className="h-5 w-5 text-blue-500 hover:scale-110 transition-transform" />;
-      default: 
+      default:
         return <HiInformationCircle className="h-5 w-5 text-primary" />;
     }
   };
 
   const handleNotificationClick = (notification) => {
-    
+
 
     markAsRead(notification.id);
     setSelectedNotification(notification);
-    
+
     // Navigate to support ticket if it's a ticket notification
     const ticketId = notification.ticketId || notification.relatedId;
     if (notification.type === 'support_ticket' && ticketId) {
       const supportPath = isSuperadmin ? `/superadmin/support` : `/admin/support`;
-      
+
       setIsOpen(false);
       navigate(`${supportPath}#ticket-${ticketId}`);
     }
@@ -269,56 +282,63 @@ export default function NotificationDropdown() {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 rounded-3xl border border-slate-200 bg-white shadow-2xl z-50 overflow-hidden">
-            
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
-              <h3 className="font-bold text-slate-900">Notifications</h3>
-              {notifications.length > 0 && (
-                <button 
-                  className="text-xs font-semibold text-slate-600 hover:text-slate-900"
-                  onClick={markAllAsRead}
-                >
-                  Mark all as read
-                </button>
-              )}
-            </div>
 
-            {/* Filter Tabs */}
-            <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
+            <h3 className="font-bold text-slate-900">Notifications</h3>
+            {notifications.length > 0 && (
               <button
-                onClick={() => setFilter('all')}
-                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+                className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+                onClick={markAllAsRead}
               >
-                All ({allCount})
+                Mark all as read
               </button>
-              <button
-                onClick={() => setFilter('unread')}
-                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'unread' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
-              >
-                Unread ({unreadCount})
-              </button>
-              <button
-                onClick={() => setFilter('read')}
-                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'read' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
-              >
-                Read ({readCount})
-              </button>
-            </div>
+            )}
+          </div>
 
-            {/* Notification List */}
-            <div className="max-h-[380px] overflow-y-auto bg-white">
-              {filteredNotifications.length > 0 ? (
-                <div className="divide-y divide-slate-200">
-                  {filteredNotifications.map((n) => (
-                    <div 
-                      key={n.id} 
-                      className={`p-4 transition-all duration-150 relative group cursor-pointer ${(n.read || n.isRead) ? 'bg-white' : 'bg-slate-50'} hover:bg-slate-100`}
-                      onClick={() => handleNotificationClick(n)}
-                    >
-                      <div className="flex gap-3">
-                        <div className="mt-0.5">{getIcon(n.type)}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm truncate ${(n.read || n.isRead) ? 'text-slate-600' : 'text-slate-900 font-semibold'}`}>
+          {/* Filter Tabs */}
+          <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
+            <button
+              onClick={() => setFilter('all')}
+              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+            >
+              All ({allCount})
+            </button>
+            <button
+              onClick={() => setFilter('unread')}
+              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'unread' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+            >
+              Unread ({unreadCount})
+            </button>
+            <button
+              onClick={() => setFilter('read')}
+              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'read' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+            >
+              Read ({readCount})
+            </button>
+          </div>
+
+          {/* Notification List */}
+          <div className="max-h-[380px] overflow-y-auto bg-white">
+            {filteredNotifications.length > 0 ? (
+              <div className="divide-y divide-slate-200">
+                {filteredNotifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`p-4 transition-all duration-150 relative group cursor-pointer ${(n.read || n.isRead) ? 'bg-white' : 'bg-slate-50'} hover:bg-slate-100`}
+                    onClick={() => handleNotificationClick(n)}
+                    className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${isNotificationUnread(n) ? 'bg-primary/5' : ''}`}
+                    onClick={() => {
+                      markAsRead(n.id);
+                      setSelectedNotification(n);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">{getIcon(n.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm truncate ${(n.read || n.isRead) ? 'text-slate-600' : 'text-slate-900 font-semibold'}`}>
+                          <p className={`text-sm truncate ${isNotificationUnread(n) ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
                             {n.title}
                           </p>
                           <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
@@ -327,44 +347,46 @@ export default function NotificationDropdown() {
                           <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
                             {n.time}
                           </p>
-                        </div>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-text-tertiary hover:text-danger-DEFAULT transition-all"
-                        >
-                          <HiTrash className="h-4 w-4" />
-                        </button>
                       </div>
-                      {!(n.read || n.isRead) && (
-                        <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-emerald-500 shadow-md" />
-                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-text-tertiary hover:text-danger-DEFAULT transition-all"
+                      >
+                        <HiTrash className="h-4 w-4" />
+                      </button>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center">
-                  <HiBell className="h-10 w-10 text-text-tertiary mx-auto opacity-20 mb-3 animate-pulse" />
-                  <p className="text-sm text-text-tertiary capitalize">No {filter !== 'all' ? filter : ''} notifications</p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="text-xs font-bold text-text-secondary hover:text-primary transition-colors uppercase tracking-wider"
-              >
-                Close View
-              </button>
-            </div>
+                    {!(n.read || n.isRead) && (
+                      <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-emerald-500 shadow-md" />
+                      {isNotificationUnread(n) && (
+                      <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center">
+                <HiBell className="h-10 w-10 text-text-tertiary mx-auto opacity-20 mb-3 animate-pulse" />
+                <p className="text-sm text-text-tertiary capitalize">No {filter !== 'all' ? filter : ''} notifications</p>
+              </div>
+            )}
           </div>
+
+          {/* Footer */}
+          <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-xs font-bold text-text-secondary hover:text-primary transition-colors uppercase tracking-wider"
+            >
+              Close View
+            </button>
+          </div>
+        </div>
       )}
 
       {/* PopUp / Modal Overlay */}
       {selectedNotification && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300">
-          <div 
+          <div
             className="relative w-full max-w-md mx-4 rounded-2xl border border-border-tertiary bg-background-primary p-6 shadow-2xl transition-all scale-100 animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >

@@ -9,13 +9,14 @@ const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
  */
 export function useSocket() {
   const socketRef = useRef(null)
+  const [socket, setSocket] = useState(null)
   const [connected, setConnected] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('hris_token')
     if (!token) return
 
-    const socket = io(SOCKET_URL, {
+    const instance = io(SOCKET_URL, {
       path: '/socket.io',
       auth: { token },
       transports: ['websocket', 'polling'],
@@ -23,19 +24,22 @@ export function useSocket() {
       reconnectionDelay: 2000,
     })
 
-    socketRef.current = socket
+    socketRef.current = instance
+    setSocket(instance)
 
-    socket.on('connect',    () => setConnected(true))
-    socket.on('disconnect', () => setConnected(false))
-    socket.on('connect_error', (err) => {
+    instance.on('connect', () => setConnected(true))
+    instance.on('disconnect', () => setConnected(false))
+    instance.on('connect_error', (err) => {
       console.warn('[socket] connect error:', err.message)
     })
 
     return () => {
-      socket.disconnect()
+      instance.disconnect()
       socketRef.current = null
+      setSocket(null)
+      setConnected(false)
     }
   }, [])
 
-  return { socket: socketRef.current, connected }
+  return { socket: socket ?? socketRef.current, connected }
 }

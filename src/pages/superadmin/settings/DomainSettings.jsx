@@ -27,7 +27,7 @@ export default function DomainSettings() {
   const set = (patch) => setData((prev) => ({ ...(prev || DEFAULT_STATE), ...patch }))
 
   return (
-    <div className="mx-auto max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700 px-4 md:px-0">
+    <div className={`mx-auto max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700 px-4 md:px-0 ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Access Infrastructure</h1>

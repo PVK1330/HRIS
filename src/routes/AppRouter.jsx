@@ -27,10 +27,10 @@ const Policies = lazy(() => import("../pages/admin/compliance/Policies.jsx"));
 const MyPolicies = lazy(() => import("../pages/admin/compliance/MyPolicies.jsx"));
 const Expenses = lazy(() => import("../pages/admin/finance/Expenses.jsx"));
 const Onboarding = lazy(() => import("../pages/admin/hr/Onboarding.jsx"));
-const ExitManagement = lazy(() => import("../pages/exit/ExitManagement.jsx"));
-const ExitDetail = lazy(() => import("../pages/exit/ExitDetail.jsx"));
-const ManagerExitApprovals = lazy(() => import("../pages/exit/ManagerExitApprovals.jsx"));
-const EmployeeExit = lazy(() => import("../pages/exit/EmployeeExit.jsx"));
+// Workflow-engine exit screens (new)
+const ExitManagement = lazy(() => import("../pages/exit/ExitManagementNew.jsx"));
+const ExitDetail = lazy(() => import("../pages/exit/ExitRequestDetail.jsx"));
+const ExitWorkflowConfig = lazy(() => import("../pages/exit/ExitWorkflowConfig.jsx"));
 const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemplates.jsx"));
 const LetterBuilder = lazy(() => import("../pages/admin/documents/LetterBuilder.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
@@ -273,18 +273,10 @@ export const router = createBrowserRouter([
             ),
           },
           {
-            path: "exit-approvals",
+            path: "settings/exit-workflows",
             element: (
               <AdminModuleGate moduleKey="exit-management">
-                <ManagerExitApprovals />
-              </AdminModuleGate>
-            ),
-          },
-          {
-            path: "my-exit",
-            element: (
-              <AdminModuleGate moduleKey="exit-management">
-                <EmployeeExit />
+                <ExitWorkflowConfig />
               </AdminModuleGate>
             ),
           },
@@ -314,11 +306,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "messages",
-            element: (
-              <AdminModuleGate moduleKey="messages">
-                <Messages />
-              </AdminModuleGate>
-            ),
+            element: <Messages />,
           },
           {
             path: "settings",

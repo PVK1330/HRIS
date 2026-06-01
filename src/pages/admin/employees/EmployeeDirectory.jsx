@@ -1009,6 +1009,25 @@ export default function EmployeeDirectory() {
       ),
     },
     {
+      key: 'status',
+      label: colLabel('Status'),
+      render: (v) => {
+        const isActive = v === 'Active';
+        return (
+          <div className="flex items-center">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-none px-2.5 py-1 text-xs font-semibold ${
+                isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+              {v}
+            </span>
+          </div>
+        )
+      },
+    },
+    {
       key: 'actions', label: 'Actions',
       render: (_, row) => (
         <div className="flex items-center gap-1.5">

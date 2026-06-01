@@ -209,7 +209,9 @@ export default function ModuleManagement() {
           </div>
           
           <div className="space-y-4">
-            {globalModuleList.map((module) => {
+            {isLoading ? (
+              <div className="h-40 animate-pulse rounded-2xl bg-slate-100" />
+            ) : globalModuleList.map((module) => {
               const Icon = module.icon
               const isEnabled = globalModules[module.key]
               return (

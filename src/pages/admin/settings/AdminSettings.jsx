@@ -11,6 +11,7 @@ import IntegrationSettings from "./sections/IntegrationSettings.jsx";
 import BillingSettings from "./sections/BillingSettings.jsx";
 import AuditLogs from "./sections/AuditLogs.jsx";
 import BackupRestore from "./sections/BackupRestore.jsx";
+import ExitSettingsSection from "./sections/ExitSettingsSection.jsx";
 
 function ActiveSection({
   active,
@@ -37,6 +38,8 @@ function ActiveSection({
       return <AuditLogs />;
     case "backup":
       return <BackupRestore />;
+    case "exit":
+      return <ExitSettingsSection />;
     default:
       return null;
   }
@@ -59,24 +62,24 @@ export default function AdminSettings() {
   const toolbar = activeTab === "general" ? generalToolbar : null;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 font-sans text-slate-900 pb-12">
-      {/* 1. Header with Title & Toolbar Actions */}
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-5 sm:px-8 shadow-sm">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar with Breadcrumbs & Actions */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl flex items-center gap-2">
-            System Configuration
-          </h1>
-          <p className="mt-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Manage your organization's settings and configurations
-          </p>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">System Configuration</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Settings</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600 uppercase tracking-wider">{currentTab.label}</span>
+          </div>
         </div>
-        
-        <div className="flex shrink-0 items-center gap-2.5">
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 shrink-0">
           <button
             type="button"
             disabled={!toolbar || !toolbar.dirty || toolbar.saving}
             onClick={() => toolbar?.onDiscard?.()}
-            className="h-10 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#0F766E] transition-colors shadow-2xs shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Discard
           </button>
@@ -84,44 +87,37 @@ export default function AdminSettings() {
             type="button"
             disabled={!toolbar || toolbar.disableSave}
             onClick={() => toolbar?.onSave?.()}
-            className="h-10 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-none bg-[#0F766E] px-3 text-xs font-bold text-white hover:bg-[#0c6b64] transition-colors shadow-2xs shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {toolbar?.saving ? "Saving…" : "Save changes"}
           </button>
         </div>
-      </header>
-
-      {/* 2. Breadcrumbs Bar */}
-      <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-6 py-3 text-xs font-medium text-slate-500 sm:px-8">
-        <span className="text-slate-400">Settings</span>
-        <HiChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
-        <span className="text-emerald-700 font-bold">{currentTab.label}</span>
       </div>
 
-      <div className="px-6 py-6 sm:px-8 max-w-7xl mx-auto space-y-6">
-        {/* 3. Modern Horizontal Top Navigation Tabs */}
-        <SettingsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-
-        {/* 4. Active Tab Details Info */}
-        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">{currentTab.label}</h2>
-            <p className="text-sm text-slate-500 mt-0.5">{currentTab.desc}</p>
-          </div>
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-full w-max">
-            {currentTab.id} Mode
-          </div>
+      {/* Tabs and Content Container */}
+      <div className="rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
+        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:p-5 min-w-0">
+          <SettingsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
 
-        {/* 5. Dynamically Rendered Tab Content Section */}
-        <main className={`transition-all duration-300 transform ${fade ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}>
-          <div className="mx-auto max-w-4xl bg-white border border-slate-100 rounded-2xl p-6 md:p-8 shadow-sm">
+        <div className="min-w-0 p-4 sm:p-6">
+          <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">{currentTab.label}</h2>
+              <p className="text-sm text-slate-500 mt-0.5">{currentTab.desc}</p>
+            </div>
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-none w-max">
+              {currentTab.id} Mode
+            </div>
+          </div>
+
+          <main className={`transition-all duration-300 transform ${fade ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}>
             <ActiveSection
               active={activeTab}
               registerGeneralToolbar={setGeneralToolbar}
             />
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   );

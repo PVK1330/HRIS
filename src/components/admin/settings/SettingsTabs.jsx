@@ -9,7 +9,8 @@ import {
   RiLinksLine,
   RiBankCardLine,
   RiHistoryLine,
-  RiDatabase2Line
+  RiDatabase2Line,
+  RiLogoutBoxRLine
 } from 'react-icons/ri';
 
 export const settingsTabs = [
@@ -72,32 +73,36 @@ export const settingsTabs = [
     label: 'Backup & Restore',
     icon: RiDatabase2Line,
     desc: 'Data backup & recovery'
+  },
+  {
+    id: 'exit',
+    label: 'Exit Management',
+    icon: RiLogoutBoxRLine,
+    desc: 'Exit types, clearance & workflow'
   }
 ];
 
 export default function SettingsTabs({ activeTab, setActiveTab }) {
   return (
-    <div className="w-full">
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
-        {settingsTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 border px-4 py-2 text-sm font-semibold transition-all rounded-sm ${
-                isActive
-                  ? 'bg-teal-700 text-white border-teal-700'
-                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white'
-              }`}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="flex flex-wrap items-center gap-1.5">
+      {settingsTabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 font-bold text-xs transition-all ${isActive
+              ? 'bg-[#0F766E] text-white shadow-2xs'
+              : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
+            }`}
+          >
+            <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+            <span>{tab.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

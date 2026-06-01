@@ -1,5 +1,4 @@
 import api from './api'
-import { getExitWorkflowSettings } from './exitService.js'
 
 const EXIT_STORAGE_KEY = 'hris_exit_management_records_v1'
 
@@ -80,27 +79,8 @@ function getEmployeeNameFromPayload(payload = {}) {
   return payload.employee_name || payload.full_name || payload.name || 'Employee'
 }
 
-async function buildWorkflowTasks(exitId) {
-  const orgId = getOrganizationId()
-  const workflow = await getExitWorkflowSettings({ organizationId: orgId })
-  const steps = asArray(workflow?.steps)
-  if (steps.length === 0) return []
-  return steps.map((step, idx) => ({
-    id: createId('task', idx + 1),
-    exit_request_id: exitId,
-    task_name: step.stepName || `Clearance Step ${idx + 1}`,
-    department: step.department || 'General',
-    order: Number(step.order || idx + 1),
-    is_parallel: Boolean(step.isParallel),
-    assigned_to_role: String(step.department || 'hr').toLowerCase(),
-    is_completed: false,
-    is_escalated: false,
-    completed_by_name: null,
-    due_date: null,
-    document_url: null,
-    document_name: null,
-    remarks: '',
-  }))
+async function buildWorkflowTasks() {
+  return []
 }
 
 async function withFallback(apiCall, fallbackCall) {
@@ -739,4 +719,77 @@ export const uploadClearanceProof = async (id, taskId, file) => {
       return tasks[idx]
     },
   )
+}
+
+// Department-based exit workflow
+export const listExitDepartmentsWithHeads = async () => {
+  const { data } = await api.get('/exit-management/departments/with-heads')
+  return data.data || []
+}
+
+export const getExitDepartmentWorkflow = async (exitId) => {
+  const { data } = await api.get(`/exit-management/${exitId}/workflow`)
+  return data.data
+}
+
+export const assignExitDepartmentWorkflow = async (exitId, steps) => {
+  const { data } = await api.put(`/exit-management/${exitId}/workflow/assign`, { steps })
+  return data.data
+}
+
+export const reorderExitDepartmentWorkflow = async (exitId, orderedStepIds) => {
+  const { data } = await api.put(`/exit-management/${exitId}/workflow/reorder`, { ordered_step_ids: orderedStepIds })
+  return data.data
+}
+
+export const approveExitWorkflowStep = async (exitId, stepId, payload = {}) => {
+  const { data } = await api.put(`/exit-management/${exitId}/workflow/steps/${stepId}/approve`, payload)
+  return data.data
+}
+
+export const rejectExitWorkflowStep = async (exitId, stepId, payload) => {
+  const { data } = await api.put(`/exit-management/${exitId}/workflow/steps/${stepId}/reject`, payload)
+  return data.data
+}
+
+export const skipExitWorkflowStep = async (exitId, stepId) => {
+  const { data } = await api.put(`/exit-management/${exitId}/workflow/steps/${stepId}/skip`)
+  return data.data
+}
+
+export const reassignExitWorkflowHead = async (exitId, stepId, departmentHeadId) => {
+  const { data } = await api.put(`/exit-management/${exitId}/workflow/steps/${stepId}/reassign`, {
+    department_head_id: departmentHeadId,
+  })
+  return data.data
+}
+
+export const restartExitDepartmentWorkflow = async (exitId) => {
+  const { data } = await api.put(`/exit-management/${exitId}/workflow/restart`)
+  return data.data
+}
+
+export const getOrgDepartmentWorkflowTemplate = async () => {
+  const { data } = await api.get('/admin/settings/termination-types/department-workflow-template')
+  return data.data || { steps: [] }
+}
+
+export const saveOrgDepartmentWorkflowTemplate = async (steps) => {
+  const { data } = await api.put('/admin/settings/termination-types/department-workflow-template', { steps })
+  return data.data
+}
+
+export const getExitPipelineStages = async () => {
+  const { data } = await api.get('/exit-management/pipeline-stages')
+  return data.data?.stages || []
+}
+
+export const getExitWorkflowConfig = async () => {
+  const { data } = await api.get('/admin/settings/termination-types/exit-workflow-config')
+  return data.data
+}
+
+export const saveExitWorkflowConfig = async (payload) => {
+  const { data } = await api.put('/admin/settings/termination-types/exit-workflow-config', payload)
+  return data.data
 }

@@ -2,17 +2,39 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import {
   HiMagnifyingGlass, HiChatBubbleLeftRight, HiPaperAirplane,
-  HiPlus, HiCheckBadge, HiArrowPath, HiXMark,
+  HiPlus, HiCheckBadge, HiArrowPath, HiPaperClip, HiDocument,
 } from 'react-icons/hi2'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import {
   listConversations, openConversation,
-  getMessages, sendMessageRest,
+  getMessages, sendMessageRest, listMessageContacts, sendMessageAttachment,
 } from '../../../services/messagesService.js'
-import { listEmployees } from '../../../services/employeeService.js'
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+function resolveSelfEmployeeId(user) {
+  const id = user?.employeeId ?? user?.id
+  return id != null ? Number(id) : null
+}
+
+function isNumericConvId(id) {
+  const n = parseInt(id, 10)
+  return Number.isInteger(n) && n > 0 && String(n) === String(id)
+}
+
+function attachmentUrl(path) {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  return `${SOCKET_URL}${path.startsWith('/') ? path : `/${path}`}`
+}
+
+function apiErrorMessage(err, fallback) {
+  const status = err?.response?.status ?? err?.status
+  const msg = err?.response?.data?.message || err?.message
+  if (status === 401 || status === 403) return 'Session expired. Please log in again.'
+  return msg || fallback
+}
 
 function formatTime(ts) {
   if (!ts) return ''
@@ -34,6 +56,7 @@ export default function Messages() {
   const [activeConvId, setActiveConvId] = useState(null)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [contactsLoading, setContactsLoading] = useState(true)
   const [apiError, setApiError] = useState('')
 
   const [messages, setMessages] = useState([])
@@ -45,6 +68,8 @@ export default function Messages() {
   const chatEndRef = useRef(null)
   const activeConvIdRef = useRef(null)
   const searchInputRef = useRef(null)
+  const loadConversationsRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   // Build the unified list of active chats + other employees
   const unifiedChats = useMemo(() => {
@@ -57,7 +82,7 @@ export default function Messages() {
 
     const items = []
     const addedConvIds = new Set()
-    const currentUserId = user?.employeeId || user?.id
+    const currentUserId = resolveSelfEmployeeId(user)
 
     empList.forEach(emp => {
       if (currentUserId && String(emp.id) === String(currentUserId)) return
@@ -70,6 +95,7 @@ export default function Messages() {
           isPlaceholder: false,
           job_title: emp.job_title || existingConv.job_title || existingConv.other_role,
           other_name: emp.full_name || existingConv.other_name,
+          department: emp.department || existingConv.department,
           online: isOnline,
         })
         addedConvIds.add(String(existingConv.id))
@@ -80,6 +106,7 @@ export default function Messages() {
           other_id: emp.id,
           other_name: emp.full_name,
           job_title: emp.job_title,
+          department: emp.department,
           last_message: 'No messages yet — Click to start chatting',
           last_message_at: null,
           unread_count: 0,
@@ -112,7 +139,7 @@ export default function Messages() {
       const nameB = (b.other_name || '').toLowerCase()
       return nameA.localeCompare(nameB)
     })
-  }, [conversations, empList, user?.id, onlineUserIds])
+  }, [conversations, empList, user?.id, user?.employeeId, onlineUserIds])
 
   const activeConv = unifiedChats.find(c => String(c.id) === String(activeConvId))
 
@@ -135,7 +162,7 @@ export default function Messages() {
 
     const joinCurrentRoom = () => {
       const cid = activeConvIdRef.current
-      if (cid) socket.emit('join_conversation', cid)
+      if (isNumericConvId(cid)) socket.emit('join_conversation', Number(cid))
     }
 
     socket.on('connect', () => {
@@ -147,25 +174,32 @@ export default function Messages() {
     socket.on('new_message', (msg) => {
       const cid = msg.conversation_id
       const viewing = activeConvIdRef.current
-      const same = String(cid ?? '') === String(viewing ?? '') && viewing != null
+      const same = isNumericConvId(viewing) && String(cid ?? '') === String(viewing)
       if (same) {
         setMessages(prev => {
           const withoutOptimistic = prev.filter(m =>
-            !(m.optimistic && m.body === msg.body && m.sender_id === msg.sender_id)
+            !(m.optimistic && m.body === msg.body && Number(m.sender_id) === Number(msg.sender_id))
           )
           if (withoutOptimistic.some(m => m.id === msg.id)) return withoutOptimistic
           return [...withoutOptimistic, msg]
         })
-        socket.emit('mark_read', { conversationId: cid })
+        socket.emit('mark_read', { conversationId: Number(cid) })
       }
-      setConversations(prev => prev.map(c =>
-        String(c.id) === String(cid)
-          ? {
-            ...c, last_message: msg.body, last_message_at: msg.created_at,
-            unread_count: String(c.id) === String(viewing) ? 0 : (c.unread_count || 0) + 1
-          }
-          : c
-      ))
+      setConversations(prev => {
+        const exists = prev.some(c => String(c.id) === String(cid))
+        if (!exists) {
+          loadConversationsRef.current?.()
+          return prev
+        }
+        return prev.map(c =>
+          String(c.id) === String(cid)
+            ? {
+              ...c, last_message: msg.body, last_message_at: msg.created_at,
+              unread_count: same ? 0 : (c.unread_count || 0) + 1,
+            }
+            : c
+        )
+      })
     })
 
     socket.on('online_users_list', ({ onlineIds }) => {
@@ -193,17 +227,50 @@ export default function Messages() {
         setMessages(prev => prev.map(m => ({ ...m, is_read: true })))
     })
 
+    socket.on('conversation:updated', ({ conversationId, lastMessage, lastMessageAt, message }) => {
+      const viewing = activeConvIdRef.current
+      const cid = conversationId
+      const same = isNumericConvId(viewing) && String(cid ?? '') === String(viewing)
+
+      if (same && message) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === message.id)) return prev
+          return [...prev, message]
+        })
+        socket.emit('mark_read', { conversationId: Number(cid) })
+      }
+
+      setConversations(prev => {
+        const exists = prev.some(c => String(c.id) === String(cid))
+        if (!exists) {
+          loadConversationsRef.current?.()
+          return prev
+        }
+        return prev.map(c =>
+          String(c.id) === String(cid)
+            ? {
+              ...c,
+              last_message: lastMessage,
+              last_message_at: lastMessageAt,
+              unread_count: same ? 0 : (c.unread_count || 0) + 1,
+            }
+            : c
+        )
+      })
+    })
+
     return () => { socket.disconnect(); socketRef.current = null }
   }, [])
 
   // Join / leave conversation rooms when selection changes (without tearing down the socket)
   useEffect(() => {
-    if (!activeConvId) return
+    if (!isNumericConvId(activeConvId)) return
     const socket = socketRef.current
     if (!socket) return
-    socket.emit('join_conversation', activeConvId)
+    const cid = Number(activeConvId)
+    socket.emit('join_conversation', cid)
     return () => {
-      socket.emit('leave_conversation', activeConvId)
+      socket.emit('leave_conversation', cid)
     }
   }, [activeConvId])
 
@@ -224,27 +291,51 @@ export default function Messages() {
       if (status === 401 || status === 403) {
         setApiError('Session expired. Please log in again.')
       } else {
-        setApiError(err?.message || 'Failed to load conversations')
+        setApiError(apiErrorMessage(err, 'Failed to load conversations'))
       }
       console.error('[Messages] loadConversations error:', err?.response?.data || err?.message)
     } finally { setLoading(false) }
   }, [])
 
-  // ── Load conversations and employees on mount ──────────────────────────────────
+  // ── Load org employee contacts (all employees — admin & employee see full org list) ──
+  const loadContacts = useCallback(async (searchTerm = '') => {
+    setContactsLoading(true)
+    try {
+      const contacts = await listMessageContacts({
+        search: searchTerm.trim() || undefined,
+        limit: 10000,
+      })
+      setEmpList(contacts || [])
+    } catch (err) {
+      console.error('Failed to load message contacts:', err?.response?.data || err?.message)
+      setApiError(prev => prev || apiErrorMessage(err, 'Failed to load contacts'))
+    } finally {
+      setContactsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadConversationsRef.current = loadConversations
+  }, [loadConversations])
+
   useEffect(() => {
     loadConversations()
-    listEmployees({ limit: 100 })
-      .then(d => setEmpList(d?.employees || []))
-      .catch((err) => console.error('Failed to load employee list:', err))
   }, [loadConversations])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadContacts(search)
+    }, search ? 300 : 0)
+    return () => clearTimeout(timer)
+  }, [search, loadContacts])
 
   // ── Load messages when conversation changes ──────────────────────────────────
   const [msgError, setMsgError] = useState('')
 
   useEffect(() => {
-    if (!activeConvId) return
+    if (!isNumericConvId(activeConvId)) return
     let cancelled = false
-    const convId = activeConvId
+    const convId = Number(activeConvId)
     const convKey = (id) => String(id ?? '')
     const isThisConv = () => convKey(activeConvIdRef.current) === convKey(convId)
 
@@ -275,48 +366,95 @@ export default function Messages() {
   // ── Send ─────────────────────────────────────────────────────────────────────
   const handleSend = async (e) => {
     e.preventDefault()
-    if (!newMessage.trim() || !activeConvId || sending) return
+    if (!newMessage.trim() || !isNumericConvId(activeConvId) || sending) return
+    const convId = Number(activeConvId)
     const body = newMessage.trim()
     setNewMessage(''); setSending(true)
 
+    const selfId = resolveSelfEmployeeId(user)
     const optimistic = {
-      id: `opt-${Date.now()}`, sender_id: user?.employeeId || user?.id,
+      id: `opt-${Date.now()}`, sender_id: selfId,
       body, created_at: new Date().toISOString(), is_read: false, optimistic: true,
     }
     setMessages(prev => [...prev, optimistic])
-    socketRef.current?.emit('typing', { conversationId: activeConvId, isTyping: false })
+    socketRef.current?.emit('typing', { conversationId: convId, isTyping: false })
 
     try {
       if (socketRef.current?.connected) {
-        socketRef.current.emit('send_message', { conversationId: activeConvId, body }, (ack) => {
-          if (ack?.ok) {
-            // Replace optimistic with real message (snake_case fields)
-            setMessages(prev => prev.map(m => m.id === optimistic.id ? ack.message : m))
-          }
+        await new Promise((resolve, reject) => {
+          socketRef.current.emit('send_message', { conversationId: convId, body }, (ack) => {
+            if (ack?.ok && ack.message) {
+              setMessages(prev => prev.map(m => m.id === optimistic.id ? ack.message : m))
+              setConversations(prev => prev.map(c =>
+                String(c.id) === String(convId)
+                  ? { ...c, last_message: body, last_message_at: ack.message.created_at, unread_count: 0 }
+                  : c
+              ))
+              resolve()
+            } else {
+              reject(new Error(ack?.error || 'Failed to send message'))
+            }
+          })
         })
       } else {
-        const msg = await sendMessageRest(activeConvId, body)
+        const msg = await sendMessageRest(convId, body)
         setMessages(prev => prev.map(m => m.id === optimistic.id ? msg : m))
+        setConversations(prev => prev.map(c =>
+          String(c.id) === String(convId)
+            ? { ...c, last_message: body, last_message_at: msg.created_at, unread_count: 0 }
+            : c
+        ))
       }
-    } catch {
+    } catch (err) {
+      console.error('[Messages] send failed:', err?.message)
       setMessages(prev => prev.filter(m => m.id !== optimistic.id))
       setNewMessage(body)
     } finally { setSending(false) }
   }
 
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !isNumericConvId(activeConvId) || sending) return
+    const convId = Number(activeConvId)
+    setSending(true)
+    try {
+      const msg = await sendMessageAttachment(convId, file, newMessage.trim())
+      setNewMessage('')
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev
+        return [...prev, msg]
+      })
+      setConversations(prev => prev.map(c =>
+        String(c.id) === String(convId)
+          ? {
+            ...c,
+            last_message: msg.body || `📎 ${msg.attachment_name || 'Attachment'}`,
+            last_message_at: msg.created_at,
+            unread_count: 0,
+          }
+          : c
+      ))
+    } catch (err) {
+      console.error('[Messages] upload failed:', err?.response?.data || err?.message)
+      setMsgError(apiErrorMessage(err, 'Failed to send attachment'))
+    } finally { setSending(false) }
+  }
+
   const handleTyping = (e) => {
     setNewMessage(e.target.value)
-    if (!activeConvId || !socketRef.current?.connected) return
-    socketRef.current.emit('typing', { conversationId: activeConvId, isTyping: true })
+    if (!isNumericConvId(activeConvId) || !socketRef.current?.connected) return
+    const convId = Number(activeConvId)
+    socketRef.current.emit('typing', { conversationId: convId, isTyping: true })
     clearTimeout(typingTimer.current)
     typingTimer.current = setTimeout(() => {
-      socketRef.current?.emit('typing', { conversationId: activeConvId, isTyping: false })
+      socketRef.current?.emit('typing', { conversationId: convId, isTyping: false })
     }, 2000)
   }
 
   const handleStartChat = async (emp) => {
-    const employeeId = emp.id && typeof emp.id === 'number' ? emp.id : emp.other_id
-    if (!employeeId) return
+    const employeeId = Number(emp.other_id ?? emp.id)
+    if (!Number.isInteger(employeeId) || employeeId <= 0) return
     try {
       const { conversation } = await openConversation(employeeId)
       await loadConversations()
@@ -326,14 +464,9 @@ export default function Messages() {
     }
   }
 
-  const filteredChats = unifiedChats.filter(c => {
-    if (!search) return true
-    const query = search.toLowerCase()
-    return (
-      c.other_name?.toLowerCase().includes(query) ||
-      c.job_title?.toLowerCase().includes(query)
-    )
-  })
+  const filteredChats = unifiedChats
+
+  const contactCount = empList.length
 
   return (
     <div className="flex h-[calc(100vh-100px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -346,19 +479,24 @@ export default function Messages() {
               <h1 className="text-xl font-black text-slate-900 tracking-tight">Messages</h1>
               <div className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-slate-300'}`} title={connected ? 'Connected' : 'Disconnected'} />
             </div>
+            {!contactsLoading && contactCount > 0 && (
+              <p className="text-[10px] font-medium text-slate-400">
+                {contactCount} employee{contactCount !== 1 ? 's' : ''} in your organization
+              </p>
+            )}
           </div>
 
           {/* Unified search */}
           <div className="relative">
             <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input type="text" ref={searchInputRef} placeholder="Search employees & chats…" value={search} onChange={e => setSearch(e.target.value)}
+            <input type="text" ref={searchInputRef} placeholder="Search all employees…" value={search} onChange={e => setSearch(e.target.value)}
               className="w-full rounded-xl border-none bg-white py-2 pl-9 pr-4 text-sm shadow-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" />
           </div>
         </div>
 
         {/* Conversation list */}
         <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1">
-          {loading ? (
+          {loading || contactsLoading ? (
             [...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
                 <div className="h-10 w-10 rounded-full bg-slate-200 shrink-0" />
@@ -393,6 +531,9 @@ export default function Messages() {
                     <span className="truncate text-sm font-bold text-slate-900">{conv.other_name}</span>
                     {conv.job_title && (
                       <span className="text-[10px] text-slate-400 truncate">{conv.job_title}</span>
+                    )}
+                    {conv.department && (
+                      <span className="text-[10px] text-slate-400 truncate">{conv.department}</span>
                     )}
                   </div>
                   <span className="text-[10px] font-medium text-slate-400 shrink-0 ml-1">{formatTime(conv.last_message_at)}</span>
@@ -469,10 +610,10 @@ export default function Messages() {
                     </div>
                   )}
                   {messages.map((msg) => {
-                    // Use == (loose) to handle int vs string mismatch between DB and JWT
-                    // eslint-disable-next-line eqeqeq
-                    const isMine = msg.sender_id == (user?.employeeId || user?.id)
+                    const isMine = Number(msg.sender_id) === resolveSelfEmployeeId(user)
                     const key = msg.optimistic ? msg.id : `msg-${msg.id}`
+                    const isImage = msg.message_type === 'image' && msg.attachment_url
+                    const fileUrl = attachmentUrl(msg.attachment_url)
                     return (
                       <div key={key} className={`flex ${isMine ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-1 duration-200`}>
                         <div className="max-w-[70%] space-y-1">
@@ -480,7 +621,23 @@ export default function Messages() {
                               ? `bg-[#0F766E] text-white rounded-tr-none ${msg.optimistic ? 'opacity-70' : ''}`
                               : 'bg-white text-slate-700 rounded-tl-none ring-1 ring-slate-100'
                             }`}>
-                            {msg.body}
+                            {isImage && fileUrl && (
+                              <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block mb-2">
+                                <img src={fileUrl} alt={msg.attachment_name || 'Image'} className="max-h-48 rounded-lg object-cover" />
+                              </a>
+                            )}
+                            {msg.message_type === 'file' && msg.attachment_url && (
+                              <a
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-2 mb-2 text-xs font-semibold underline ${isMine ? 'text-emerald-50' : 'text-[#0F766E]'}`}
+                              >
+                                <HiDocument className="h-4 w-4 shrink-0" />
+                                {msg.attachment_name || 'Download file'}
+                              </a>
+                            )}
+                            {msg.body ? <p className="whitespace-pre-wrap break-words">{msg.body}</p> : null}
                           </div>
                           <div className={`flex items-center gap-1 text-[10px] text-slate-400 ${isMine ? 'justify-end' : 'justify-start'}`}>
                             <span>{formatTime(msg.created_at)}</span>
@@ -498,6 +655,22 @@ export default function Messages() {
             {/* Input */}
             <footer className="h-20 border-t border-slate-100 px-6 py-4 bg-white shrink-0">
               <form onSubmit={handleSend} className="flex items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                  onChange={handleFileSelect}
+                />
+                <button
+                  type="button"
+                  disabled={!isNumericConvId(activeConvId) || sending}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-xl p-2.5 text-slate-500 hover:bg-slate-100 hover:text-[#0F766E] transition-all disabled:opacity-40"
+                  title="Attach image or document"
+                >
+                  <HiPaperClip className="h-5 w-5" />
+                </button>
                 <input type="text" placeholder="Type your message…"
                   className="flex-1 rounded-xl border-none bg-slate-50 px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
                   value={newMessage} onChange={handleTyping} />

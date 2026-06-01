@@ -88,11 +88,7 @@ export default function LetterBuilder() {
       const { data } = await api.get('/letters/templates', { params: { limit: 100 } });
       const t = data.data.templates.find(x => String(x.id) === String(id));
       if (t) {
-        setForm(prev => {
-          const isUnsaved = sessionStorage.getItem(`lb_form_${id}`);
-          // If we restored unsaved changes from session storage, do NOT overwrite them with the DB version!
-          return isUnsaved ? prev : t;
-        });
+        setForm(t);
       }
     } catch (err) {
       toast.error('Failed to load template');

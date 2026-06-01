@@ -6,6 +6,7 @@ import {
   getCandidateOnboardingState,
   rejectOffer,
 } from '../../../services/candidateOnboardingService.js'
+import { candidateOnboardingPath } from '../../../utils/candidateOnboardingTenant.js'
 import { WORKFLOW_STATUS_LABELS } from '../../../constants/onboardingWorkflow.js'
 
 export default function CandidateOffer() {
@@ -37,7 +38,7 @@ export default function CandidateOffer() {
       acceptOffer(token)
         .then((res) => {
           toast.success(res.message || 'Offer accepted')
-          navigate(`/onboarding/sign?token=${encodeURIComponent(token)}`)
+          navigate(candidateOnboardingPath('/onboarding/sign', token))
         })
         .catch((err) => toast.error(err.response?.data?.message || 'Could not accept offer'))
     }
@@ -47,7 +48,7 @@ export default function CandidateOffer() {
     try {
       const res = await acceptOffer(token)
       toast.success(res.message || 'Offer accepted')
-      navigate(`/onboarding/sign?token=${encodeURIComponent(token)}`)
+      navigate(candidateOnboardingPath('/onboarding/sign', token))
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not accept offer')
     }
@@ -125,7 +126,7 @@ export default function CandidateOffer() {
           {status === 'accepted_pending_upload' && (
             <button
               type="button"
-              onClick={() => navigate(`/onboarding/sign?token=${encodeURIComponent(token)}`)}
+              onClick={() => navigate(candidateOnboardingPath('/onboarding/sign', token))}
               className="w-full h-11 bg-[#0F766E] text-white text-xs font-black uppercase tracking-widest"
             >
               Sign offer letter →
@@ -135,7 +136,7 @@ export default function CandidateOffer() {
           {status === 'documents_pending' && (
             <button
               type="button"
-              onClick={() => navigate(`/onboarding/documents?token=${encodeURIComponent(token)}`)}
+              onClick={() => navigate(candidateOnboardingPath('/onboarding/documents', token))}
               className="w-full h-11 bg-[#0F766E] text-white text-xs font-black uppercase tracking-widest"
             >
               Upload documents →
