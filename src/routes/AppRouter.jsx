@@ -31,7 +31,6 @@ const Onboarding = lazy(() => import("../pages/admin/hr/Onboarding.jsx"));
 const ExitManagement = lazy(() => import("../pages/exit/ExitManagementNew.jsx"));
 const ExitDetail = lazy(() => import("../pages/exit/ExitRequestDetail.jsx"));
 const ExitWorkflowConfig = lazy(() => import("../pages/exit/ExitWorkflowConfig.jsx"));
-const EmployeeExit = lazy(() => import("../pages/exit/ExitManagementNew.jsx"));
 const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemplates.jsx"));
 const LetterBuilder = lazy(() => import("../pages/admin/documents/LetterBuilder.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
@@ -274,26 +273,10 @@ export const router = createBrowserRouter([
             ),
           },
           {
-            path: "exit-approvals",
-            element: (
-              <AdminModuleGate moduleKey="exit-management">
-                <ExitManagement />
-              </AdminModuleGate>
-            ),
-          },
-          {
             path: "settings/exit-workflows",
             element: (
               <AdminModuleGate moduleKey="exit-management">
                 <ExitWorkflowConfig />
-              </AdminModuleGate>
-            ),
-          },
-          {
-            path: "my-exit",
-            element: (
-              <AdminModuleGate moduleKey="exit-management">
-                <EmployeeExit />
               </AdminModuleGate>
             ),
           },

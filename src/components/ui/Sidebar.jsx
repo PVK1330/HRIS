@@ -96,7 +96,7 @@ export function Sidebar({
                 </div>
                 {visibleItems.map((item) => {
                   const Icon = item.icon
-                  const itemKey = item.key ?? item.path
+                  const itemKey = item.path ?? item.key
                   const hasChildren = item.children && item.children.length > 0
                   const isExpanded = expandedMenus[itemKey]
   

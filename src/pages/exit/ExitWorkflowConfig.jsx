@@ -164,6 +164,7 @@ export default function ExitWorkflowConfig() {
   const [view, setView] = useState('list') // 'list' | 'builder'
   const [workflows, setWorkflows] = useState([])
   const [loading, setLoading] = useState(true)
+  const [denied, setDenied] = useState(false)
   const [depts, setDepts] = useState([])
   const [roles, setRoles] = useState([])
   const [saving, setSaving] = useState(false)
@@ -173,14 +174,18 @@ export default function ExitWorkflowConfig() {
   const loadList = async () => {
     setLoading(true)
     try { setWorkflows(await svc.listWorkflows() || []) }
-    catch (e) { toast.error(e?.response?.data?.message || 'Failed to load workflows') }
+    catch (e) {
+      if (e?.response?.status === 403) setDenied(true)
+      else toast.error(e?.response?.data?.message || 'Failed to load workflows')
+    }
     finally { setLoading(false) }
   }
 
   useEffect(() => { loadList() }, [])
   useEffect(() => {
-    svc.listDepartments().then(setDepts).catch(() => {})
-    svc.listRoles().then(setRoles).catch(() => {})
+    svc.getBuilderOptions()
+      .then((o) => { setDepts(o.departments || []); setRoles(o.roles || []) })
+      .catch((e) => { if (e?.response?.status === 403) setDenied(true) })
   }, [])
 
   const startNew = () => {
@@ -222,6 +227,18 @@ export default function ExitWorkflowConfig() {
     const r = await Swal.fire({ title: 'Deactivate workflow?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626' })
     if (!r.isConfirmed) return
     try { await svc.deleteWorkflow(id); toast.success('Deactivated'); loadList() } catch (e) { toast.error(e?.response?.data?.message || 'Failed') }
+  }
+
+  if (denied) {
+    return (
+      <div className="mx-auto max-w-2xl p-10 text-center">
+        <h1 className="text-lg font-bold text-slate-800">Exit Workflow Setup</h1>
+        <p className="mt-2 text-sm text-slate-500">
+          Configuring the exit approval workflow is restricted to administrators and settings managers.
+          Your access to individual exit requests is governed by the workflow stages assigned to your role.
+        </p>
+      </div>
+    )
   }
 
   if (view === 'builder') {

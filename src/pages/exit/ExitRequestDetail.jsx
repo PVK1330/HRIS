@@ -4,34 +4,34 @@ import toast from 'react-hot-toast'
 import Swal from 'sweetalert2'
 import {
   HiArrowLeft, HiCheck, HiXMark, HiArrowUturnLeft, HiArrowTrendingUp,
-  HiChatBubbleLeftRight, HiArrowRightOnRectangle, HiClock,
+  HiChatBubbleLeftRight, HiClock, HiUser, HiBriefcase, HiCalendarDays,
 } from 'react-icons/hi2'
 import svc from '../../services/exitWorkflowService'
 
-const STATE_BADGE = {
-  ACTIVE: 'bg-amber-100 text-amber-700',
+const STATUS_PILL = {
+  IN_PROGRESS: 'bg-amber-100 text-amber-700',
   COMPLETED: 'bg-green-100 text-green-700',
-  PENDING: 'bg-slate-100 text-slate-500',
   REJECTED: 'bg-red-100 text-red-700',
+  WITHDRAWN: 'bg-slate-200 text-slate-600',
+  SUBMITTED: 'bg-blue-100 text-blue-700',
 }
-const STATE_LABEL = { ACTIVE: 'Current', COMPLETED: 'Done', PENDING: 'Upcoming', REJECTED: 'Rejected' }
-const STATE_DOT = { ACTIVE: 'bg-amber-500', COMPLETED: 'bg-green-500', PENDING: 'bg-slate-300', REJECTED: 'bg-red-500' }
 
-function Stepper({ stages, activeId, onPick }) {
-  return (
-    <div className="mb-5 flex items-center gap-1 overflow-x-auto pb-1">
-      {stages.map((s, i) => (
-        <div key={s.id} className="flex items-center">
-          <button onClick={() => onPick(s.id)}
-            className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition ${activeId === s.id ? 'border-[#0F766E] bg-teal-50 text-[#0F766E]' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
-            <span className={`h-2.5 w-2.5 rounded-full ${STATE_DOT[s.state] || 'bg-slate-300'}`} />
-            {s.name}
-          </button>
-          {i < stages.length - 1 && <span className="mx-1 h-px w-4 bg-slate-200" />}
-        </div>
-      ))}
-    </div>
-  )
+function approverLabel(stage) {
+  const parts = [
+    ...(stage.owner_roles || []),
+    ...(stage.owner_departments || []).map((d) => `${d} dept`),
+    ...(stage.owner_users || []),
+  ]
+  return parts.length ? [...new Set(parts)].join(', ') : 'Unassigned'
+}
+
+function initials(name) {
+  return (name || '?').split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+}
+
+function fmtDate(d) {
+  if (!d) return ''
+  try { return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) } catch { return '' }
 }
 
 export default function ExitRequestDetail() {
@@ -39,7 +39,6 @@ export default function ExitRequestDetail() {
   const nav = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [activeStageId, setActiveStageId] = useState(null)
   const [comment, setComment] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -48,8 +47,6 @@ export default function ExitRequestDetail() {
     try {
       const d = await svc.getExitRequest(id)
       setData(d)
-      const active = d.stages?.find((s) => s.state === 'ACTIVE') || d.stages?.[0]
-      setActiveStageId((prev) => prev ?? active?.id ?? null)
     } catch (e) {
       toast.error(e?.response?.data?.message || 'Failed to load exit request')
       if (e?.response?.status === 403 || e?.response?.status === 404) nav('/admin/exit-management')
@@ -62,13 +59,8 @@ export default function ExitRequestDetail() {
   if (!data) return null
 
   const stages = [...(data.stages || [])].sort((a, b) => a.stage_order - b.stage_order)
-  const activeStage = stages.find((s) => s.id === activeStageId) || stages[0]
-  const isCurrentStage = activeStage?.state === 'ACTIVE'
-  const actions = isCurrentStage ? (data.my_actions || []) : []
-  const can = (a) => actions.includes(a)
-
-  const stageApprovals = (data.approvals || []).filter((a) => a.stage_id === activeStage?.id)
-  const stageChecklist = (data.checklist_items || []).filter((c) => c.stage_id === activeStage?.id)
+  const myActions = data.my_actions || []
+  const can = (a) => myActions.includes(a)
 
   const run = async (fn, okMsg) => {
     setBusy(true)
@@ -76,7 +68,6 @@ export default function ExitRequestDetail() {
     catch (e) { toast.error(e?.response?.data?.message || 'Action failed') }
     finally { setBusy(false) }
   }
-
   const doApprove = () => run(() => svc.approveStage(id, comment), 'Approved')
   const doReject = async () => {
     const { value } = await Swal.fire({ title: 'Reject exit request', input: 'textarea', inputLabel: 'Reason (required)', inputValidator: (v) => !v && 'A reason is required', showCancelButton: true, confirmButtonColor: '#dc2626' })
@@ -92,97 +83,125 @@ export default function ExitRequestDetail() {
     const r = await Swal.fire({ title: 'Withdraw this exit request?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626' })
     if (r.isConfirmed) run(() => svc.withdrawExitRequest(id, 'Withdrawn by request'), 'Withdrawn')
   }
-  const toggleChecklist = (item) =>
-    run(() => svc.updateChecklistItem(id, activeStage.id, item.id, { status: item.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED' }), 'Checklist updated')
+  const toggleChecklist = (stageId, item) =>
+    run(() => svc.updateChecklistItem(id, stageId, item.id, { status: item.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED' }), 'Checklist updated')
+
+  const canWithdraw = ['SUBMITTED', 'IN_PROGRESS'].includes(data.status) && data.my_visibility === 'subject_readonly'
 
   return (
-    <div className="mx-auto max-w-4xl p-4">
+    <div className="mx-auto max-w-3xl p-4">
       <button onClick={() => nav('/admin/exit-management')} className="mb-3 flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-[#0F766E]"><HiArrowLeft /> Back to exits</button>
 
       {/* header */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
-        <div>
-          <h1 className="text-lg font-bold text-slate-800">{data.employee_name}</h1>
-          <p className="text-sm text-slate-500 capitalize">{data.exit_type} · workflow: {data.workflow_name || '—'}</p>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0F766E] text-base font-bold text-white">{initials(data.employee_name)}</div>
+          <div>
+            <h1 className="text-lg font-bold text-slate-800">{data.employee_name}</h1>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
+              {data.job_title && <span className="flex items-center gap-1"><HiBriefcase className="h-3.5 w-3.5" /> {data.job_title}</span>}
+              <span className="flex items-center gap-1 capitalize"><HiUser className="h-3.5 w-3.5" /> {data.exit_type}</span>
+              {data.last_working_day && <span className="flex items-center gap-1"><HiCalendarDays className="h-3.5 w-3.5" /> LWD {fmtDate(data.last_working_day)}</span>}
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`rounded-full px-3 py-1 text-xs font-bold ${data.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : data.status === 'REJECTED' ? 'bg-red-100 text-red-700' : data.status === 'WITHDRAWN' ? 'bg-slate-200 text-slate-600' : 'bg-amber-100 text-amber-700'}`}>{data.status}</span>
-          {['SUBMITTED', 'IN_PROGRESS'].includes(data.status) && (data.my_visibility === 'subject_readonly') && (
-            <button onClick={doWithdraw} className="flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50"><HiArrowRightOnRectangle /> Withdraw</button>
-          )}
+          <span className={`rounded-full px-3 py-1 text-xs font-bold ${STATUS_PILL[data.status] || 'bg-slate-100 text-slate-500'}`}>{data.status.replace('_', ' ')}</span>
+          {canWithdraw && <button onClick={doWithdraw} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50">Withdraw</button>}
         </div>
       </div>
 
-      <Stepper stages={stages} activeId={activeStageId} onPick={setActiveStageId} />
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Approval flow</h2>
+        <span className="text-xs text-slate-400">{data.workflow_name}</span>
+      </div>
 
-      {/* active stage panel */}
-      {activeStage && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800">{activeStage.name}</h2>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${STATE_BADGE[activeStage.state]}`}>{STATE_LABEL[activeStage.state]}</span>
-          </div>
+      {/* vertical timeline */}
+      <div className="space-y-0">
+        {stages.map((s, i) => {
+          const isActive = s.state === 'ACTIVE'
+          const isDone = s.state === 'COMPLETED'
+          const isRejected = s.state === 'REJECTED'
+          const stageActs = (data.approvals || []).filter((a) => a.stage_id === s.id && a.action !== 'PENDING')
+          const checklist = (data.checklist_items || []).filter((c) => c.stage_id === s.id)
+          const decided = stageActs.find((a) => ['APPROVE', 'REJECT', 'COMPLETE'].includes(a.action))
 
-          {/* checklist */}
-          {stageChecklist.length > 0 && (
-            <div className="mb-4">
-              <h3 className="mb-1 text-xs font-bold uppercase text-slate-400">Checklist</h3>
-              {stageChecklist.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 py-1 text-sm text-slate-600">
-                  <input type="checkbox" disabled={!can('complete_checklist')} checked={c.status === 'COMPLETED'} onChange={() => toggleChecklist(c)}
-                    className="h-4 w-4 rounded text-[#0F766E] disabled:opacity-50" />
-                  <span className={c.status === 'COMPLETED' ? 'line-through text-slate-400' : ''}>{c.label}</span>
-                  <span className="text-[10px] uppercase text-slate-300">{c.item_type}</span>
-                </label>
-              ))}
-            </div>
-          )}
+          return (
+            <div key={s.id} className="flex gap-3">
+              {/* rail */}
+              <div className="flex flex-col items-center">
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                  isDone ? 'bg-green-500 text-white'
+                    : isRejected ? 'bg-red-500 text-white'
+                    : isActive ? 'bg-[#0F766E] text-white ring-4 ring-teal-100'
+                    : 'bg-slate-100 text-slate-400'}`}>
+                  {isDone ? <HiCheck className="h-5 w-5" /> : isRejected ? <HiXMark className="h-5 w-5" /> : s.stage_order}
+                </div>
+                {i < stages.length - 1 && <div className={`w-0.5 flex-1 ${isDone ? 'bg-green-300' : 'bg-slate-200'}`} style={{ minHeight: 24 }} />}
+              </div>
 
-          {/* history */}
-          <div className="mb-4">
-            <h3 className="mb-1 text-xs font-bold uppercase text-slate-400">Stage activity</h3>
-            {stageApprovals.length === 0 ? (
-              <p className="text-sm text-slate-400">No activity yet.</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {stageApprovals.map((a) => (
-                  <li key={a.id} className="flex items-start gap-2 text-sm">
-                    <HiClock className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
-                    <div>
-                      <span className="font-semibold text-slate-700">{a.actor_full_name || a.actor_name || 'System'}</span>
-                      <span className="text-slate-500"> — {a.action.toLowerCase().replace('_', ' ')}</span>
-                      {a.comments && <span className="text-slate-400"> · “{a.comments}”</span>}
+              {/* card */}
+              <div className={`mb-4 flex-1 rounded-xl border p-4 ${isActive ? 'border-teal-300 bg-teal-50/40 shadow-sm' : 'border-slate-200 bg-white'}`}>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-slate-800">{s.name}</h3>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                    isDone ? 'bg-green-100 text-green-700' : isRejected ? 'bg-red-100 text-red-700'
+                      : isActive ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'}`}>
+                    {isDone ? 'Approved' : isRejected ? 'Rejected' : isActive ? 'Current' : 'Upcoming'}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-500">Approver: <span className="font-medium text-slate-600">{approverLabel(s)}</span></p>
+
+                {/* completed → who acted */}
+                {decided && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                    <HiClock className="h-3.5 w-3.5 text-slate-300" />
+                    {decided.action === 'REJECT' ? 'Rejected' : 'Approved'} by {decided.actor_full_name || decided.actor_name || 'System'} · {fmtDate(decided.created_at)}
+                    {decided.comments && <span className="text-slate-400"> · “{decided.comments}”</span>}
+                  </p>
+                )}
+
+                {/* checklist */}
+                {checklist.length > 0 && (isActive || isDone) && (
+                  <div className="mt-3 rounded-lg bg-white/70 p-2">
+                    {checklist.map((c) => (
+                      <label key={c.id} className="flex items-center gap-2 py-0.5 text-sm text-slate-600">
+                        <input type="checkbox" disabled={!isActive || !can('complete_checklist')} checked={c.status === 'COMPLETED'} onChange={() => toggleChecklist(s.id, c)} className="h-4 w-4 rounded text-[#0F766E] disabled:opacity-50" />
+                        <span className={c.status === 'COMPLETED' ? 'text-slate-400 line-through' : ''}>{c.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {/* current stage: action card OR waiting note */}
+                {isActive && (
+                  can('approve') ? (
+                    <div className="mt-3 rounded-lg border border-teal-200 bg-white p-3">
+                      <p className="mb-2 text-xs font-bold uppercase text-teal-700">Your action is needed</p>
+                      <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} placeholder="Optional comment…" className="mb-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                      <div className="flex flex-wrap gap-2">
+                        <button disabled={busy} onClick={doApprove} className="flex items-center gap-1 rounded-lg bg-[#0F766E] px-4 py-2 text-sm font-bold text-white hover:bg-teal-800 disabled:opacity-50"><HiCheck /> Approve</button>
+                        {can('reject') && <button disabled={busy} onClick={doReject} className="flex items-center gap-1 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-600 disabled:opacity-50"><HiXMark /> Reject</button>}
+                        {can('send_back') && <button disabled={busy} onClick={doSendBack} className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"><HiArrowUturnLeft /> Send back</button>}
+                        {can('escalate') && <button disabled={busy} onClick={doEscalate} className="flex items-center gap-1 rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-600 hover:bg-amber-50"><HiArrowTrendingUp /> Escalate</button>}
+                        {can('comment') && <button disabled={busy} onClick={doComment} className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"><HiChatBubbleLeftRight /> Comment</button>}
+                      </div>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* action panel — only on the current stage, only permitted actions */}
-          {isCurrentStage && actions.some((a) => a !== 'view') ? (
-            <div className="rounded-lg bg-slate-50 p-3">
-              <h3 className="mb-2 text-xs font-bold uppercase text-slate-400">Your actions</h3>
-              {(can('comment') || can('approve')) && (
-                <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} placeholder="Optional comment…"
-                  className="mb-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-              )}
-              <div className="flex flex-wrap gap-2">
-                {can('approve') && <button disabled={busy} onClick={doApprove} className="flex items-center gap-1 rounded-lg bg-[#0F766E] px-4 py-2 text-sm font-bold text-white hover:bg-teal-800 disabled:opacity-50"><HiCheck /> Approve</button>}
-                {can('reject') && <button disabled={busy} onClick={doReject} className="flex items-center gap-1 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-600 disabled:opacity-50"><HiXMark /> Reject</button>}
-                {can('send_back') && <button disabled={busy} onClick={doSendBack} className="flex items-center gap-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"><HiArrowUturnLeft /> Send back</button>}
-                {can('escalate') && <button disabled={busy} onClick={doEscalate} className="flex items-center gap-1 rounded-lg border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-600 hover:bg-amber-50"><HiArrowTrendingUp /> Escalate</button>}
-                {can('comment') && <button disabled={busy} onClick={doComment} className="flex items-center gap-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"><HiChatBubbleLeftRight /> Comment</button>}
+                  ) : (
+                    <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">⏳ Waiting for <span className="font-semibold">{approverLabel(s)}</span> to approve.</p>
+                  )
+                )}
               </div>
             </div>
-          ) : (
-            <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-400">
-              {activeStage.state === 'PENDING' ? 'This stage has not started yet.'
-                : activeStage.state === 'COMPLETED' ? 'This stage is complete (read-only).'
-                : 'You have no actions on this stage.'}
-            </p>
-          )}
-        </div>
+          )
+        })}
+      </div>
+
+      {data.status === 'COMPLETED' && (
+        <div className="mt-2 rounded-xl border border-green-200 bg-green-50 p-4 text-center text-sm font-semibold text-green-700">✓ Exit process completed</div>
+      )}
+      {data.status === 'REJECTED' && (
+        <div className="mt-2 rounded-xl border border-red-200 bg-red-50 p-4 text-center text-sm font-semibold text-red-700">This exit request was rejected{data.rejection_reason ? `: ${data.rejection_reason}` : ''}.</div>
       )}
     </div>
   )

@@ -78,18 +78,12 @@ export const deleteWorkflow = (id) =>
   api.delete(`/admin/settings/exit-workflows/${id}`).then(unwrap)
 
 /* ------------------ Lookups for the workflow builder --------------------- */
+// Single self-contained endpoint (gated by the same config permission) so the builder
+// needs no departments.manage / rbac permissions.
 
-export const listDepartments = () =>
-  api.get('/departments', { params: { limit: 200 } })
-    .then((res) => res?.data?.data?.records ?? res?.data?.data ?? res?.data?.records ?? [])
-
-export const listRoles = () =>
-  api.get('/rbac/roles')
-    .then((res) => res?.data?.data?.records ?? res?.data?.data ?? res?.data?.records ?? [])
-
-export const listEmployees = () =>
-  api.get('/employees', { params: { limit: 500 } })
-    .then((res) => res?.data?.data?.records ?? res?.data?.data ?? res?.data?.records ?? [])
+export const getBuilderOptions = () =>
+  api.get('/admin/settings/exit-workflows/options')
+    .then((res) => res?.data?.data ?? { departments: [], roles: [], employees: [] })
 
 export default {
   listExitRequests, getExitRequest, submitExitRequest,
@@ -97,5 +91,5 @@ export default {
   addStageComment, withdrawExitRequest, getAuditLog, getDashboardWidgets, getTerminationTypes,
   listChecklist, updateChecklistItem,
   listWorkflows, getWorkflow, createWorkflow, updateWorkflow, activateWorkflow, deleteWorkflow,
-  listDepartments, listRoles, listEmployees,
+  getBuilderOptions,
 }

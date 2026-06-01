@@ -1,17 +1,15 @@
 import { useState } from 'react'
-import { HiArrowRightOnRectangle, HiWrenchScrewdriver, HiBuildingOffice2 } from 'react-icons/hi2'
+import { HiArrowRightOnRectangle, HiBuildingOffice2 } from 'react-icons/hi2'
 import TerminationTypes from '../TerminationTypes.jsx'
-import ClearanceChecklistSettings from '../ClearanceChecklist.jsx'
-import ExitDepartmentWorkflowSettings from '../ExitDepartmentWorkflowSettings.jsx'
+import ExitWorkflowConfig from '../../../exit/ExitWorkflowConfig.jsx'
 
 const EXIT_TABS = [
-  { id: 'termination', label: 'Termination Types', Icon: HiArrowRightOnRectangle },
-  { id: 'clearance', label: 'Clearance Checklist', Icon: HiWrenchScrewdriver },
   { id: 'workflow', label: 'Department Workflow', Icon: HiBuildingOffice2 },
+  { id: 'termination', label: 'Termination Types', Icon: HiArrowRightOnRectangle },
 ]
 
 export default function ExitSettingsSection() {
-  const [exitTab, setExitTab] = useState('termination')
+  const [exitTab, setExitTab] = useState('workflow')
   return (
     <div className="space-y-6 min-w-0">
       <div className="flex flex-wrap items-center gap-1.5">
@@ -35,9 +33,8 @@ export default function ExitSettingsSection() {
           )
         })}
       </div>
+      {exitTab === 'workflow' && <ExitWorkflowConfig />}
       {exitTab === 'termination' && <TerminationTypes embedded />}
-      {exitTab === 'clearance' && <ClearanceChecklistSettings embedded />}
-      {exitTab === 'workflow' && <ExitDepartmentWorkflowSettings embedded />}
     </div>
   )
 }

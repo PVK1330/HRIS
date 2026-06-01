@@ -148,14 +148,6 @@ const adminNavGroups = [
         featureCode: "onboarding_exit",
       },
       {
-        label: "Exit Workflow Setup",
-        icon: HiArrowRightOnRectangle,
-        path: "/admin/settings/exit-workflows",
-        key: "exit-management",
-        permission: "view_exit",
-        featureCode: "onboarding_exit",
-      },
-      {
         label: "Letter Templates",
         icon: HiEnvelope,
         path: "/admin/letters",
@@ -402,6 +394,12 @@ export default function AdminLayout() {
           })
           .filter((item) => {
             const moduleKey = item.key;
+
+            /* Admin-only items (e.g. Exit Workflow Setup) never show for non-admin staff,
+               regardless of RBAC module access — configuration is org-admin only. */
+            if (item.adminOnly && user?.role !== "admin") {
+              return false;
+            }
 
             /* Messages + dashboard always visible for tenant users */
             if (moduleKey === "messages" || moduleKey === "dashboard") {
