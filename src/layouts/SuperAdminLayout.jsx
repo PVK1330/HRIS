@@ -21,6 +21,7 @@ import {
 import { Sidebar } from "../components/ui/Sidebar.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
 import { Button } from "../components/ui/Button.jsx";
+import NotificationDropdown from "../components/layout/NotificationDropdown.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const superNavGroups = [
@@ -190,14 +191,7 @@ export default function SuperAdminLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              className="relative rounded-lg p-2 text-text-secondary hover:bg-background-secondary"
-              aria-label="Notifications"
-            >
-              <HiBell className="h-5 w-5" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger-DEFAULT" />
-            </button>
+            <NotificationDropdown />
             <Link to="/superadmin/profile" className="hidden items-center gap-2 sm:flex group">
               <Avatar name={user?.name} size="sm" className="group-hover:ring-2 group-hover:ring-indigo-600 transition-all" />
               <div className="min-w-0 text-right">

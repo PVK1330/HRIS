@@ -7,9 +7,7 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { superadminService } from '../../../services/superadminService.js'
 import {
-  HiPaperAirplane,
-  HiUserPlus,
-  HiChatBubbleLeftRight,
+  HiPaperClip,
   HiCheckCircle,
   HiClock,
   HiExclamationCircle,
@@ -21,22 +19,61 @@ import {
   HiLifebuoy,
   HiShieldExclamation,
   HiHeart,
-  HiEye
+  HiEye,
+  HiXMark,
+  HiCalendarDays,
+  HiUser,
+  HiBuildingOffice,
+  HiTag,
 } from 'react-icons/hi2'
 import Swal from 'sweetalert2'
+
+// Status color mapping
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'Waiting':
+      return 'amber'
+    case 'In Progress':
+      return 'blue'
+    case 'Resolved':
+      return 'green'
+    case 'Closed':
+    case 'Rejected':
+      return 'slate'
+    case 'Open':
+    default:
+      return 'red'
+  }
+}
+
+// Priority color mapping
+const getPriorityColor = (priority) => {
+  switch (priority?.toLowerCase()) {
+    case 'low':
+      return 'green'
+    case 'medium':
+      return 'orange'
+    case 'high':
+      return 'red'
+    default:
+      return 'slate'
+  }
+}
+
+const STATUS_OPTIONS = ['Waiting', 'In Progress', 'Resolved', 'Closed']
 
 export default function SupportTickets() {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const [showReplyModal, setShowReplyModal] = useState(false)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState(null)
-  const [ticketStatus, setTicketStatus] = useState('Open')
+  const [ticketStatus, setTicketStatus] = useState('Waiting')
   const [replyText, setReplyText] = useState('')
-  const [assignee, setAssignee] = useState('')
   const [saving, setSaving] = useState(false)
-  const STATUS_OPTIONS = ['Open', 'In Progress', 'Waiting for Admin', 'Resolved', 'Closed']
+  const [loadingTicketDetails, setLoadingTicketDetails] = useState(false)
+  const [pendingTicketId, setPendingTicketId] = useState(null)
 
   const fetchTickets = async () => {
     try {
@@ -46,7 +83,6 @@ export default function SupportTickets() {
       const payload = response?.data?.data
       setTickets(Array.isArray(payload) ? payload : [])
     } catch (error) {
-      console.error('Failed to fetch support tickets:', error)
       setTickets([])
       setError('Unable to load support tickets. Please refresh or try again later.')
     } finally {
@@ -58,52 +94,96 @@ export default function SupportTickets() {
     fetchTickets()
   }, [])
 
-  const handleViewTicket = async (ticket) => {
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash || ''
+      if (hash.startsWith('#ticket-')) {
+        const ticketId = parseInt(hash.replace('#ticket-', ''), 10)
+        if (Number.isInteger(ticketId) && ticketId > 0) {
+          setPendingTicketId(ticketId)
+        }
+      }
+    }
+
+    handleHashChange()
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  useEffect(() => {
+    if (!pendingTicketId || tickets.length === 0) return
+    const ticket = tickets.find((t) => Number(t.id) === pendingTicketId || Number(t.ticketId) === pendingTicketId)
+    if (ticket) {
+      handleViewTicket(ticket, { setHash: false })
+      setPendingTicketId(null)
+    }
+  }, [pendingTicketId, tickets])
+
+  useEffect(() => {
+
+  }, [tickets])
+
+  const handleViewTicket = async (ticket, { setHash = true } = {}) => {
+    if (setHash && ticket?.id) {
+      window.history.replaceState(null, '', `#ticket-${ticket.id}`)
+    }
     setSelectedTicket(ticket)
-    setTicketStatus(ticket.status || 'Open')
+    setTicketStatus(ticket.status || 'Waiting')
     setReplyText('')
-    setShowReplyModal(true)
+    setLoadingTicketDetails(true)
+    setShowDetailsModal(true)
 
     try {
       const response = await superadminService.getSupportTicketById(ticket.id)
       const data = response?.data?.data
       if (data) {
         setSelectedTicket(data)
-        setTicketStatus(data.status || 'Open')
+        setTicketStatus(data.status || 'Waiting')
       }
     } catch (error) {
-      console.error('Failed to load ticket details:', error)
       toast.error('Unable to load ticket details')
+    } finally {
+      setLoadingTicketDetails(false)
     }
   }
 
   const handleSaveTicket = async () => {
     if (!selectedTicket) return
-    if (!ticketStatus && !replyText.trim()) {
-      toast.error('Select a status or enter a description to update the ticket')
+    if (!replyText.trim() && ticketStatus === selectedTicket.status) {
+      toast.error('No changes detected. Please update status or add a response.')
+      return
+    }
+    if (!replyText.trim()) {
+      toast.error('Super Admin response is required when updating the ticket.')
       return
     }
 
     setSaving(true)
     try {
-      const payload = {}
+      const payload = {
+        message: replyText.trim(),
+      }
       if (ticketStatus && ticketStatus !== selectedTicket.status) payload.status = ticketStatus
-      if (replyText.trim()) payload.superAdminDescription = replyText.trim()
+
 
       const response = await superadminService.updateSupportTicket(selectedTicket.id, payload)
-      const updated = response?.data?.data
+      const updated = response?.data?.data?.ticket || response?.data?.data || response?.data
 
-      if (updated) {
-        setSelectedTicket(updated)
-        setTickets((prev) => prev.map((t) => (t.id === updated.id ? { ...t, status: updated.status, superAdminDescription: updated.superAdminDescription } : t)))
-        toast.success('Ticket updated successfully')
-        if (replyText.trim()) setReplyText('')
-        setTicketStatus(updated.status)
-        await fetchTickets()
-        setShowReplyModal(false)
+      if (!updated) {
+        throw new Error('Ticket update returned invalid response')
       }
+
+      setSelectedTicket(updated)
+      setTickets((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)))
+      if (replyText.trim()) setReplyText('')
+      setTicketStatus(updated.status || 'Waiting')
+      toast.success('Ticket updated successfully')
+      setShowDetailsModal(false)
+      if (window.location.hash.startsWith('#ticket-')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+      await fetchTickets()
     } catch (error) {
-      console.error('Failed to update ticket:', error)
       toast.error('Unable to update ticket. Please try again.')
     } finally {
       setSaving(false)
@@ -117,7 +197,7 @@ export default function SupportTickets() {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Yes, delete',
-      confirmButtonColor: '#0F766E',
+      confirmButtonColor: '#dc2626',
     })
 
     if (!result.isConfirmed) return
@@ -127,35 +207,19 @@ export default function SupportTickets() {
       setTickets((prev) => prev.filter((t) => t.id !== ticketId))
       toast.success('Ticket deleted successfully')
     } catch (err) {
-      console.error('Failed to delete ticket:', err)
       toast.error(err?.response?.data?.message || 'Failed to delete ticket')
     }
   }
 
-  const handleAssign = async () => {
-    if (!selectedTicket) return
-    if (!assignee) return
-    try {
-      await superadminService.updateSupportTicket(selectedTicket.id, { assignedTo: assignee, status: 'In Progress' })
-      await fetchTickets()
-      toast.success('Ticket assigned successfully')
-    } catch (error) {
-      console.error('Failed to assign ticket:', error)
-      toast.error('Unable to assign ticket')
-    }
+  // Calculate stats
+  const stats = {
+    total: tickets.length,
+    waiting: tickets.filter(t => (t.status || 'Waiting') === 'Waiting').length,
+    inProgress: tickets.filter(t => t.status === 'In Progress').length,
+    resolved: tickets.filter(t => t.status === 'Resolved').length,
   }
 
-  const handleResolve = async (ticketId) => {
-    try {
-      await superadminService.updateSupportTicket(ticketId, { status: 'Resolved' })
-      await fetchTickets()
-      setShowReplyModal(false)
-      toast.success('Ticket marked resolved')
-    } catch (error) {
-      console.error('Failed to resolve ticket:', error)
-      toast.error('Unable to resolve ticket')
-    }
-  }
+  const selectedTicketStatus = selectedTicket?.status || 'Waiting'
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
@@ -166,7 +230,7 @@ export default function SupportTickets() {
             <div className="h-8 w-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-sm">
               <HiLifebuoy className="h-4.5 w-4.5" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Support</h1>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Support Tickets</h1>
             <div className="group relative">
               <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-emerald-500 transition-colors" />
               <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
@@ -176,21 +240,22 @@ export default function SupportTickets() {
               </div>
             </div>
           </div>
-          <p className="text-[11px] font-medium text-slate-500">Manage and resolve help requests.</p>
+          <p className="text-[11px] font-medium text-slate-500">View and manage support tickets from all organizations.</p>
         </div>
         <Button label="Refresh" variant="ghost" icon={HiArrowPath} size="sm" className="text-slate-500 font-bold" onClick={fetchTickets} />
       </div>
 
-      {/* Premium Stats Grid */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="PENDING" value={tickets.filter(t => t.status === 'Open').length.toString()} icon={HiShieldExclamation} trendColor="red" />
-        <StatCard title="ACTIVE" value={tickets.filter(t => t.status === 'In Progress').length.toString()} icon={HiClock} trendColor="amber" />
-        <StatCard title="RESOLVED" value={tickets.filter(t => t.status === 'Resolved').length.toString()} icon={HiCheckCircle} trendColor="green" />
-        <StatCard title="SATISFACTION" value="N/A" icon={HiHeart} trendColor="rose" />
+        <StatCard title="TOTAL" value={stats.total.toString()} icon={HiTicket} trendColor="blue" />
+        <StatCard title="WAITING" value={stats.waiting.toString()} icon={HiClock} trendColor="amber" />
+        <StatCard title="IN PROGRESS" value={stats.inProgress.toString()} icon={HiExclamationCircle} trendColor="orange" />
+        <StatCard title="RESOLVED" value={stats.resolved.toString()} icon={HiCheckCircle} trendColor="green" />
       </div>
 
       {error && (
-        <div className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700 flex items-center gap-2">
+          <HiExclamationCircle className="h-5 w-5 shrink-0" />
           {error}
         </div>
       )}
@@ -198,150 +263,246 @@ export default function SupportTickets() {
       {/* Ticket Table */}
       <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
         <Table
+          maxHeightClass="max-h-full"
           loading={loading}
+          emptyMessage={tickets.length === 0 && !loading ? 'No support tickets found' : 'No data to display'}
           columns={[
-            { key: 'ticket', label: 'Ticket ID & Subject' },
-            { key: 'org', label: 'Organization' },
-            { key: 'createdAt', label: 'Created Date & Time' },
-            { key: 'priority', label: 'Priority' },
-            { key: 'status', label: 'Status' },
-            { key: 'actions', label: 'Control' },
+            {
+              key: 'ticket',
+              label: 'Ticket ID & Subject',
+              render: (_, ticket) => (
+                <div className="space-y-1">
+                  <div className="text-sm font-bold text-blue-600">{ticket.ticketId || `TKT-${String(ticket.id).padStart(3, '0')}`}</div>
+                  <div className="text-xs text-slate-500 truncate max-w-[200px]">{ticket.subject || '-'}</div>
+                </div>
+              )
+            },
+            {
+              key: 'org',
+              label: 'Organization',
+              render: (_, ticket) => (
+                <div className="flex items-center gap-2">
+                  <HiBuildingOffice className="h-4 w-4 text-slate-400" />
+                  <span className="text-sm text-slate-700">{ticket.tenantName || ticket.organization || '-'}</span>
+                </div>
+              )
+            },
+            {
+              key: 'createdAt',
+              label: 'Created Date & Time',
+              render: (_, ticket) => (
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <HiCalendarDays className="h-4 w-4 text-slate-400" />
+                  {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '-'}
+                </div>
+              )
+            },
+            {
+              key: 'priority',
+              label: 'Priority',
+              render: (_, ticket) => {
+                const color = getPriorityColor(ticket.priority)
+                return <Badge label={ticket.priority || 'Normal'} color={color} />
+              }
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              render: (_, ticket) => {
+                const color = getStatusColor(ticket.status || 'Waiting')
+                return <Badge label={ticket.status || 'Waiting'} color={color} />
+              }
+            },
+            {
+              key: 'actions',
+              label: 'Control',
+              render: (_, ticket) => (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleViewTicket(ticket)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-100 transition-colors"
+                  >
+                    <HiEye className="h-4 w-4" />
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTicket(ticket.id)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                  >
+                    <HiTrash className="h-4 w-4" />
+                    Delete
+                  </button>
+                </div>
+              )
+            },
           ]}
-          data={tickets.map((ticket) => ({
-            ticket: (
-              <div className="flex flex-col py-1">
-                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{ticket.ticketCode || `TKT-${ticket.id}`}</span>
-                <span className="text-sm font-bold text-slate-900 tracking-tight truncate max-w-[280px]">{ticket.subject}</span>
-              </div>
-            ),
-            org: <span className="text-xs font-black text-slate-700 uppercase tracking-wider">{ticket.tenantName || ticket.tenant_name || ticket.org || ticket.org_name || 'Unknown'}</span>,
-            createdAt: (
-              <div className="flex flex-col py-1">
-                <span className="text-sm font-semibold text-slate-900">{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
-                <span className="text-[11px] text-slate-400 mt-1">{ticket.createdAt ? new Date(ticket.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}</span>
-              </div>
-            ),
-            priority: <Badge label={ticket.priority} color={ticket.priority === 'Critical' ? 'red' : ticket.priority === 'High' ? 'amber' : 'blue'} variant="glass" />,
-            status: <Badge label={ticket.status} color={ticket.status === 'Open' ? 'red' : ticket.status === 'In Progress' || ticket.status === 'Waiting for Admin' ? 'amber' : ticket.status === 'Resolved' ? 'green' : 'gray'} />,
-            actions: (
-              <div className="flex gap-2">
-                <Button  variant="ghost" size="sm" icon={HiEye} ariaLabel="View ticket" className='text-blue-600'  onClick={() => handleViewTicket(ticket)} />
-                <Button variant="ghost" size="sm" icon={HiTrash} ariaLabel="Delete ticket" className="text-rose-600" onClick={() => handleDeleteTicket(ticket.id)} />
-              </div>
-            ),
-          }))}
+          data={tickets}
+          rowClassName={() => 'hover:bg-slate-50 transition-colors'}
         />
       </div>
 
-      {/* Professional Support Interface */}
+      {/* Ticket Details Modal */}
       <Modal
-        isOpen={showReplyModal}
-        onClose={() => setShowReplyModal(false)}
-        title={selectedTicket?.subject || ''}
-        description={selectedTicket ? `ID: ${selectedTicket.ticketCode || selectedTicket.id} · Origin: ${selectedTicket.tenantName || selectedTicket.tenant_name || selectedTicket.org || selectedTicket.org_name || ''}` : ''}
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false)
+          if (window.location.hash.startsWith('#ticket-')) {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search)
+          }
+        }}
+        title={selectedTicket?.subject || 'Ticket Details'}
+        description={selectedTicket ? (selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`) : ''}
         icon={HiTicket}
-        size="lg"
+        size="2xl"
+        bodyClassName="overflow-hidden"
       >
         {selectedTicket && (
-          <div className="flex flex-col h-[700px] p-2">
-            <div className="flex items-center justify-between border-b border-slate-50 pb-6 mb-6">
-              <div className="flex items-center gap-4">
-                <Badge label={selectedTicket.status} color={selectedTicket.status === 'Open' ? 'red' : selectedTicket.status === 'In Progress' || selectedTicket.status === 'Waiting for Admin' ? 'amber' : selectedTicket.status === 'Resolved' ? 'green' : 'gray'} variant="glass" />
-                <div className="h-4 w-px bg-slate-100" />
-                <div className="flex items-center gap-2">
-                  <HiClock className="h-4 w-4 text-slate-300" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SLA: In Tracking</span>
+          <div className="flex h-full min-h-[calc(90vh-140px)] flex-col overflow-hidden">
+            <div className="overflow-y-auto px-6 py-6 space-y-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Ticket ID</p>
+                        <p className="text-lg font-semibold text-slate-900 mt-1">{selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`}</p>
+                      </div>
+                      <Badge label={selectedTicket.status || 'Waiting'} color={getStatusColor(selectedTicket.status || 'Waiting')} />
+                    </div>
+
+                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                      <div className="rounded-2xl bg-white p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Category</p>
+                        <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.category || '-'}</p>
+                      </div>
+                      <div className="rounded-2xl bg-white p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Priority</p>
+                        <Badge label={selectedTicket.priority || 'Normal'} color={getPriorityColor(selectedTicket.priority)} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Admin Name</p>
+                      <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.adminName || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Organization</p>
+                      <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.tenantName || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Created</p>
+                      <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString() : '-'}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-3">Description</p>
+                    <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{selectedTicket.description || '-'}</p>
+                  </div>
+
+                  {(selectedTicket.attachmentUrl || selectedTicket.attachment_url) && (
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Attachment</p>
+                      <a
+                        href={selectedTicket.attachmentUrl || selectedTicket.attachment_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-emerald-700"
+                      >
+                        <HiPaperClip className="h-4 w-4 text-slate-500" />
+                        {selectedTicket.attachmentUrl?.split('/').pop() || selectedTicket.attachment_url?.split('/').pop() || 'Download attachment'}
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-6">
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Update Status</p>
+                      <select
+                        value={ticketStatus}
+                        onChange={(e) => setTicketStatus(e.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
+                      >
+                        {STATUS_OPTIONS.map((status) => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Super Admin Response</p>
+                      <textarea
+                        className="h-full w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 resize-none"
+                        placeholder="Add response, notes, or resolution details..."
+                        rows={8}
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">Conversation History</p>
+                    <p className="text-[11px] text-slate-400">All messages related to this ticket</p>
+                  </div>
+                  <span className="text-[11px] text-slate-500">{(selectedTicket.conversation || []).length} messages</span>
+                </div>
+
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                  {(selectedTicket.conversation || []).length ? (
+                    (selectedTicket.conversation || []).map((msg) => (
+                      <div
+                        key={`${msg.id}-${msg.createdAt}-${msg.senderRole}`}
+                        className={`rounded-3xl border-l-4 bg-white p-4 shadow-sm ${msg.senderRole === 'admin' ? 'border-sky-500' : 'border-emerald-500'}`}
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${msg.senderRole === 'admin' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                              {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
+                            </span>
+                            <span className="text-xs font-semibold text-slate-700">{msg.senderName}</span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                            <Badge label={msg.status || selectedTicket.status || 'Waiting'} color={getStatusColor(msg.status || selectedTicket.status || 'Waiting')} />
+                            <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
+                            <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}</span>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{msg.message}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-500">No conversation history yet.</p>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 mb-6">
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Ticket ID</p>
-                <p className="text-sm font-semibold text-slate-900">{selectedTicket.ticketCode || selectedTicket.id}</p>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Tenant</p>
-                <p className="text-sm font-semibold text-slate-900">{selectedTicket.tenantName || selectedTicket.tenant_name || selectedTicket.org || selectedTicket.org_name || '-'}</p>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 md:col-span-2">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Subject</p>
-                <p className="text-sm font-semibold text-slate-900">{selectedTicket.subject}</p>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Category</p>
-                <p className="text-sm font-semibold text-slate-900">{selectedTicket.category}</p>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Priority</p>
-                <p className="text-sm font-semibold text-slate-900">{selectedTicket.priority}</p>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Status</label>
-                <select value={ticketStatus} onChange={(e) => setTicketStatus(e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-500 transition-all">
-                  {STATUS_OPTIONS.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Created Date</p>
-                <p className="text-sm font-semibold text-slate-900">
-                  {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}
-                </p>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Created Time</p>
-                <p className="text-sm font-semibold text-slate-900">
-                  {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
-                </p>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 md:col-span-2">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Description</p>
-                <p className="text-sm font-medium text-slate-700 leading-relaxed">{selectedTicket.description || '-'}</p>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 md:col-span-2">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Attachment</p>
-                {selectedTicket.attachmentUrl || selectedTicket.attachment_url ? (
-                  <a href={selectedTicket.attachmentUrl || selectedTicket.attachment_url} target="_blank" rel="noreferrer" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline">
-                    View attachment
-                  </a>
-                ) : (
-                  <p className="text-sm text-slate-500">No attachment</p>
-                )}
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 md:col-span-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Assign to</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={assignee}
-                    onChange={(e) => setAssignee(e.target.value)}
-                    placeholder="Assignee name or email"
-                    className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 outline-none focus:border-emerald-500 transition-all"
-                  />
-                  <Button variant="ghost" label="Assign" icon={HiUserPlus} onClick={handleAssign} disabled={!assignee.trim()} />
-                </div>
-              </div>
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 md:col-span-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block">
-                  Super Admin Description
-                </label>
-
-                <textarea
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none"
-                  placeholder="Add description or update for this ticket..."
-                  rows={3}
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="pt-6 border-t border-slate-50">
-              <div className="flex flex-wrap gap-4">
-                <Button variant="primary" label="Save" className="h-[52px] rounded-[1.25rem] bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-100 px-6" onClick={handleSaveTicket} disabled={saving || (!replyText.trim() && ticketStatus === selectedTicket.status)} />
-                <Button variant="ghost" label="Mark Resolved" icon={HiCheckCircle} className="h-[52px] rounded-[1.25rem] px-6" onClick={() => handleResolve(selectedTicket.id)} disabled={selectedTicket.status === 'Resolved'} />
+            <div className="sticky bottom-0 z-20 border-t border-slate-200 bg-white px-6 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowDetailsModal(false)}
+                  className="h-11 rounded-2xl border border-slate-300 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveTicket}
+                  disabled={saving || loadingTicketDetails || (!replyText.trim() && ticketStatus === selectedTicketStatus)}
+                  className="h-11 rounded-2xl bg-emerald-600 px-6 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </div>
           </div>
@@ -350,5 +511,6 @@ export default function SupportTickets() {
     </div>
   )
 }
+
 
 

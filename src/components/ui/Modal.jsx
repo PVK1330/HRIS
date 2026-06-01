@@ -14,7 +14,7 @@ const sizeClasses = {
   announcement: 'max-w-[min(720px,calc(100vw-2rem))]',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
-  xl: 'max-w-7xl',
+  xl: 'max-w-8xl',
   '2xl': 'max-w-6xl',
   custom: 'max-w-[1200px]',
 }
@@ -30,6 +30,7 @@ export function Modal({
   /** Sticky footer — stays visible while body scrolls */
   footer,
   size = 'md',
+  bodyClassName = '',
   showClose = true,
   icon: Icon,
   bodyClassName = '',
@@ -66,7 +67,7 @@ export function Modal({
 
       {/* Modal panel — fixed max height; only the body scrolls */}
       <div
-        className={`relative z-10 flex w-full ${maxW} max-h-[min(85dvh,calc(100dvh-1.5rem))] min-h-0 flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} max-h-full flex flex-col transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
@@ -82,51 +83,46 @@ export function Modal({
           </button>
         )}
 
-        {/* Header */}
-        <div className="shrink-0 border-b border-slate-100 px-5 py-4 sm:px-6">
-          {header ? (
-            <div className="pr-8">{header}</div>
-          ) : (
-            <div className="flex items-center gap-3 pr-8">
-              {Icon && (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                  <Icon className="h-5 w-5" />
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
-                  {title}
-                </h2>
-                {description && (
-                  <p className="mt-0.5 text-sm leading-relaxed text-slate-500">
-                    {description}
-                  </p>
+        <div className="flex flex-col">
+          {/* Header */}
+          <div className="px-5 pt-6 pb-2 sm:px-6">
+            {header ? (
+              <div className="pr-10">{header}</div>
+            ) : (
+              <div className="flex items-center gap-4">
+                {Icon && (
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                    <Icon className="h-6 w-6" />
+                  </div>
                 )}
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                    {title}
+                  </h2>
+                  {description && (
+                    <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                      {description}
+                    </p>
+                  )}
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 px-5 py-1 sm:px-6 overflow-y-auto custom-scrollbar">
+            <div className="pb-8">
+              {children}
             </div>
-          )}
-        </div>
-
-        {/* Scrollable body */}
-        <div
-          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 py-4 sm:px-6 custom-scrollbar ${bodyClassName}`}
-        >
-          {children}
-        </div>
-
-        {/* Sticky footer */}
-        {footer ? (
-          <div className="shrink-0 border-t border-slate-100 bg-white px-5 py-4 sm:px-6">
-            {footer}
           </div>
         ) : null}
+        </div>
       </div>
-    </div>
-  )
+      )
 
-  const mount =
-    typeof document !== 'undefined' &&
-    (document.getElementById('modal-root') || document.body)
-  if (!mount) return null
-  return createPortal(modalContent, mount)
+      const mount =
+      typeof document !== 'undefined' &&
+      (document.getElementById('modal-root') || document.body)
+      if (!mount) return null
+      return createPortal(modalContent, mount)
 }
