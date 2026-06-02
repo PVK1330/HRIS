@@ -129,15 +129,14 @@ export default function NotificationDropdown() {
 
 
 
-  const filteredNotifications = notifications.filter(n => {
+  const filteredNotifications = notifications.filter((n) => {
     const isRead = n.read || n.isRead;
+
     if (filter === 'unread') return !isRead;
     if (filter === 'read') return isRead;
-    if (!socket || !connected) return;
-    const onNewNotification = () => fetchNotifications();
-    socket.on('notification:new', onNewNotification);
-    return () => socket.off('notification:new', onNewNotification);
-  }, [socket, connected]);
+
+    return true;
+  });
 
 
 
@@ -293,6 +292,7 @@ export default function NotificationDropdown() {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
             <h3 className="font-bold text-slate-900">Notifications</h3>
+
             {notifications.length > 0 && (
               <button
                 className="text-xs font-semibold text-slate-600 hover:text-slate-900"
@@ -302,7 +302,6 @@ export default function NotificationDropdown() {
               </button>
             )}
           </div>
-
           {/* Filter Tabs */}
           <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
             <button
@@ -463,3 +462,4 @@ export default function NotificationDropdown() {
     </div>
   );
 }
+

@@ -12,6 +12,7 @@ import BillingSettings from "./sections/BillingSettings.jsx";
 import AuditLogs from "./sections/AuditLogs.jsx";
 import BackupRestore from "./sections/BackupRestore.jsx";
 import ExitSettingsSection from "./sections/ExitSettingsSection.jsx";
+import AssetSettingsSection from "./sections/AssetSettingsSection.jsx";
 
 function ActiveSection({
   active,
@@ -40,6 +41,8 @@ function ActiveSection({
       return <BackupRestore />;
     case "exit":
       return <ExitSettingsSection />;
+    case "assets":
+      return <AssetSettingsSection registerToolbar={registerGeneralToolbar} />;
     default:
       return null;
   }
