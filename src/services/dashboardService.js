@@ -7,6 +7,7 @@ import { getVisaRecordStats, listVisaRecords } from './visaRecordService.js'
 import { getExitRecordStats, listExitRecords } from './exitManagementService.js'
 import { getLeave as getEmployeeLeave, getAttendance as getEmployeeAttendance } from './employeeProfileService.js'
 import { listExpenses } from './expenseService.js'
+import { getUnreadCount, listConversations } from './messagesService.js'
 
 const todayIso = () => new Date().toISOString().split('T')[0]
 
@@ -165,6 +166,9 @@ export async function fetchAdminDashboard() {
     exitList,
     employeePage,
     announcementsRes,
+    notificationsRes,
+    unreadMessages,
+    conversations,
   ] = await Promise.all([
     safe(() => getEmployeeStats(), {}),
     safe(() => listAttendance({ date: today, limit: 1, page: 1 }), {}),
@@ -176,6 +180,9 @@ export async function fetchAdminDashboard() {
     safe(() => listExitRecords({ limit: 5, page: 1, sortBy: 'last_working_day', sortOrder: 'asc' }), {}),
     safe(() => listEmployees({ limit: 500, page: 1, status: 'all', sortBy: 'join_date', sortOrder: 'desc' }), {}),
     safe(() => api.get('/admin/announcements'), null),
+    safe(() => api.get('/notifications'), null),
+    safe(() => getUnreadCount(), 0),
+    safe(() => listConversations(), []),
   ])
 
   const employees = employeePage?.records || employeePage?.employees || []
@@ -185,6 +192,16 @@ export async function fetchAdminDashboard() {
   const announcements = (announcementsRes?.data?.data || [])
     .filter((a) => a.status === 'Published' && (!a.dispatch_channels || a.dispatch_channels === 'In App' || a.dispatch_channels === 'Both'))
     .slice(0, 4)
+  const notifications = Array.isArray(notificationsRes?.data)
+    ? notificationsRes.data
+    : Array.isArray(notificationsRes?.data?.notifications)
+      ? notificationsRes.data.notifications
+      : Array.isArray(notificationsRes?.data?.data?.notifications)
+        ? notificationsRes.data.data.notifications
+        : Array.isArray(notificationsRes?.data?.data)
+          ? notificationsRes.data.data
+          : []
+  const messageThreads = Array.isArray(conversations) ? conversations : []
 
   return {
     employees: {
@@ -215,6 +232,10 @@ export async function fetchAdminDashboard() {
     },
     exitStats,
     announcements,
+    notifications: notifications.slice(0, 6),
+    notificationsUnread: notifications.filter((n) => !(n?.isRead ?? n?.read ?? n?.is_read)).length,
+    unreadMessages: Number(unreadMessages) || 0,
+    recentConversations: messageThreads.slice(0, 6),
   }
 }
 
@@ -226,11 +247,14 @@ export async function fetchEmployeeDashboard(employeeId) {
   const year = new Date().getFullYear()
   const month = new Date().getMonth() + 1
 
-  const [leaveData, attendanceData, expensePage, announcementsRes] = await Promise.all([
+  const [leaveData, attendanceData, expensePage, announcementsRes, notificationsRes, unreadMessages, conversations] = await Promise.all([
     safe(() => getEmployeeLeave(employeeId, { year }), {}),
     safe(() => getEmployeeAttendance(employeeId, { year, month }), {}),
     safe(() => listExpenses({ status: 'Pending', limit: 1, page: 1 }), { rows: [], total: 0 }),
     safe(() => api.get('/admin/announcements'), null),
+    safe(() => api.get('/notifications'), null),
+    safe(() => getUnreadCount(), 0),
+    safe(() => listConversations(), []),
   ])
 
   const balances = leaveData?.balances || []
@@ -244,6 +268,15 @@ export async function fetchEmployeeDashboard(employeeId) {
   const announcements = (announcementsRes?.data?.data || [])
     .filter((a) => a.status === 'Published')
     .slice(0, 4)
+  const notifications = Array.isArray(notificationsRes?.data)
+    ? notificationsRes.data
+    : Array.isArray(notificationsRes?.data?.notifications)
+      ? notificationsRes.data.notifications
+      : Array.isArray(notificationsRes?.data?.data?.notifications)
+        ? notificationsRes.data.data.notifications
+        : Array.isArray(notificationsRes?.data?.data)
+          ? notificationsRes.data.data
+          : []
 
   return {
     personal: {
@@ -252,6 +285,10 @@ export async function fetchEmployeeDashboard(employeeId) {
       pendingTasks: expensePage?.total ?? 0,
     },
     announcements,
+    notifications: notifications.slice(0, 6),
+    notificationsUnread: notifications.filter((n) => !(n?.isRead ?? n?.read ?? n?.is_read)).length,
+    unreadMessages: Number(unreadMessages) || 0,
+    recentConversations: (Array.isArray(conversations) ? conversations : []).slice(0, 6),
   }
 }
 
