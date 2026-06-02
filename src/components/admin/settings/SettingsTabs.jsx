@@ -10,7 +10,8 @@ import {
   RiBankCardLine,
   RiHistoryLine,
   RiDatabase2Line,
-  RiLogoutBoxRLine
+  RiLogoutBoxRLine,
+  RiMacbookLine
 } from 'react-icons/ri';
 
 export const settingsTabs = [
@@ -68,17 +69,23 @@ export const settingsTabs = [
     icon: RiHistoryLine,
     desc: 'System audit logs'
   },
-  {
-    id: 'backup',
-    label: 'Backup & Restore',
-    icon: RiDatabase2Line,
-    desc: 'Data backup & recovery'
-  },
+  // {
+  //   id: 'backup',
+  //   label: 'Backup & Restore',
+  //   icon: RiDatabase2Line,
+  //   desc: 'Data backup & recovery'
+  // },
   {
     id: 'exit',
     label: 'Exit Management',
     icon: RiLogoutBoxRLine,
     desc: 'Exit types, clearance & workflow'
+  },
+  {
+    id: 'assets',
+    label: 'Assets',
+    icon: RiMacbookLine,
+    desc: 'Asset categories & rules'
   }
 ];
 

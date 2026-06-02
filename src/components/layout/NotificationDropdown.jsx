@@ -255,19 +255,26 @@ export default function NotificationDropdown() {
   };
 
   const handleNotificationClick = (notification) => {
-
-
     markAsRead(notification.id);
-    setSelectedNotification(notification);
 
-    // Navigate to support ticket if it's a ticket notification
+    // If it has a direct redirectUrl, go there
+    if (notification.redirectUrl) {
+      setIsOpen(false);
+      navigate(notification.redirectUrl);
+      return;
+    }
+
+    // Fallback for legacy ticket handling
     const ticketId = notification.ticketId || notification.relatedId;
     if (notification.type === 'support_ticket' && ticketId) {
       const supportPath = isSuperadmin ? `/superadmin/support` : `/admin/support`;
-
       setIsOpen(false);
       navigate(`${supportPath}#ticket-${ticketId}`);
+      return;
     }
+
+    // Otherwise, show the modal
+    setSelectedNotification(notification);
   };
 
   return (
@@ -306,6 +313,7 @@ export default function NotificationDropdown() {
               </button>
             )}
           </div>
+<<<<<<< HEAD
 
           {/* Filter Tabs */}
       <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
@@ -328,6 +336,29 @@ export default function NotificationDropdown() {
           Read ({readCount})
         </button>
       </div>
+=======
+          {/* Filter Tabs */}
+          <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
+            <button
+              onClick={() => setFilter('all')}
+              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+            >
+              All ({allCount})
+            </button>
+            <button
+              onClick={() => setFilter('unread')}
+              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'unread' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+            >
+              Unread ({unreadCount})
+            </button>
+            <button
+              onClick={() => setFilter('read')}
+              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'read' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+            >
+              Read ({readCount})
+            </button>
+          </div>
+>>>>>>> 3f8d7c4bc90ebd09fa3dbdcf90be436acabfef48
 
           {/* Notification List */}
           <div className="max-h-[380px] overflow-y-auto bg-white">
@@ -372,19 +403,27 @@ export default function NotificationDropdown() {
               </div>
             )}
           </div>
+<<<<<<< HEAD
        
+=======
+>>>>>>> 3f8d7c4bc90ebd09fa3dbdcf90be436acabfef48
 
-        {/* Footer */}
-        <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">
-          <button
-            onClick={() => setIsOpen(false)}
-            className="text-xs font-bold text-text-secondary hover:text-primary transition-colors uppercase tracking-wider"
-          >
-            Close View
-          </button>
+          {/* Footer */}
+          <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-xs font-bold text-text-secondary hover:text-primary transition-colors uppercase tracking-wider"
+            >
+              Close View
+            </button>
+          </div>
         </div>
+<<<<<<< HEAD
       </div>
   )}
+=======
+      )}
+>>>>>>> 3f8d7c4bc90ebd09fa3dbdcf90be436acabfef48
 
       {/* PopUp / Modal Overlay */}
       {selectedNotification && createPortal(
@@ -417,7 +456,7 @@ export default function NotificationDropdown() {
 
             {/* Modal Footer */}
             <div className="mt-6 flex justify-end gap-3 border-t border-border-tertiary pt-4">
-              {selectedNotification.type === 'support_ticket' && selectedNotification.ticketId && (
+              {selectedNotification.type === 'support_ticket' && selectedNotification.ticketId && !selectedNotification.redirectUrl && (
                 <button
                   type="button"
                   onClick={() => {
@@ -429,6 +468,18 @@ export default function NotificationDropdown() {
                 >
                   <HiTicket className="h-4 w-4" />
                   View Ticket
+                </button>
+              )}
+              {selectedNotification.redirectUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedNotification(null);
+                    navigate(selectedNotification.redirectUrl);
+                  }}
+                  className="rounded-xl px-4 py-2 text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-all duration-150 flex items-center gap-1.5"
+                >
+                  View Details
                 </button>
               )}
               <button

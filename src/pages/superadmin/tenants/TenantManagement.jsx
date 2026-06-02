@@ -29,7 +29,8 @@ import {
   HiQuestionMarkCircle,
   HiGlobeAlt,
   HiInformationCircle,
-  HiSquares2X2
+  HiSquares2X2,
+  HiMagnifyingGlass
 } from 'react-icons/hi2'
 
 const slugify = (text) => text.toString().toLowerCase().trim()
@@ -239,7 +240,7 @@ export default function TenantManagement() {
       org.status,
       org.created
     ])
-    
+
     const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
@@ -602,7 +603,7 @@ export default function TenantManagement() {
       setShowConfirmModal(false)
       setShowDetailModal(false)
       fetchTenants()
-      
+
       Swal.fire({
         icon: 'success',
         title: 'Action Executed',
@@ -621,65 +622,85 @@ export default function TenantManagement() {
   }
 
   return (
-    <div className="sa-page">
-      {/* Header */}
-      <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
-              <HiGlobeAlt className="h-4.5 w-4.5" />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Organizations</h1>
-            <div className="group relative">
-              <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-indigo-500 transition-colors" />
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
-                <p className="font-bold text-indigo-400 mb-1 uppercase tracking-widest">Company Management</p>
-                Manage all companies, their domains, and user limits.
-                <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar with Moved Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Organisation Management</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Tenants</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Organisation Management</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button type="button" onClick={handleExport} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+            <HiArrowDownTray className="h-4 w-4" /> Export CSV
+          </button>
+          <button type="button" onClick={openNewOrgModal} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
+            <HiPlus className="h-4 w-4" /> Add Organization
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Metrics Cards Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          { label: 'TOTAL ORGANIZATIONS', count: totalCount, bgColor: 'bg-[#0F172A]', icon: HiGlobeAlt, filter: 'all', filterType: 'status' },
+          { label: 'ACTIVE', count: organizations.filter(o => o.status === 'Active').length, bgColor: 'bg-[#10B981]', icon: HiCheck, filter: 'Active', filterType: 'status' },
+          { label: 'TRIAL', count: organizations.filter(o => o.status === 'Trial').length, bgColor: 'bg-[#3B82F6]', icon: HiClock, filter: 'Trial', filterType: 'status' },
+          { label: 'SUSPENDED', count: organizations.filter(o => o.status === 'Suspended').length, bgColor: 'bg-[#EF4444]', icon: HiXMark, filter: 'Suspended', filterType: 'status' }
+        ].map((card, idx) => {
+          const isActiveFilter = card.filterType === 'status' && statusFilter === card.filter;
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => { if (card.filterType === 'status') setStatusFilter(card.filter) }}
+              className={`group flex items-center gap-3.5 rounded-none border p-4 text-left transition-all hover:bg-slate-50/50 active:scale-[0.99] min-w-0 shadow-sm ${isActiveFilter ? 'border-[#0F766E] bg-slate-50/40 ring-1 ring-[#0F766E]' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}><card.icon className="h-5 w-5" /></div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[11px] font-bold uppercase tracking-wider truncate leading-none ${isActiveFilter ? 'text-[#0F766E]' : 'text-slate-400'}`}>{card.label}</div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
               </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Main Table Registry Area */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Organization Listing</h2>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+            <div className="relative min-w-[250px] flex-1 max-w-md">
+              <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search organizations..." className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium" />
             </div>
-          </div>
-          <p className="text-[11px] font-medium text-slate-500">View and manage all organization accounts.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button label="Export CSV" variant="ghost" size="sm" icon={HiArrowDownTray} onClick={handleExport} className="text-slate-500 font-bold" />
-          <Button label="Add Organization" variant="primary" size="sm" icon={HiPlus} onClick={openNewOrgModal} />
-        </div>
-      </div>
-
-      {/* Filter Section */}
-      <div className="sa-card p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Input label="Search Organizations" placeholder="Name, domain, or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-          <div>
-            <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Subscription Plan</label>
-            <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all appearance-none cursor-pointer" value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
+            <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className="h-10 min-w-[180px] cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]">
               <option value="all">All Ecosystem Tiers</option>
-              {plans.map(plan => (
-                <option key={plan.id} value={plan.plan_name}>{plan.plan_name}</option>
-              ))}
+              {plans.map(p => <option key={p.id} value={p.plan_name}>{p.plan_name}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Current Status</label>
-            <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all appearance-none cursor-pointer" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 min-w-[180px] cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]">
               <option value="all">All Operational States</option>
-              <option>Active</option>
-              <option>Trial</option>
-              <option>Suspended</option>
-              <option>SSL Issue</option>
+              <option>Active</option><option>Trial</option><option>Suspended</option><option>SSL Issue</option>
             </select>
           </div>
-          <div className="flex items-end">
-            <Button label="Reset Filters" variant="ghost" className="w-full font-bold text-slate-400" onClick={() => { setSearchQuery(''); setPlanFilter('all'); setStatusFilter('all'); }} />
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-medium text-slate-500">{totalCount} records shown</p>
+            {searchQuery || planFilter !== 'all' || statusFilter !== 'all' ? (
+              <button type="button" onClick={() => { setSearchQuery(''); setPlanFilter('all'); setStatusFilter('all'); }} className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50">Reset Filters</button>
+            ) : null}
           </div>
         </div>
-      </div>
 
-      {/* Organization Table */}
-      <div className="sa-card overflow-hidden">
         <Table
           pageSize={pageSize}
+          square
           totalCount={totalCount}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
@@ -713,11 +734,11 @@ export default function TenantManagement() {
             status: <Badge label={org.status} color={org.status === 'Active' ? 'green' : org.status === 'Trial' ? 'amber' : org.status === 'Suspended' ? 'gray' : 'red'} />,
             created: <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{org.created}</span>,
             actions: (
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" icon={HiDocumentText} className="text-slate-400 hover:text-indigo-600" onClick={() => handleView(org)} />
-                <Button variant="ghost" size="sm" icon={HiPencil} className="text-slate-400 hover:text-blue-600" onClick={() => handleEdit(org)} />
-                <Button variant="ghost" size="sm" icon={HiSquares2X2} className="text-slate-400 hover:text-violet-600" onClick={() => handleOpenFeatures(org)} />
-                <Button variant="ghost" size="sm" icon={HiArrowTopRightOnSquare} className="text-slate-400 hover:text-emerald-600" onClick={() => handleLoginAs(org)} />
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => handleView(org)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-500 text-white transition-colors hover:bg-slate-600" title="View details"><HiDocumentText className="h-4 w-4" /></button>
+                <button type="button" onClick={() => handleEdit(org)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600" title="Edit organization"><HiPencil className="h-4 w-4" /></button>
+                <button type="button" onClick={() => handleOpenFeatures(org)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-violet-500 text-white transition-colors hover:bg-violet-600" title="Manage features"><HiSquares2X2 className="h-4 w-4" /></button>
+                <button type="button" onClick={() => handleLoginAs(org)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-emerald-500 text-white transition-colors hover:bg-emerald-600" title="Login as Admin"><HiArrowTopRightOnSquare className="h-4 w-4" /></button>
               </div>
             ),
           }))}
@@ -728,32 +749,33 @@ export default function TenantManagement() {
       <Modal
         isOpen={showNewModal}
         onClose={() => { setShowNewModal(false); resetNewOrgForm() }}
-        title="Add Organization"
-        description="Organization details, subscription plan, and payment collection."
-        icon={HiPlus}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Add Organization</h2>
+            <p className="text-sm text-slate-500">Organization details, subscription plan, and payment collection.</p>
+          </div>
+        }
         size="xl"
       >
-        <div className="space-y-6 p-2">
+        <div className="space-y-6">
           <div className="flex gap-1 border-b border-slate-200">
             <button
               type="button"
               onClick={() => setAddOrgTab('details')}
-              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
-                addOrgTab === 'details'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
+              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${addOrgTab === 'details'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
             >
               Organization
             </button>
             <button
               type="button"
               onClick={() => setAddOrgTab('subscription')}
-              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
-                addOrgTab === 'subscription'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
+              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${addOrgTab === 'subscription'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
             >
               Plan & payment
             </button>
@@ -785,28 +807,17 @@ export default function TenantManagement() {
             />
           )}
 
-          <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-6">
-            <Button label="Cancel" variant="ghost" className="font-bold text-slate-400" onClick={() => { setShowNewModal(false); resetNewOrgForm() }} />
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => { setShowNewModal(false); resetNewOrgForm() }} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
             {addOrgTab === 'subscription' ? (
-              <Button label="Back" variant="ghost" className="font-bold text-slate-600" onClick={() => setAddOrgTab('details')} />
+              <button type="button" onClick={() => setAddOrgTab('details')} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Back</button>
             ) : (
-              <Button label="Next: Plan & payment" variant="ghost" className="font-bold text-indigo-600" onClick={() => setAddOrgTab('subscription')} />
+              <button type="button" onClick={() => setAddOrgTab('subscription')} className="rounded-none bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition-colors">Next: Plan & payment</button>
             )}
             {addOrgTab === 'subscription' && (
-              <Button
-                label={
-                  isLoading || stripeCheckoutLoading
-                    ? stripeCheckoutLoading
-                      ? 'Opening Stripe…'
-                      : 'Creating…'
-                    : newForm.paymentGateway === 'stripe'
-                      ? 'Create & pay with Stripe'
-                      : 'Create organization'
-                }
-                variant="primary"
-                onClick={handleCreateOrganization}
-                disabled={isLoading || stripeCheckoutLoading}
-              />
+              <button type="button" onClick={handleCreateOrganization} disabled={isLoading || stripeCheckoutLoading} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors disabled:opacity-50">
+                {isLoading || stripeCheckoutLoading ? (stripeCheckoutLoading ? 'Opening Stripe…' : 'Creating…') : (newForm.paymentGateway === 'stripe' ? 'Create & pay with Stripe' : 'Create organization')}
+              </button>
             )}
           </div>
         </div>
@@ -816,13 +827,16 @@ export default function TenantManagement() {
       <Modal
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
-        title={selectedOrg?.name}
-        description={`Organization ID: ${selectedOrg?.id} · Domain: ${selectedOrg?.domain}`}
-        icon={HiUsers}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">{selectedOrg?.name}</h2>
+            <p className="text-sm text-slate-500">Organization ID: {selectedOrg?.id} · Domain: {selectedOrg?.domain}</p>
+          </div>
+        }
         size="lg"
       >
         {selectedOrg && (
-          <div className="space-y-5 p-2">
+          <div className="space-y-5">
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Admin Email</span>
@@ -870,8 +884,8 @@ export default function TenantManagement() {
             <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Danger Zone</span>
               <div className="flex gap-2">
-                <Button label="Suspend" variant="ghost" size="sm" className="text-amber-600 hover:bg-amber-50 font-bold" icon={HiClock} onClick={() => handleAction('suspend', selectedOrg)} />
-                <Button label="Delete" variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 font-bold" icon={HiTrash} onClick={() => handleAction('delete', selectedOrg)} />
+                <button type="button" onClick={() => handleAction('suspend', selectedOrg)} className="rounded-none border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-600 hover:bg-amber-50 transition-colors inline-flex items-center gap-1.5"><HiClock className="h-4 w-4" /> Suspend</button>
+                <button type="button" onClick={() => handleAction('delete', selectedOrg)} className="rounded-none border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors inline-flex items-center gap-1.5"><HiTrash className="h-4 w-4" /> Delete</button>
               </div>
             </div>
           </div>
@@ -926,11 +940,14 @@ export default function TenantManagement() {
       <Modal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Edit Organization"
-        description="Update organization details and resource limits."
-        icon={HiPencil}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Edit Organization</h2>
+            <p className="text-sm text-slate-500">Update organization details and resource limits.</p>
+          </div>
+        }
       >
-        <div className="space-y-6 p-2">
+        <div className="space-y-6">
           <Input label="Organization Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
           <Input label="Root Admin Email" value={editForm.adminEmail} onChange={(e) => setEditForm({ ...editForm, adminEmail: e.target.value })} />
           <div className="grid grid-cols-2 gap-4">
@@ -949,9 +966,9 @@ export default function TenantManagement() {
               </select>
             </div>
           </div>
-          <div className="flex gap-3 pt-6 border-t border-slate-100">
-            <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowEditModal(false)} />
-            <Button label="Save" variant="primary" className="flex-1" onClick={handleSaveEdit} />
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowEditModal(false)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={handleSaveEdit} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors">Save</button>
           </div>
         </div>
       </Modal>
@@ -973,34 +990,34 @@ export default function TenantManagement() {
               </p>
             </div>
           </div>
-          
-          <Input 
-            label="New Password" 
+
+          <Input
+            label="New Password"
             type="password"
             placeholder="••••••••"
-            value={resetForm.password} 
-            onChange={(e) => setResetForm({ ...resetForm, password: e.target.value })} 
+            value={resetForm.password}
+            onChange={(e) => setResetForm({ ...resetForm, password: e.target.value })}
           />
-          <Input 
-            label="Confirm New Password" 
+          <Input
+            label="Confirm New Password"
             type="password"
             placeholder="••••••••"
-            value={resetForm.confirmPassword} 
-            onChange={(e) => setResetForm({ ...resetForm, confirmPassword: e.target.value })} 
+            value={resetForm.confirmPassword}
+            onChange={(e) => setResetForm({ ...resetForm, confirmPassword: e.target.value })}
           />
 
           <div className="flex gap-3 pt-4 border-t border-slate-100">
-            <Button 
-              label="Cancel" 
-              variant="ghost" 
-              className="flex-1 font-bold text-slate-400" 
-              onClick={() => setShowResetModal(false)} 
+            <Button
+              label="Cancel"
+              variant="ghost"
+              className="flex-1 font-bold text-slate-400"
+              onClick={() => setShowResetModal(false)}
             />
-            <Button 
-              label="Update & Email" 
-              variant="primary" 
-              className="flex-1" 
-              onClick={handleResetPassword} 
+            <Button
+              label="Update & Email"
+              variant="primary"
+              className="flex-1"
+              onClick={handleResetPassword}
               loading={isLoading}
               disabled={!resetForm.password || resetForm.password !== resetForm.confirmPassword || isLoading}
             />

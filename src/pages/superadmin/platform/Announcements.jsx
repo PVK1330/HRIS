@@ -267,55 +267,37 @@ export default function Announcements() {
   }
 
   return (
-    <div className="sa-page">
-      {/* Hero */}
-      <div className="sa-hero px-6 py-4">
-        <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white shadow-inner">
-                <HiMegaphone className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-xl font-black uppercase tracking-widest">Announcements</h1>
-                <p className="mt-0.5 text-xs text-emerald-100/80 leading-relaxed max-w-xl">
-                  Send important updates to all platform tenants. Schedule ahead for precise delivery.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-start md:items-end gap-1.5">
-           
-            <Button
-              label="Add Announcement"
-              icon={HiSparkles}
-              onClick={() => setShowCreateModal(true)}
-              variant="ghost"
-              className="mt-1 !bg-white !text-[#0F766E] hover:!bg-emerald-50 border-none shadow-lg text-[11px] font-black uppercase tracking-widest py-2"
-            />
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Top Title Bar with Moved Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Announcements</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Platform</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Announcements</span>
           </div>
         </div>
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5" />
+        <div className="flex items-center gap-2 shrink-0">
+          <button type="button" onClick={() => setShowCreateModal(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
+            <HiSparkles className="h-4 w-4" /> Add Announcement
+          </button>
+        </div>
       </div>
 
-      <div>
-        {/* History Feed (full width) */}
-        <div className="sa-card overflow-hidden">
-          <div className="bg-[#0F766E] px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
-                <HiSignal className="h-4 w-4 opacity-90" />
-              </div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white">Previous Announcements</h2>
-            </div>
-            <p className="text-xs font-bold text-white/80">
-              {isLoading ? 'Loading...' : `${announcements.length} Sent`}
-            </p>
-          </div>
+      {/* Main Table Registry Area */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Previous Announcements</h2>
+        </div>
 
-          <div className="p-4">
-            <Table
+        <div className="flex flex-col sm:flex-row gap-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3 w-full">
+            <p className="text-xs font-medium text-slate-500 whitespace-nowrap">{isLoading ? 'Loading...' : `${announcements.length} records`}</p>
+          </div>
+        </div>
+
+        <Table
               loading={isLoading}
               pageSize={6}
               emptyMessage="No announcements yet"
@@ -344,37 +326,29 @@ export default function Announcements() {
                 sentDate: <span className="text-xs font-semibold text-slate-600">{ann.status === 'Scheduled' ? ann.scheduledAt : ann.sentDate}</span>,
                 recipients: <span className="text-xs font-black text-emerald-600">{ann.recipients}</span>,
                 actions: (
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" icon={HiEye} className="text-slate-400 hover:text-slate-700" onClick={() => handleViewClick(ann)} />
-                    <Button variant="ghost" size="sm" icon={HiPencilSquare} className="text-slate-400 hover:text-emerald-600" onClick={() => handleEditClick(ann)} />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={HiTrash}
-                      className="text-slate-400 hover:text-rose-600"
-                      onClick={() => {
-                        setSelectedAnnouncement(ann)
-                        setShowRevokeModal(true)
-                      }}
-                    />
+                  <div className="flex items-center justify-start gap-2">
+                    <button type="button" onClick={() => handleViewClick(ann)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-500 text-white transition-colors hover:bg-slate-600" title="View"><HiEye className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => handleEditClick(ann)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-blue-500 text-white transition-colors hover:bg-blue-600" title="Edit"><HiPencilSquare className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => { setSelectedAnnouncement(ann); setShowRevokeModal(true); }} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" title="Delete"><HiTrash className="h-4 w-4" /></button>
                   </div>
                 ),
               }))}
             />
-          </div>
-        </div>
       </div>
 
       {/* Create Modal */}
       <Modal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        title="Create Announcement"
-        description="Broadcast a new message to your tenant organizations."
-        icon={HiMegaphone}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Create Announcement</h2>
+            <p className="text-sm text-slate-500">Broadcast a new message to your tenant organizations.</p>
+          </div>
+        }
         size="md"
       >
-        <div className="space-y-5 p-2">
+        <div className="space-y-5">
           <div className="space-y-1.5">
             <Input
               label="Announcement Title"
@@ -392,7 +366,7 @@ export default function Announcements() {
             <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Announcement Message</label>
             <textarea
               rows={6}
-              className="w-full rounded-[1.5rem] border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all resize-none shadow-sm"
+              className="w-full rounded-none border border-slate-200 bg-white px-5 py-4 text-sm font-medium focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all resize-none"
               placeholder="Type your message here..."
               value={newAnnouncement.message}
               onChange={(e) => {
@@ -407,7 +381,7 @@ export default function Announcements() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Target Audience</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-slate-900 transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all cursor-pointer"
                 
                 value={newAnnouncement.audience}
                 onChange={(e) => setNewAnnouncement({ ...newAnnouncement, audience: e.target.value })}
@@ -421,7 +395,7 @@ export default function Announcements() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Priority</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all cursor-pointer"
                 value={newAnnouncement.priority}
                 onChange={(e) => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value })}
               >
@@ -434,7 +408,7 @@ export default function Announcements() {
             <div className="space-y-2 sm:col-span-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Announcement Type</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all cursor-pointer"
                 value={newAnnouncement.type}
                 onChange={(e) => setNewAnnouncement({ ...newAnnouncement, type: e.target.value })}
               >
@@ -471,7 +445,6 @@ export default function Announcements() {
                     setFormErrors((p) => ({ ...p, scheduledAt: undefined }))
                     setNewAnnouncement({ ...newAnnouncement, scheduledAt: e.target.value })
                   }}
-                  className="border-emerald-100 bg-emerald-50/20"
                 />
                 {!!formErrors.scheduledAt && (
                   <p className="px-1 text-[11px] font-bold text-rose-600">{formErrors.scheduledAt}</p>
@@ -480,25 +453,12 @@ export default function Announcements() {
             )}
           </div>
 
-          <div className="flex gap-3 pt-6 border-t border-slate-100">
-            <Button
-              label="Cancel"
-              variant="ghost"
-              className="flex-1 font-bold text-slate-400"
-              onClick={() => setShowCreateModal(false)}
-              disabled={isSubmitting}
-            />
-            <Button
-              label={newAnnouncement.isScheduled ? 'Schedule Announcement' : 'Post Announcement'}
-              variant="primary"
-              icon={newAnnouncement.isScheduled ? HiCalendarDays : HiRocketLaunch}
-              className="flex-1 bg-[#0F766E] hover:bg-[#0D5F57] border-none shadow-lg shadow-emerald-900/10 text-white text-[11px] uppercase tracking-widest font-black"
-              onClick={async () => {
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowCreateModal(false)} disabled={isSubmitting} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={async () => {
                 const ok = await handleSend()
                 if (ok) setShowCreateModal(false)
-              }}
-              disabled={isSubmitting}
-            />
+              }} disabled={isSubmitting} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors inline-flex items-center gap-1.5">{newAnnouncement.isScheduled ? <HiCalendarDays className="h-4 w-4"/> : <HiRocketLaunch className="h-4 w-4" />}{newAnnouncement.isScheduled ? 'Schedule Announcement' : 'Post Announcement'}</button>
           </div>
         </div>
       </Modal>
@@ -507,35 +467,41 @@ export default function Announcements() {
       <Modal
         isOpen={showViewModal}
         onClose={() => setShowViewModal(false)}
-        title={viewAnnouncement?.title || 'Announcement'}
-        description={`Audience: ${viewAnnouncement?.audience || '-'} · Type: ${viewAnnouncement?.type || '-'}`}
-        icon={HiMegaphone}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">{viewAnnouncement?.title || 'Announcement'}</h2>
+            <p className="text-sm text-slate-500">Audience: {viewAnnouncement?.audience || '-'} · Type: {viewAnnouncement?.type || '-'}</p>
+          </div>
+        }
         size="md"
       >
-        <div className="space-y-5 p-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</p>
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-none border border-slate-200 bg-slate-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</p>
               <div className="mt-1">
-                {viewAnnouncement && <Badge label={viewAnnouncement.status} color={viewAnnouncement.status === 'Scheduled' ? 'amber' : viewAnnouncement.status === 'Processing' ? 'indigo' : 'green'} variant="glass" />}
+                {viewAnnouncement && <Badge label={viewAnnouncement.status} color={viewAnnouncement.status === 'Scheduled' ? 'amber' : viewAnnouncement.status === 'Processing' ? 'indigo' : 'green'} />}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</p>
+            <div className="rounded-none border border-slate-200 bg-slate-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Priority</p>
               <div className="mt-1">
-                {viewAnnouncement && <Badge label={viewAnnouncement.priority} color={viewAnnouncement.priority === 'Immediate' ? 'rose' : viewAnnouncement.priority === 'High' ? 'orange' : 'slate'} variant="glass" />}
+                {viewAnnouncement && <Badge label={viewAnnouncement.priority} color={viewAnnouncement.priority === 'Immediate' ? 'rose' : viewAnnouncement.priority === 'High' ? 'orange' : 'slate'} />}
               </div>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-100 bg-white p-4">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Message</p>
+          <div className="rounded-none border border-slate-200 bg-white p-4">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Message</p>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{viewAnnouncement?.message}</p>
           </div>
-          <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+          <div className="flex items-center justify-between rounded-none border border-slate-200 bg-slate-50 px-4 py-3">
             <span className="text-xs font-semibold text-slate-600">Recipients: {viewAnnouncement?.recipients ?? 0}</span>
             <span className="text-xs font-semibold text-slate-600">
               {viewAnnouncement?.status === 'Scheduled' ? `Scheduled: ${viewAnnouncement?.scheduledAt || '-'}` : `Sent: ${viewAnnouncement?.sentDate || '-'}`}
             </span>
+          </div>
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowViewModal(false)} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors">Close</button>
           </div>
         </div>
       </Modal>
@@ -544,12 +510,15 @@ export default function Announcements() {
       <Modal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Edit Announcement"
-        description="Update the content or priority. Saving will resend the notification to organizations."
-        icon={HiMegaphone}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Edit Announcement</h2>
+            <p className="text-sm text-slate-500">Update the content or priority. Saving will resend the notification.</p>
+          </div>
+        }
         size="md"
       >
-        <div className="space-y-6 p-2">
+        <div className="space-y-6">
           <div className="space-y-1.5">
             <Input
               label="Title"
@@ -566,7 +535,7 @@ export default function Announcements() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Audience</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all cursor-pointer"
                 value={editForm.audience}
                 onChange={(e) => setEditForm({ ...editForm, audience: e.target.value })}
               >
@@ -579,7 +548,7 @@ export default function Announcements() {
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Type</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all cursor-pointer"
                 value={editForm.type}
                 onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
               >
@@ -592,7 +561,7 @@ export default function Announcements() {
             <div className="space-y-2 sm:col-span-2">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Priority</label>
               <select
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] transition-all cursor-pointer"
+                className="w-full rounded-none border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all cursor-pointer"
                 value={editForm.priority}
                 onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
               >
@@ -605,7 +574,7 @@ export default function Announcements() {
 
           <textarea
             rows={5}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-emerald-500 outline-none transition-all resize-none shadow-sm"
+            className="w-full rounded-none border border-slate-200 bg-white px-5 py-4 text-sm font-medium focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all resize-none shadow-sm"
             value={editForm.message}
             onChange={(e) => {
               setEditErrors((p) => ({ ...p, message: undefined }))
@@ -613,21 +582,9 @@ export default function Announcements() {
             }}
           />
           {!!editErrors.message && <p className="px-1 -mt-3 text-[11px] font-bold text-rose-600">{editErrors.message}</p>}
-          <div className="flex gap-4 pt-6 border-t border-slate-50">
-            <Button
-              label="Cancel"
-              variant="ghost"
-              className="flex-1 font-bold text-slate-400"
-              onClick={() => setShowEditModal(false)}
-              disabled={isUpdating}
-            />
-            <Button
-              label={isUpdating ? 'Saving…' : 'Save Changes'}
-              variant="primary"
-              className="flex-1 bg-[#0F766E] hover:bg-[#0D5F57] border-none shadow-lg shadow-emerald-900/10 text-white"
-              onClick={handleSaveEdit}
-              disabled={isUpdating}
-            />
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowEditModal(false)} disabled={isUpdating} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={handleSaveEdit} disabled={isUpdating} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors">{isUpdating ? 'Saving…' : 'Save Changes'}</button>
           </div>
         </div>
       </Modal>
@@ -636,26 +593,17 @@ export default function Announcements() {
       <Modal
         isOpen={showRevokeModal}
         onClose={() => setShowRevokeModal(false)}
-        title="Delete Announcement"
-        description="Are you sure you want to delete this announcement? This action cannot be undone."
-        icon={HiExclamationTriangle}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Delete Announcement</h2>
+            <p className="text-sm text-slate-500">Are you sure you want to delete this announcement? This action cannot be undone.</p>
+          </div>
+        }
       >
-        <div className="space-y-6 p-2">
-          <div className="flex gap-4 pt-2">
-            <Button
-              label="Cancel"
-              variant="ghost"
-              className="flex-1 font-bold text-slate-400 border-transparent"
-              onClick={() => setShowRevokeModal(false)}
-              disabled={isDeleting}
-            />
-            <Button
-              label={isDeleting ? 'Deleting…' : 'Delete'}
-              variant="danger"
-              className="flex-1 bg-rose-600 border-none shadow-lg shadow-rose-100 uppercase text-[10px] font-black tracking-widest"
-              onClick={handleRevoke}
-              disabled={isDeleting}
-            />
+        <div className="space-y-6">
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowRevokeModal(false)} disabled={isDeleting} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={handleRevoke} disabled={isDeleting} className="rounded-none border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors inline-flex items-center gap-1.5"><HiTrash className="h-4 w-4"/> {isDeleting ? 'Deleting…' : 'Delete'}</button>
           </div>
         </div>
       </Modal>

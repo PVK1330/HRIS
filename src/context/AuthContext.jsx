@@ -134,7 +134,7 @@ const TENANT_FEATURE_CODE_TO_MODULE_KEYS = {
   designation: ["departments", "designations"],
   designations: ["departments", "designations"],
   projects: [],
-  task_management: [],
+  task_management: ["tasks"],
   messages: ["messages"],
   message_center: ["messages"],
   visa_management: ["visa-nationality"],
@@ -213,6 +213,7 @@ const DEFAULT_MOCK_ALLOWED_MODULES = [
   "designations",
   "messages",
   "system-settings",
+  "tasks",
 ];
 
 const PERMISSIONS = {

@@ -684,25 +684,25 @@ export default function Onboarding() {
     },
   ]
 
-  /* â”€â”€â”€ Shared input / select class helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const inputCls = 'w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20'
+  /* ─── Shared input / select class helpers ───────────────────────── */
+  const inputCls = 'h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:ring-[#0F766E]/20'
   const selectCls = `${inputCls} cursor-pointer`
-  const labelCls = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5'
+  const labelCls = 'mb-1 block text-sm font-medium text-slate-800'
 
-  /* â”€â”€â”€ Section header component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ─── Section header component ──────────────────────────────────── */
   const SectionHeader = ({ icon: Icon, title, subtitle, color = 'text-[#0F766E]' }) => (
     <div className="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100">
       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-[#0F766E] shrink-0">
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <h3 className="text-sm font-bold tracking-wide text-slate-800 uppercase">{title}</h3>
-        {subtitle && <p className="text-[10px] text-slate-400 mt-0.5">{subtitle}</p>}
+        <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+        {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
       </div>
     </div>
   )
 
-  /* â”€â”€â”€ JSX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ─── JSX ────────────────────────────────────────────────────── */
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
@@ -804,8 +804,19 @@ export default function Onboarding() {
         )}
       </div>
 
-      {/* â”€â”€ View / Activate Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} title="Onboarding details" size="xl">
+      {/* ─── View / Activate Modal ────────────────────────────────────── */}
+      <Modal 
+        isOpen={viewModalOpen} 
+        onClose={() => setViewModalOpen(false)} 
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Onboarding Details</h2>
+            <p className="text-xs font-medium text-slate-500">View candidate onboarding progress.</p>
+          </div>
+        }
+        size="lg" 
+        showClose
+      >
         <div className="animate-in fade-in duration-500 space-y-10">
           <div className="flex flex-wrap items-center justify-between border-b border-slate-200 bg-slate-50 -mx-6 px-8 py-6 mb-8">
             <div className="flex flex-wrap items-center gap-12">
@@ -857,23 +868,28 @@ export default function Onboarding() {
             Then the employee becomes Active in the directory and receives a welcome email with portal login.
           </div>
 
-          <div className="pt-10 border-t border-slate-100 flex justify-end gap-4 px-2">
-            <button type="button" onClick={() => setViewModalOpen(false)} className="h-12 px-8 rounded-none border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors">
+          <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-100 px-2">
+            <button type="button" onClick={() => setViewModalOpen(false)} className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
               Cancel
             </button>
             <button
               type="button"
               disabled={activating || selectedHire?.workflowStatus === 'rejected'}
               onClick={handleCompleteActivation}
-              className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] transition-all shadow-xl shadow-emerald-900/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {activating ? 'Completing' : 'Complete onboarding (Step 3)'}
+              {activating ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  Completing…
+                </>
+              ) : 'Complete onboarding (Step 3)'}
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* â”€â”€ Add to Onboarding Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Add to Onboarding Modal ──────────────────────────────────── */}
       <Modal
         isOpen={modalOpen}
         onClose={() => {
@@ -882,12 +898,20 @@ export default function Onboarding() {
           setSelectedEmployeeId('')
           setSelectedEmployeeIdForDocs('')
         }}
-        title={
-          selectedEmployeeId && onboardingMode !== 'create'
-            ? 'Continue onboarding'
-            : 'Add employee to onboarding'
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">
+              {selectedEmployeeId && onboardingMode !== 'create'
+                ? 'Continue Onboarding'
+                : 'Add New Candidate'}
+            </h2>
+            <p className="text-xs font-medium text-slate-500">
+              Configure candidate details and onboarding steps below.
+            </p>
+          </div>
         }
-        size={onboardingMode === 'create' ? 'xl' : 'lg'}
+        size="lg"
+        showClose
       >
         {/* Mode switcher tabs */}
         <div className="sticky top-0 z-10 shrink-0 flex border-b border-slate-200 bg-white -mx-6 px-6 mb-6">
@@ -900,9 +924,9 @@ export default function Onboarding() {
               key={key}
               type="button"
               onClick={() => setOnboardingMode(key)}
-              className={`flex-1 pb-3 text-xs font-black uppercase tracking-widest text-center border-b-2 transition-all ${onboardingMode === key
+              className={`flex-1 pb-3 text-sm font-semibold text-center border-b-2 transition-all ${onboardingMode === key
                 ? 'border-[#0F766E] text-[#0F766E]'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
             >
               {label}
@@ -913,12 +937,12 @@ export default function Onboarding() {
         {/* â”€â”€ TAB 1: ONBOARDING (CREATE NEW HIRE) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {onboardingMode === 'create' ? (
           <form className="p-2" onSubmit={handleCreateAndStartOnboarding}>
-            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1 pb-2">
+            <div className="space-y-6 pb-2">
               {/* SECTION 1 ” Candidate Personal Details */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                 <SectionHeader icon={HiUser} title="Candidate Information" subtitle="Personal credentials and contact details" />
                 <div className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className={labelCls}>First Name <span className="text-rose-500">*</span></label>
                       <input type="text" value={wizardForm.firstName} onChange={(e) => fw({ firstName: e.target.value })} placeholder="e.g. Neha" className={inputCls} />
@@ -927,22 +951,22 @@ export default function Onboarding() {
                       <label className={labelCls}>Last Name <span className="text-rose-500">*</span></label>
                       <input type="text" value={wizardForm.lastName} onChange={(e) => fw({ lastName: e.target.value })} placeholder="e.g. Joshi" className={inputCls} />
                     </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className={labelCls}>Date of Birth <span className="text-rose-500">*</span></label>
                       <input type="date" value={wizardForm.dateOfBirth} onChange={(e) => fw({ dateOfBirth: e.target.value })} className={inputCls} />
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className={labelCls}>Personal Email <span className="text-rose-500">*</span></label>
                       <input type="email" value={wizardForm.personalEmail} onChange={(e) => fw({ personalEmail: e.target.value })} placeholder="neha@gmail.com" className={inputCls} />
                     </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className={labelCls}>Phone Number <span className="text-rose-500">*</span></label>
                       <input type="tel" value={wizardForm.phoneNumber} onChange={(e) => fw({ phoneNumber: e.target.value })} placeholder="+91 98765 43210" className={inputCls} />
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div>
                       <label className={labelCls}>Gender</label>
                       <select value={wizardForm.gender} onChange={(e) => fw({ gender: e.target.value })} className={selectCls}>
@@ -952,6 +976,8 @@ export default function Onboarding() {
                         <option value="Other">Other</option>
                       </select>
                     </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className={labelCls}>Nationality <span className="text-rose-500">*</span></label>
                       <select value={wizardForm.nationality} onChange={(e) => fw({ nationality: e.target.value })} className={selectCls}>
@@ -976,7 +1002,7 @@ export default function Onboarding() {
                   </div>
                   <div>
                     <label className={labelCls}>Current Address</label>
-                    <textarea value={wizardForm.currentAddress} onChange={(e) => fw({ currentAddress: e.target.value })} placeholder="Street, City, State, PIN code" rows={2} className={`${inputCls} resize-none`} />
+                    <textarea value={wizardForm.currentAddress} onChange={(e) => fw({ currentAddress: e.target.value })} placeholder="Street, City, State, PIN code" rows={2} className={`${inputCls} resize-none h-auto py-2`} />
                   </div>
                 </div>
               </div>
@@ -1182,16 +1208,18 @@ export default function Onboarding() {
               </div>
 
             </div>
-            <div className="pt-5 mt-4 border-t border-slate-200 flex justify-between items-center gap-4">
-              <button type="button" onClick={() => { setModalOpen(false); setOnboardingMode('create'); setWizardForm(INITIAL_FORM) }} className="h-11 px-6 rounded-lg border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors shadow-sm">Cancel</button>
-              <button type="submit" disabled={initLoading} className="h-11 px-10 rounded-lg bg-[#0F766E] hover:bg-[#0c6b64] shadow-lg shadow-emerald-950/10 text-[10px] font-black uppercase tracking-widest text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                {initLoading ? (<><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving</>) : 'Submit & send offer (Step 1)'}
+            <div className="sticky bottom-0 z-10 bg-white flex items-center justify-end gap-3 pt-4 pb-4 mt-6 border-t border-slate-100">
+              <button type="button" onClick={() => { setModalOpen(false); setOnboardingMode('create'); setWizardForm(INITIAL_FORM) }} className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={initLoading} className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors disabled:cursor-not-allowed disabled:opacity-60 flex items-center gap-2">
+                {initLoading ? (<><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving</>) : 'Submit & send offer'}
               </button>
             </div>
           </form>
         ) : onboardingMode === 'status' ? (
           /* TAB 2: ONBOARDING STATUS */
-          <div className="p-2 space-y-6 max-h-[min(58vh,calc(100dvh-16rem))] overflow-y-auto pr-1">
+          <div className="p-2 space-y-6">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <SectionHeader icon={HiUser} title="Select Employee" subtitle="Choose a candidate to update onboarding status (Step 2)" />
               <select
@@ -1263,9 +1291,9 @@ export default function Onboarding() {
                             type="button"
                             onClick={handleHrUploadSignedOffer}
                             disabled={uploadingSignedOffer}
-                            className="h-10 px-6 rounded-lg bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-50"
+                            className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            {uploadingSignedOffer ? 'Uploading…' : 'Save signed offer (Step 2)'}
+                            {uploadingSignedOffer ? 'Uploading…' : 'Save signed offer'}
                           </button>
                         </div>
                       )}
@@ -1277,8 +1305,7 @@ export default function Onboarding() {
           </div>
         ) : (
           /* TAB 3: Document checklist (candidate uploads via secure link) */
-          <div className="flex min-h-0 flex-col p-2">
-            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pr-1 max-h-[min(58vh,calc(100dvh-16rem))]">
+          <div className="p-2 space-y-6">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <SectionHeader icon={HiUser} title="Select Employee" subtitle="Review checklist uploads (Step 3)" />
               <select
@@ -1344,7 +1371,7 @@ export default function Onboarding() {
                         <button
                           type="button"
                           onClick={handleApproveAllUploaded}
-                          className="h-9 px-4 text-[10px] font-black uppercase tracking-widest bg-emerald-600 text-white rounded-lg"
+                          className="h-9 px-4 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 transition-colors text-white rounded-md"
                         >
                           Approve all uploaded
                         </button>
@@ -1420,15 +1447,17 @@ export default function Onboarding() {
                 </div>
               </>
             )}
-            </div>
+            
             {selectedEmployeeIdForDocs && checklistItems.length > 0 && (
-              <div className="sticky bottom-0 z-10 mt-4 shrink-0 border-t border-slate-200 bg-white pt-4 pb-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="sticky bottom-0 z-10 mt-4 border-t border-slate-200 bg-white pt-4 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <p className="text-xs text-slate-500">
                   Approve all mandatory documents, then activate the employee.
                 </p>
                 <button
                   type="button"
+                  disabled={activating}
                   onClick={async () => {
+                    setActivating(true)
                     try {
                       const res = await completeOnboardingWorkflow(
                         Number(selectedEmployeeIdForDocs),
@@ -1440,11 +1469,18 @@ export default function Onboarding() {
                       toast.error(
                         err.response?.data?.message || 'Could not complete onboarding',
                       )
+                    } finally {
+                      setActivating(false)
                     }
                   }}
-                  className="h-11 px-8 rounded-lg bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] shadow-md shrink-0"
+                  className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors shrink-0 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Complete onboarding & activate
+                  {activating ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                      Completing…
+                    </>
+                  ) : 'Complete onboarding'}
                 </button>
               </div>
             )}
@@ -1460,8 +1496,14 @@ export default function Onboarding() {
           setRejectItemId(null)
           setRejectComment('')
         }}
-        title="Reject Document"
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Reject Document</h2>
+            <p className="text-xs font-medium text-slate-500">Provide a reason for document rejection.</p>
+          </div>
+        }
         size="md"
+        showClose
       >
         <div className="p-4">
           <p className="text-sm text-slate-500 mb-4">

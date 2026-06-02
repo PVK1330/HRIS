@@ -88,6 +88,9 @@ export const listMyExitTasks = (params = {}) =>
 export const completeExitTask = (taskId) =>
   api.put(`/exit-management/tasks/${taskId}/complete`).then(unwrap)
 
+export const setExitTaskDelayReason = (taskId, reason) =>
+  api.put(`/exit-management/tasks/${taskId}/delay-reason`, { reason }).then(unwrap)
+
 export const listRequestTasks = (id) =>
   api.get(`/exit-management/${id}/tasks`).then(unwrap)
 
@@ -140,7 +143,7 @@ export default {
   listChecklist, updateChecklistItem,
   listExitAssets, returnExitAsset,
   listExitDocTemplates, listExitDocuments, generateExitDocuments, downloadExitDocument,
-  listMyExitTasks, completeExitTask, listRequestTasks,
+  listMyExitTasks, completeExitTask, setExitTaskDelayReason, listRequestTasks,
   listWorkflows, getWorkflow, createWorkflow, updateWorkflow, activateWorkflow, deleteWorkflow,
   getBuilderOptions,
   listClearanceItems, createClearanceItem, updateClearanceItem, deleteClearanceItem,

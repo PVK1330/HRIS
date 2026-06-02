@@ -1,26 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
-import { HiCheckCircle, HiPencil, HiTrash, HiUser, HiClock, HiFlag, HiPlus, HiCheck } from 'react-icons/hi2'
+import { HiCheckCircle, HiPencil, HiTrash, HiClock, HiFlag, HiPlus, HiCheck, HiEye } from 'react-icons/hi2'
+import * as tasksService from '../../../services/tasksService'
+import api from '../../../services/api'
+import toast from 'react-hot-toast'
 
 const selectClass =
   'w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
-
 const textareaClass =
   'w-full min-h-[88px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#004CA5]'
 
 const initialFormData = {
-  taskTitle: '',
-  taskDescription: '',
-  project: '',
-  department: '',
-  assignedTo: '',
-  priority: '',
-  dueDate: '',
-  estimatedHours: '',
+  title: '',
+  description: '',
+  assignee_id: '',
+  priority: 'Medium',
+  due_date: '',
   status: 'Pending',
 }
 
@@ -39,143 +39,98 @@ function statusColor(status) {
   return 'gray'
 }
 
+function normalizeTask(task = {}) {
+  return {
+    id: task.id,
+    title: task.title || '',
+    description: task.description || '',
+    priority: task.priority || 'Medium',
+    status: task.status || 'Pending',
+    due_date: task.due_date || task.dueDate || null,
+    assignee_id: task.assignee_id ?? task.assigneeId ?? null,
+    assignee_name: task.assignee_name || task.assigneeName || '',
+    assigner_name: task.assigner_name || task.assignerName || '',
+    created_at: task.created_at || task.createdAt || null,
+  }
+}
+
 export default function TaskManagement() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState(initialFormData)
+  
+  const [taskList, setTaskList] = useState([])
+  const [employees, setEmployees] = useState([])
+  const [loading, setLoading] = useState(true)
+
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [priority, setPriority] = useState('')
-  const [project, setProject] = useState('')
-  const [taskList, setTaskList] = useState([
-    {
-      id: 1,
-      title: 'Design employee dashboard',
-      description: 'Create UI/UX for employee dashboard',
-      project: 'HRIS Platform',
-      department: 'IT',
-      assignedTo: 'John Smith',
-      priority: 'High',
-      dueDate: '2026-04-20',
-      estimatedHours: 40,
-      status: 'In Progress',
-    },
-    {
-      id: 2,
-      title: 'Implement leave management',
-      description: 'Build leave request and approval system',
-      project: 'HRIS Platform',
-      department: 'IT',
-      assignedTo: 'Sarah Johnson',
-      priority: 'High',
-      dueDate: '2026-04-25',
-      estimatedHours: 60,
-      status: 'Pending',
-    },
-    {
-      id: 3,
-      title: 'Create API documentation',
-      description: 'Document all API endpoints',
-      project: 'HRIS Platform',
-      department: 'IT',
-      assignedTo: 'Michael Brown',
-      priority: 'Medium',
-      dueDate: '2026-05-10',
-      estimatedHours: 30,
-      status: 'Pending',
-    },
-    {
-      id: 4,
-      title: 'Setup testing framework',
-      description: 'Configure unit and integration tests',
-      project: 'HRIS Platform',
-      department: 'IT',
-      assignedTo: 'Emily Davis',
-      priority: 'Medium',
-      dueDate: '2026-04-15',
-      estimatedHours: 25,
-      status: 'Completed',
-    },
-    {
-      id: 5,
-      title: 'Database optimization',
-      description: 'Optimize database queries',
-      project: 'HRIS Platform',
-      department: 'IT',
-      assignedTo: 'David Wilson',
-      priority: 'Low',
-      dueDate: '2026-06-01',
-      estimatedHours: 20,
-      status: 'Pending',
-    },
-  ])
+  const [statusFilter, setStatusFilter] = useState('')
+  const [priorityFilter, setPriorityFilter] = useState('')
 
+  useEffect(() => {
+    fetchTasks()
+    fetchEmployees()
+  }, [])
 
-  const employees = useMemo(
-    () => [
-      { value: '', label: 'Unassigned' },
-      { value: 'John Smith', label: 'John Smith (EMP001)' },
-      { value: 'Sarah Johnson', label: 'Sarah Johnson (EMP002)' },
-      { value: 'Michael Brown', label: 'Michael Brown (EMP003)' },
-      { value: 'Emily Davis', label: 'Emily Davis (EMP004)' },
-      { value: 'David Wilson', label: 'David Wilson (EMP005)' },
-    ],
-    []
-  )
+  const fetchTasks = async () => {
+    try {
+      setLoading(true)
+      const res = await tasksService.getTasks()
+      const list = Array.isArray(res?.data) ? res.data : []
+      setTaskList(list.map(normalizeTask))
+    } catch (err) {
+      toast.error('Failed to load tasks')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const projects = useMemo(
-    () => [
-      { value: '', label: 'All projects' },
-      { value: 'HRIS Platform', label: 'HRIS Platform' },
-      { value: 'Mobile App', label: 'Mobile App' },
-      { value: 'Website', label: 'Website' },
-    ],
-    []
-  )
+  const fetchEmployees = async () => {
+    try {
+      const res = await api.get('/employees?limit=1000') // Adjust as needed
+      const payload = res?.data
+      const list = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.data?.records)
+            ? payload.data.records
+            : Array.isArray(payload?.data?.employees)
+              ? payload.data.employees
+              : Array.isArray(payload?.employees)
+                ? payload.employees
+                : []
+      setEmployees(list)
+    } catch (err) {
+      setEmployees([])
+    }
+  }
 
-  const statusOptions = useMemo(
-    () => [
-      { value: '', label: 'All statuses' },
-      { value: 'Pending', label: 'Pending' },
-      { value: 'In Progress', label: 'In Progress' },
-      { value: 'Completed', label: 'Completed' },
-      { value: 'Overdue', label: 'Overdue' },
-    ],
-    []
-  )
+  const statusOptions = useMemo(() => [
+    { value: '', label: 'All statuses' },
+    { value: 'Pending', label: 'Pending' },
+    { value: 'In Progress', label: 'In Progress' },
+    { value: 'Completed', label: 'Completed' },
+    { value: 'Overdue', label: 'Overdue' },
+  ], [])
 
-  const priorityOptions = useMemo(
-    () => [
-      { value: '', label: 'All priorities' },
-      { value: 'High', label: 'High' },
-      { value: 'Medium', label: 'Medium' },
-      { value: 'Low', label: 'Low' },
-    ],
-    []
-  )
-
-  const projectOptions = useMemo(
-    () => [
-      { value: '', label: 'All projects' },
-      { value: 'HRIS Platform', label: 'HRIS Platform' },
-      { value: 'Mobile App Development', label: 'Mobile App Development' },
-      { value: 'Website Redesign', label: 'Website Redesign' },
-      { value: 'Process Automation', label: 'Process Automation' },
-    ],
-    []
-  )
+  const priorityOptions = useMemo(() => [
+    { value: '', label: 'All priorities' },
+    { value: 'High', label: 'High' },
+    { value: 'Medium', label: 'Medium' },
+    { value: 'Low', label: 'Low' },
+  ], [])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return taskList.filter((t) => {
-      if (query && !`${t.title} ${t.assignedTo}`.toLowerCase().includes(query)) return false
-      if (status && t.status !== status) return false
-      if (priority && t.priority !== priority) return false
-      if (project && t.project !== project) return false
+      if (query && !`${t.title} ${t.assignee_name}`.toLowerCase().includes(query)) return false
+      if (statusFilter && t.status !== statusFilter) return false
+      if (priorityFilter && t.priority !== priorityFilter) return false
       return true
     })
-  }, [search, status, priority, project, taskList])
+  }, [search, statusFilter, priorityFilter, taskList])
 
   const summary = useMemo(() => {
     const pending = taskList.filter((t) => t.status === 'Pending').length
@@ -201,64 +156,42 @@ export default function TaskManagement() {
     resetModal()
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    if (editMode) {
-      // Update existing task
-      setTaskList((prev) => 
-        prev.map((task) => 
-          task.id === editingId 
-            ? { 
-                ...task, 
-                title: formData.taskTitle,
-                description: formData.taskDescription,
-                project: formData.project,
-                department: formData.department,
-                assignedTo: formData.assignedTo,
-                priority: formData.priority,
-                dueDate: formData.dueDate,
-                estimatedHours: parseFloat(formData.estimatedHours) || 0,
-                status: formData.status
-              } 
-            : task
-        )
-      )
-      alert('Task updated successfully!')
-    } else {
-      // Add new task
-      const newTask = {
-        id: taskList.length + 1,
-        title: formData.taskTitle,
-        description: formData.taskDescription,
-        project: formData.project,
-        department: formData.department,
-        assignedTo: formData.assignedTo,
+    try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
         priority: formData.priority,
-        dueDate: formData.dueDate,
-        estimatedHours: parseFloat(formData.estimatedHours) || 0,
-        status: formData.status
+        due_date: formData.due_date || null,
+        status: formData.status,
+        assignee_id: formData.assignee_id ? parseInt(formData.assignee_id) : null
       }
-      setTaskList((prev) => [...prev, newTask])
-      alert('Task added successfully!')
+
+      if (editMode) {
+        await tasksService.updateTask(editingId, payload)
+        toast.success('Task updated successfully!')
+      } else {
+        await tasksService.createTask(payload)
+        toast.success('Task created successfully!')
+      }
+      fetchTasks()
+      handleCloseModal()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Action failed')
     }
-    
-    handleCloseModal()
   }
 
   const handleEdit = (id) => {
     const task = taskList.find((t) => t.id === id)
     if (task) {
       setFormData({
-        taskTitle: task.title,
-        taskDescription: task.description,
-        project: task.project,
-        department: task.department,
-        assignedTo: task.assignedTo,
-        priority: task.priority,
-        dueDate: task.dueDate,
-        estimatedHours: task.estimatedHours.toString(),
-        status: task.status,
+        title: task.title || '',
+        description: task.description || '',
+        assignee_id: task.assignee_id || '',
+        priority: task.priority || 'Medium',
+        due_date: task.due_date ? String(task.due_date).split('T')[0] : '',
+        status: task.status || 'Pending',
       })
       setEditMode(true)
       setEditingId(id)
@@ -266,37 +199,37 @@ export default function TaskManagement() {
     }
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this task?')) {
-      setTaskList((prev) => prev.filter((t) => t.id !== id))
-      alert('Task deleted successfully!')
+      try {
+        await tasksService.deleteTask(id)
+        toast.success('Task deleted successfully!')
+        fetchTasks()
+      } catch (err) {
+        toast.error('Failed to delete task')
+      }
     }
   }
 
-  const handleStatusChange = (id, newStatus) => {
-    setTaskList((prev) => 
-      prev.map((task) => 
-        task.id === id ? { ...task, status: newStatus } : task
-      )
-    )
-    alert('Task status updated successfully!')
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await tasksService.updateTask(id, { status: newStatus })
+      toast.success('Task status updated!')
+      fetchTasks()
+    } catch (err) {
+      toast.error('Failed to update status')
+    }
   }
 
   const columns = [
     { key: 'title', label: 'Task' },
-    { key: 'project', label: 'Project' },
-    { key: 'assignedTo', label: 'Assigned To' },
+    { key: 'assignee_name', label: 'Assigned To', render: (v) => v || 'Unassigned' },
     {
       key: 'priority',
       label: 'Priority',
       render: (v) => <Badge label={v} color={priorityColor(v)} />,
     },
-    { key: 'dueDate', label: 'Due Date' },
-    {
-      key: 'estimatedHours',
-      label: 'Hours',
-      render: (v) => `${v}h`,
-    },
+    { key: 'due_date', label: 'Due Date', render: (v) => v ? new Date(v).toLocaleDateString() : 'N/A' },
     {
       key: 'status',
       label: 'Status',
@@ -307,6 +240,14 @@ export default function TaskManagement() {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex gap-2">
+          <Link to={`/admin/tasks/${row.id}`}>
+            <Button
+              label="View"
+              variant="ghost"
+              size="sm"
+              icon={HiEye}
+            />
+          </Link>
           <Button
             label="Complete"
             variant="Approve"
@@ -315,8 +256,8 @@ export default function TaskManagement() {
             onClick={() => handleStatusChange(row.id, 'Completed')}
             disabled={row.status === 'Completed'}
           />
-          <Button label="Edit Task" className="bg-blue-500 text-blue-600 hover:bg-blue-500" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
-          <Button label="Delete Task" variant="danger" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
+          <Button label="Edit" className="bg-blue-500 text-blue-600 hover:bg-blue-500" size="sm" icon={HiPencil} onClick={() => handleEdit(row.id)} />
+          <Button label="Delete" variant="danger" size="sm" icon={HiTrash} onClick={() => handleDelete(row.id)} />
         </div>
       ),
     },
@@ -380,81 +321,40 @@ export default function TaskManagement() {
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Input label="Search" name="search" placeholder="Search tasks..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          <Input label="Project" name="project" type="select" value={project} onChange={(e) => setProject(e.target.value)} options={projectOptions} />
-          <Input label="Priority" name="priority" type="select" value={priority} onChange={(e) => setPriority(e.target.value)} options={priorityOptions} />
-          <Input label="Status" name="status" type="select" value={status} onChange={(e) => setStatus(e.target.value)} options={statusOptions} />
+          <Input label="Priority" name="priority" type="select" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} options={priorityOptions} />
+          <Input label="Status" name="status" type="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} options={statusOptions} />
         </div>
       </div>
 
-      <Table columns={columns} data={filtered} pageSize={10} />
+      {loading ? <div className="text-center p-4">Loading tasks...</div> : <Table columns={columns} data={filtered} pageSize={10} />}
 
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Task' : 'Add Task'} size="xl
-      " showClose>
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editMode ? 'Edit Task' : 'Add Task'} size="xl" showClose>
         <form onSubmit={handleSubmit} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Task Title"
-              name="taskTitle"
-              value={formData.taskTitle}
+              name="title"
+              value={formData.title}
               onChange={handleFormChange}
               required
             />
-            <div className="w-full">
-              <label htmlFor="task-project" className="mb-1 block text-sm font-medium text-gray-700">
-                Project
-                <span className="text-red-500"> *</span>
-              </label>
-              <select
-                id="task-project"
-                name="project"
-                value={formData.project}
-                onChange={handleFormChange}
-                className={selectClass}
-                required
-              >
-                <option value="" disabled hidden>
-                  Select project
-                </option>
-                <option value="HRIS Platform">HRIS Platform</option>
-                <option value="Mobile App">Mobile App</option>
-                <option value="Website">Website</option>
-              </select>
-            </div>
-            <div className="w-full">
-              <label htmlFor="task-dept" className="mb-1 block text-sm font-medium text-gray-700">
-                Department
-              </label>
-              <select
-                id="task-dept"
-                name="department"
-                value={formData.department}
-                onChange={handleFormChange}
-                className={selectClass}
-              >
-                <option value="">Select department</option>
-                <option value="IT">IT</option>
-                <option value="HR">HR</option>
-                <option value="Finance">Finance</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Operations">Operations</option>
-              </select>
-            </div>
             <div className="w-full">
               <label htmlFor="task-assignee" className="mb-1 block text-sm font-medium text-gray-700">
                 Assign To
               </label>
               <select
                 id="task-assignee"
-                name="assignedTo"
-                value={formData.assignedTo}
+                name="assignee_id"
+                value={formData.assignee_id}
                 onChange={handleFormChange}
                 className={selectClass}
               >
-                {employees.map((emp) => (
-                  <option key={emp.value} value={emp.value}>
-                    {emp.label}
+                <option value="">Unassigned</option>
+                {(Array.isArray(employees) ? employees : []).map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {`${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'Unnamed'} ({emp.employee_id || emp.emp_id || 'N/A'})
                   </option>
                 ))}
               </select>
@@ -472,9 +372,6 @@ export default function TaskManagement() {
                 className={selectClass}
                 required
               >
-                <option value="" disabled hidden>
-                  Select priority
-                </option>
                 <option value="High">High</option>
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
@@ -482,19 +379,10 @@ export default function TaskManagement() {
             </div>
             <Input
               label="Due Date"
-              name="dueDate"
+              name="due_date"
               type="date"
-              value={formData.dueDate}
+              value={formData.due_date}
               onChange={handleFormChange}
-              required
-            />
-            <Input
-              label="Estimated Hours"
-              name="estimatedHours"
-              type="number"
-              value={formData.estimatedHours}
-              onChange={handleFormChange}
-              placeholder="0"
             />
           </div>
           <div className="mt-3 w-full">
@@ -503,8 +391,8 @@ export default function TaskManagement() {
             </label>
             <textarea
               id="task-description"
-              name="taskDescription"
-              value={formData.taskDescription}
+              name="description"
+              value={formData.description}
               onChange={handleFormChange}
               className={textareaClass}
               rows={3}

@@ -236,27 +236,22 @@ export default function Permissions() {
   }
 
   return (
-    <div className="sa-page">
-      {/* Header */}
-      <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-[#0F766E] flex items-center justify-center text-white shadow-sm">
-              <HiLockClosed className="h-4.5 w-4.5" />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Permissions</h1>
-            <div className="group relative">
-              <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-[#0F766E] transition-colors" />
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
-                <p className="font-bold text-emerald-300 mb-1 uppercase tracking-widest">Access Control</p>
-                Set what each admin role can access on the platform.
-                <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
-              </div>
-            </div>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
+      {/* Top Title Bar with Moved Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Permissions</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Team</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Permissions</span>
           </div>
-          <p className="text-[11px] font-medium text-slate-500">Manage user roles and permissions.</p>
         </div>
-        <Button label="Add Role" variant="primary" size="sm" icon={HiPlus} onClick={() => setShowCreateModal(true)} className="bg-[#0F766E] hover:bg-[#0D5F57] border-none" />
+        <div className="flex items-center gap-2 shrink-0">
+          <button type="button" onClick={() => setShowCreateModal(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
+            <HiPlus className="h-4 w-4" /> Add Role
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -346,46 +341,45 @@ export default function Permissions() {
       <Modal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        title="Add Role"
-        description="Create a new role with specific access permissions."
-        icon={HiPlus}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Add Role</h2>
+            <p className="text-sm text-slate-500">Create a new role with specific access permissions.</p>
+          </div>
+        }
         size="lg"
       >
-        <div className="space-y-8 p-2">
-
-
-          <div className="space-y-6">
-            <Input
-              label="Role Name *"
-              placeholder="e.g. Finance Auditor"
-              value={newRole.name}
-              onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
+        <div className="space-y-6">
+          <Input
+            label="Role Name *"
+            placeholder="e.g. Finance Auditor"
+            value={newRole.name}
+            onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
+          />
+          <div className="flex items-center justify-between p-4 rounded-none border border-slate-200 bg-white shadow-sm">
+            <div className="space-y-0.5">
+              <label className="text-sm font-semibold text-slate-900">Active Status</label>
+              <p className="text-xs text-slate-500">Determine if this role can be currently assigned to users</p>
+            </div>
+            <GreenCheckbox
+              checked={newRole.isActive}
+              onChange={() => setNewRole({ ...newRole, isActive: !newRole.isActive })}
             />
-            <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/30">
-              <div className="space-y-0.5">
-                <label className="text-[11px] font-black text-slate-900 uppercase tracking-widest px-1">Active Status</label>
-                <p className="text-[10px] text-slate-500 px-1 italic">Determine if this role can be currently assigned to users</p>
-              </div>
-              <GreenCheckbox
-                checked={newRole.isActive}
-                onChange={() => setNewRole({ ...newRole, isActive: !newRole.isActive })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Description</label>
-              <textarea
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all resize-none shadow-sm"
-                placeholder="Briefly describe the responsibilities of this role..."
-                rows={3}
-                value={newRole.description}
-                onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
-              />
-            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-900">Description</label>
+            <textarea
+              className="w-full rounded-none border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all resize-none"
+              placeholder="Briefly describe the responsibilities of this role..."
+              rows={3}
+              value={newRole.description}
+              onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
+            />
           </div>
 
-          <div className="flex gap-4 pt-6 border-t border-slate-100">
-            <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowCreateModal(false)} />
-            <Button label="Create Role" variant="primary" className="flex-1 bg-[#0F766E] hover:bg-[#0D5F57] border-none" onClick={handleCreateRole} disabled={!newRole.name} />
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowCreateModal(false)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={handleCreateRole} disabled={!newRole.name} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors">Create Role</button>
           </div>
         </div>
       </Modal>
@@ -394,44 +388,43 @@ export default function Permissions() {
       <Modal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Edit Role"
-        description="Update administrative credentials and orchestration rights."
-        icon={HiPencil}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Edit Role</h2>
+            <p className="text-sm text-slate-500">Update administrative credentials and orchestration rights.</p>
+          </div>
+        }
         size="lg"
       >
-        <div className="space-y-8 p-2">
-
-
-          <div className="space-y-6">
-            <Input
-              label="Role Name *"
-              value={editRole.name}
-              onChange={(e) => setEditRole({ ...editRole, name: e.target.value })}
+        <div className="space-y-6">
+          <Input
+            label="Role Name *"
+            value={editRole.name}
+            onChange={(e) => setEditRole({ ...editRole, name: e.target.value })}
+          />
+          <div className="flex items-center justify-between p-4 rounded-none border border-slate-200 bg-white shadow-sm">
+            <div className="space-y-0.5">
+              <label className="text-sm font-semibold text-slate-900">Active Status</label>
+              <p className="text-xs text-slate-500">Toggle availability for this role</p>
+            </div>
+            <GreenCheckbox
+              checked={editRole.isActive}
+              onChange={() => setEditRole({ ...editRole, isActive: !editRole.isActive })}
             />
-            <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/30">
-              <div className="space-y-0.5">
-                <label className="text-[11px] font-black text-slate-900 uppercase tracking-widest px-1">Active Status</label>
-                <p className="text-[10px] text-slate-500 px-1 italic">Toggle availability for this role</p>
-              </div>
-              <GreenCheckbox
-                checked={editRole.isActive}
-                onChange={() => setEditRole({ ...editRole, isActive: !editRole.isActive })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Description</label>
-              <textarea
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm font-medium focus:bg-white focus:border-[#0F766E] focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all resize-none shadow-sm"
-                rows={3}
-                value={editRole.description}
-                onChange={(e) => setEditRole({ ...editRole, description: e.target.value })}
-              />
-            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-900">Description</label>
+            <textarea
+              className="w-full rounded-none border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] outline-none transition-all resize-none"
+              rows={3}
+              value={editRole.description}
+              onChange={(e) => setEditRole({ ...editRole, description: e.target.value })}
+            />
           </div>
 
-          <div className="flex gap-4 pt-6 border-t border-slate-100">
-            <Button label="Cancel" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowEditModal(false)} />
-            <Button label="Update Role" variant="primary" className="flex-1 bg-[#0F766E] hover:bg-[#0D5F57] border-none" onClick={handleUpdateRole} disabled={!editRole.name} />
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowEditModal(false)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={handleUpdateRole} disabled={!editRole.name} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors">Update Role</button>
           </div>
         </div>
       </Modal>

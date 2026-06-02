@@ -59,7 +59,7 @@ export function Modal({
       />
 
       <div
-        className={`relative w-full ${maxW} max-h-full flex flex-col transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
@@ -75,7 +75,8 @@ export function Modal({
           </button>
         )}
 
-        <div className="flex flex-col max-h-[90vh]">
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* Header */}
           <div className="px-5 pt-6 pb-2 sm:px-6">
             {header ? (
               <div className="pr-10">{header}</div>

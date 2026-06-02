@@ -41,12 +41,12 @@ const superNavGroups = [
         roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
 
-      {
-        label: 'Global Modules',
-        icon: HiWrenchScrewdriver,
-        path: '/superadmin/modules',
-        roles: ['superadmin'],
-      },
+      // {
+      //   label: 'Global Modules',
+      //   icon: HiWrenchScrewdriver,
+      //   path: '/superadmin/modules',
+      //   roles: ['superadmin'],
+      // },
       {
         label: 'Subscription Plans',
         icon: HiCurrencyDollar,

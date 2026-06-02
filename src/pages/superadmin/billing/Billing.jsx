@@ -282,39 +282,63 @@ export default function Billing() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Financial Control</h1>
-          <p className="mt-1 text-sm text-slate-500 font-medium">Global revenue tracking, invoicing, and subscription reconciliation.</p>
+      {/* Top Title Bar with Moved Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Financial Control</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Billing</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Invoices & Ledger</span>
+          </div>
         </div>
-        <div className="flex gap-2">
-           <Button label="Export History" variant="ghost" icon={HiCloudArrowDown} onClick={handleExport} className="font-bold text-slate-600" />
-           <Button label="Sync Payments" variant="ghost" icon={HiArrowPath} className="font-bold text-slate-600" onClick={handleSyncPayments} />
-           <Button label="Manual Invoice" variant="primary" icon={HiDocumentPlus} onClick={() => setShowManualInvoiceModal(true)} />
+        <div className="flex items-center gap-2 shrink-0">
+          <button type="button" onClick={handleExport} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+            <HiCloudArrowDown className="h-4 w-4" /> Export History
+          </button>
+          <button type="button" onClick={handleSyncPayments} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+            <HiArrowPath className="h-4 w-4" /> Sync Payments
+          </button>
+          <button type="button" onClick={() => setShowManualInvoiceModal(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
+            <HiDocumentPlus className="h-4 w-4" /> Manual Invoice
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="MONTHLY REVENUE" value={`AED ${Number(stats.monthly_revenue).toLocaleString()}`} icon={HiCurrencyDollar} trend="+12.5%" trendColor="green" />
-        <StatCard title="ANNUAL REVENUE" value={`AED ${Number(stats.annual_revenue).toLocaleString()}`} icon={HiCurrencyDollar} trend="+8.2%" trendColor="green" />
-        <StatCard title="OUTSTANDING" value={`AED ${Number(stats.outstanding_amount).toLocaleString()}`} icon={HiBellAlert} trendColor="amber" />
-        <StatCard title="FAILED ATTEMPTS" value={stats.failed_count} icon={HiArrowTrendingDown} trendColor="red" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          { label: 'MONTHLY REVENUE', count: `AED ${Number(stats.monthly_revenue).toLocaleString()}`, bgColor: 'bg-[#10B981]', icon: HiCurrencyDollar },
+          { label: 'ANNUAL REVENUE', count: `AED ${Number(stats.annual_revenue).toLocaleString()}`, bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
+          { label: 'OUTSTANDING', count: `AED ${Number(stats.outstanding_amount).toLocaleString()}`, bgColor: 'bg-[#F59E0B]', icon: HiBellAlert },
+          { label: 'FAILED ATTEMPTS', count: stats.failed_count, bgColor: 'bg-[#EF4444]', icon: HiArrowTrendingDown }
+        ].map((card, idx) => (
+            <div
+              key={idx}
+              className="group flex items-center gap-3.5 rounded-none border border-slate-200 p-4 text-left transition-all hover:bg-slate-50/50 min-w-0 shadow-sm bg-white"
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}><card.icon className="h-5 w-5" /></div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold uppercase tracking-wider truncate leading-none text-slate-400">{card.label}</div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </div>
+        ))}
       </div>
 
-      {/* Filter Section */}
-      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Input 
-            label="Search Invoices" 
-            placeholder="ID or Organization..." 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)} 
-            icon={HiMagnifyingGlass}
-          />
-          <div>
-            <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</label>
+      {/* Main Table Registry Area */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Invoicing & Ledger</h2>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="relative min-w-[250px] flex-1 max-w-md">
+            <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by ID or Organization..." className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium" />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
             <select 
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none cursor-pointer" 
+              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer" 
               value={statusFilter} 
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -324,17 +348,11 @@ export default function Billing() {
               <option value="failed">Failed</option>
               <option value="refunded">Refunded</option>
             </select>
+            <p className="text-xs font-medium text-slate-500 whitespace-nowrap">{totalCount} records</p>
+            {searchQuery || statusFilter !== 'all' ? (
+              <button type="button" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }} className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50 whitespace-nowrap">Clear Filters</button>
+            ) : null}
           </div>
-          <div className="flex items-end lg:col-span-2">
-            <Button label="Reset Filters" variant="ghost" className="font-bold text-slate-400" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-50 p-5 bg-slate-50/30">
-           <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Invoicing & Ledger</h2>
-           <Badge label={`${totalCount} Total Records`} color="indigo" variant="glass" />
         </div>
         
         {loading ? (
@@ -390,10 +408,10 @@ export default function Billing() {
               ),
               status: <Badge label={invoice.status.toUpperCase()} color={invoice.status === 'completed' ? 'green' : invoice.status === 'pending' ? 'amber' : 'red'} />,
               actions: (
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" icon={HiInformationCircle} className="text-slate-400 hover:text-indigo-600" onClick={() => handleViewDetails(invoice)} />
-                  <Button variant="ghost" size="sm" icon={HiCloudArrowDown} className="text-slate-400 hover:text-emerald-600" onClick={() => handleDownloadInvoice(invoice)} />
-                  <Button variant="ghost" size="sm" icon={HiPrinter} className="text-slate-400 hover:text-slate-700" onClick={() => handlePrintInvoice(invoice)} />
+                <div className="flex items-center justify-start gap-2">
+                  <button type="button" onClick={() => handleViewDetails(invoice)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-500 text-white transition-colors hover:bg-slate-600" title="View Details"><HiInformationCircle className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => handleDownloadInvoice(invoice)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-emerald-500 text-white transition-colors hover:bg-emerald-600" title="Download Invoice"><HiCloudArrowDown className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => handlePrintInvoice(invoice)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-800 text-white transition-colors hover:bg-slate-900" title="Print Invoice"><HiPrinter className="h-4 w-4" /></button>
                 </div>
               ),
             }))}
@@ -405,19 +423,22 @@ export default function Billing() {
       <Modal
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
-        title={`Invoice INV-${selectedInvoice?.id}`}
-        description={`Issued for ${selectedInvoice?.tenant_name}`}
-        icon={HiDocumentText}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Invoice INV-{selectedInvoice?.id}</h2>
+            <p className="text-sm text-slate-500">Issued for {selectedInvoice?.tenant_name}</p>
+          </div>
+        }
         size="lg"
       >
         {selectedInvoice && (
-          <div className="space-y-6 p-2">
+          <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="p-4 rounded-none bg-slate-50 border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Due</span>
                 <p className="mt-1 text-lg font-black text-slate-900">{selectedInvoice.currency} {Number(selectedInvoice.amount).toLocaleString()}</p>
               </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="p-4 rounded-none bg-slate-50 border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Status</span>
                 <div className="mt-1">
                   <Badge 
@@ -426,54 +447,42 @@ export default function Billing() {
                   />
                 </div>
               </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="p-4 rounded-none bg-slate-50 border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Billing Period</span>
                 <p className="mt-1 text-sm font-bold text-slate-700">
                   {new Date(selectedInvoice.billing_start_date).toLocaleDateString()} - {new Date(selectedInvoice.billing_end_date).toLocaleDateString()}
                 </p>
               </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="p-4 rounded-none bg-slate-50 border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment Method</span>
                 <p className="mt-1 text-sm font-bold text-slate-700">{selectedInvoice.payment_method}</p>
               </div>
             </div>
 
             {selectedInvoice.notes && (
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="p-4 rounded-none bg-slate-50 border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Notes</span>
                 <p className="mt-1 text-sm text-slate-600">{selectedInvoice.notes}</p>
               </div>
             )}
 
             {selectedInvoice.status === 'pending' && (
-              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between">
+              <div className="p-4 rounded-none bg-amber-50 border border-amber-200 flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-black text-amber-600 uppercase tracking-widest">Awaiting Payment</p>
                   <p className="text-[10px] text-amber-700 font-medium">Verify transaction before marking as completed.</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    label="Mark Paid" 
-                    variant="primary" 
-                    size="sm" 
-                    className="bg-green-600 border-none"
-                    onClick={() => handleUpdateStatus(selectedInvoice.id, 'completed')}
-                  />
-                  <Button 
-                    label="Mark Failed" 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-red-500 hover:bg-red-50"
-                    onClick={() => handleUpdateStatus(selectedInvoice.id, 'failed')}
-                  />
+                  <button type="button" onClick={() => handleUpdateStatus(selectedInvoice.id, 'completed')} className="rounded-none bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 transition-colors">Mark Paid</button>
+                  <button type="button" onClick={() => handleUpdateStatus(selectedInvoice.id, 'failed')} className="rounded-none border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors">Mark Failed</button>
                 </div>
               </div>
             )}
 
-            <div className="flex gap-3 pt-4 border-t border-slate-100">
-              <Button label="Close" variant="ghost" className="flex-1 font-bold text-slate-400" onClick={() => setShowDetailModal(false)} />
-              <Button label="Download Invoice" variant="ghost" className="flex-1 font-bold text-indigo-600" onClick={() => handleDownloadInvoice(selectedInvoice)} />
-              <Button label="Print Invoice" variant="ghost" className="flex-1 font-bold text-slate-700" onClick={() => handlePrintInvoice(selectedInvoice)} />
+            <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+              <button type="button" onClick={() => handlePrintInvoice(selectedInvoice)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 mr-auto"><HiPrinter className="h-4 w-4"/> Print Invoice</button>
+              <button type="button" onClick={() => handleDownloadInvoice(selectedInvoice)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5"><HiCloudArrowDown className="h-4 w-4"/> Download Invoice</button>
+              <button type="button" onClick={() => setShowDetailModal(false)} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors">Close</button>
             </div>
           </div>
         )}
@@ -482,12 +491,15 @@ export default function Billing() {
       <Modal
         isOpen={showManualInvoiceModal}
         onClose={() => setShowManualInvoiceModal(false)}
-        title="Create Manual Invoice"
-        description="Generate a pending invoice for a tenant."
-        icon={HiDocumentPlus}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Create Manual Invoice</h2>
+            <p className="text-sm text-slate-500">Generate a pending invoice for a tenant.</p>
+          </div>
+        }
         size="lg"
       >
-        <div className="space-y-4 p-2">
+        <div className="space-y-6">
           <Input
             label="Tenant ID *"
             type="number"
@@ -524,9 +536,9 @@ export default function Billing() {
             value={manualInvoiceForm.notes}
             onChange={(e) => setManualInvoiceForm(prev => ({ ...prev, notes: e.target.value }))}
           />
-          <div className="flex gap-3 pt-2 border-t border-slate-100">
-            <Button label="Cancel" variant="ghost" className="flex-1" onClick={() => setShowManualInvoiceModal(false)} />
-            <Button label="Create Invoice" variant="primary" className="flex-1" onClick={handleCreateManualInvoice} />
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowManualInvoiceModal(false)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={handleCreateManualInvoice} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors">Create Invoice</button>
           </div>
         </div>
       </Modal>

@@ -212,7 +212,7 @@ export default function RolesPermissions({ registerToolbar }) {
 
   // Permission toggle button component
   const PermissionToggle = ({ permission, enabled, permSaving }) => {
-    const available = permission.available
+    const available = isPermissionAvailable(permission)
     const locked = !available
     const dashGuard = selectedRole?.is_system && permission.key === 'dashboard'
     

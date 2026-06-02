@@ -40,7 +40,9 @@ const DepartmentManagement = lazy(() => import("../pages/admin/settings/Departme
 const DesignationsManagement = lazy(() => import("../pages/admin/settings/Designations.jsx"));
 const ProjectManagement = lazy(() => import("../pages/admin/settings/Projects.jsx"));
 const TaskManagement = lazy(() => import("../pages/admin/settings/Tasks.jsx"));
+const TaskDetails = lazy(() => import("../pages/admin/settings/TaskDetails.jsx"));
 const Messages = lazy(() => import("../pages/admin/communication/Messages.jsx"));
+const NotificationCenter = lazy(() => import("../pages/admin/communication/NotificationCenter.jsx"));
 const AssetManagement = lazy(() => import("../pages/admin/assets/AssetManagement.jsx"));
 const Reports = lazy(() => import("../pages/admin/reports/Reports.jsx"));
 const AnnouncementsPage = lazy(() => import("../pages/admin/Announcements.jsx"));
@@ -309,6 +311,10 @@ export const router = createBrowserRouter([
             element: <Messages />,
           },
           {
+            path: "notifications",
+            element: <NotificationCenter />,
+          },
+          {
             path: "settings",
             element: (
               <AdminModuleGate moduleKey="system-settings">
@@ -350,11 +356,11 @@ export const router = createBrowserRouter([
           },
           {
             path: "tasks",
-            element: (
-              <AdminModuleGate moduleKey="system-settings">
-                <TaskManagement />
-              </AdminModuleGate>
-            ),
+            element: <TaskManagement />,
+          },
+          {
+            path: "tasks/:id",
+            element: <TaskDetails />,
           },
           {
             path: "assets",
