@@ -19,7 +19,8 @@ import {
   HiPencil,
   HiXCircle,
   HiChevronLeft,
-  HiChevronRight
+  HiChevronRight,
+  HiMagnifyingGlass
 } from 'react-icons/hi2'
 
 export default function SubscriptionFeatures() {
@@ -284,27 +285,9 @@ export default function SubscriptionFeatures() {
       className: 'text-right',
       render: (value, row) => (
         <div className="flex items-center justify-end gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            icon={HiChartBar}
-            className="text-slate-400 hover:text-indigo-600"
-            onClick={() => handleViewClick(row)}
-          />
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            icon={HiPencil}
-            className="text-slate-400 hover:text-blue-600"
-            onClick={() => handleEditClick(row)}
-          />
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            icon={HiTrash}
-            className="text-slate-400 hover:text-red-600"
-            onClick={() => handleDeleteClick(row)}
-          />
+          <button type="button" onClick={() => handleViewClick(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-500 text-white transition-colors hover:bg-slate-600" title="View Details"><HiChartBar className="h-4 w-4" /></button>
+          <button type="button" onClick={() => handleEditClick(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-blue-500 text-white transition-colors hover:bg-blue-600" title="Edit Feature"><HiPencil className="h-4 w-4" /></button>
+          <button type="button" onClick={() => handleDeleteClick(row)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" title="Delete Feature"><HiTrash className="h-4 w-4" /></button>
         </div>
       )
     }
@@ -313,46 +296,59 @@ export default function SubscriptionFeatures() {
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
-              <HiLightBulb className="h-4.5 w-4.5" />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Subscription Features</h1>
-            <div className="group relative">
-              <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-indigo-500 transition-colors" />
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
-                <p className="font-bold text-indigo-400 mb-1 uppercase tracking-widest">Feature Management</p>
-                Configure which features are available in each pricing plan.
-                <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
-              </div>
-            </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Subscription Features</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Subscriptions</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Feature Management</span>
           </div>
-          <p className="text-[11px] font-medium text-slate-500">Manage feature availability across different subscription plans.</p>
         </div>
-        <div className="flex gap-2">
-          <Button label="Export CSV" variant="ghost" size="sm" icon={HiChartBar} onClick={handleExport} className="text-slate-500 font-bold" />
-          <Button label="Add Feature" variant="primary" size="sm" icon={HiPlus} onClick={() => {
-            setFormError(null)
-            setShowAddFeatureModal(true)
-          }} />
+        <div className="flex items-center gap-2 shrink-0">
+          <button type="button" onClick={handleExport} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+            <HiChartBar className="h-4 w-4" /> Export CSV
+          </button>
+          <button type="button" onClick={() => { setFormError(null); setShowAddFeatureModal(true); }} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
+            <HiPlus className="h-4 w-4" /> Add Feature
+          </button>
         </div>
       </div>
 
-      {/* Filter Section */}
-      <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Input 
-            label="Search Features" 
-            placeholder="Name or code..." 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)} 
-          />
-          <div>
-            <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</label>
+      {/* Stats Section - Dynamic from API */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
+        {[
+          { label: 'TOTAL FEATURES', count: totalFeatures, bgColor: 'bg-[#0F172A]', icon: HiCube },
+          { label: 'ACTIVE FEATURES', count: activeFeaturesCount, bgColor: 'bg-[#10B981]', icon: HiCheckCircle },
+          { label: 'INACTIVE FEATURES', count: inactiveCount, bgColor: 'bg-[#F59E0B]', icon: HiExclamationTriangle }
+        ].map((card, idx) => (
+            <div
+              key={idx}
+              className="group flex items-center gap-3.5 rounded-none border border-slate-200 p-4 text-left transition-all hover:bg-slate-50/50 min-w-0 shadow-sm bg-white"
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}><card.icon className="h-5 w-5" /></div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold uppercase tracking-wider truncate leading-none text-slate-400">{card.label}</div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              </div>
+            </div>
+        ))}
+      </div>
+
+      {/* Main Table Registry Area */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Feature Registry</h2>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="relative min-w-[250px] flex-1 max-w-md">
+            <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Name or code..." className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium" />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
             <select 
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none cursor-pointer" 
+              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer" 
               value={statusFilter} 
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -360,31 +356,12 @@ export default function SubscriptionFeatures() {
               <option value="active">Active Only</option>
               <option value="inactive">Inactive Only</option>
             </select>
-          </div>
-          <div className="flex items-end">
-            <Button label="Reset Filters" variant="ghost" className="w-full font-bold text-slate-400" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }} />
+            <p className="text-xs font-medium text-slate-500 whitespace-nowrap">{totalFeatures} records</p>
+            {searchQuery || statusFilter !== 'all' ? (
+              <button type="button" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }} className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50 whitespace-nowrap">Clear Filters</button>
+            ) : null}
           </div>
         </div>
-      </div>
-
-      {/* Stats Section - Dynamic from API */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard 
-          title="Total Features" 
-          value={totalFeatures} 
-          icon={HiCube}
-        />
-        <StatCard 
-          title="Active Features" 
-          value={activeFeaturesCount} 
-          icon={HiCheckCircle}
-        />
-        <StatCard 
-          title="Inactive Features" 
-          value={inactiveCount} 
-          icon={HiExclamationTriangle}
-        />
-      </div>
 
       {/* Error Alert */}
       {error && (
@@ -413,7 +390,7 @@ export default function SubscriptionFeatures() {
 
           {/* Custom Pagination Component */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between gap-4 pt-6 pb-2">
+            <div className="flex items-center justify-between gap-4 p-4 border-t border-slate-200">
               <p className="text-[11px] font-medium text-slate-500">
                 Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
                 {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
@@ -423,7 +400,7 @@ export default function SubscriptionFeatures() {
                 <button
                   onClick={() => fetchFeatures(pagination.page - 1)}
                   disabled={pagination.page === 1}
-                  className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="h-8 w-8 rounded-none border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   <HiChevronLeft className="h-4 w-4" />
                 </button>
@@ -440,9 +417,9 @@ export default function SubscriptionFeatures() {
                         <button
                           key={pageNum}
                           onClick={() => fetchFeatures(pageNum)}
-                          className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-medium transition-all ${
+                          className={`min-w-[32px] h-8 px-2 rounded-none text-xs font-medium transition-all ${
                             pagination.page === pageNum
-                              ? 'bg-indigo-600 text-white shadow-sm'
+                              ? 'bg-[#0F766E] text-white shadow-sm'
                               : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
                           }`}
                         >
@@ -461,7 +438,7 @@ export default function SubscriptionFeatures() {
                 <button
                   onClick={() => fetchFeatures(pagination.page + 1)}
                   disabled={pagination.page === pagination.totalPages}
-                  className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="h-8 w-8 rounded-none border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   <HiChevronRight className="h-4 w-4" />
                 </button>
@@ -470,6 +447,7 @@ export default function SubscriptionFeatures() {
           )}
         </>
       )}
+      </div>
 
       {/* Rest of the modals remain the same */}
       {/* Edit Feature Modal */}
@@ -479,14 +457,17 @@ export default function SubscriptionFeatures() {
           setShowEditFeatureModal(false)
           setFormError(null)
         }}
-        title={selectedFeature ? `Edit Feature: ${selectedFeature.feature_name}` : 'Edit Feature'}
-        description="Modify feature details."
-        icon={HiPencil}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">{selectedFeature ? `Edit Feature: ${selectedFeature.feature_name}` : 'Edit Feature'}</h2>
+            <p className="text-sm text-slate-500">Modify feature details.</p>
+          </div>
+        }
         size="lg"
       >
-        <div className="space-y-8 p-2">
+        <div className="space-y-6">
           {formError && (
-            <div className="rounded-xl bg-red-50 p-3 flex items-center gap-2 border border-red-100">
+            <div className="rounded-none bg-red-50 p-3 flex items-center gap-2 border border-red-200">
               <HiExclamationTriangle className="h-4 w-4 text-red-500" />
               <p className="text-xs font-medium text-red-700">{formError}</p>
             </div>
@@ -509,7 +490,7 @@ export default function SubscriptionFeatures() {
           <div className="space-y-1">
             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Description</label>
             <textarea
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-3.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none resize-none"
+              className="w-full rounded-none border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all outline-none resize-none"
               rows={3}
               value={editForm.feature_description}
               onChange={(e) => setEditForm({ ...editForm, feature_description: e.target.value })}
@@ -528,7 +509,7 @@ export default function SubscriptionFeatures() {
             <div className="space-y-1">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Status</label>
               <select
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-3.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                className="w-full rounded-none border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all outline-none"
                 value={editForm.feature_is_active ? 'active' : 'inactive'}
                 onChange={(e) => setEditForm({ ...editForm, feature_is_active: e.target.value === 'active' })}
               >
@@ -538,20 +519,9 @@ export default function SubscriptionFeatures() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 pt-6 border-t border-slate-50">
-            <Button 
-              label="Cancel" 
-              variant="ghost" 
-              className="font-black uppercase tracking-widest text-[10px] text-slate-400" 
-              onClick={() => setShowEditFeatureModal(false)} 
-            />
-            <Button 
-              label="Save" 
-              variant="primary" 
-              className="bg-indigo-600 border-none shadow-lg shadow-indigo-100"
-              onClick={handleUpdateFeature}
-              disabled={!editForm.feature_name || !editForm.feature_code}
-            />
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowEditFeatureModal(false)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={handleUpdateFeature} disabled={!editForm.feature_name || !editForm.feature_code} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors">Save</button>
           </div>
         </div>
       </Modal>
@@ -601,14 +571,17 @@ export default function SubscriptionFeatures() {
           setShowAddFeatureModal(false)
           setFormError(null)
         }}
-        title="Add New Feature"
-        description="Create a new feature and configure its availability across plans."
-        icon={HiPlus}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Add New Feature</h2>
+            <p className="text-sm text-slate-500">Create a new feature and configure its availability across plans.</p>
+          </div>
+        }
         size="lg"
       >
-        <div className="space-y-8 p-2">
+        <div className="space-y-6">
           {formError && (
-            <div className="rounded-xl bg-red-50 p-3 flex items-center gap-2 border border-red-100">
+            <div className="rounded-none bg-red-50 p-3 flex items-center gap-2 border border-red-200">
               <HiExclamationTriangle className="h-4 w-4 text-red-500" />
               <p className="text-xs font-medium text-red-700">{formError}</p>
             </div>
@@ -633,7 +606,7 @@ export default function SubscriptionFeatures() {
           <div className="space-y-1">
             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Description</label>
             <textarea
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-3.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none resize-none"
+              className="w-full rounded-none border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all outline-none resize-none"
               rows={3}
               placeholder="Describe what this feature does..."
               value={newFeature.feature_description}
@@ -653,7 +626,7 @@ export default function SubscriptionFeatures() {
             <div className="space-y-1">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Status</label>
               <select
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-3.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                className="w-full rounded-none border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] transition-all outline-none"
                 value={newFeature.feature_is_active ? 'active' : 'inactive'}
                 onChange={(e) => setNewFeature({ ...newFeature, feature_is_active: e.target.value === 'active' })}
               >
@@ -663,30 +636,19 @@ export default function SubscriptionFeatures() {
             </div>
           </div>
 
-          <div className="flex gap-4 pt-6 border-t border-slate-50">
-            <Button 
-              label="Cancel" 
-              variant="ghost" 
-              className="flex-1 font-black uppercase text-[10px] tracking-widest text-slate-400" 
-              onClick={() => {
-                setShowAddFeatureModal(false)
-                setNewFeature({
-                  feature_name: '',
-                  feature_code: '',
-                  feature_description: '',
-                  feature_sort_order: 0,
-                  feature_is_active: true
-                })
-                setFormError(null)
-              }} 
-            />
-            <Button 
-              label="Save" 
-              variant="primary" 
-              className="flex-1 bg-indigo-600 border-none shadow-lg shadow-indigo-100"
-              onClick={handleCreateFeature}
-              disabled={!newFeature.feature_name || !newFeature.feature_code}
-            />
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => {
+              setShowAddFeatureModal(false)
+              setNewFeature({
+                feature_name: '',
+                feature_code: '',
+                feature_description: '',
+                feature_sort_order: 0,
+                feature_is_active: true
+              })
+              setFormError(null)
+            }} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={handleCreateFeature} disabled={!newFeature.feature_name || !newFeature.feature_code} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors">Save</button>
           </div>
         </div>
       </Modal>

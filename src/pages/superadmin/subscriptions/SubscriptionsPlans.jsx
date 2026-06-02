@@ -19,8 +19,10 @@ import {
   HiPlus,
   HiXCircle,
   HiPencil,
+  HiTrash,
   HiEye,
-  HiTrash
+  HiMagnifyingGlass,
+  HiDocumentArrowDown
 } from 'react-icons/hi2'
 
 export default function SubscriptionsPlans() {
@@ -246,99 +248,69 @@ export default function SubscriptionsPlans() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header Section */}
-      <div className="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white shadow-lg">
-              <HiBriefcase className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Subscription Plans</h1>
-              <p className="text-sm text-slate-500 mt-0.5">Manage pricing tiers, limits, and feature access</p>
-            </div>
-            <div className="group relative ml-2">
-              <HiQuestionMarkCircle className="h-5 w-5 text-slate-400 cursor-help hover:text-indigo-500 transition-colors" />
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-64 p-4 bg-slate-900 text-white text-xs leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
-                <p className="font-bold text-indigo-400 mb-2 uppercase tracking-wider text-[10px]">Plan Management</p>
-                <p className="mb-2">Create and manage subscription plans with custom pricing, quotas, and feature sets.</p>
-                <p className="text-slate-400 text-[10px]">Use -1 for unlimited quotas</p>
-                <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+      {/* Top Title Bar with Moved Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Subscription Plans</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Subscriptions</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Plan Management</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button type="button" onClick={handleExport} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+            <HiDocumentArrowDown className="h-4 w-4" /> Export CSV
+          </button>
+          <button type="button" onClick={() => setShowAddPlanModal(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
+            <HiPlus className="h-4 w-4" /> Add New Plan
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Metrics Cards Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          { label: 'ACTIVE PLANS', count: activePlansCount.toString(), bgColor: 'bg-[#10B981]', icon: HiCheckCircle },
+          { label: 'MONTHLY POTENTIAL', count: `$${formatPrice(totalMonthlyRevenue)}`, bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
+          { label: 'ANNUAL POTENTIAL', count: `$${formatPrice(totalAnnualRevenue)}`, bgColor: 'bg-[#3B82F6]', icon: HiChartBar }
+        ].map((card, idx) => (
+            <div
+              key={idx}
+              className="group flex items-center gap-3.5 rounded-none border border-slate-200 p-4 text-left transition-all hover:bg-slate-50/50 min-w-0 shadow-sm bg-white"
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}><card.icon className="h-5 w-5" /></div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold uppercase tracking-wider truncate leading-none text-slate-400">{card.label}</div>
+                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
               </div>
             </div>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <Button
-            label="Export CSV"
-            variant="outline"
-            size="md"
-            icon={HiChartBar}
-            onClick={handleExport}
-            className="border-slate-200 text-slate-600 hover:bg-slate-50"
-          />
-          <Button
-            label="Add New Plan"
-            variant="primary"
-            size="md"
-            icon={HiPlus}
-            onClick={() => setShowAddPlanModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200"
-          />
-        </div>
+        ))}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="ACTIVE PLANS"
-          value={activePlansCount.toString()}
-          subtitle={`out of ${plans.length} total`}
-          icon={HiCheckCircle}
-          trendColor="blue"
-        />
-        <StatCard
-          title="MONTHLY POTENTIAL"
-          value={`$${formatPrice(totalMonthlyRevenue)}`}
-          subtitle="from all plans"
-          icon={HiCurrencyDollar}
-          trendColor="green"
-        />
-        <StatCard
-          title="ANNUAL POTENTIAL"
-          value={`$${formatPrice(totalAnnualRevenue)}`}
-          subtitle="from all plans"
-          icon={HiChartBar}
-          trendColor="amber"
-        />
-      </div>
+      {/* Main Registry Area */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Plan Listing</h2>
+        </div>
 
-      {/* Search and Filter Bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1">
-            <Input
-              label="Search Plans"
-              placeholder="Search by name, code, or description..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+            <div className="relative min-w-[250px] flex-1 max-w-md">
+              <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by name, code, or description..." className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium" />
+            </div>
           </div>
-          <div className="flex gap-3">
-            <Button
-              label="Clear Filters"
-              variant="ghost"
-              className="text-slate-500"
-              onClick={() => setSearchQuery('')}
-            />
+          <div className="flex items-center gap-3">
+            {searchQuery ? (
+              <button type="button" onClick={() => setSearchQuery('')} className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50">Clear Filters</button>
+            ) : null}
           </div>
         </div>
-      </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="rounded-2xl bg-red-50 p-4 flex items-center gap-3 border border-red-200">
+        <div className="bg-red-50 p-4 flex items-center gap-3 border-b border-red-200">
           <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
             <HiXCircle className="h-5 w-5 text-red-600" />
           </div>
@@ -353,6 +325,7 @@ export default function SubscriptionsPlans() {
       )}
 
       {/* Plans Grid */}
+      <div className="p-4 bg-slate-50/30">
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
@@ -438,23 +411,17 @@ export default function SubscriptionsPlans() {
               </div>
 
               {/* Actions */}
-              <div className="p-6 pt-0 flex gap-3">
-                <Button
-                  label="View"
-                  variant="ghost"
-                  size="sm"
-                  icon={HiEye}
-                  className="flex-1 text-slate-600 hover:text-indigo-600"
+              <div className="p-4 border-t border-slate-100 flex gap-2">
+                <button
+                  type="button"
                   onClick={() => handleViewPlan(plan)}
-                />
-                <Button
-                  label="Edit"
-                  variant="ghost"
-                  size="sm"
-                  icon={HiPencil}
-                  className="flex-1 text-slate-600 hover:text-indigo-600"
+                  className="inline-flex flex-1 h-8 items-center justify-center gap-1 rounded-none bg-slate-500 text-xs font-semibold text-white transition-colors hover:bg-slate-600"
+                ><HiEye className="h-3.5 w-3.5" /> View</button>
+                <button
+                  type="button"
                   onClick={() => handleEditPlan(plan)}
-                />
+                  className="inline-flex flex-1 h-8 items-center justify-center gap-1 rounded-none bg-sky-500 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
+                ><HiPencil className="h-3.5 w-3.5" /> Edit</button>
               </div>
 
               {/* Status Indicator */}
@@ -463,6 +430,8 @@ export default function SubscriptionsPlans() {
           ))}
         </div>
       )}
+      </div>
+      </div>
 
       {/* Create Plan Modal */}
       <Modal
@@ -584,20 +553,9 @@ export default function SubscriptionsPlans() {
             <p className="text-[10px] text-slate-500">Selected: {selectedFeatures.length} features</p>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-slate-200">
-            <Button
-              label="Cancel"
-              variant="ghost"
-              className="flex-1"
-              onClick={() => setShowAddPlanModal(false)}
-            />
-            <Button
-              label="Create Plan"
-              variant="primary"
-              className="flex-1 bg-indigo-600"
-              onClick={handleCreatePlan}
-              disabled={!newPlan.plan_name || !newPlan.plan_code}
-            />
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => setShowAddPlanModal(false)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+            <button type="button" onClick={handleCreatePlan} disabled={!newPlan.plan_name || !newPlan.plan_code} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors">Create Plan</button>
           </div>
         </div>
       </Modal>
@@ -705,30 +663,11 @@ export default function SubscriptionsPlans() {
             <p className="text-[10px] text-slate-500">Selected: {selectedFeatures.length} features</p>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-            <Button
-              label="Delete Plan"
-              variant="ghost"
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              icon={HiTrash}
-              onClick={() => {
-                setShowEditPlanModal(false)
-                setShowDeletePlanModal(true)
-              }}
-            />
+          <div className="mt-8 flex items-center justify-between gap-3 border-t border-slate-100 pt-6">
+            <button type="button" onClick={() => { setShowEditPlanModal(false); setShowDeletePlanModal(true); }} className="rounded-none border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors inline-flex items-center gap-1.5"><HiTrash className="h-4 w-4"/> Delete Plan</button>
             <div className="flex gap-3">
-              <Button
-                label="Cancel"
-                variant="ghost"
-                onClick={() => setShowEditPlanModal(false)}
-              />
-              <Button
-                label="Save Changes"
-                variant="primary"
-                className="bg-indigo-600"
-                onClick={handleSavePlan}
-                disabled={!editForm.plan_name || !editForm.plan_code}
-              />
+              <button type="button" onClick={() => setShowEditPlanModal(false)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+              <button type="button" onClick={handleSavePlan} disabled={!editForm.plan_name || !editForm.plan_code} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors">Save Changes</button>
             </div>
           </div>
         </div>
