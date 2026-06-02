@@ -61,6 +61,8 @@ export default function Dashboard() {
   const [dateRange, setDateRange] = useState('Last 30 days')
   const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
+  const [birthdays, setBirthdays] = useState([])
+
   const isManager = user?.role === 'manager'
   const isHRAdmin = user?.role === 'admin' || user?.role === 'hr_admin'
   const isEmployee = user?.role === 'employee'

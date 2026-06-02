@@ -92,48 +92,41 @@ export default function AuditLogs() {
   }
 
   return (
-    <div className="sa-page">
-      {/* Header */}
-      <div className="sa-hero px-6 py-5">
-        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white shadow-inner">
-                <HiShieldCheck className="h-5 w-5" />
-              </div>
-              <h1 className="text-xl font-black text-white tracking-widest uppercase">Audit Logs</h1>
-            </div>
-            <p className="text-xs text-emerald-100/90 font-medium">
-              Immutable trail of administrative actions, infrastructure updates, and security events.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button label="Export CSV" variant="ghost" icon={HiArrowDownTray} className="bg-white text-[#0F766E] hover:bg-emerald-50 border-none font-bold" onClick={handleExport} />
-            <Button label="Sync" variant="ghost" icon={HiArrowPath} className="bg-white/15 text-white hover:bg-white/20 border border-white/20 font-bold" onClick={fetchAuditLogs} />
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Top Title Bar with Moved Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Audit Logs</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Platform</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Audit Logs</span>
           </div>
         </div>
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5" />
+        <div className="flex items-center gap-2 shrink-0">
+          <button type="button" onClick={handleExport} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+            <HiArrowDownTray className="h-4 w-4" /> Export CSV
+          </button>
+          <button type="button" onClick={fetchAuditLogs} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+            <HiArrowPath className="h-4 w-4" /> Sync
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="sa-card p-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <div className="flex-1 space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Search</label>
-            <div className="relative group">
-              <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4 group-focus-within:text-slate-900 transition-colors" />
-              <input
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:border-[#0F766E] outline-none transition-all"
-                placeholder="Action, admin, target..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+      {/* Main Table Registry Area */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm mb-6">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Audit Trail</h2>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 border-b border-slate-200 bg-white px-4 py-3">
+          <div className="relative min-w-[250px] flex-1 max-w-md">
+            <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Action, admin, target..." className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium" />
           </div>
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Target Node</label>
+          <div className="flex flex-wrap items-center gap-3">
             <select
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-[#0F766E] transition-all appearance-none cursor-pointer"
+              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer"
               value={orgFilter}
               onChange={(e) => setOrgFilter(e.target.value)}
             >
@@ -142,11 +135,8 @@ export default function AuditLogs() {
                 <option key={org} value={org}>{org}</option>
               ))}
             </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Action Type</label>
             <select
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-[#0F766E] transition-all appearance-none cursor-pointer"
+              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer"
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
             >
@@ -156,18 +146,11 @@ export default function AuditLogs() {
               <option value="Domain">DNS/Network</option>
               <option value="Billing">Financial</option>
             </select>
+            <p className="text-xs font-medium text-slate-500 whitespace-nowrap">{filteredLogs.length} records</p>
+            {searchQuery || orgFilter !== 'all' || actionFilter !== 'all' ? (
+              <button type="button" onClick={() => { setSearchQuery(''); setOrgFilter('all'); setActionFilter('all'); }} className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50 whitespace-nowrap">Clear Filters</button>
+            ) : null}
           </div>
-          <div className="flex items-end">
-            <Button label="Clear Filters" variant="ghost" className="h-[42px] px-6 text-slate-400 font-bold w-full" onClick={() => { setSearchQuery(''); setOrgFilter('all'); setActionFilter('all'); }} />
-          </div>
-        </div>
-      </div>
-
-      {/* Audit Table */}
-      <div className="sa-card overflow-hidden">
-        <div className="sa-card-head">
-          <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Audit Trail</h2>
-          <p className="text-xs font-bold text-slate-500">{filteredLogs.length} records</p>
         </div>
         <Table
           loading={loading}
@@ -220,20 +203,6 @@ export default function AuditLogs() {
           }))}
         />
       </div>
-
-      {/* Security Advisory */}
-      {/* <div className="rounded-2xl border border-slate-900 bg-slate-900 p-6 flex gap-4 items-start shadow-xl shadow-slate-200">
-        <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white border border-white/5 shadow-inner">
-           <HiExclamationCircle className="h-6 w-6" />
-        </div>
-        <div>
-          <p className="text-xs font-black text-white uppercase tracking-[0.2em] mb-2">Immutable Policy Enforcement</p>
-          <p className="text-xs font-medium text-white/70 leading-relaxed max-w-4xl">
-            Audit logs are cryptographically sealed and cannot be modified or deleted by any administrative user, including SuperAdmins. 
-            This ensures a complete, forensic-grade chain of custody for all platform kernel activities.
-          </p>
-        </div>
-      </div> */}
     </div>
   )
 }

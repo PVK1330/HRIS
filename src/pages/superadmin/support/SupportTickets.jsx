@@ -25,6 +25,7 @@ import {
   HiUser,
   HiBuildingOffice,
   HiTag,
+  HiFolderOpen,
 } from 'react-icons/hi2'
 import Swal from 'sweetalert2'
 
@@ -224,33 +225,60 @@ export default function SupportTickets() {
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col flex-wrap items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-sm">
-              <HiLifebuoy className="h-4.5 w-4.5" />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Support Tickets</h1>
-            <div className="group relative">
-              <HiQuestionMarkCircle className="h-4 w-4 text-slate-300 cursor-help hover:text-emerald-500 transition-colors" />
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 p-3 bg-slate-900 text-white text-[10px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl border border-white/10">
-                <p className="font-bold text-emerald-400 mb-1 uppercase tracking-widest">Support Center</p>
-                Manage and resolve help requests from organization admins.
-                <div className="absolute bottom-[-3px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45" />
-              </div>
-            </div>
+      {/* Top Title Bar with Moved Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Support Tickets</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+            <span>Support</span>
+            <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600">Tickets</span>
           </div>
-          <p className="text-[11px] font-medium text-slate-500">View and manage support tickets from all organizations.</p>
         </div>
-        <Button label="Refresh" variant="ghost" icon={HiArrowPath} size="sm" className="text-slate-500 font-bold" onClick={fetchTickets} />
+        <div className="flex items-center gap-2 shrink-0">
+          <button type="button" onClick={fetchTickets} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+            <HiArrowPath className="h-4 w-4" /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="TOTAL" value={stats.total.toString()} icon={HiTicket} trendColor="blue" />
-        <StatCard title="WAITING" value={stats.waiting.toString()} icon={HiClock} trendColor="amber" />
-        <StatCard title="IN PROGRESS" value={stats.inProgress.toString()} icon={HiExclamationCircle} trendColor="orange" />
-        <StatCard title="RESOLVED" value={stats.resolved.toString()} icon={HiCheckCircle} trendColor="green" />
+      {/* Stats Section */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+        {[
+          { label: 'New Tickets', count: stats.total.toString(), color: 'text-orange-500', borderColor: 'border-orange-200', bgColor: 'bg-orange-50', icon: HiTicket, barColor: 'bg-orange-500', trendBg: 'bg-orange-50', trendColor: 'text-orange-500', trend: '+19.01%' },
+          { label: 'Open Tickets', count: stats.waiting.toString(), color: 'text-purple-500', borderColor: 'border-purple-200', bgColor: 'bg-purple-50', icon: HiFolderOpen, barColor: 'bg-purple-500', trendBg: 'bg-slate-100', trendColor: 'text-slate-700', trend: '+19.01%' },
+          { label: 'Solved Tickets', count: stats.resolved.toString(), color: 'text-green-500', borderColor: 'border-green-200', bgColor: 'bg-green-50', icon: HiCheckCircle, barColor: 'bg-green-500', trendBg: 'bg-blue-100', trendColor: 'text-blue-500', trend: '+19.01%' },
+          { label: 'Pending Tickets', count: stats.inProgress.toString(), color: 'text-blue-500', borderColor: 'border-blue-200', bgColor: 'bg-blue-50', icon: HiExclamationCircle, barColor: 'bg-cyan-500', trendBg: 'bg-slate-100', trendColor: 'text-slate-700', trend: '+19.01%' }
+        ].map((card, idx) => (
+            <div
+              key={idx}
+              className="rounded-xl border border-slate-100 bg-white p-5 flex flex-col justify-between shadow-sm min-w-0"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className={`flex h-14 w-14 items-center justify-center rounded-full border border-dashed ${card.borderColor} ${card.bgColor} shrink-0`}>
+                  <card.icon className={`h-6 w-6 ${card.color}`} />
+                </div>
+                <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold ${card.trendBg} ${card.trendColor}`}>
+                  <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 10.5C3.5 10.5 5 7.5 7 8.5C9 9.5 11 4.5 14 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  {card.trend}
+                </div>
+              </div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-xs font-medium text-slate-500 mb-1">{card.label}</div>
+                  <div className="text-2xl font-bold text-slate-800">{card.count}</div>
+                </div>
+                <div className="flex items-end gap-0.5 h-10 w-24">
+                   {[40, 60, 30, 80, 50, 90, 70, 40, 60, 100].map((h, i) => (
+                     <div key={i} className={`w-full rounded-[1px] ${card.barColor}`} style={{ height: `${h}%` }}></div>
+                   ))}
+                </div>
+              </div>
+            </div>
+        ))}
       </div>
 
       {error && (
@@ -260,8 +288,11 @@ export default function SupportTickets() {
         </div>
       )}
 
-      {/* Ticket Table */}
-      <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+      {/* Main Table Registry Area */}
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">Ticket Registry</h2>
+        </div>
         <Table
           maxHeightClass="max-h-full"
           loading={loading}
@@ -317,21 +348,9 @@ export default function SupportTickets() {
               key: 'actions',
               label: 'Control',
               render: (_, ticket) => (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleViewTicket(ticket)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-100 transition-colors"
-                  >
-                    <HiEye className="h-4 w-4" />
-                    View
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTicket(ticket.id)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors"
-                  >
-                    <HiTrash className="h-4 w-4" />
-                    Delete
-                  </button>
+                <div className="flex items-center justify-start gap-2">
+                  <button type="button" onClick={() => handleViewTicket(ticket)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-500 text-white transition-colors hover:bg-slate-600" title="View Details"><HiEye className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => handleDeleteTicket(ticket.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" title="Delete Ticket"><HiTrash className="h-4 w-4" /></button>
                 </div>
               )
             },
@@ -350,9 +369,12 @@ export default function SupportTickets() {
             window.history.replaceState(null, '', window.location.pathname + window.location.search)
           }
         }}
-        title={selectedTicket?.subject || 'Ticket Details'}
-        description={selectedTicket ? (selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`) : ''}
-        icon={HiTicket}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">{selectedTicket?.subject || 'Ticket Details'}</h2>
+            <p className="text-sm text-slate-500">{selectedTicket ? (selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`) : ''}</p>
+          </div>
+        }
         size="2xl"
         bodyClassName="overflow-hidden"
       >
@@ -360,8 +382,9 @@ export default function SupportTickets() {
           <div className="flex h-full min-h-[calc(90vh-140px)] flex-col overflow-hidden">
             <div className="overflow-y-auto px-6 py-6 space-y-6">
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                {/* Left Column: Ticket Info */}
                 <div className="space-y-4">
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5">
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Ticket ID</p>
@@ -371,18 +394,18 @@ export default function SupportTickets() {
                     </div>
 
                     <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-2xl bg-white p-4">
+                      <div className="rounded-none border border-slate-100 bg-white p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Category</p>
                         <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.category || '-'}</p>
                       </div>
-                      <div className="rounded-2xl bg-white p-4">
+                      <div className="rounded-none border border-slate-100 bg-white p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Priority</p>
                         <Badge label={selectedTicket.priority || 'Normal'} color={getPriorityColor(selectedTicket.priority)} />
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5 space-y-4">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Admin Name</p>
                       <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.adminName || '-'}</p>
@@ -397,19 +420,19 @@ export default function SupportTickets() {
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-3">Description</p>
                     <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{selectedTicket.description || '-'}</p>
                   </div>
 
                   {(selectedTicket.attachmentUrl || selectedTicket.attachment_url) && (
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="rounded-none border border-slate-200 bg-slate-50 p-5">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Attachment</p>
                       <a
                         href={selectedTicket.attachmentUrl || selectedTicket.attachment_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-emerald-700"
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-[#0F766E]"
                       >
                         <HiPaperClip className="h-4 w-4 text-slate-500" />
                         {selectedTicket.attachmentUrl?.split('/').pop() || selectedTicket.attachment_url?.split('/').pop() || 'Download attachment'}
@@ -418,14 +441,53 @@ export default function SupportTickets() {
                   )}
                 </div>
 
-                <div className="space-y-6">
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                {/* Right Column: Conversation and Reply */}
+                <div className="flex flex-col space-y-4 h-full max-h-full">
+                  <div className="flex-1 rounded-none border border-slate-200 bg-slate-50 p-4 flex flex-col min-h-[300px]">
+                    <div className="mb-4 flex items-center justify-between gap-3 shrink-0">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">Conversation History</p>
+                        <p className="text-[11px] text-slate-400">All messages related to this ticket</p>
+                      </div>
+                      <span className="text-[11px] text-slate-500">{(selectedTicket.conversation || []).length} messages</span>
+                    </div>
+
+                    <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                      {(selectedTicket.conversation || []).length ? (
+                        (selectedTicket.conversation || []).map((msg) => (
+                          <div
+                            key={`${msg.id}-${msg.createdAt}-${msg.senderRole}`}
+                            className={`rounded-none border-l-4 bg-white p-4 shadow-sm border border-slate-100 ${msg.senderRole === 'admin' ? 'border-l-sky-500' : 'border-l-[#0F766E]'}`}
+                          >
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                                <span className={`rounded-none px-2.5 py-1 text-[11px] font-bold uppercase ${msg.senderRole === 'admin' ? 'bg-sky-50 text-sky-700' : 'bg-[#0F766E]/10 text-[#0F766E]'}`}>
+                                  {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
+                                </span>
+                                <span className="text-xs font-semibold text-slate-700">{msg.senderName}</span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                <Badge label={msg.status || selectedTicket.status || 'Waiting'} color={getStatusColor(msg.status || selectedTicket.status || 'Waiting')} />
+                                <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
+                                <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}</span>
+                              </div>
+                            </div>
+                            <p className="mt-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{msg.message}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500">No conversation history yet.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5 space-y-4 shrink-0">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Update Status</p>
                       <select
                         value={ticketStatus}
                         onChange={(e) => setTicketStatus(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20"
                       >
                         {STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>{status}</option>
@@ -436,52 +498,14 @@ export default function SupportTickets() {
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Super Admin Response</p>
                       <textarea
-                        className="h-full w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 resize-none"
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20 resize-none"
                         placeholder="Add response, notes, or resolution details..."
-                        rows={8}
+                        rows={4}
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
                       />
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">Conversation History</p>
-                    <p className="text-[11px] text-slate-400">All messages related to this ticket</p>
-                  </div>
-                  <span className="text-[11px] text-slate-500">{(selectedTicket.conversation || []).length} messages</span>
-                </div>
-
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                  {(selectedTicket.conversation || []).length ? (
-                    (selectedTicket.conversation || []).map((msg) => (
-                      <div
-                        key={`${msg.id}-${msg.createdAt}-${msg.senderRole}`}
-                        className={`rounded-3xl border-l-4 bg-white p-4 shadow-sm ${msg.senderRole === 'admin' ? 'border-sky-500' : 'border-emerald-500'}`}
-                      >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${msg.senderRole === 'admin' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                              {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
-                            </span>
-                            <span className="text-xs font-semibold text-slate-700">{msg.senderName}</span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                            <Badge label={msg.status || selectedTicket.status || 'Waiting'} color={getStatusColor(msg.status || selectedTicket.status || 'Waiting')} />
-                            <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
-                            <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}</span>
-                          </div>
-                        </div>
-                        <p className="mt-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{msg.message}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500">No conversation history yet.</p>
-                  )}
                 </div>
               </div>
             </div>
@@ -491,7 +515,7 @@ export default function SupportTickets() {
                 <button
                   type="button"
                   onClick={() => setShowDetailsModal(false)}
-                  className="h-11 rounded-2xl border border-slate-300 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                  className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
@@ -499,7 +523,7 @@ export default function SupportTickets() {
                   type="button"
                   onClick={handleSaveTicket}
                   disabled={saving || loadingTicketDetails || (!replyText.trim() && ticketStatus === selectedTicketStatus)}
-                  className="h-11 rounded-2xl bg-emerald-600 px-6 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50 disabled:pointer-events-none"
+                  className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors"
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
