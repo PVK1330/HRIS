@@ -82,7 +82,7 @@ export function Modal({
           </button>
         )}
 
-        <div className="flex flex-col">
+        <div className="flex flex-col flex-1 min-h-0">
           {/* Header */}
           <div className="px-5 pt-6 pb-2 sm:px-6">
             {header ? (
