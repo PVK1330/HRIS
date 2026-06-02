@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-
 import { Toggle } from '../../../components/ui/Toggle.jsx'
 import settingsService from '../../../services/settingsService.js'
 
@@ -23,16 +22,6 @@ function deepClone(v) {
   return JSON.parse(JSON.stringify(v))
 }
 
-function RowSkeleton() {
-  return (
-    <div className="space-y-0">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="mb-2 h-16 animate-pulse rounded bg-gray-100" />
-      ))}
-    </div>
-  )
-}
-
 export default function AccountSettings() {
   const [settings, setSettings] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -45,15 +34,13 @@ export default function AccountSettings() {
       setSettings(next)
       originalRef.current = deepClone(next)
     } catch (err) {
-      toast.error(err?.message || 'Failed to load account settings')
+      toast.error(err?.message || 'Failed to load settings')
       setSettings({ ...DEFAULTS })
       originalRef.current = { ...DEFAULTS }
     }
   }, [])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  useEffect(() => { load() }, [load])
 
   const isDirty = useMemo(() => {
     if (!settings || !originalRef.current) return false
@@ -62,12 +49,8 @@ export default function AccountSettings() {
 
   const set = (patch) => setSettings((prev) => ({ ...(prev || DEFAULTS), ...patch }))
 
-  const handleDiscard = () => {
-    if (!originalRef.current) return
-    setSettings(deepClone(originalRef.current))
-  }
-
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    if (e) e.preventDefault()
     if (!settings) return
     setSaving(true)
     try {
@@ -79,7 +62,7 @@ export default function AccountSettings() {
       const next = fromApi(res?.data)
       setSettings(next)
       originalRef.current = deepClone(next)
-      toast.success('Account settings saved')
+      toast.success('Settings saved')
     } catch (err) {
       toast.error(err?.message || 'Failed to save settings')
     } finally {
@@ -87,96 +70,80 @@ export default function AccountSettings() {
     }
   }
 
-  return (
-    <div className="mx-auto max-w-3xl px-4 pb-24 md:px-0">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Account Governance</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
-            Configure security and user onboarding policies.
-          </p>
-        </div>
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-white shadow-md">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-            />
-          </svg>
+  if (settings === null) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 w-1/4 rounded bg-gray-200"></div>
+          <div className="h-32 rounded-xl bg-gray-100"></div>
         </div>
       </div>
+    )
+  }
 
-      {settings === null ? (
-        <RowSkeleton />
-      ) : (
-        <div className="rounded-xl border border-gray-200 bg-white">
-          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
-            <div>
-              <div className="text-sm font-semibold text-gray-800">Public Registration</div>
-              <div className="mt-0.5 text-xs text-gray-400">Allow new users to create accounts.</div>
-            </div>
-            <Toggle checked={settings.publicRegistration} onChange={(v) => set({ publicRegistration: v })} />
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="space-y-10 divide-y divide-gray-900/10">
+        
+        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+          <div className="px-4 sm:px-0">
+            <h2 className="text-base font-semibold leading-7 text-gray-900">Account Policies</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-600">
+              Configure security and user onboarding access across the platform.
+            </p>
           </div>
 
-          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
-            <div>
-              <div className="text-sm font-semibold text-gray-800">Email Verification</div>
-              <div className="mt-0.5 text-xs text-gray-400">Require email confirmation for access.</div>
-            </div>
-            <Toggle checked={settings.emailVerification} onChange={(v) => set({ emailVerification: v })} />
-          </div>
+          <form 
+            onSubmit={handleSave}
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+          >
+            <div className="px-4 py-6 sm:p-8 space-y-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium leading-6 text-gray-900">Public Registration</h3>
+                  <p className="mt-1 text-sm text-gray-500">Allow new users to create accounts without an admin invitation.</p>
+                </div>
+                <Toggle checked={settings.publicRegistration} onChange={(v) => set({ publicRegistration: v })} />
+              </div>
 
-          <div className="flex items-center justify-between px-6 py-5">
-            <div>
-              <div className="text-sm font-semibold text-gray-800">Multi-Factor Auth (2FA)</div>
-              <div className="mt-0.5 text-xs text-gray-400">Enforce secondary identity verification.</div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium leading-6 text-gray-900">Email Verification</h3>
+                  <p className="mt-1 text-sm text-gray-500">Require email confirmation before granting system access.</p>
+                </div>
+                <Toggle checked={settings.emailVerification} onChange={(v) => set({ emailVerification: v })} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium leading-6 text-gray-900">Multi-Factor Auth (2FA)</h3>
+                  <p className="mt-1 text-sm text-gray-500">Enforce secondary identity verification for all accounts.</p>
+                </div>
+                <Toggle checked={settings.twoFactorAuth} onChange={(v) => set({ twoFactorAuth: v })} />
+              </div>
             </div>
-            <Toggle checked={settings.twoFactorAuth} onChange={(v) => set({ twoFactorAuth: v })} />
-          </div>
+
+            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
+              <button
+                type="button"
+                onClick={() => setSettings(deepClone(originalRef.current))}
+                disabled={!isDirty || saving}
+                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
+              >
+                Discard
+              </button>
+              <button
+                type="submit"
+                disabled={!isDirty || saving}
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
 
-      {isDirty && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-gray-200 bg-white px-8 py-4 shadow-lg">
-          <div className="flex items-center">
-            <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
-            <span className="ml-2 text-xs uppercase tracking-wider text-gray-500">POLICY LOCKED</span>
-          </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleDiscard}
-              disabled={saving}
-              className="rounded-lg border border-gray-300 px-6 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              Discard
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 rounded-lg bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
-            >
-              {saving && (
-                <span
-                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
-                  aria-hidden
-                />
-              )}
-              Save Changes
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }

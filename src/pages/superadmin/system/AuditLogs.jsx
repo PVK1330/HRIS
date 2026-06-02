@@ -101,7 +101,7 @@ export default function AuditLogs() {
               <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white shadow-inner">
                 <HiShieldCheck className="h-5 w-5" />
               </div>
-              <h1 className="text-xl font-black text-white tracking-widest uppercase">Forensic Audit Logs</h1>
+              <h1 className="text-xl font-black text-white tracking-widest uppercase">Audit Logs</h1>
             </div>
             <p className="text-xs text-emerald-100/90 font-medium">
               Immutable trail of administrative actions, infrastructure updates, and security events.
@@ -183,7 +183,7 @@ export default function AuditLogs() {
             timestamp: (
               <div className="flex items-center gap-3 py-1">
                 <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                   <HiCalendarDays className="h-4 w-4" />
+                  <HiCalendarDays className="h-4 w-4" />
                 </div>
                 <span className="font-mono text-[11px] font-bold text-slate-500">
                   {new Date(log.timestamp).toLocaleString()}
@@ -191,25 +191,25 @@ export default function AuditLogs() {
               </div>
             ),
             admin: (
-               <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                     <HiFingerPrint className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm font-black text-slate-900 tracking-tight">{log.admin}</span>
-               </div>
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                  <HiFingerPrint className="h-4 w-4" />
+                </div>
+                <span className="text-sm font-black text-slate-900 tracking-tight">{log.admin}</span>
+              </div>
             ),
             action: <Badge label={log.action} color={log.action.includes('Organization') ? 'blue' : log.action.includes('Domain') ? 'indigo' : 'gray'} variant="glass" />,
             target: (
-               <div className="flex items-center gap-2">
-                  <HiGlobeAlt className="h-3.5 w-3.5 text-slate-300" />
-                  <span className="text-sm text-slate-700 font-bold tracking-tight">{log.target}</span>
-               </div>
+              <div className="flex items-center gap-2">
+                <HiGlobeAlt className="h-3.5 w-3.5 text-slate-300" />
+                <span className="text-sm text-slate-700 font-bold tracking-tight">{log.target}</span>
+              </div>
             ),
             ip: (
-               <div className="flex items-center gap-2">
-                  <HiCommandLine className="h-3.5 w-3.5 text-slate-300" />
-                  <span className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-widest">{log.ip}</span>
-               </div>
+              <div className="flex items-center gap-2">
+                <HiCommandLine className="h-3.5 w-3.5 text-slate-300" />
+                <span className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-widest">{log.ip}</span>
+              </div>
             ),
             result: (
               <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
@@ -222,7 +222,7 @@ export default function AuditLogs() {
       </div>
 
       {/* Security Advisory */}
-      <div className="rounded-2xl border border-slate-900 bg-slate-900 p-6 flex gap-4 items-start shadow-xl shadow-slate-200">
+      {/* <div className="rounded-2xl border border-slate-900 bg-slate-900 p-6 flex gap-4 items-start shadow-xl shadow-slate-200">
         <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white border border-white/5 shadow-inner">
            <HiExclamationCircle className="h-6 w-6" />
         </div>
@@ -233,7 +233,7 @@ export default function AuditLogs() {
             This ensures a complete, forensic-grade chain of custody for all platform kernel activities.
           </p>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }

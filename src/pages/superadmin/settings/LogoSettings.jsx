@@ -1,218 +1,213 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { HiPhoto, HiShieldCheck } from 'react-icons/hi2'
+import { useCallback, useRef, useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
-
-import { adminSettingsService } from '../../../services/adminSettingsService.js'
-
-const ACCEPT = 'image/png,image/jpeg,image/jpg,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,.ico'
-
-function GridSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      {Array.from({ length: 2 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="h-5 w-32 animate-pulse rounded bg-slate-200" />
-          <div className="mt-3 h-3 w-48 animate-pulse rounded bg-slate-200" />
-          <div className="mt-4 h-24 w-full animate-pulse rounded bg-slate-200" />
-        </div>
-      ))}
-    </div>
-  )
-}
+import settingsService from '../../../services/settingsService.js'
 
 export default function LogoSettings() {
-  const [logos, setLogos] = useState({ largeLogo: '', smallLogo: '', favicon: '' })
+  const [data, setData] = useState({ largeLogo: null, smallLogo: null, favicon: null })
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  
+  const [filesToUpload, setFilesToUpload] = useState({ large: null, small: null, favicon: null })
+  const [previews, setPreviews] = useState({ large: null, small: null, favicon: null })
 
-  const refetch = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async () => {
     try {
-      const res = await adminSettingsService.getSuperadminLogo()
-      const d = res?.data?.data
-      setLogos({
-        largeLogo: d?.largeLogo || '',
-        smallLogo: d?.smallLogo || '',
-        favicon:   d?.favicon   || '',
+      const res = await settingsService.getLogo()
+      const apiData = res?.data || {}
+      setData({
+        largeLogo: apiData.largeLogo || null,
+        smallLogo: apiData.smallLogo || null,
+        favicon: apiData.favicon || null,
       })
     } catch (err) {
-      toast.error(err?.message || 'Failed to load logos')
+      toast.error(err?.message || 'Failed to load brand assets')
+      setData({ largeLogo: null, smallLogo: null, favicon: null })
     } finally {
       setLoading(false)
     }
   }, [])
 
+  useEffect(() => { load() }, [load])
+
+  // Cleanup object URLs to prevent memory leaks
   useEffect(() => {
-    refetch()
-  }, [refetch])
-
-  return (
-    <div className="mx-auto max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700 px-4 md:px-0">
-      {/* Page Header */}
-      <div className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Platform Branding</h1>
-          <p className="mt-0.5 text-slate-500 text-[11px] font-medium">Customize the visual identity of the Control Center.</p>
-        </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white shadow-md">
-          <HiPhoto className="h-5 w-5" />
-        </div>
-      </div>
-
-      {loading ? (
-        <GridSkeleton />
-      ) : (
-        <div className="space-y-6 pb-24">
-          {/* Main Logos Section */}
-          <section className="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-100">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 tracking-tight">Navigation Logos</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sidebar Branding</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <LogoSlot
-                title="Full Identity"
-                caption="Main sidebar logo"
-                hint="Best: 185x45px (PNG/SVG)"
-                type="large"
-                currentUrl={logos.largeLogo}
-                onUploaded={(url) => setLogos((l) => ({ ...l, largeLogo: url }))}
-              />
-              <LogoSlot
-                title="Compact Identity"
-                caption="Collapsed menu icon"
-                hint="Best: 45x45px (PNG/SVG)"
-                type="small"
-                currentUrl={logos.smallLogo}
-                onUploaded={(url) => setLogos((l) => ({ ...l, smallLogo: url }))}
-              />
-            </div>
-          </section>
-
-          {/* Browser Presence */}
-          <section className="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-white shadow-lg shadow-amber-100">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-base font-black text-slate-900 tracking-tight">Browser Experience</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Tab Assets</p>
-              </div>
-            </div>
-
-            <div className="max-w-sm">
-              <LogoSlot
-                title="Tab Favicon"
-                caption="Browser bookmark icon"
-                hint="Best: 32x32px (.ico / .png)"
-                type="favicon"
-                currentUrl={logos.favicon}
-                onUploaded={(url) => setLogos((l) => ({ ...l, favicon: url }))}
-              />
-            </div>
-          </section>
-
-          {/* Note */}
-          <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-[11px] font-medium text-blue-700 border-dashed">
-            <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md">
-                <HiShieldCheck className="h-4 w-4" />
-              </div>
-              <p className="leading-relaxed">
-                <strong>Administrative Isolation:</strong> These assets apply to the <span className="font-bold underline">SuperAdmin Control Center</span>. 
-                Organization branding is managed by tenants independently.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function LogoSlot({ title, caption, hint, type, currentUrl, onUploaded }) {
-  const inputRef = useRef(null)
-  const [uploading, setUploading] = useState(false)
-
-  const onPick = () => inputRef.current?.click()
-
-  const onFileChange = async (e) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('File too large (Max 2MB)')
-      return
+    return () => {
+      if (previews.large) URL.revokeObjectURL(previews.large)
+      if (previews.small) URL.revokeObjectURL(previews.small)
+      if (previews.favicon) URL.revokeObjectURL(previews.favicon)
     }
+  }, [previews])
 
-    const fd = new FormData()
-    fd.append('logo', file)
+  const handleFileChange = (type, file) => {
+    if (!file) return
+    
+    // Revoke old preview
+    if (previews[type]) URL.revokeObjectURL(previews[type])
+    
+    setFilesToUpload(prev => ({ ...prev, [type]: file }))
+    setPreviews(prev => ({ ...prev, [type]: URL.createObjectURL(file) }))
+  }
 
-    setUploading(true)
+  const handleDiscard = () => {
+    if (previews.large) URL.revokeObjectURL(previews.large)
+    if (previews.small) URL.revokeObjectURL(previews.small)
+    if (previews.favicon) URL.revokeObjectURL(previews.favicon)
+    
+    setFilesToUpload({ large: null, small: null, favicon: null })
+    setPreviews({ large: null, small: null, favicon: null })
+  }
+
+  const handleSave = async (e) => {
+    if (e) e.preventDefault()
+    setSaving(true)
+    
+    let successCount = 0
+    let failCount = 0
+    
     try {
-      const res = await adminSettingsService.uploadSuperadminLogo(type, fd)
-      const url = res?.data?.data?.url
-      toast.success(`${title} Updated`)
-      onUploaded?.(url)
-      window.dispatchEvent(
-        new CustomEvent('platform-logo-updated', { detail: { type, url } })
-      )
+      const uploads = []
+      
+      for (const type of ['large', 'small', 'favicon']) {
+        const file = filesToUpload[type]
+        if (file) {
+          const formData = new FormData()
+          formData.append('logo', file)
+          uploads.push(settingsService.uploadLogo(type, formData).then(() => { successCount++ }).catch(e => { failCount++; console.error(e) }))
+        }
+      }
+      
+      if (uploads.length === 0) {
+        toast('No changes to save', { icon: 'ℹ️' })
+        return
+      }
+
+      await Promise.all(uploads)
+      
+      if (failCount > 0) {
+        toast.error(`Failed to upload ${failCount} asset(s)`)
+      }
+      
+      if (successCount > 0) {
+        toast.success(`Successfully uploaded ${successCount} asset(s)`)
+        handleDiscard() // clear previews and pending files
+        await load() // refresh current images
+      }
     } catch (err) {
-      toast.error(err?.message || 'Upload failed')
+      toast.error('An error occurred during upload')
     } finally {
-      setUploading(false)
+      setSaving(false)
     }
   }
 
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-0.5">
-        <h4 className="text-[13px] font-black text-slate-800">{title}</h4>
-        <p className="text-[10px] font-medium text-slate-400">{caption}</p>
-      </div>
+  const isDirty = Object.values(filesToUpload).some(f => f !== null)
 
-      <div className="relative group/logo h-28 w-full rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/30 transition-all hover:border-blue-500 hover:bg-white overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center p-3">
-          {currentUrl ? (
-            <img src={currentUrl} alt={title} className="max-h-full max-w-full object-contain drop-shadow-sm transition-transform group-hover/logo:scale-105" />
-          ) : (
-            <HiPhoto className="h-8 w-8 text-slate-200" />
-          )}
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="animate-pulse space-y-8">
+          <div className="h-48 rounded-xl bg-gray-100"></div>
+          <div className="h-48 rounded-xl bg-gray-100"></div>
         </div>
+      </div>
+    )
+  }
+
+  const ImageUploader = ({ label, description, currentUrl, previewUrl, onFileChange }) => (
+    <div className="sm:col-span-3">
+      <label className="block text-sm font-medium leading-6 text-gray-900">{label}</label>
+      {description && <p className="mt-1 text-xs text-gray-500">{description}</p>}
+      <div className="mt-4 flex items-center gap-x-5">
+        {(previewUrl || currentUrl) ? (
+          <div className={`overflow-hidden rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center p-2 relative ${previewUrl ? 'ring-2 ring-indigo-500' : ''}`} style={{ width: 120, height: 120 }}>
+            {previewUrl && <div className="absolute top-1 right-1 bg-indigo-500 text-white text-[9px] px-1.5 rounded uppercase font-bold tracking-wider">New</div>}
+            <img src={previewUrl || currentUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-gray-400" style={{ width: 120, height: 120 }}>
+            <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+        )}
         
-        {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
-           <button
-             type="button"
-             onClick={onPick}
-             disabled={uploading}
-             className="rounded-lg bg-white px-4 py-2 text-[10px] font-black text-slate-900 shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
-           >
-             {uploading ? 'Uploading...' : 'Change Logo'}
-           </button>
+        <div>
+          <label className="cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+            <span>Change</span>
+            <input type="file" className="sr-only" accept="image/*" onChange={(e) => onFileChange(e.target.files?.[0])} />
+          </label>
+          <p className="mt-2 text-xs leading-5 text-gray-500">PNG, JPG, GIF up to 2MB</p>
         </div>
       </div>
+    </div>
+  )
 
-      <p className="text-[9px] font-bold text-slate-400 tracking-tight italic">{hint}</p>
-      
-      <input
-        ref={inputRef}
-        type="file"
-        accept={ACCEPT}
-        onChange={onFileChange}
-        className="hidden"
-      />
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="space-y-10 divide-y divide-gray-900/10">
+        
+        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+          <div className="px-4 sm:px-0">
+            <h2 className="text-base font-semibold leading-7 text-gray-900">Brand Assets</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-600">
+              Customize the platform's visual identity with custom logos and favicons.
+            </p>
+          </div>
+
+          <form 
+            onSubmit={handleSave}
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+          >
+            <div className="px-4 py-6 sm:p-8 space-y-10">
+              <ImageUploader 
+                label="Primary Logo (Large)"
+                description="Used in the main sidebar and top navigation. Transparent PNG recommended."
+                currentUrl={data.largeLogo}
+                previewUrl={previews.large}
+                onFileChange={(f) => handleFileChange('large', f)}
+              />
+
+              <div className="border-t border-gray-900/5"></div>
+
+              <ImageUploader 
+                label="Alternative Logo (Small)"
+                description="Used in collapsed sidebars or mobile headers. Usually a square symbol."
+                currentUrl={data.smallLogo}
+                previewUrl={previews.small}
+                onFileChange={(f) => handleFileChange('small', f)}
+              />
+
+              <div className="border-t border-gray-900/5"></div>
+
+              <ImageUploader 
+                label="Favicon"
+                description="Shown in browser tabs. Must be a square image (32x32)."
+                currentUrl={data.favicon}
+                previewUrl={previews.favicon}
+                onFileChange={(f) => handleFileChange('favicon', f)}
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
+              <button
+                type="button"
+                onClick={handleDiscard}
+                disabled={!isDirty || saving}
+                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
+              >
+                Discard
+              </button>
+              <button
+                type="submit"
+                disabled={!isDirty || saving}
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+              >
+                {saving ? 'Uploading...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
     </div>
   )
 }
