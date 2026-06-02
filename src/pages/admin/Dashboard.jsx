@@ -40,7 +40,6 @@ import {
 import { Avatar } from '../../components/ui/Avatar.jsx'
 import { Badge } from '../../components/ui/Badge.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
-import { Building2, Package, Users } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext.jsx'
 import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
 import { fetchAdminDashboard, fetchEmployeeDashboard } from '../../services/dashboardService.js'
@@ -235,7 +234,6 @@ export default function Dashboard() {
   const announcements = dashboardData.announcements || []
   const events = dashboardData.events || []
   const expiryAlertsToShow = dashboardData.expiryAlerts || []
-  const birthdays = dashboardData.celebrations || []
 
   const attendancePieData = [
     { name: 'Present', value: dashboardData.attendance.present || 0 },
@@ -249,6 +247,7 @@ export default function Dashboard() {
   }
 
   return (
+    <>
     <div className="space-y-6 pb-12 min-w-0">
       <DashboardHeader
         title={isHrView ? 'Admin Dashboard' : 'Dashboard'}
@@ -598,6 +597,7 @@ export default function Dashboard() {
         <ExpiredPlans plans={DEMO_EXPIRED} loading={false} />
       </div>
     </div>
+    </>
   )
 }
 
