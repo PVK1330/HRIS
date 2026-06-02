@@ -245,19 +245,26 @@ export default function NotificationDropdown() {
   };
 
   const handleNotificationClick = (notification) => {
-
-
     markAsRead(notification.id);
-    setSelectedNotification(notification);
 
-    // Navigate to support ticket if it's a ticket notification
+    // If it has a direct redirectUrl, go there
+    if (notification.redirectUrl) {
+      setIsOpen(false);
+      navigate(notification.redirectUrl);
+      return;
+    }
+
+    // Fallback for legacy ticket handling
     const ticketId = notification.ticketId || notification.relatedId;
     if (notification.type === 'support_ticket' && ticketId) {
       const supportPath = isSuperadmin ? `/superadmin/support` : `/admin/support`;
-
       setIsOpen(false);
       navigate(`${supportPath}#ticket-${ticketId}`);
+      return;
     }
+
+    // Otherwise, show the modal
+    setSelectedNotification(notification);
   };
 
   return (
@@ -405,7 +412,7 @@ export default function NotificationDropdown() {
 
             {/* Modal Footer */}
             <div className="mt-6 flex justify-end gap-3 border-t border-border-tertiary pt-4">
-              {selectedNotification.type === 'support_ticket' && selectedNotification.ticketId && (
+              {selectedNotification.type === 'support_ticket' && selectedNotification.ticketId && !selectedNotification.redirectUrl && (
                 <button
                   type="button"
                   onClick={() => {
@@ -417,6 +424,18 @@ export default function NotificationDropdown() {
                 >
                   <HiTicket className="h-4 w-4" />
                   View Ticket
+                </button>
+              )}
+              {selectedNotification.redirectUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedNotification(null);
+                    navigate(selectedNotification.redirectUrl);
+                  }}
+                  className="rounded-xl px-4 py-2 text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-all duration-150 flex items-center gap-1.5"
+                >
+                  View Details
                 </button>
               )}
               <button

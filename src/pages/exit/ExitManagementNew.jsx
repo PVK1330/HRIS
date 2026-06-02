@@ -39,16 +39,45 @@ function SubmitModal({ open, onClose, onDone }) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [busy, setBusy] = useState(false)
   const [termTypes, setTermTypes] = useState([])
+  const [employees, setEmployees] = useState([])
+  const [employeeSearch, setEmployeeSearch] = useState('')
 
   useEffect(() => {
-    if (!open) { setForm(EMPTY_FORM); return }
+    if (!open) { setForm(EMPTY_FORM); setEmployeeSearch(''); return }
     svc.getTerminationTypes()
       .then((d) => setTermTypes(Array.isArray(d) ? d : (d?.records || [])))
       .catch(() => setTermTypes([]))
+    
+    // Fetch employees for termination
+    import('../../services/api.js').then(api => {
+      api.default.get('/employees?limit=1000').then(res => {
+        const payload = res?.data
+        const list = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : Array.isArray(payload?.data?.records)
+              ? payload.data.records
+            : Array.isArray(payload?.data?.employees)
+              ? payload.data.employees
+              : Array.isArray(payload?.employees)
+                ? payload.employees
+                : []
+        setEmployees(list)
+      }).catch(() => setEmployees([]))
+    }).catch(() => setEmployees([]))
   }, [open])
 
   if (!open) return null
   const isTermination = form.exit_type === 'termination'
+  const filteredEmployees = employees.filter((emp) => {
+    const q = employeeSearch.trim().toLowerCase()
+    if (!q) return true
+    const fullName = `${emp?.first_name || ''} ${emp?.last_name || ''}`.trim().toLowerCase()
+    const empId = String(emp?.employee_id || emp?.emp_id || '').toLowerCase()
+    const email = String(emp?.work_email || '').toLowerCase()
+    return fullName.includes(q) || empId.includes(q) || email.includes(q)
+  })
 
   const submit = async () => {
     if (isTermination && termTypes.length > 0 && !form.termination_type_id) {
@@ -62,6 +91,7 @@ function SubmitModal({ open, onClose, onDone }) {
         notice_date: form.notice_date || undefined,
         last_working_day: form.last_working_day || undefined,
         termination_type_id: isTermination && form.termination_type_id ? Number(form.termination_type_id) : undefined,
+        employee_id: isTermination && form.employee_id ? Number(form.employee_id) : undefined
       }
       await svc.submitExitRequest(payload)
       toast.success('Exit request submitted'); onDone()
@@ -86,6 +116,27 @@ function SubmitModal({ open, onClose, onDone }) {
               ))}
             </div>
           </div>
+
+          {isTermination && (
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-600">Employee to Terminate</label>
+              <input
+                type="text"
+                value={employeeSearch}
+                onChange={(e) => setEmployeeSearch(e.target.value)}
+                placeholder="Search by name, ID or email..."
+                className="mb-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#0F766E] focus:outline-none"
+              />
+              <select value={form.employee_id || ''} onChange={(e) => setForm({ ...form, employee_id: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#0F766E] focus:outline-none mb-3">
+                <option value="">Select Employee…</option>
+                {filteredEmployees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {`${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unnamed'}{e.employee_id || e.emp_id ? ` (${e.employee_id || e.emp_id})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {isTermination && (
             <div>
@@ -160,6 +211,18 @@ export default function ExitManagementNew() {
     catch (e) { toast.error(e?.response?.data?.message || 'Failed') }
   }
 
+  const addDelayReason = async (taskId) => {
+    const reason = prompt('Please provide reason for delay:')
+    if (!reason || !reason.trim()) return
+    try {
+      await svc.setExitTaskDelayReason(taskId, reason.trim())
+      toast.success('Delay reason saved')
+      loadTasks()
+    } catch (e) {
+      toast.error(e?.response?.data?.message || 'Failed')
+    }
+  }
+
   const visible = records.filter((r) =>
     !query.trim() || (r.employee_name || '').toLowerCase().includes(query.trim().toLowerCase()))
 
@@ -208,8 +271,23 @@ export default function ExitManagementNew() {
                   <div className="truncate text-xs text-slate-500">
                     {t.employee_name}{t.stage_name ? ` · ${t.stage_name}` : ''}
                   </div>
+                  <div className="mt-0.5 text-[11px] text-slate-500">
+                    {t.task_state === 'OVERDUE'
+                      ? 'Overdue'
+                      : t.task_state === 'DUE_SOON'
+                        ? 'Due soon'
+                        : t.task_state === 'COMPLETED'
+                          ? 'Completed'
+                          : 'Pending'}
+                    {t.due_at ? ` · Due ${new Date(t.due_at).toLocaleDateString()}` : ''}
+                  </div>
                 </div>
                 <button onClick={() => nav(`/admin/exit-management/${t.exit_request_id}`)} className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">Open</button>
+                {t.task_state === 'OVERDUE' && (
+                  <button onClick={() => addDelayReason(t.id)} className="shrink-0 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100">
+                    Add reason
+                  </button>
+                )}
                 <button onClick={() => completeTask(t.id)} className="flex shrink-0 items-center gap-1 rounded-lg bg-[#0F766E] px-2.5 py-1 text-xs font-bold text-white hover:bg-teal-800"><HiCheck className="h-3.5 w-3.5" /> Done</button>
               </div>
             ))}

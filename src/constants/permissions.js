@@ -18,6 +18,7 @@ export const LEGACY_MODULE_KEYS = {
   MESSAGES: 'messages',
   LETTERS: 'letter-templates',
   ASSETS: 'assets',
+  TASKS: 'tasks',
 }
 
 /** If API returns action slugs in allowedModules, map to legacy sidebar keys */
@@ -40,6 +41,7 @@ const ACTION_TO_LEGACY = {
   'policies.acknowledge': [LEGACY_MODULE_KEYS.POLICIES],
   'messages.view': [LEGACY_MODULE_KEYS.MESSAGES],
   'assets.view': [LEGACY_MODULE_KEYS.ASSETS],
+  'tasks': [LEGACY_MODULE_KEYS.TASKS],
 }
 
 /** Sidebar keys for org structure — one permission gates both */

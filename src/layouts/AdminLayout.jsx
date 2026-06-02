@@ -220,6 +220,7 @@ const adminNavGroups = [
         permission: "view_employees",
         featureCode: "employee_directory",
       },
+      /*
       {
         label: "Employee Grid",
         icon: HiUsers,
@@ -228,6 +229,7 @@ const adminNavGroups = [
         permission: "view_employees",
         featureCode: "employee_directory",
       },
+      */
       {
         label: "Employee Details",
         icon: HiIdentification,
@@ -262,7 +264,7 @@ const adminNavGroups = [
       },
 
       // { label: 'Projects', icon: HiFolder, path: '/admin/projects', permission: 'edit_settings', featureCode: 'projects' },
-      // { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'edit_settings', featureCode: 'task_management' },
+      { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'tasks', key: 'tasks' },
       // { label: 'Template Generator', icon: HiDocumentText, path: '/admin/templates', permission: 'edit_settings', featureCode: 'template_generation' },
     ],
   },
@@ -336,6 +338,8 @@ const FEATURE_PATH_MAP = {
   payroll_invoicing: ["/admin/payroll"],
   template_generation: ["/admin/templates"],
   task_management: ["/admin/tasks"],
+  task: ["/admin/tasks"],
+  tasks: ["/admin/tasks"],
   projects: ["/admin/projects"],
   time_tracking: ["/admin/attendance"],
   shift_management: ["/admin/attendance"],
@@ -390,6 +394,12 @@ export default function AdminLayout() {
                 path: "/admin/my-policies",
               };
             }
+            if (item.key === "employee-profiles" && user?.role === "employee") {
+              return {
+                ...item,
+                label: "My Profile",
+              };
+            }
             return item;
           })
           .filter((item) => {
@@ -398,6 +408,11 @@ export default function AdminLayout() {
             /* Admin-only items (e.g. Exit Workflow Setup) never show for non-admin staff,
                regardless of RBAC module access — configuration is org-admin only. */
             if (item.adminOnly && user?.role !== "admin") {
+              return false;
+            }
+
+            /* Employees shouldn't see the entire employee directory/lists */
+            if (moduleKey === "employee-directory" && user?.role === "employee") {
               return false;
             }
 

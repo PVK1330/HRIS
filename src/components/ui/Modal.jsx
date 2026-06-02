@@ -66,7 +66,7 @@ export function Modal({
 
       {/* Modal panel — fixed max height; only the body scrolls */}
       <div
-        className={`relative w-full ${maxW} max-h-full flex flex-col transform rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
@@ -82,44 +82,44 @@ export function Modal({
           </button>
         )}
 
-        <div className="flex flex-col">
-          {/* Header */}
-          <div className="px-5 pt-6 pb-2 sm:px-6">
-            {header ? (
-              <div className="pr-10">{header}</div>
-            ) : (
-              <div className="flex items-center gap-4">
-                {Icon && (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-                    {title}
-                  </h2>
-                  {description && (
-                    <p className="mt-1 text-sm leading-relaxed text-slate-500">
-                      {description}
-                    </p>
-                  )}
+        {/* Header */}
+        <div className="shrink-0 px-5 pt-6 pb-2 sm:px-6">
+          {header ? (
+            <div className="pr-10">{header}</div>
+          ) : (
+            <div className="flex items-center gap-4">
+              {Icon && (
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                  <Icon className="h-6 w-6" />
                 </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                  {title}
+                </h2>
+                {description && (
+                  <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                    {description}
+                  </p>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Body */}
-          <div className="flex-1 px-5 py-1 sm:px-6 overflow-y-auto custom-scrollbar">
-            <div className="pb-8">
-              {children}
-            </div>
-          </div>
-          {footer && (
-            <div className="rounded-b-lg border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-              {footer}
             </div>
           )}
         </div>
+
+        {/* Body */}
+        <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar px-5 py-1 sm:px-6 ${bodyClassName}`}>
+          <div className="pb-8">
+            {children}
+          </div>
+        </div>
+
+        {/* Footer */}
+        {footer && (
+          <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )
