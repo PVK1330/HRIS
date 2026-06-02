@@ -50,10 +50,16 @@ export default function NotificationDropdown() {
   const fetchNotifications = useCallback(async () => {
     try {
 
+      console.log('[NOTIFICATION DROPDOWN] Fetching notifications for user', {
+        userId: user?.id,
+        userRole: user?.role,
+        userPanel: user?.panel,
+        isSuperadmin,
+      });
 
       const response = await api.get('/notifications');
 
-
+      console.log('[NOTIFICATION DROPDOWN] Received response:', response.data);
 
       // Extract notifications from various possible response structures
       const notificationsList = Array.isArray(response.data)
@@ -66,6 +72,7 @@ export default function NotificationDropdown() {
               ? response.data.data
               : [];
 
+      console.log('[NOTIFICATION DROPDOWN] Parsed notifications list:', notificationsList.length, 'items');
 
       const mappedNotifications = notificationsList.map((n) => {
         const mapped = {
@@ -101,14 +108,13 @@ export default function NotificationDropdown() {
               : ''),
         };
 
-
-
         return mapped;
       });
 
-
-
       setNotifications(mappedNotifications);
+      console.log('[NOTIFICATION DROPDOWN] Set notifications:', mappedNotifications.length, 'items', {
+        titles: mappedNotifications.map(n => n.title),
+      });
     } catch (err) {
       console.error('[NOTIFICATION DROPDOWN] Error fetching notifications:', err);
       // Keep silent on client feed sync errors
@@ -158,21 +164,26 @@ export default function NotificationDropdown() {
     });
 
     socket.on('connect', () => {
-
+      console.log('[NOTIFICATION DROPDOWN] Socket connected');
     });
 
     socket.on('ticket:created', () => {
-
+      console.log('[NOTIFICATION DROPDOWN] Received ticket:created event');
       fetchNotifications();
     });
 
     socket.on('ticket:updated', () => {
+      console.log('[NOTIFICATION DROPDOWN] Received ticket:updated event');
+      fetchNotifications();
+    });
 
+    socket.on('notification:new', (notification) => {
+      console.log('[NOTIFICATION DROPDOWN] Received notification:new event', notification);
       fetchNotifications();
     });
 
     socket.on('disconnect', () => {
-
+      console.log('[NOTIFICATION DROPDOWN] Socket disconnected');
     });
 
     return () => {
@@ -295,10 +306,8 @@ export default function NotificationDropdown() {
               </button>
             )}
           </div>
-        </div>
-      )}
 
-      {/* Filter Tabs */}
+          {/* Filter Tabs */}
       <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
         <button
           onClick={() => setFilter('all')}
@@ -363,7 +372,7 @@ export default function NotificationDropdown() {
               </div>
             )}
           </div>
-        )}
+       
 
         {/* Footer */}
         <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">
@@ -375,6 +384,7 @@ export default function NotificationDropdown() {
           </button>
         </div>
       </div>
+  )}
 
       {/* PopUp / Modal Overlay */}
       {selectedNotification && createPortal(
@@ -446,4 +456,6 @@ export default function NotificationDropdown() {
     </div>
   );
 }
+  
+
 
