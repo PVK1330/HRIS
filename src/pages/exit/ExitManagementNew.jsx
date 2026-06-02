@@ -33,7 +33,15 @@ const WIDGETS = [
 
 const initials = (n) => (n || '?').split(' ').map((x) => x[0]).slice(0, 2).join('').toUpperCase()
 
-const EMPTY_FORM = { exit_type: 'resignation', termination_type_id: '', exit_reason: '', notice_date: '', last_working_day: '' }
+const DEFAULT_NOTICE_DAYS = 30
+const EMPTY_FORM = {
+  exit_type: 'resignation',
+  termination_type_id: '',
+  exit_reason: '',
+  notice_date: '',
+  last_working_day: '',
+  notice_period_days: DEFAULT_NOTICE_DAYS,
+}
 
 function SubmitModal({ open, onClose, onDone }) {
   const [form, setForm] = useState(EMPTY_FORM)
@@ -46,6 +54,21 @@ function SubmitModal({ open, onClose, onDone }) {
       .then((d) => setTermTypes(Array.isArray(d) ? d : (d?.records || [])))
       .catch(() => setTermTypes([]))
   }, [open])
+
+  useEffect(() => {
+    if (!form.notice_date) return
+    if (form.exit_type !== 'resignation') return
+    const notice = new Date(form.notice_date)
+    if (Number.isNaN(notice.getTime())) return
+    const lwd = new Date(notice)
+    lwd.setDate(lwd.getDate() + DEFAULT_NOTICE_DAYS)
+    const lwdIso = lwd.toISOString().slice(0, 10)
+    setForm((prev) => (
+      prev.last_working_day === lwdIso
+        ? prev
+        : { ...prev, last_working_day: lwdIso, notice_period_days: DEFAULT_NOTICE_DAYS }
+    ))
+  }, [form.notice_date, form.exit_type])
 
   if (!open) return null
   const isTermination = form.exit_type === 'termination'
@@ -61,6 +84,7 @@ function SubmitModal({ open, onClose, onDone }) {
         exit_reason: form.exit_reason || undefined,
         notice_date: form.notice_date || undefined,
         last_working_day: form.last_working_day || undefined,
+        notice_period_days: isTermination ? 0 : DEFAULT_NOTICE_DAYS,
         termination_type_id: isTermination && form.termination_type_id ? Number(form.termination_type_id) : undefined,
       }
       await svc.submitExitRequest(payload)
