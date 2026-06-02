@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { HiArrowRightOnRectangle, HiBuildingOffice2 } from 'react-icons/hi2'
+import { HiArrowRightOnRectangle, HiBuildingOffice2, HiClipboardDocumentCheck } from 'react-icons/hi2'
 import TerminationTypes from '../TerminationTypes.jsx'
+import ClearanceItemsCatalog from '../ClearanceItemsCatalog.jsx'
 import ExitWorkflowConfig from '../../../exit/ExitWorkflowConfig.jsx'
 
 const EXIT_TABS = [
   { id: 'workflow', label: 'Department Workflow', Icon: HiBuildingOffice2 },
+  { id: 'clearance', label: 'Clearance Items', Icon: HiClipboardDocumentCheck },
   { id: 'termination', label: 'Termination Types', Icon: HiArrowRightOnRectangle },
 ]
 
@@ -34,6 +36,7 @@ export default function ExitSettingsSection() {
         })}
       </div>
       {exitTab === 'workflow' && <ExitWorkflowConfig />}
+      {exitTab === 'clearance' && <ClearanceItemsCatalog />}
       {exitTab === 'termination' && <TerminationTypes embedded />}
     </div>
   )

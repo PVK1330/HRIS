@@ -3,8 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   HiInboxArrowDown, HiBuildingOffice2, HiExclamationTriangle, HiCheckCircle,
-  HiXCircle, HiArrowUturnLeft, HiPlus, HiArrowRight, HiArrowPath,
+  HiXCircle, HiArrowUturnLeft, HiPlus, HiArrowRight, HiArrowPath, HiMagnifyingGlass,
+  HiClipboardDocumentCheck, HiCheck,
 } from 'react-icons/hi2'
+
+const fmtDate = (d) => {
+  if (!d) return ''
+  try { return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) } catch { return '' }
+}
 import svc from '../../services/exitWorkflowService'
 
 const STATUS_PILL = {
@@ -27,32 +33,83 @@ const WIDGETS = [
 
 const initials = (n) => (n || '?').split(' ').map((x) => x[0]).slice(0, 2).join('').toUpperCase()
 
+const EMPTY_FORM = { exit_type: 'resignation', termination_type_id: '', exit_reason: '', notice_date: '', last_working_day: '' }
+
 function SubmitModal({ open, onClose, onDone }) {
-  const [form, setForm] = useState({ exit_type: 'resignation', exit_reason: '', last_working_day: '' })
+  const [form, setForm] = useState(EMPTY_FORM)
   const [busy, setBusy] = useState(false)
+  const [termTypes, setTermTypes] = useState([])
+
+  useEffect(() => {
+    if (!open) { setForm(EMPTY_FORM); return }
+    svc.getTerminationTypes()
+      .then((d) => setTermTypes(Array.isArray(d) ? d : (d?.records || [])))
+      .catch(() => setTermTypes([]))
+  }, [open])
+
   if (!open) return null
+  const isTermination = form.exit_type === 'termination'
+
   const submit = async () => {
+    if (isTermination && termTypes.length > 0 && !form.termination_type_id) {
+      toast.error('Select a termination type'); return
+    }
     setBusy(true)
-    try { await svc.submitExitRequest(form); toast.success('Exit request submitted'); onDone() }
-    catch (e) { toast.error(e?.response?.data?.message || 'Failed to submit') }
+    try {
+      const payload = {
+        exit_type: form.exit_type,
+        exit_reason: form.exit_reason || undefined,
+        notice_date: form.notice_date || undefined,
+        last_working_day: form.last_working_day || undefined,
+        termination_type_id: isTermination && form.termination_type_id ? Number(form.termination_type_id) : undefined,
+      }
+      await svc.submitExitRequest(payload)
+      toast.success('Exit request submitted'); onDone()
+    } catch (e) { toast.error(e?.response?.data?.message || 'Failed to submit') }
     finally { setBusy(false) }
   }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h2 className="mb-1 text-lg font-bold text-slate-800">Submit exit request</h2>
         <p className="mb-4 text-xs text-slate-500">It will be routed automatically through your organization's exit workflow.</p>
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-600">Type</label>
-            <select value={form.exit_type} onChange={(e) => setForm({ ...form, exit_type: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-              <option value="resignation">Resignation</option>
-              <option value="termination">Termination</option>
-            </select>
+            <div className="grid grid-cols-2 gap-2">
+              {[['resignation', 'Resignation'], ['termination', 'Termination']].map(([v, lbl]) => (
+                <button key={v} type="button" onClick={() => setForm({ ...form, exit_type: v, termination_type_id: '' })}
+                  className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${form.exit_type === v ? 'border-[#0F766E] bg-teal-50 text-[#0F766E]' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Last working day</label>
-            <input type="date" value={form.last_working_day} onChange={(e) => setForm({ ...form, last_working_day: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+
+          {isTermination && (
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-600">Termination type</label>
+              {termTypes.length === 0 ? (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">No termination types configured. Add them under Settings → Exit Management → Termination Types.</p>
+              ) : (
+                <select value={form.termination_type_id} onChange={(e) => setForm({ ...form, termination_type_id: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#0F766E] focus:outline-none">
+                  <option value="">Select a type…</option>
+                  {termTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-600">Notice date</label>
+              <input type="date" value={form.notice_date} onChange={(e) => setForm({ ...form, notice_date: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-600">Last working day</label>
+              <input type="date" value={form.last_working_day} onChange={(e) => setForm({ ...form, last_working_day: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+            </div>
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-600">Reason</label>
@@ -74,7 +131,9 @@ export default function ExitManagementNew() {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [query, setQuery] = useState('')
   const [showSubmit, setShowSubmit] = useState(false)
+  const [tasks, setTasks] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -89,7 +148,20 @@ export default function ExitManagementNew() {
     finally { setLoading(false) }
   }, [statusFilter])
 
+  const loadTasks = useCallback(async () => {
+    try { setTasks(await svc.listMyExitTasks({ status: 'PENDING' }) || []) } catch { /* none */ }
+  }, [])
+
   useEffect(() => { load() }, [load])
+  useEffect(() => { loadTasks() }, [loadTasks])
+
+  const completeTask = async (taskId) => {
+    try { await svc.completeExitTask(taskId); toast.success('Task completed'); loadTasks() }
+    catch (e) { toast.error(e?.response?.data?.message || 'Failed') }
+  }
+
+  const visible = records.filter((r) =>
+    !query.trim() || (r.employee_name || '').toLowerCase().includes(query.trim().toLowerCase()))
 
   return (
     <div className="mx-auto max-w-5xl p-4">
@@ -120,26 +192,57 @@ export default function ExitManagementNew() {
         })}
       </div>
 
+      {/* My tasks */}
+      {tasks.length > 0 && (
+        <div className="mb-6 overflow-hidden rounded-xl border border-teal-200 bg-teal-50/40">
+          <div className="flex items-center gap-2 border-b border-teal-100 px-4 py-2.5">
+            <HiClipboardDocumentCheck className="h-4 w-4 text-[#0F766E]" />
+            <h2 className="text-sm font-bold text-slate-700">My exit tasks</h2>
+            <span className="rounded-full bg-[#0F766E] px-2 py-0.5 text-xs font-bold text-white">{tasks.length}</span>
+          </div>
+          <div className="divide-y divide-teal-100">
+            {tasks.map((t) => (
+              <div key={t.id} className="flex items-center gap-3 px-4 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-slate-700">{t.title}</div>
+                  <div className="truncate text-xs text-slate-500">
+                    {t.employee_name}{t.stage_name ? ` · ${t.stage_name}` : ''}
+                  </div>
+                </div>
+                <button onClick={() => nav(`/admin/exit-management/${t.exit_request_id}`)} className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">Open</button>
+                <button onClick={() => completeTask(t.id)} className="flex shrink-0 items-center gap-1 rounded-lg bg-[#0F766E] px-2.5 py-1 text-xs font-bold text-white hover:bg-teal-800"><HiCheck className="h-3.5 w-3.5" /> Done</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Requests */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-100 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 p-3">
           <h2 className="font-semibold text-slate-700">Exit requests</h2>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-slate-200 px-2 py-1 text-sm">
-            <option value="all">All statuses</option>
-            <option value="IN_PROGRESS">In progress</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="WITHDRAWN">Withdrawn</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <HiMagnifyingGlass className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search employee…" className="h-9 w-44 rounded-lg border border-slate-200 pl-8 pr-2 text-sm focus:border-[#0F766E] focus:outline-none" />
+            </div>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-9 rounded-lg border border-slate-200 px-2 text-sm">
+              <option value="all">All statuses</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="REJECTED">Rejected</option>
+              <option value="WITHDRAWN">Withdrawn</option>
+            </select>
+          </div>
         </div>
 
         {loading ? (
           <div className="py-14 text-center text-slate-400">Loading…</div>
-        ) : records.length === 0 ? (
-          <div className="py-14 text-center text-slate-400">No exit requests to show.</div>
+        ) : visible.length === 0 ? (
+          <div className="py-14 text-center text-slate-400">{query ? 'No matching exit requests.' : 'No exit requests to show.'}</div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {records.map((r) => {
+            {visible.map((r) => {
               const total = r.total_stages || 0
               const done = r.status === 'COMPLETED' ? total : Math.max(0, (r.current_stage_order || 1) - 1)
               const pct = total ? Math.round((done / total) * 100) : (r.status === 'COMPLETED' ? 100 : 0)
@@ -148,9 +251,10 @@ export default function ExitManagementNew() {
                   className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-500">{initials(r.employee_name)}</div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2">
                       <span className="truncate font-semibold text-slate-700">{r.employee_name}</span>
                       <span className="capitalize text-xs text-slate-400">{r.exit_type}</span>
+                      {r.last_working_day && <span className="text-xs text-slate-400">· LWD {fmtDate(r.last_working_day)}</span>}
                     </div>
                     <div className="mt-1 flex items-center gap-2">
                       <div className="h-1.5 w-28 overflow-hidden rounded-full bg-slate-100">

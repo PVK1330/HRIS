@@ -320,56 +320,48 @@ export default function NotificationDropdown() {
         </button>
       </div>
 
-      {/* Notification List */}
-      <div className="max-h-[380px] overflow-y-auto bg-white">
-        {filteredNotifications.length > 0 ? (
-          <div className="divide-y divide-slate-200">
-            {filteredNotifications.map((n) => (
-              <div
-                key={n.id}
-                className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${isNotificationUnread(n) ? 'bg-primary/5' : ''
-                  }`}
-                onClick={() => handleNotificationClick(n)}
-              >
-                <div className="flex gap-3">
-                  <div className="mt-0.5">{getIcon(n.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm truncate ${(n.read || n.isRead) ? 'text-slate-600' : 'text-slate-900 font-semibold'}`}> </p>
-                    <p className={`text-sm truncate ${isNotificationUnread(n) ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
-                      {n.title}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                      {n.message}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-                      {n.time}
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-text-tertiary hover:text-danger-DEFAULT transition-all"
+          {/* Notification List */}
+          <div className="max-h-[380px] overflow-y-auto bg-white">
+            {filteredNotifications.length > 0 ? (
+              <div className="divide-y divide-slate-200">
+                {filteredNotifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${isNotificationUnread(n) ? 'bg-primary/5' : 'bg-white'} hover:bg-slate-100`}
+                    onClick={() => handleNotificationClick(n)}
                   >
-                    <HiTrash className="h-4 w-4" />
-                  </button>
-                </div>
-                {!(n.read || n.isRead) && (
-                  <>
-                    <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-emerald-500 shadow-md" />
-
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">{getIcon(n.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm truncate ${isNotificationUnread(n) ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
+                          {n.title}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                          {n.message}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
+                          {n.time}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-text-tertiary hover:text-danger-DEFAULT transition-all"
+                      >
+                        <HiTrash className="h-4 w-4" />
+                      </button>
+                    </div>
                     {isNotificationUnread(n) && (
-                      <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary" />
+                      <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary shadow-md" />
                     )}
-                  </>
-                )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-8 text-center">
-            <HiBell className="h-10 w-10 text-text-tertiary mx-auto opacity-20 mb-3 animate-pulse" />
-            <p className="text-sm text-text-tertiary capitalize">
-              No {filter !== 'all' ? filter : ''} notifications
-            </p>
+            ) : (
+              <div className="p-8 text-center">
+                <HiBell className="h-10 w-10 text-text-tertiary mx-auto opacity-20 mb-3 animate-pulse" />
+                <p className="text-sm text-text-tertiary capitalize">No {filter !== 'all' ? filter : ''} notifications</p>
+              </div>
+            )}
           </div>
         )}
 

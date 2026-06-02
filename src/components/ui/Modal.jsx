@@ -105,9 +105,8 @@ export function Modal({
           <div className={`flex-1 px-5 py-1 sm:px-6 overflow-y-auto custom-scrollbar ${bodyClassName}`}>
             <div className="pb-8">{children}</div>
           </div>
-
           {footer && (
-            <div className="border-t border-slate-200 px-5 py-4 sm:px-6">
+            <div className="rounded-b-lg border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
               {footer}
             </div>
           )}

@@ -57,6 +57,40 @@ export const listChecklist = (id, stageId) =>
 export const updateChecklistItem = (id, stageId, itemId, payload) =>
   api.put(`/exit-management/${id}/stages/${stageId}/checklist/${itemId}`, payload).then(unwrap)
 
+/* --------------------- Asset clearance (ASSET_RETURN) -------------------- */
+
+export const listExitAssets = (id) =>
+  api.get(`/exit-management/${id}/assets`).then(unwrap)
+
+export const returnExitAsset = (id, assetId, payload = {}) =>
+  api.put(`/exit-management/${id}/assets/${assetId}/return`, payload).then(unwrap)
+
+/* ---------------------- Exit documents (letters) ------------------------ */
+
+export const listExitDocTemplates = (id) =>
+  api.get(`/exit-management/${id}/documents/templates`).then(unwrap)
+
+export const listExitDocuments = (id) =>
+  api.get(`/exit-management/${id}/documents`).then(unwrap)
+
+export const generateExitDocuments = (id, payload) =>
+  api.post(`/exit-management/${id}/documents/generate`, payload).then(unwrap)
+
+export const downloadExitDocument = (id, attachmentId) =>
+  api.get(`/exit-management/${id}/documents/${attachmentId}/download`, { responseType: 'blob' })
+    .then((res) => res.data)
+
+/* ----------------------------- Exit tasks -------------------------------- */
+
+export const listMyExitTasks = (params = {}) =>
+  api.get('/exit-management/tasks/mine', { params }).then(unwrap)
+
+export const completeExitTask = (taskId) =>
+  api.put(`/exit-management/tasks/${taskId}/complete`).then(unwrap)
+
+export const listRequestTasks = (id) =>
+  api.get(`/exit-management/${id}/tasks`).then(unwrap)
+
 /* --------------------------- Workflow config ----------------------------- */
 
 export const listWorkflows = () =>
@@ -83,13 +117,31 @@ export const deleteWorkflow = (id) =>
 
 export const getBuilderOptions = () =>
   api.get('/admin/settings/exit-workflows/options')
-    .then((res) => res?.data?.data ?? { departments: [], roles: [], employees: [] })
+    .then((res) => res?.data?.data ?? { departments: [], roles: [], employees: [], clearance_items: [] })
+
+/* ------------------- Clearance-item catalog (settings) ------------------- */
+
+export const listClearanceItems = (params = {}) =>
+  api.get('/admin/settings/exit-workflows/clearance-items', { params }).then(unwrap)
+
+export const createClearanceItem = (payload) =>
+  api.post('/admin/settings/exit-workflows/clearance-items', payload).then(unwrap)
+
+export const updateClearanceItem = (itemId, payload) =>
+  api.put(`/admin/settings/exit-workflows/clearance-items/${itemId}`, payload).then(unwrap)
+
+export const deleteClearanceItem = (itemId) =>
+  api.delete(`/admin/settings/exit-workflows/clearance-items/${itemId}`).then(unwrap)
 
 export default {
   listExitRequests, getExitRequest, submitExitRequest,
   approveStage, rejectStage, sendBackStage, escalateStage, reassignStage,
   addStageComment, withdrawExitRequest, getAuditLog, getDashboardWidgets, getTerminationTypes,
   listChecklist, updateChecklistItem,
+  listExitAssets, returnExitAsset,
+  listExitDocTemplates, listExitDocuments, generateExitDocuments, downloadExitDocument,
+  listMyExitTasks, completeExitTask, listRequestTasks,
   listWorkflows, getWorkflow, createWorkflow, updateWorkflow, activateWorkflow, deleteWorkflow,
   getBuilderOptions,
+  listClearanceItems, createClearanceItem, updateClearanceItem, deleteClearanceItem,
 }

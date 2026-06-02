@@ -106,9 +106,6 @@ export default function Dashboard() {
   const [dateRange, setDateRange] = useState('Last 30 days')
   const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
-
-  const [expiryAlerts, setExpiryAlerts] = useState([])
-  const [birthdays, setBirthdays] = useState([])
   const isManager = user?.role === 'manager'
   const isHRAdmin = user?.role === 'admin' || user?.role === 'hr_admin'
   const isEmployee = user?.role === 'employee'
@@ -309,8 +306,6 @@ export default function Dashboard() {
                   </Link>
                 </div>
               </div>
-            </div>
-
             <div className="space-y-6">
               <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="mb-4 text-sm font-semibold text-slate-900">Employee Status</h3>
@@ -420,8 +415,9 @@ export default function Dashboard() {
                     My Profile
                   </Link>
                 </div>
-              </div>
-           </div>
+               </div>
+            </div>
+          </div>
 
            {/* Trends / Graphs */}
            {!isEmployee && (
@@ -600,8 +596,3 @@ export default function Dashboard() {
     </>
   )
 }
-
-
-
-
-
