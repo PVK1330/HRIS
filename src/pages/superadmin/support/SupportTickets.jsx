@@ -25,6 +25,7 @@ import {
   HiUser,
   HiBuildingOffice,
   HiTag,
+  HiFolderOpen,
 } from 'react-icons/hi2'
 import Swal from 'sweetalert2'
 
@@ -245,19 +246,36 @@ export default function SupportTickets() {
       {/* Stats Section */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
-          { label: 'TOTAL', count: stats.total.toString(), bgColor: 'bg-[#0F172A]', icon: HiTicket },
-          { label: 'WAITING', count: stats.waiting.toString(), bgColor: 'bg-[#F59E0B]', icon: HiClock },
-          { label: 'IN PROGRESS', count: stats.inProgress.toString(), bgColor: 'bg-[#3B82F6]', icon: HiExclamationCircle },
-          { label: 'RESOLVED', count: stats.resolved.toString(), bgColor: 'bg-[#10B981]', icon: HiCheckCircle }
+          { label: 'New Tickets', count: stats.total.toString(), color: 'text-orange-500', borderColor: 'border-orange-200', bgColor: 'bg-orange-50', icon: HiTicket, barColor: 'bg-orange-500', trendBg: 'bg-orange-50', trendColor: 'text-orange-500', trend: '+19.01%' },
+          { label: 'Open Tickets', count: stats.waiting.toString(), color: 'text-purple-500', borderColor: 'border-purple-200', bgColor: 'bg-purple-50', icon: HiFolderOpen, barColor: 'bg-purple-500', trendBg: 'bg-slate-100', trendColor: 'text-slate-700', trend: '+19.01%' },
+          { label: 'Solved Tickets', count: stats.resolved.toString(), color: 'text-green-500', borderColor: 'border-green-200', bgColor: 'bg-green-50', icon: HiCheckCircle, barColor: 'bg-green-500', trendBg: 'bg-blue-100', trendColor: 'text-blue-500', trend: '+19.01%' },
+          { label: 'Pending Tickets', count: stats.inProgress.toString(), color: 'text-blue-500', borderColor: 'border-blue-200', bgColor: 'bg-blue-50', icon: HiExclamationCircle, barColor: 'bg-cyan-500', trendBg: 'bg-slate-100', trendColor: 'text-slate-700', trend: '+19.01%' }
         ].map((card, idx) => (
             <div
               key={idx}
-              className="group flex items-center gap-3.5 rounded-none border border-slate-200 p-4 text-left transition-all hover:bg-slate-50/50 min-w-0 shadow-sm bg-white"
+              className="rounded-xl border border-slate-100 bg-white p-5 flex flex-col justify-between shadow-sm min-w-0"
             >
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}><card.icon className="h-5 w-5" /></div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-bold uppercase tracking-wider truncate leading-none text-slate-400">{card.label}</div>
-                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
+              <div className="flex justify-between items-start mb-4">
+                <div className={`flex h-14 w-14 items-center justify-center rounded-full border border-dashed ${card.borderColor} ${card.bgColor} shrink-0`}>
+                  <card.icon className={`h-6 w-6 ${card.color}`} />
+                </div>
+                <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold ${card.trendBg} ${card.trendColor}`}>
+                  <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 10.5C3.5 10.5 5 7.5 7 8.5C9 9.5 11 4.5 14 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  {card.trend}
+                </div>
+              </div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-xs font-medium text-slate-500 mb-1">{card.label}</div>
+                  <div className="text-2xl font-bold text-slate-800">{card.count}</div>
+                </div>
+                <div className="flex items-end gap-0.5 h-10 w-24">
+                   {[40, 60, 30, 80, 50, 90, 70, 40, 60, 100].map((h, i) => (
+                     <div key={i} className={`w-full rounded-[1px] ${card.barColor}`} style={{ height: `${h}%` }}></div>
+                   ))}
+                </div>
               </div>
             </div>
         ))}
@@ -364,8 +382,9 @@ export default function SupportTickets() {
           <div className="flex h-full min-h-[calc(90vh-140px)] flex-col overflow-hidden">
             <div className="overflow-y-auto px-6 py-6 space-y-6">
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                {/* Left Column: Ticket Info */}
                 <div className="space-y-4">
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5">
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Ticket ID</p>
@@ -375,18 +394,18 @@ export default function SupportTickets() {
                     </div>
 
                     <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-2xl bg-white p-4">
+                      <div className="rounded-none border border-slate-100 bg-white p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Category</p>
                         <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.category || '-'}</p>
                       </div>
-                      <div className="rounded-2xl bg-white p-4">
+                      <div className="rounded-none border border-slate-100 bg-white p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Priority</p>
                         <Badge label={selectedTicket.priority || 'Normal'} color={getPriorityColor(selectedTicket.priority)} />
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5 space-y-4">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Admin Name</p>
                       <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.adminName || '-'}</p>
@@ -401,19 +420,19 @@ export default function SupportTickets() {
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-3">Description</p>
                     <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{selectedTicket.description || '-'}</p>
                   </div>
 
                   {(selectedTicket.attachmentUrl || selectedTicket.attachment_url) && (
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="rounded-none border border-slate-200 bg-slate-50 p-5">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Attachment</p>
                       <a
                         href={selectedTicket.attachmentUrl || selectedTicket.attachment_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-emerald-700"
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-[#0F766E]"
                       >
                         <HiPaperClip className="h-4 w-4 text-slate-500" />
                         {selectedTicket.attachmentUrl?.split('/').pop() || selectedTicket.attachment_url?.split('/').pop() || 'Download attachment'}
@@ -422,14 +441,53 @@ export default function SupportTickets() {
                   )}
                 </div>
 
-                <div className="space-y-6">
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                {/* Right Column: Conversation and Reply */}
+                <div className="flex flex-col space-y-4 h-full max-h-full">
+                  <div className="flex-1 rounded-none border border-slate-200 bg-slate-50 p-4 flex flex-col min-h-[300px]">
+                    <div className="mb-4 flex items-center justify-between gap-3 shrink-0">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">Conversation History</p>
+                        <p className="text-[11px] text-slate-400">All messages related to this ticket</p>
+                      </div>
+                      <span className="text-[11px] text-slate-500">{(selectedTicket.conversation || []).length} messages</span>
+                    </div>
+
+                    <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                      {(selectedTicket.conversation || []).length ? (
+                        (selectedTicket.conversation || []).map((msg) => (
+                          <div
+                            key={`${msg.id}-${msg.createdAt}-${msg.senderRole}`}
+                            className={`rounded-none border-l-4 bg-white p-4 shadow-sm border border-slate-100 ${msg.senderRole === 'admin' ? 'border-l-sky-500' : 'border-l-[#0F766E]'}`}
+                          >
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                                <span className={`rounded-none px-2.5 py-1 text-[11px] font-bold uppercase ${msg.senderRole === 'admin' ? 'bg-sky-50 text-sky-700' : 'bg-[#0F766E]/10 text-[#0F766E]'}`}>
+                                  {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
+                                </span>
+                                <span className="text-xs font-semibold text-slate-700">{msg.senderName}</span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                <Badge label={msg.status || selectedTicket.status || 'Waiting'} color={getStatusColor(msg.status || selectedTicket.status || 'Waiting')} />
+                                <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
+                                <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}</span>
+                              </div>
+                            </div>
+                            <p className="mt-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{msg.message}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500">No conversation history yet.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5 space-y-4 shrink-0">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Update Status</p>
                       <select
                         value={ticketStatus}
                         onChange={(e) => setTicketStatus(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20"
                       >
                         {STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>{status}</option>
@@ -440,52 +498,14 @@ export default function SupportTickets() {
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Super Admin Response</p>
                       <textarea
-                        className="h-full w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 resize-none"
+                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20 resize-none"
                         placeholder="Add response, notes, or resolution details..."
-                        rows={8}
+                        rows={4}
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
                       />
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">Conversation History</p>
-                    <p className="text-[11px] text-slate-400">All messages related to this ticket</p>
-                  </div>
-                  <span className="text-[11px] text-slate-500">{(selectedTicket.conversation || []).length} messages</span>
-                </div>
-
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                  {(selectedTicket.conversation || []).length ? (
-                    (selectedTicket.conversation || []).map((msg) => (
-                      <div
-                        key={`${msg.id}-${msg.createdAt}-${msg.senderRole}`}
-                        className={`rounded-3xl border-l-4 bg-white p-4 shadow-sm ${msg.senderRole === 'admin' ? 'border-sky-500' : 'border-emerald-500'}`}
-                      >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${msg.senderRole === 'admin' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                              {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
-                            </span>
-                            <span className="text-xs font-semibold text-slate-700">{msg.senderName}</span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                            <Badge label={msg.status || selectedTicket.status || 'Waiting'} color={getStatusColor(msg.status || selectedTicket.status || 'Waiting')} />
-                            <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
-                            <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}</span>
-                          </div>
-                        </div>
-                        <p className="mt-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{msg.message}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500">No conversation history yet.</p>
-                  )}
                 </div>
               </div>
             </div>
