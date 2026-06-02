@@ -325,28 +325,21 @@ export default function NotificationDropdown() {
                 {filteredNotifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`p-4 transition-all duration-150 relative group cursor-pointer ${(n.read || n.isRead) ? 'bg-white' : 'bg-slate-50'} hover:bg-slate-100`}
+                    className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${isNotificationUnread(n) ? 'bg-primary/5' : 'bg-white'} hover:bg-slate-100`}
                     onClick={() => handleNotificationClick(n)}
-                    className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${isNotificationUnread(n) ? 'bg-primary/5' : ''}`}
-                    onClick={() => {
-                      markAsRead(n.id);
-                      setSelectedNotification(n);
-                      setIsOpen(false);
-                    }}
                   >
                     <div className="flex gap-3">
                       <div className="mt-0.5">{getIcon(n.type)}</div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm truncate ${(n.read || n.isRead) ? 'text-slate-600' : 'text-slate-900 font-semibold'}`}>
-                          <p className={`text-sm truncate ${isNotificationUnread(n) ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
-                            {n.title}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                            {n.message}
-                          </p>
-                          <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-                            {n.time}
-                          </p>
+                        <p className={`text-sm truncate ${isNotificationUnread(n) ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
+                          {n.title}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                          {n.message}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
+                          {n.time}
+                        </p>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
@@ -355,10 +348,8 @@ export default function NotificationDropdown() {
                         <HiTrash className="h-4 w-4" />
                       </button>
                     </div>
-                    {!(n.read || n.isRead) && (
-                      <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-emerald-500 shadow-md" />
-                      {isNotificationUnread(n) && (
-                      <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary" />
+                    {isNotificationUnread(n) && (
+                      <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary shadow-md" />
                     )}
                   </div>
                 ))}

@@ -33,7 +33,6 @@ export function Modal({
   bodyClassName = '',
   showClose = true,
   icon: Icon,
-  bodyClassName = '',
 }) {
   useEffect(() => {
     if (!isOpen) return
@@ -115,10 +114,15 @@ export function Modal({
               {children}
             </div>
           </div>
-        ) : null}
+          {footer && (
+            <div className="rounded-b-lg border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+              {footer}
+            </div>
+          )}
         </div>
       </div>
-      )
+    </div>
+  )
 
       const mount =
       typeof document !== 'undefined' &&
