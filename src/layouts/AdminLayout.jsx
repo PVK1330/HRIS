@@ -264,7 +264,8 @@ const adminNavGroups = [
       },
 
       // { label: 'Projects', icon: HiFolder, path: '/admin/projects', permission: 'edit_settings', featureCode: 'projects' },
-      { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'tasks', key: 'tasks' },
+      // Tasks are intentionally hidden from sidebar per exit-completion UX requirement.
+      // { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'tasks', key: 'tasks' },
       // { label: 'Template Generator', icon: HiDocumentText, path: '/admin/templates', permission: 'edit_settings', featureCode: 'template_generation' },
     ],
   },

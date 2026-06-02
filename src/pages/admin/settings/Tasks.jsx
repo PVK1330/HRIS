@@ -39,6 +39,21 @@ function statusColor(status) {
   return 'gray'
 }
 
+function normalizeTask(task = {}) {
+  return {
+    id: task.id,
+    title: task.title || '',
+    description: task.description || '',
+    priority: task.priority || 'Medium',
+    status: task.status || 'Pending',
+    due_date: task.due_date || task.dueDate || null,
+    assignee_id: task.assignee_id ?? task.assigneeId ?? null,
+    assignee_name: task.assignee_name || task.assigneeName || '',
+    assigner_name: task.assigner_name || task.assignerName || '',
+    created_at: task.created_at || task.createdAt || null,
+  }
+}
+
 export default function TaskManagement() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
@@ -62,7 +77,8 @@ export default function TaskManagement() {
     try {
       setLoading(true)
       const res = await tasksService.getTasks()
-      setTaskList(res.data || [])
+      const list = Array.isArray(res?.data) ? res.data : []
+      setTaskList(list.map(normalizeTask))
     } catch (err) {
       toast.error('Failed to load tasks')
     } finally {
@@ -174,7 +190,7 @@ export default function TaskManagement() {
         description: task.description || '',
         assignee_id: task.assignee_id || '',
         priority: task.priority || 'Medium',
-        due_date: task.due_date ? task.due_date.split('T')[0] : '',
+        due_date: task.due_date ? String(task.due_date).split('T')[0] : '',
         status: task.status || 'Pending',
       })
       setEditMode(true)

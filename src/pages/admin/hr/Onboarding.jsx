@@ -876,9 +876,14 @@ export default function Onboarding() {
               type="button"
               disabled={activating || selectedHire?.workflowStatus === 'rejected'}
               onClick={handleCompleteActivation}
-              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {activating ? 'Completing…' : 'Complete onboarding (Step 3)'}
+              {activating ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  Completing…
+                </>
+              ) : 'Complete onboarding (Step 3)'}
             </button>
           </div>
         </div>
@@ -1450,7 +1455,9 @@ export default function Onboarding() {
                 </p>
                 <button
                   type="button"
+                  disabled={activating}
                   onClick={async () => {
+                    setActivating(true)
                     try {
                       const res = await completeOnboardingWorkflow(
                         Number(selectedEmployeeIdForDocs),
@@ -1462,11 +1469,18 @@ export default function Onboarding() {
                       toast.error(
                         err.response?.data?.message || 'Could not complete onboarding',
                       )
+                    } finally {
+                      setActivating(false)
                     }
                   }}
-                  className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors shrink-0"
+                  className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors shrink-0 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Complete onboarding
+                  {activating ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                      Completing…
+                    </>
+                  ) : 'Complete onboarding'}
                 </button>
               </div>
             )}

@@ -6,6 +6,33 @@ import { HiArrowLeft, HiPaperClip, HiChatBubbleLeftEllipsis } from 'react-icons/
 import * as tasksService from '../../../services/tasksService'
 import toast from 'react-hot-toast'
 
+function normalizeTask(task = {}) {
+  return {
+    ...task,
+    created_at: task.created_at || task.createdAt || null,
+    due_date: task.due_date || task.dueDate || null,
+    assignee_name: task.assignee_name || task.assigneeName || '',
+    assigner_name: task.assigner_name || task.assignerName || '',
+  }
+}
+
+function normalizeComment(comment = {}) {
+  return {
+    ...comment,
+    employee_name: comment.employee_name || comment.employeeName || '',
+    created_at: comment.created_at || comment.createdAt || null,
+  }
+}
+
+function normalizeAttachment(attachment = {}) {
+  return {
+    ...attachment,
+    file_name: attachment.file_name || attachment.fileName || '',
+    file_url: attachment.file_url || attachment.fileUrl || '',
+    file_size: attachment.file_size || attachment.fileSize || 0,
+  }
+}
+
 function priorityColor(priority) {
   if (priority === 'High') return 'red'
   if (priority === 'Medium') return 'orange'
@@ -37,9 +64,9 @@ export default function TaskDetails() {
     try {
       setLoading(true)
       const res = await tasksService.getTaskById(id)
-      setTask(res.data.task)
-      setComments(res.data.comments || [])
-      setAttachments(res.data.attachments || [])
+      setTask(normalizeTask(res?.data?.task || {}))
+      setComments((Array.isArray(res?.data?.comments) ? res.data.comments : []).map(normalizeComment))
+      setAttachments((Array.isArray(res?.data?.attachments) ? res.data.attachments : []).map(normalizeAttachment))
     } catch (err) {
       toast.error('Failed to load task details')
     } finally {
