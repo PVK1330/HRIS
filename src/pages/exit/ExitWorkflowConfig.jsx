@@ -349,9 +349,18 @@ export default function ExitWorkflowConfig() {
 
   const activate = async (id) => { try { await svc.activateWorkflow(id); toast.success('Set as default'); loadList() } catch (e) { toast.error(e?.response?.data?.message || 'Failed') } }
   const remove = async (id) => {
-    const r = await Swal.fire({ title: 'Deactivate workflow?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626' })
+    const r = await Swal.fire({ title: 'Delete workflow?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626' })
     if (!r.isConfirmed) return
-    try { await svc.deleteWorkflow(id); toast.success('Deactivated'); loadList() } catch (e) { toast.error(e?.response?.data?.message || 'Failed') }
+    try { await svc.deleteWorkflow(id); toast.success('Deleted'); loadList() } catch (e) { toast.error(e?.response?.data?.message || 'Failed') }
+  }
+
+  const reactivate = async (id) => {
+    try {
+      const wf = await svc.getWorkflow(id)
+      await svc.updateWorkflow(id, { name: wf.name, description: wf.description, is_default: false, is_active: true })
+      toast.success('Reactivated workflow')
+      loadList()
+    } catch (e) { toast.error(e?.response?.data?.message || 'Failed') }
   }
 
   if (denied) {
@@ -478,7 +487,12 @@ export default function ExitWorkflowConfig() {
                 {!w.is_default && w.is_active && (
                   <button onClick={() => activate(w.id)} className="flex items-center gap-1 rounded-lg border border-teal-200 px-3 py-1.5 text-xs font-semibold text-[#0F766E] hover:bg-teal-50"><HiCheckCircle /> Set default</button>
                 )}
-                <button onClick={() => remove(w.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50"><HiTrash /></button>
+                {!w.is_active && (
+                  <button onClick={() => reactivate(w.id)} className="flex items-center gap-1 rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50"><HiArrowUp /> Reactivate</button>
+                )}
+                {w.is_active && (
+                  <button onClick={() => remove(w.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50"><HiTrash /></button>
+                )}
               </div>
             </div>
           ))}

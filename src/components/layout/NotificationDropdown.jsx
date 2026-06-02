@@ -129,15 +129,14 @@ export default function NotificationDropdown() {
 
 
 
-  const filteredNotifications = notifications.filter(n => {
+  const filteredNotifications = notifications.filter((n) => {
     const isRead = n.read || n.isRead;
+
     if (filter === 'unread') return !isRead;
     if (filter === 'read') return isRead;
-    if (!socket || !connected) return;
-    const onNewNotification = () => fetchNotifications();
-    socket.on('notification:new', onNewNotification);
-    return () => socket.off('notification:new', onNewNotification);
-  }, [socket, connected]);
+
+    return true;
+  });
 
 
 
@@ -286,6 +285,7 @@ export default function NotificationDropdown() {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
             <h3 className="font-bold text-slate-900">Notifications</h3>
+
             {notifications.length > 0 && (
               <button
                 className="text-xs font-semibold text-slate-600 hover:text-slate-900"
@@ -295,28 +295,30 @@ export default function NotificationDropdown() {
               </button>
             )}
           </div>
+        </div>
+      )}
 
-          {/* Filter Tabs */}
-          <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
-            <button
-              onClick={() => setFilter('all')}
-              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
-            >
-              All ({allCount})
-            </button>
-            <button
-              onClick={() => setFilter('unread')}
-              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'unread' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
-            >
-              Unread ({unreadCount})
-            </button>
-            <button
-              onClick={() => setFilter('read')}
-              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'read' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
-            >
-              Read ({readCount})
-            </button>
-          </div>
+      {/* Filter Tabs */}
+      <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
+        <button
+          onClick={() => setFilter('all')}
+          className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+        >
+          All ({allCount})
+        </button>
+        <button
+          onClick={() => setFilter('unread')}
+          className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'unread' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+        >
+          Unread ({unreadCount})
+        </button>
+        <button
+          onClick={() => setFilter('read')}
+          className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'read' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+        >
+          Read ({readCount})
+        </button>
+      </div>
 
           {/* Notification List */}
           <div className="max-h-[380px] overflow-y-auto bg-white">
@@ -361,18 +363,18 @@ export default function NotificationDropdown() {
               </div>
             )}
           </div>
+        )}
 
-          {/* Footer */}
-          <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-xs font-bold text-text-secondary hover:text-primary transition-colors uppercase tracking-wider"
-            >
-              Close View
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">
+          <button
+            onClick={() => setIsOpen(false)}
+            className="text-xs font-bold text-text-secondary hover:text-primary transition-colors uppercase tracking-wider"
+          >
+            Close View
+          </button>
         </div>
-      )}
+      </div>
 
       {/* PopUp / Modal Overlay */}
       {selectedNotification && createPortal(
@@ -444,3 +446,4 @@ export default function NotificationDropdown() {
     </div>
   );
 }
+
