@@ -802,16 +802,16 @@ export default function Onboarding() {
       </div>
 
       {/* ─── View / Activate Modal ────────────────────────────────────── */}
-      <Modal 
-        isOpen={viewModalOpen} 
-        onClose={() => setViewModalOpen(false)} 
+      <Modal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
         header={
           <div className="flex flex-col gap-1">
             <h2 className="text-lg font-bold text-slate-900">Onboarding Details</h2>
             <p className="text-xs font-medium text-slate-500">View candidate onboarding progress.</p>
           </div>
         }
-        size="lg" 
+        size="lg"
         showClose
       >
         <div className="animate-in fade-in duration-500 space-y-10">
@@ -1452,7 +1452,7 @@ export default function Onboarding() {
                 </div>
               </>
             )}
-            
+
             {selectedEmployeeIdForDocs && checklistItems.length > 0 && (
               <div className="sticky bottom-0 z-10 mt-4 border-t border-slate-200 bg-white pt-4 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <p className="text-xs text-slate-500">
