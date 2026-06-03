@@ -13,8 +13,13 @@ export function hasRbacSlug(allowedModules, slug) {
   return asSet(allowedModules).has(slug)
 }
 
-export function canPunchAttendance(allowedModules) {
-  return hasRbacSlug(allowedModules, 'attendance.create')
+/**
+ * Punch permission: explicit attendance.create, or tenant admin with employee profile.
+ */
+export function canPunchAttendance(allowedModules, user = null) {
+  if (hasRbacSlug(allowedModules, 'attendance.create')) return true
+  if (user?.role === 'admin' && (user?.employeeId || user?.id)) return true
+  return false
 }
 
 export function canViewOwnAttendance(allowedModules) {

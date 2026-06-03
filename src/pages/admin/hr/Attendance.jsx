@@ -46,9 +46,9 @@ function StatusBadge({ status }) {
 }
 
 export default function Attendance() {
-  const { allowedModules } = useAuth();
+  const { user, allowedModules } = useAuth();
   const mods = allowedModules || [];
-  const showPunch = canPunchAttendance(mods);
+  const showPunch = Boolean(user?.employeeId || user?.id);
   const showTeamLog = canViewTeamAttendance(mods) || canViewAllAttendance(mods);
   const showApproverInbox = canApproveRegularization(mods);
 

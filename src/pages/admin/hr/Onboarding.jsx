@@ -31,7 +31,6 @@ import {
   getFilterOptions,
   getDesignationsForDepartment,
   sendOnboardingOfferLetter,
-  sendOnboardingOfferLetter,
   updateEmployee,
   getEmployee,
 } from '../../../services/employeeService.js'
@@ -120,7 +119,6 @@ export default function Onboarding() {
   const [selectedHire, setSelectedHire] = useState(null)
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activating, setActivating] = useState(false)
   const [directoryOptions, setDirectoryOptions] = useState([])
   const [initLoading, setInitLoading] = useState(false)
   const [onboardingMode, setOnboardingMode] = useState('create')

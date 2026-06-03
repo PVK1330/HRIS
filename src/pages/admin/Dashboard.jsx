@@ -59,7 +59,8 @@ const EMPTY_STATS = {
 
 export default function Dashboard() {
   const { user, allowedModules } = useAuth()
-  const showPunchCard = canPunchAttendance(allowedModules) && Boolean(user?.employeeId || user?.id)
+  const hasEmployeeProfile = Boolean(user?.employeeId || user?.id)
+  const showPunchCard = hasEmployeeProfile
   const [isLoading, setIsLoading] = useState(true)
   const [dateRange, setDateRange] = useState('Last 30 days')
   const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
