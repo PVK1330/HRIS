@@ -31,13 +31,12 @@ import {
   getFilterOptions,
   getDesignationsForDepartment,
   sendOnboardingOfferLetter,
-  getOnboardingChecklist,
-  reviewOnboardingChecklistItem,
-  uploadSignedOfferByHr,
-  completeOnboardingWorkflow,
+  sendOnboardingOfferLetter,
   updateEmployee,
   getEmployee,
 } from '../../../services/employeeService.js'
+import * as onboardingApi from '../../../services/onboardingApi.js'
+import { useAsyncAction } from '../../../hooks/useAsyncAction.js'
 import {
   ONBOARDING_TOTAL_STEPS,
   WORKFLOW_STATUS_LABELS,
@@ -142,9 +141,16 @@ export default function Onboarding() {
   const [checklistItems, setChecklistItems] = useState([])
   const [onboardingReviewMeta, setOnboardingReviewMeta] = useState(null)
   const [signedOfferHrFile, setSignedOfferHrFile] = useState(null)
-  const [uploadingSignedOffer, setUploadingSignedOffer] = useState(false)
   const [rejectItemId, setRejectItemId] = useState(null)
   const [rejectComment, setRejectComment] = useState("")
+
+  const { execute: execUploadOffer, loading: uploadingSignedOffer } = useAsyncAction();
+  const { execute: execApproveAll, loading: approvingAll } = useAsyncAction();
+  const { execute: execRemind, loading: remindingCandidate } = useAsyncAction({
+    successMessage: 'Reminder email sent to candidate'
+  });
+  const { execute: execReview, loading: reviewingItem } = useAsyncAction();
+  const { execute: execComplete, loading: activating } = useAsyncAction();
 
   const fw = (patch) => setWizardForm((prev) => ({ ...prev, ...patch }))
 
@@ -334,7 +340,7 @@ export default function Onboarding() {
       return
     }
     try {
-      const data = await getOnboardingChecklist(Number(id))
+      const data = await onboardingApi.getOnboardingChecklist(Number(id))
       setChecklistItems(data?.checklist || [])
       setOnboardingReviewMeta(data)
     } catch {
@@ -355,17 +361,20 @@ export default function Onboarding() {
       toast.error('No uploaded documents waiting for approval.')
       return
     }
-    try {
+    await execApproveAll(async () => {
       for (const item of pending) {
-        await reviewOnboardingChecklistItem(Number(selectedEmployeeIdForDocs), item.id, {
+        await onboardingApi.approveChecklistItem(Number(selectedEmployeeIdForDocs), item.id, {
           hrReviewStatus: 'Approved',
         })
       }
       toast.success(`Approved ${pending.length} document(s).`)
       await loadOnboardingChecklist(selectedEmployeeIdForDocs)
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not approve documents')
-    }
+    });
+  }
+
+  const handleRemindCandidate = async () => {
+    if (!selectedEmployeeIdForDocs) return
+    await execRemind(() => onboardingApi.sendReminder(Number(selectedEmployeeIdForDocs)));
   }
 
   const openContinueOnboarding = useCallback(
@@ -389,32 +398,26 @@ export default function Onboarding() {
 
   const handleHrUploadSignedOffer = async () => {
     if (!selectedEmployeeId || !signedOfferHrFile) return
-    setUploadingSignedOffer(true)
-    try {
-      const res = await uploadSignedOfferByHr(Number(selectedEmployeeId), signedOfferHrFile)
+    const { success } = await execUploadOffer(async () => {
+      const res = await onboardingApi.uploadSignedOfferByHr(Number(selectedEmployeeId), signedOfferHrFile)
       toast.success(res.message || 'Signed offer uploaded (Step 2).')
       setSignedOfferHrFile(null)
       await loadOnboardingChecklist(selectedEmployeeId)
       await loadOnboarding()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Upload failed')
-    } finally {
-      setUploadingSignedOffer(false)
-    }
+      return res;
+    });
   }
 
   const handleReviewChecklistItem = async (itemId, hrReviewStatus, hrReviewComment = '') => {
     if (!selectedEmployeeId) return
-    try {
-      await reviewOnboardingChecklistItem(Number(selectedEmployeeId), itemId, {
+    await execReview(async () => {
+      await onboardingApi.approveChecklistItem(Number(selectedEmployeeId), itemId, {
         hrReviewStatus,
         hrReviewComment,
       })
       toast.success('Document review saved')
       await loadOnboardingChecklist(selectedEmployeeId)
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Review failed')
-    }
+    });
   }
 
   const loadTenantRoles = useCallback(async () => {
@@ -474,18 +477,14 @@ export default function Onboarding() {
 
   const handleCompleteActivation = async () => {
     if (!selectedHire?.id) return
-    setActivating(true)
-    try {
-      const result = await completeOnboardingWorkflow(selectedHire.id)
+    const { success } = await execComplete(async () => {
+      const result = await onboardingApi.completeOnboarding(selectedHire.id)
       toast.success(result.message || 'Onboarding complete. Welcome email sent.')
       setViewModalOpen(false)
       setSelectedHire(null)
       await loadOnboarding()
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Activation failed')
-    } finally {
-      setActivating(false)
-    }
+      return result;
+    });
   }
 
   /* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -1367,7 +1366,15 @@ export default function Onboarding() {
                           </div>
                         )}
                       </div>
-                      <div className="flex justify-end mb-3">
+                      <div className="flex justify-end gap-3 mb-3">
+                        <button
+                          type="button"
+                          onClick={handleRemindCandidate}
+                          disabled={remindingCandidate}
+                          className="h-9 px-4 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors rounded-md disabled:opacity-60 flex items-center gap-2"
+                        >
+                          {remindingCandidate ? 'Sending...' : 'Remind Candidate'}
+                        </button>
                         <button
                           type="button"
                           onClick={handleApproveAllUploaded}
@@ -1457,21 +1464,12 @@ export default function Onboarding() {
                   type="button"
                   disabled={activating}
                   onClick={async () => {
-                    setActivating(true)
-                    try {
-                      const res = await completeOnboardingWorkflow(
-                        Number(selectedEmployeeIdForDocs),
-                      )
+                    await execComplete(async () => {
+                      const res = await onboardingApi.completeOnboarding(Number(selectedEmployeeIdForDocs));
                       toast.success(res.message || 'Onboarding complete')
                       setModalOpen(false)
                       await loadOnboarding()
-                    } catch (err) {
-                      toast.error(
-                        err.response?.data?.message || 'Could not complete onboarding',
-                      )
-                    } finally {
-                      setActivating(false)
-                    }
+                    });
                   }}
                   className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors shrink-0 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >

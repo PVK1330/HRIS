@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import PermissionGate from "../components/PermissionGate.jsx";
+import AttendanceModuleGate from "../components/AttendanceModuleGate.jsx";
 import AdminLayout from "../layouts/AdminLayout.jsx";
 import SuperAdminLayout from "../layouts/SuperAdminLayout.jsx";
 const Login = lazy(() => import("../pages/auth/Login.jsx"));
@@ -17,7 +18,12 @@ const AdminDashboard = lazy(() => import("../pages/admin/Dashboard.jsx"));
 const EmployeeDirectory = lazy(() => import("../pages/admin/employees/EmployeeDirectory.jsx"));
 const EmployeeGrid = lazy(() => import("../pages/admin/employees/EmployeeGrid.jsx"));
 const EmployeeProfile = lazy(() => import("../pages/admin/employees/EmployeeProfile.jsx"));
+const AttendanceLayout = lazy(() => import("../pages/admin/hr/AttendanceLayout.jsx"));
 const Attendance = lazy(() => import("../pages/admin/hr/Attendance.jsx"));
+const AttendanceDashboard = lazy(() => import("../pages/admin/hr/attendance/AttendanceDashboard.jsx"));
+const AttendanceRegularization = lazy(() => import("../pages/admin/hr/attendance/AttendanceRegularization.jsx"));
+const AttendanceReports = lazy(() => import("../pages/admin/hr/attendance/AttendanceReports.jsx"));
+const AttendanceOverride = lazy(() => import("../pages/admin/hr/attendance/AttendanceOverride.jsx"));
 const LeaveAbsence = lazy(() => import("../pages/admin/hr/LeaveAbsence.jsx"));
 const Documents = lazy(() => import("../pages/admin/documents/Documents.jsx"));
 const VisaNationality = lazy(() => import("../pages/admin/compliance/VisaNationality.jsx"));
@@ -170,17 +176,17 @@ export const router = createBrowserRouter([
           {
             path: "attendance",
             element: (
-              <AdminModuleGate
-                moduleKey={[
-                  "attendance",
-                  "time-tracking",
-                  "shift-management",
-                  "overtime-management",
-                ]}
-              >
-                <Attendance />
-              </AdminModuleGate>
+              <AttendanceModuleGate>
+                <AttendanceLayout />
+              </AttendanceModuleGate>
             ),
+            children: [
+              { index: true, element: <Attendance /> },
+              { path: "dashboard", element: <AttendanceDashboard /> },
+              { path: "regularization", element: <AttendanceRegularization /> },
+              { path: "reports", element: <AttendanceReports /> },
+              { path: "override", element: <AttendanceOverride /> },
+            ],
           },
           {
             path: "leave",

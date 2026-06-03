@@ -41,8 +41,10 @@ client.interceptors.response.use((res) => res, unwrapError)
 
 export async function fetchAttendanceSettings() {
   const { data } = await client.get('/')
-  return data
+  return data?.data ?? data
 }
+
+export const getAttendanceSettings = fetchAttendanceSettings
 
 export async function updateAttendanceSettings(payload) {
   const { data } = await client.put('/', payload)

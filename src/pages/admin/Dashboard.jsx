@@ -25,6 +25,8 @@ import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
 import { fetchAdminDashboard, fetchEmployeeDashboard } from '../../services/dashboardService.js'
 import DashboardHeader from './dashboard/DashboardHeader.jsx'
 import DashboardStats from './dashboard/DashboardStats.jsx'
+import AttendancePunchCard from '../../components/attendance/AttendancePunchCard.jsx'
+import { canPunchAttendance } from '../../utils/rbac.js'
 
 function MetricCard({ label, value, subtitle, tone = 'slate' }) {
   const toneStyles = {
@@ -56,7 +58,8 @@ const EMPTY_STATS = {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, allowedModules } = useAuth()
+  const showPunchCard = canPunchAttendance(allowedModules) && Boolean(user?.employeeId || user?.id)
   const [isLoading, setIsLoading] = useState(true)
   const [dateRange, setDateRange] = useState('Last 30 days')
   const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
@@ -130,6 +133,8 @@ export default function Dashboard() {
           dateRange={dateRange}
           onDateChange={setDateRange}
         />
+
+        {showPunchCard ? <AttendancePunchCard /> : null}
 
         <div className="grid gap-4 sm:grid-cols-3">
           <MetricCard
@@ -252,6 +257,8 @@ export default function Dashboard() {
         dateRange={dateRange}
         onDateChange={setDateRange}
       />
+
+      {showPunchCard ? <AttendancePunchCard /> : null}
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-[#0F766E] to-[#0f766e]/90 p-6 text-white">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
