@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
-import { HiArrowDownTray } from 'react-icons/hi2'
+import {
+  HiArrowPath,
+  HiDocumentChartBar,
+  HiDocumentText,
+  HiTableCells,
+} from 'react-icons/hi2'
 import { Button } from '../../../../components/ui/Button.jsx'
+import { Tooltip } from '../../../../components/ui/Tooltip.jsx'
 import { Table } from '../../../../components/ui/Table.jsx'
 import {
   exportAttendanceExcel,
@@ -9,6 +15,8 @@ import {
 } from '../../../../services/attendanceService.js'
 import { listEmployees } from '../../../../services/employeeService.js'
 import { buildReportColumns } from '../../../../utils/attendanceLabels.js'
+import { useAuth } from '../../../../context/AuthContext.jsx'
+import { canViewTeamAttendance, canViewAllAttendance } from '../../../../utils/rbac.js'
 
 const REPORT_TYPES = [
   { id: 'employee', label: 'Employee Attendance' },
@@ -22,6 +30,9 @@ const REPORT_TYPES = [
   { id: 'payroll', label: 'Payroll Attendance' },
 ]
 
+const inputClass =
+  'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-teal-600 focus:ring-1 focus:ring-teal-600 outline-none'
+
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -31,18 +42,28 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url)
 }
 
+const defaultFilters = () => ({
+  reportType: 'summary',
+  dateFrom: '',
+  dateTo: '',
+  year: String(new Date().getFullYear()),
+  month: String(new Date().getMonth() + 1),
+  department: '',
+  employeeId: '',
+})
+
 export default function AttendanceReports() {
-  const [reportType, setReportType] = useState('summary')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [year, setYear] = useState(String(new Date().getFullYear()))
-  const [month, setMonth] = useState(String(new Date().getMonth() + 1))
-  const [department, setDepartment] = useState('')
-  const [employeeId, setEmployeeId] = useState('')
+  const { allowedModules } = useAuth()
+  const canRun = canViewTeamAttendance(allowedModules) || canViewAllAttendance(allowedModules)
+
+  const [filters, setFilters] = useState(defaultFilters)
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(null)
   const [error, setError] = useState('')
   const [employees, setEmployees] = useState([])
+
+  const { reportType, dateFrom, dateTo, year, month, department, employeeId } = filters
 
   useEffect(() => {
     listEmployees({ limit: 200 }).then((d) => setEmployees(d?.records || d || [])).catch(() => {})
@@ -73,6 +94,8 @@ export default function AttendanceReports() {
   }
 
   const exportFile = async (format) => {
+    setExporting(format)
+    setError('')
     try {
       const blob = format === 'pdf'
         ? await exportAttendancePdf(params())
@@ -80,71 +103,137 @@ export default function AttendanceReports() {
       downloadBlob(blob, `attendance-${reportType}.${format === 'pdf' ? 'pdf' : 'xlsx'}`)
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Export failed')
+    } finally {
+      setExporting(null)
     }
+  }
+
+  const resetFilters = () => {
+    setFilters(defaultFilters())
+    setRows([])
+    setError('')
   }
 
   const columns = buildReportColumns(rows[0])
 
+  if (!canRun) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
+        You need team or organization attendance view permission to run reports.
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Report filters</h2>
+        <p className="mt-1 text-sm text-slate-500">Choose criteria, generate data, then export if needed.</p>
+
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="text-sm">
-            Report
+          <label className="text-sm font-medium text-slate-700">
+            Report type
             <select
               value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              onChange={(e) => setFilters((f) => ({ ...f, reportType: e.target.value }))}
+              className={inputClass}
             >
               {REPORT_TYPES.map((r) => (
                 <option key={r.id} value={r.id}>{r.label}</option>
               ))}
             </select>
           </label>
-          <label className="text-sm">
-            From
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+          <label className="text-sm font-medium text-slate-700">
+            Date from
+            <input type="date" value={dateFrom} onChange={(e) => setFilters((f) => ({ ...f, dateFrom: e.target.value }))} className={inputClass} />
           </label>
-          <label className="text-sm">
-            To
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+          <label className="text-sm font-medium text-slate-700">
+            Date to
+            <input type="date" value={dateTo} onChange={(e) => setFilters((f) => ({ ...f, dateTo: e.target.value }))} className={inputClass} />
           </label>
-          <label className="text-sm">
+          <label className="text-sm font-medium text-slate-700">
             Year
-            <input type="number" value={year} onChange={(e) => setYear(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+            <input type="number" value={year} onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))} className={inputClass} />
           </label>
-          <label className="text-sm">
+          <label className="text-sm font-medium text-slate-700">
             Month
-            <input type="number" min={1} max={12} value={month} onChange={(e) => setMonth(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+            <input type="number" min={1} max={12} value={month} onChange={(e) => setFilters((f) => ({ ...f, month: e.target.value }))} className={inputClass} />
           </label>
-          <label className="text-sm">
+          <label className="text-sm font-medium text-slate-700">
             Department
-            <input value={department} onChange={(e) => setDepartment(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+            <input value={department} onChange={(e) => setFilters((f) => ({ ...f, department: e.target.value }))} className={inputClass} placeholder="Optional" />
           </label>
-          <label className="text-sm">
+          <label className="text-sm font-medium text-slate-700 sm:col-span-2">
             Employee
-            <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
-              <option value="">All</option>
+            <select value={employeeId} onChange={(e) => setFilters((f) => ({ ...f, employeeId: e.target.value }))} className={inputClass}>
+              <option value="">All employees</option>
               {employees.map((e) => (
                 <option key={e.id} value={e.id}>{e.full_name || e.name}</option>
               ))}
             </select>
           </label>
         </div>
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button type="button" onClick={runReport} disabled={loading}>Generate</Button>
-          <Button type="button" variant="secondary" onClick={() => exportFile('pdf')} className="inline-flex items-center gap-2">
-            <HiArrowDownTray className="h-4 w-4" /> PDF
-          </Button>
-          <Button type="button" variant="secondary" onClick={() => exportFile('excel')} className="inline-flex items-center gap-2">
-            <HiArrowDownTray className="h-4 w-4" /> Excel
-          </Button>
+
+        {error && (
+          <p className="mt-3 text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <Tooltip content="Run report with current filters">
+            <Button
+              type="button"
+              variant="teal"
+              size="md"
+              label="Generate Report"
+              icon={HiDocumentChartBar}
+              loading={loading}
+              disabled={loading || !!exporting}
+              onClick={runReport}
+            />
+          </Tooltip>
+          <Tooltip content="Download PDF with tenant branding">
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              label="Export PDF"
+              icon={HiDocumentText}
+              loading={exporting === 'pdf'}
+              disabled={loading || exporting === 'excel'}
+              onClick={() => exportFile('pdf')}
+            />
+          </Tooltip>
+          <Tooltip content="Download Excel workbook">
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              label="Export Excel"
+              icon={HiTableCells}
+              loading={exporting === 'excel'}
+              disabled={loading || exporting === 'pdf'}
+              onClick={() => exportFile('excel')}
+            />
+          </Tooltip>
+          <Tooltip content="Clear filters and results">
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              label="Reset Filters"
+              icon={HiArrowPath}
+              disabled={loading || !!exporting}
+              onClick={resetFilters}
+            />
+          </Tooltip>
         </div>
       </div>
 
-      <Table loading={loading} columns={columns} data={rows} emptyMessage="Run a report to see data" />
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <Table loading={loading} columns={columns} data={rows} emptyMessage="Run a report to see data" />
+      </div>
     </div>
   )
 }

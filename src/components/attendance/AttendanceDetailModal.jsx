@@ -2,11 +2,17 @@ import { useEffect, useState } from 'react'
 import { Modal } from '../ui/Modal.jsx'
 import { getAttendanceDetail } from '../../services/attendanceService.js'
 
+function displayValue(value) {
+  if (value === null || value === undefined) return 'N/A'
+  if (typeof value === 'string' && value.trim() === '') return 'N/A'
+  return value
+}
+
 function Field({ label, value }) {
   return (
     <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3">
       <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-medium text-slate-900">{value ?? 'N/A'}</p>
+      <p className="mt-1 text-sm font-medium text-slate-900">{displayValue(value)}</p>
     </div>
   )
 }
@@ -59,8 +65,8 @@ export default function AttendanceDetailModal({ recordId, open, onClose }) {
               <Field label="Check in" value={detail.check_in_time} />
               <Field label="Check out" value={detail.check_out_time} />
               <Field label="Hours worked" value={detail.worked_hours ?? detail.total_hours} />
-              <Field label="Late (minutes)" value={detail.late_minutes} />
-              <Field label="Overtime (hours)" value={detail.overtime_hours} />
+              <Field label="Late (minutes)" value={detail.late_minutes ?? (detail.is_late ? 0 : null)} />
+              <Field label="Overtime (hours)" value={detail.overtime_hours ?? 0} />
               <Field label="Work mode" value={detail.work_mode} />
             </div>
           </section>

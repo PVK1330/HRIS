@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { HiIdentification } from 'react-icons/hi2'
+import {
+  HiArrowPath,
+  HiCheck,
+  HiIdentification,
+} from 'react-icons/hi2'
 import { Button } from '../../../../components/ui/Button.jsx'
+import { Tooltip } from '../../../../components/ui/Tooltip.jsx'
 import { useAuth } from '../../../../context/AuthContext.jsx'
 import { canManageAttendanceOverride } from '../../../../utils/rbac.js'
 import { markAttendanceOverride } from '../../../../services/attendanceService.js'
@@ -23,6 +28,8 @@ const labelClass = 'text-sm font-medium text-slate-700'
 
 export default function AttendanceOverride() {
   const { allowedModules } = useAuth()
+  const canManage = canManageAttendanceOverride(allowedModules)
+
   const [form, setForm] = useState(EMPTY)
   const [empList, setEmpList] = useState([])
   const [submitting, setSubmitting] = useState(false)
@@ -65,7 +72,13 @@ export default function AttendanceOverride() {
     }
   }
 
-  if (!canManageAttendanceOverride(allowedModules)) {
+  const resetForm = () => {
+    setForm(EMPTY)
+    setError('')
+    setMessage('')
+  }
+
+  if (!canManage) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
         You need the <strong>attendance.manage</strong> permission to create or edit attendance manually.
@@ -84,7 +97,7 @@ export default function AttendanceOverride() {
         <div>
           <label className={labelClass}>Employee</label>
           <div className="relative mt-1">
-            <HiIdentification className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <HiIdentification className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <select
               required
               value={form.employeeId}
@@ -136,13 +149,36 @@ export default function AttendanceOverride() {
 
         <div>
           <label className={labelClass}>Notes</label>
-          <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className={inputClass} rows={3} />
+          <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className={inputClass} rows={3} placeholder="Optional audit note" />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {message && <p className="text-sm text-emerald-700">{message}</p>}
+        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+        {message && <p className="text-sm text-emerald-700" role="status">{message}</p>}
 
-        <Button type="submit" disabled={submitting}>{submitting ? 'Saving…' : 'Save override'}</Button>
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:flex-wrap">
+          <Tooltip content="Save manual attendance (audited)">
+            <Button
+              type="submit"
+              variant="teal"
+              size="md"
+              label="Save Override"
+              icon={HiCheck}
+              loading={submitting}
+              disabled={submitting}
+            />
+          </Tooltip>
+          <Tooltip content="Clear all fields">
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              label="Reset"
+              icon={HiArrowPath}
+              disabled={submitting}
+              onClick={resetForm}
+            />
+          </Tooltip>
+        </div>
       </form>
     </div>
   )
