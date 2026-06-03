@@ -11,7 +11,8 @@ import {
   RiHistoryLine,
   RiDatabase2Line,
   RiLogoutBoxRLine,
-  RiMacbookLine
+  RiMacbookLine,
+  RiUserAddLine
 } from 'react-icons/ri';
 
 export const settingsTabs = [
@@ -75,6 +76,12 @@ export const settingsTabs = [
   //   icon: RiDatabase2Line,
   //   desc: 'Data backup & recovery'
   // },
+  {
+    id: 'onboarding',
+    label: 'Onboarding',
+    icon: RiUserAddLine,
+    desc: 'Handover departments'
+  },
   {
     id: 'exit',
     label: 'Exit Management',

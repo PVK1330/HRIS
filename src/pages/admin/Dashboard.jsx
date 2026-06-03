@@ -252,14 +252,7 @@ export default function Dashboard() {
   return (
     <>
     <div className="space-y-6 pb-12 min-w-0">
-      <DashboardHeader
-        title={isHrView ? 'Admin Dashboard' : 'Dashboard'}
-        subtitle={todayLabel}
-        dateRange={dateRange}
-        onDateChange={setDateRange}
-      />
 
-      {showPunchCard ? <AttendancePunchCard /> : null}
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-[#0F766E] to-[#0f766e]/90 p-6 text-white">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

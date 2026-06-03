@@ -221,14 +221,7 @@ const adminNavGroups = [
         permission: "view_employees",
         featureCode: "employee_directory",
       },
-      {
-        label: "Employee Grid",
-        icon: HiUsers,
-        path: "/admin/employee-grid",
-        key: "employee-directory",
-        permission: "view_employees",
-        featureCode: "employee_directory",
-      },
+
       {
         label: "Employee Details",
         icon: HiIdentification,

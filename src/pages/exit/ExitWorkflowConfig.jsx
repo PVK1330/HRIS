@@ -78,7 +78,7 @@ function StageEditor({ stage, index, total, depts, roles, catalog = [], onChange
         <MultiSelect label="Owning roles" options={roles} selected={stage.role_ids} onChange={(v) => set({ role_ids: v })} />
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+      {/* <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1">Approval mode</label>
           <select value={stage.approval_mode} onChange={(e) => set({ approval_mode: e.target.value })}
@@ -106,9 +106,9 @@ function StageEditor({ stage, index, total, depts, roles, catalog = [], onChange
             <option value="REASSIGN">Reassign</option>
           </select>
         </div>
-      </div>
+      </div> */}
 
-      <div className="mt-3 flex flex-wrap gap-4">
+      {/* <div className="mt-3 flex flex-wrap gap-4">
         {[
           ['escalation_enabled', 'Enable escalation'],
           ['allow_future_visibility', 'Future stages preview'],
@@ -122,7 +122,7 @@ function StageEditor({ stage, index, total, depts, roles, catalog = [], onChange
             {lbl}
           </label>
         ))}
-      </div>
+      </div> */}
 
       {stage.escalation_enabled && (
         <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg bg-amber-50 p-2 md:grid-cols-3">
@@ -315,7 +315,7 @@ export default function ExitWorkflowConfig() {
   const removeStage = (i) => setForm((f) => ({ ...f, stages: f.stages.filter((_, idx) => idx !== i).map((s, idx) => ({ ...s, stage_order: idx + 1 })) }))
   const moveStage = (i, dir) => setForm((f) => {
     const arr = [...f.stages]; const j = i + dir
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
     return { ...f, stages: arr.map((s, idx) => ({ ...s, stage_order: idx + 1 })) }
   })
 
@@ -434,7 +434,7 @@ export default function ExitWorkflowConfig() {
             locked
               ? <StageReadOnly key={i} stage={s} index={i} depts={depts} roles={roles} />
               : <StageEditor key={i} stage={s} index={i} total={form.stages.length} depts={depts} roles={roles} catalog={catalog}
-                  onChange={(ns) => updateStage(i, ns)} onRemove={removeStage} onMove={moveStage} />
+                onChange={(ns) => updateStage(i, ns)} onRemove={removeStage} onMove={moveStage} />
           ))}
         </div>
 

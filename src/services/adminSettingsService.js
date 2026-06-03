@@ -163,4 +163,21 @@ export const adminSettingsService = {
       permissionIds,
       ...(scope != null ? { scope } : {}),
     }),
+
+  getOnboardingHandoverRules: () =>
+    axios.get(`${API_URL}/api/v1/admin/settings/onboarding/handover-rules`, {
+      headers: { Authorization: `Bearer ${readToken()}` },
+    }),
+  createOnboardingHandoverRule: (body) =>
+    axios.post(`${API_URL}/api/v1/admin/settings/onboarding/handover-rules`, body, {
+      headers: { Authorization: `Bearer ${readToken()}` },
+    }),
+  updateOnboardingHandoverRule: (id, body) =>
+    axios.put(`${API_URL}/api/v1/admin/settings/onboarding/handover-rules/${id}`, body, {
+      headers: { Authorization: `Bearer ${readToken()}` },
+    }),
+  deleteOnboardingHandoverRule: (id) =>
+    axios.delete(`${API_URL}/api/v1/admin/settings/onboarding/handover-rules/${id}`, {
+      headers: { Authorization: `Bearer ${readToken()}` },
+    }),
 }

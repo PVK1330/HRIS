@@ -18,6 +18,7 @@ export const LEGACY_MODULE_KEYS = {
   MESSAGES: 'messages',
   LETTERS: 'letter-templates',
   ASSETS: 'assets',
+  ONBOARDING: 'onboarding',
   TASKS: 'tasks',
 }
 
@@ -52,6 +53,14 @@ const ACTION_TO_LEGACY = {
   'policies.acknowledge': [LEGACY_MODULE_KEYS.POLICIES],
   'messages.view': [LEGACY_MODULE_KEYS.MESSAGES],
   'assets.view': [LEGACY_MODULE_KEYS.ASSETS],
+  'assets.create': [LEGACY_MODULE_KEYS.ASSETS],
+  'assets.edit': [LEGACY_MODULE_KEYS.ASSETS],
+  'assets.delete': [LEGACY_MODULE_KEYS.ASSETS],
+  'assets.assign': [LEGACY_MODULE_KEYS.ASSETS],
+  'assets.return': [LEGACY_MODULE_KEYS.ASSETS],
+  onboarding: [LEGACY_MODULE_KEYS.ONBOARDING],
+  'onboarding.view': [LEGACY_MODULE_KEYS.ONBOARDING],
+  'onboarding.manage': [LEGACY_MODULE_KEYS.ONBOARDING],
   'tasks': [LEGACY_MODULE_KEYS.TASKS],
 }
 

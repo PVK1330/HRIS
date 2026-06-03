@@ -12,6 +12,7 @@ import BillingSettings from "./sections/BillingSettings.jsx";
 import AuditLogs from "./sections/AuditLogs.jsx";
 import BackupRestore from "./sections/BackupRestore.jsx";
 import ExitSettingsSection from "./sections/ExitSettingsSection.jsx";
+import OnboardingSettingsSection from "./sections/OnboardingSettingsSection.jsx";
 import AssetSettingsSection from "./sections/AssetSettingsSection.jsx";
 
 function ActiveSection({
@@ -39,6 +40,8 @@ function ActiveSection({
       return <AuditLogs />;
     case "backup":
       return <BackupRestore />;
+    case "onboarding":
+      return <OnboardingSettingsSection />;
     case "exit":
       return <ExitSettingsSection />;
     case "assets":

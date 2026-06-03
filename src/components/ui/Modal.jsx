@@ -3,15 +3,17 @@ import { createPortal } from 'react-dom'
 import { HiXMark } from 'react-icons/hi2'
 
 const sizeClasses = {
-  sm: 'max-w-md',
+  sm: 'max-w-sm sm:max-w-md',
+  md: 'max-w-md sm:max-w-lg',
+  lg: 'max-w-lg sm:max-w-2xl',
+  xl: 'max-w-xl sm:max-w-4xl',
+  '2xl': 'max-w-2xl sm:max-w-6xl',
+  '3xl': 'max-w-3xl sm:max-w-7xl',
+  full: 'max-w-[calc(100vw-2rem)]',
   employee: 'max-w-[min(1000px,calc(100vw-2rem))]',
   visa: 'max-w-[min(640px,calc(100vw-1.5rem))]',
-  exit: 'max-w-4xl',
+  exit: 'max-w-md sm:max-w-4xl',
   announcement: 'max-w-[min(720px,calc(100vw-2rem))]',
-  md: 'max-w-lg',
-  lg: 'max-w-2xl',
-  xl: 'max-w-8xl',
-  '2xl': 'max-w-6xl',
   custom: 'max-w-[1200px]',
 }
 
@@ -103,7 +105,7 @@ export function Modal({
             )}
           </div>
 
-          <div className={`flex-1 px-5 py-1 sm:px-6 overflow-y-auto custom-scrollbar ${bodyClassName}`}>
+          <div className={`flex-1 px-5 py-1 sm:px-6 custom-scrollbar ${bodyClassName.includes('overflow-') ? bodyClassName : 'overflow-y-auto ' + bodyClassName}`}>
             <div className="pb-8">{children}</div>
           </div>
           {footer && (

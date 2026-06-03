@@ -16,7 +16,6 @@ const Login = lazy(() => import("../pages/auth/Login.jsx"));
 
 const AdminDashboard = lazy(() => import("../pages/admin/Dashboard.jsx"));
 const EmployeeDirectory = lazy(() => import("../pages/admin/employees/EmployeeDirectory.jsx"));
-const EmployeeGrid = lazy(() => import("../pages/admin/employees/EmployeeGrid.jsx"));
 const EmployeeProfile = lazy(() => import("../pages/admin/employees/EmployeeProfile.jsx"));
 const AttendanceLayout = lazy(() => import("../pages/admin/hr/AttendanceLayout.jsx"));
 const Attendance = lazy(() => import("../pages/admin/hr/Attendance.jsx"));
@@ -157,14 +156,7 @@ export const router = createBrowserRouter([
               </AdminModuleGate>
             ),
           },
-          {
-            path: "employee-grid",
-            element: (
-              <AdminModuleGate moduleKey="employee-directory">
-                <EmployeeGrid />
-              </AdminModuleGate>
-            ),
-          },
+
           {
             path: "employee-profile",
             element: (
