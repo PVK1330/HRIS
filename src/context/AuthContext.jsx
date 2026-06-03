@@ -364,10 +364,6 @@ export function AuthProvider({ children }) {
       if (key === "system-settings" && user?.role === "admin") {
         return true;
       }
-      /* Portal employees: RBAC only (no subscription plan gate) */
-      if (user?.role === "employee") {
-        return true;
-      }
       if (user?.role === "admin" && planModuleKeys instanceof Set) {
         const planKey = resolvePlanFeatureKey(key);
         return planModuleKeys.has(planKey) || planModuleKeys.has(key);

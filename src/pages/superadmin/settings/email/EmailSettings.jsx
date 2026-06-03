@@ -1,433 +1,299 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { HiEye, HiEyeSlash, HiEnvelope, HiServer, HiShieldCheck } from 'react-icons/hi2'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-
-import SettingsCard from '../../../../components/settings/SettingsCard.jsx'
-import FormField from '../../../../components/settings/FormField.jsx'
-import SaveButton from '../../../../components/settings/SaveButton.jsx'
-import SettingsInput from '../../../../components/settings/SettingsInput.jsx'
-import SettingsSelect from '../../../../components/settings/SettingsSelect.jsx'
-import { Button } from '../../../../components/ui/Button.jsx'
-import { Modal } from '../../../../components/ui/Modal.jsx'
-
-import useSettings from '../../../../hooks/useSettings.js'
+import { Toggle } from '../../../../components/ui/Toggle.jsx'
 import settingsService from '../../../../services/settingsService.js'
-import useSettingsMeta from '../useSettingsMeta.js'
 
-const FALLBACK_EMAIL_META = {
-  deliveryOptions: [{ value: 'smtp', label: 'SMTP' }],
-  encryptionOptions: [{ value: 'tls', label: 'TLS' }],
-}
-
-const DEFAULT_STATE = {
-  systemEmail: '',
-  systemFromName: '',
-  emailDelivery: 'smtp',
-  smtpHost: '',
-  smtpPort: '587',
-  smtpUsername: '',
-  smtpPassword: '',
-  smtpEncryption: 'tls',
+const DEFAULTS = {
+  host: '',
+  port: 587,
+  username: '',
+  password: '',
+  encryption: 'tls',
+  fromName: '',
+  fromEmail: '',
 }
 
 function fromApi(api) {
-  if (!api) return DEFAULT_STATE
+  if (!api) return { ...DEFAULTS }
   return {
-    systemEmail:    api.systemEmail ?? '',
-    systemFromName: api.systemFromName ?? '',
-    emailDelivery:  api.emailDelivery || 'smtp',
-    smtpHost:       api.smtpHost ?? '',
-    smtpPort:       String(api.smtpPort ?? '587'),
-    smtpUsername:   api.smtpUsername ?? '',
-    smtpPassword:   api.smtpPassword ?? '',
-    smtpEncryption: api.smtpEncryption || 'tls',
+    host: api.host || '',
+    port: Number(api.port) || 587,
+    username: api.username || '',
+    password: api.password || '',
+    encryption: api.encryption || 'tls',
+    fromName: api.fromName || '',
+    fromEmail: api.fromEmail || '',
   }
 }
 
-function FormSkeleton() {
-  return (
-    <div className="space-y-4">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="space-y-2">
-          <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
-          <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const PASSWORD_MASK = '••••••••'
-
-function TestEmailModal({ open, onClose }) {
-  const [sendTo, setSendTo] = useState('')
-  const [sending, setSending] = useState(false)
-  const [success, setSuccess] = useState(null)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    if (open) {
-      setSendTo('')
-      setSuccess(null)
-      setError(null)
-    }
-  }, [open])
-
-  const submit = async () => {
-    if (!sendTo.trim()) {
-      setError('Recipient address required')
-      return
-    }
-    setSending(true)
-    setError(null)
-    setSuccess(null)
-    try {
-      const res = await settingsService.sendTestEmail({ sendTo: sendTo.trim() })
-      setSuccess(res?.message || 'Verification relay successful')
-      toast.success('Test email dispatched')
-    } catch (err) {
-      setError(err?.message || 'Relay verification failed')
-    } finally {
-      setSending(false)
-    }
-  }
-
-  return (
-    <Modal isOpen={open} onClose={onClose} title="Network Diagnostic: SMTP Relay" size="sm">
-      <div className="space-y-6 p-1">
-        <p className="text-xs font-medium text-slate-500 leading-relaxed">
-          Trigger a real-time verification email using the currently persisted SMTP parameters to validate server-to-server connectivity.
-        </p>
-
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Recipient Address</label>
-          <input
-            type="email"
-            value={sendTo}
-            onChange={(e) => setSendTo(e.target.value)}
-            placeholder="admin@verification.com"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white"
-          />
-        </div>
-
-        {success && (
-          <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-4 border border-emerald-100 text-[11px] font-bold text-emerald-700 animate-in zoom-in">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-            {success}
-          </div>
-        )}
-        {error && (
-          <div className="flex items-center gap-3 rounded-xl bg-red-50 p-4 border border-red-100 text-[11px] font-bold text-red-700 animate-in zoom-in">
-            <div className="h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-            {error}
-          </div>
-        )}
-
-        <div className="flex justify-end gap-3 pt-2">
-          <button 
-            type="button"
-            onClick={onClose}
-            className="rounded-xl px-5 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={sending}
-            onClick={submit}
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-black text-white shadow-lg transition-all hover:bg-black disabled:opacity-50"
-          >
-            {sending ? 'Dispatching...' : 'Fire Test Email'}
-          </button>
-        </div>
-      </div>
-    </Modal>
-  )
-}
+function deepClone(v) { return JSON.parse(JSON.stringify(v)) }
 
 export default function EmailSettings() {
-  const { meta } = useSettingsMeta()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const tab = searchParams.get('tab') === 'smtp' ? 'smtp' : 'email'
-  const [showPwd, setShowPwd] = useState(false)
-  const [testOpen, setTestOpen] = useState(false)
+  const [data, setData] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const original = useRef(null)
 
-  const fetchFn = useCallback(async () => {
-    const res = await settingsService.getEmail()
-    const mapped = fromApi(res.data)
-    return mapped
+  const load = useCallback(async () => {
+    try {
+      const res = await settingsService.getEmail()
+      const next = fromApi(res?.data)
+      setData(next)
+      original.current = deepClone(next)
+    } catch (err) {
+      toast.error(err?.message || 'Failed to load email settings')
+      setData({ ...DEFAULTS })
+      original.current = { ...DEFAULTS }
+    }
   }, [])
 
-  const saveFn = useCallback(
-    async (state) => {
+  useEffect(() => { load() }, [load])
+
+  const isDirty = useMemo(() => {
+    if (!data || !original.current) return false
+    return JSON.stringify(data) !== JSON.stringify(original.current)
+  }, [data])
+
+  const set = (patch) => setData((prev) => ({ ...(prev || DEFAULTS), ...patch }))
+
+  const handleSave = async (e) => {
+    if (e) e.preventDefault()
+    if (!data) return
+    setSaving(true)
+    try {
       const payload = {
-        systemEmail: state.systemEmail,
-        systemFromName: state.systemFromName,
-        emailDelivery: state.emailDelivery,
-        smtpHost: state.smtpHost,
-        smtpPort: Number(state.smtpPort) || 587,
-        smtpUsername: state.smtpUsername,
-        smtpEncryption: state.smtpEncryption,
-      }
-      // Only send password if the user actually typed a new one (i.e. it's
-      // not the masked placeholder we received from the server).
-      if (state.smtpPassword && state.smtpPassword !== PASSWORD_MASK) {
-        payload.smtpPassword = state.smtpPassword
+        ...data,
+        port: Number(data.port) || 587,
       }
       const res = await settingsService.updateEmail(payload)
-      return fromApi(res.data)
-    },
-    []
-  )
-
-  const { data, setData, loading, save, saving } = useSettings(fetchFn, saveFn)
-  const state = data || DEFAULT_STATE
-  const emailMeta = meta?.email || FALLBACK_EMAIL_META
-  const originalPasswordWasMasked = data?.smtpPassword === PASSWORD_MASK
-
-  const set = (patch) => setData((prev) => ({ ...(prev || DEFAULT_STATE), ...patch }))
-
-  const switchTab = (next) => {
-    if (next === 'smtp') {
-      const sp = new URLSearchParams(searchParams)
-      sp.set('tab', 'smtp')
-      setSearchParams(sp, { replace: true })
-    } else {
-      const sp = new URLSearchParams(searchParams)
-      sp.delete('tab')
-      setSearchParams(sp, { replace: true })
+      const next = fromApi(res?.data)
+      setData(next)
+      original.current = deepClone(next)
+      toast.success('Email settings saved')
+    } catch (err) {
+      toast.error(err?.message || 'Failed to save email settings')
+    } finally {
+      setSaving(false)
     }
   }
 
+  const handleTest = async () => {
+    setTesting(true)
+    try {
+      // Assuming sendTestEmail expects `{ sendTo: string }`.
+      // You can just send it to the 'fromEmail' for testing if no specific input is provided.
+      await settingsService.sendTestEmail({ sendTo: data?.fromEmail || 'test@example.com' })
+      toast.success('SMTP connection successful')
+    } catch (err) {
+      toast.error(err?.message || 'SMTP connection failed')
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  const baseInput = "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+
+  if (data === null) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="animate-pulse space-y-8">
+          <div className="h-64 rounded-xl bg-gray-100"></div>
+          <div className="h-48 rounded-xl bg-gray-100"></div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="mx-auto max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700 px-4 md:px-0">
-      {/* Page Header */}
-      <div className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Email Infrastructure</h1>
-          <p className="mt-0.5 text-slate-500 text-[11px] font-medium">Configure automated messaging and global SMTP relay.</p>
-        </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white shadow-md">
-          <HiEnvelope className="h-5 w-5" />
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="space-y-10 divide-y divide-gray-900/10">
+        
+        {/* SMTP Configuration */}
+        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+          <div className="px-4 sm:px-0">
+            <h2 className="text-base font-semibold leading-7 text-gray-900">SMTP Server</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-600">
+              Configure connection details for your outbound mail server.
+            </p>
+          </div>
 
-      {/* Segmented Control / Tabs */}
-      <div className="mb-6 flex gap-1 rounded-xl bg-slate-100 p-1 max-w-fit">
-        <button
-          type="button"
-          onClick={() => switchTab('email')}
-          className={`px-4 md:px-6 py-2 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${
-            tab === 'email'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          Messaging
-        </button>
-        <button
-          type="button"
-          onClick={() => switchTab('smtp')}
-          className={`px-4 md:px-6 py-2 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${
-            tab === 'smtp'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          SMTP Protocol
-        </button>
-      </div>
-
-      {loading ? (
-        <FormSkeleton />
-      ) : (
-        <form
-          className="space-y-6 pb-24"
-          onSubmit={(e) => {
-            e.preventDefault()
-            save()
-          }}
-        >
-          {tab === 'email' && (
-            <div className="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
-               <div className="mb-6 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-100">
-                    <HiEnvelope className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 tracking-tight">System Identity</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sender Metadata</p>
-                  </div>
-               </div>
-
-               <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Outbound Email</label>
-                    <input
-                      type="email"
-                      value={state.systemEmail}
-                      onChange={(e) => set({ systemEmail: e.target.value })}
-                      placeholder="no-reply@platform.com"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-indigo-600 focus:bg-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Friendly "From" Name</label>
+          <form 
+            onSubmit={handleSave}
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+          >
+            <div className="px-4 py-6 sm:p-8 space-y-6">
+              
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Hostname</label>
+                  <div className="mt-2">
                     <input
                       type="text"
-                      value={state.systemFromName}
-                      onChange={(e) => set({ systemFromName: e.target.value })}
-                      placeholder="HR Core Notifications"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-indigo-600 focus:bg-white"
+                      value={data.host}
+                      onChange={(e) => set({ host: e.target.value })}
+                      placeholder="smtp.example.com"
+                      className={baseInput}
                     />
                   </div>
+                </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Delivery Mechanism</label>
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Port</label>
+                  <div className="mt-2">
+                    <input
+                      type="number"
+                      value={data.port}
+                      onChange={(e) => set({ port: e.target.value })}
+                      placeholder="587"
+                      className={baseInput}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Encryption Method</label>
+                  <div className="mt-2">
                     <select
-                      value={state.emailDelivery}
-                      onChange={(e) => set({ emailDelivery: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-indigo-600 focus:bg-white appearance-none cursor-pointer"
+                      value={data.encryption}
+                      onChange={(e) => set({ encryption: e.target.value })}
+                      className={baseInput}
                     >
-                      {emailMeta.deliveryOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      <option value="none">None</option>
+                      <option value="ssl">SSL</option>
+                      <option value="tls">TLS</option>
                     </select>
                   </div>
-               </div>
-            </div>
-          )}
+                </div>
+              </div>
 
-          {tab === 'smtp' && (
-            <div className="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
-               <div className="mb-6 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-100">
-                      <HiServer className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 tracking-tight">SMTP Protocol</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Relay Credentials</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setTestOpen(true)}
-                    className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-[9px] font-black text-blue-600 border border-blue-100 transition-all hover:bg-blue-600 hover:text-white"
-                  >
-                    <HiEye className="h-3 w-3" />
-                    TEST RELAY
-                  </button>
-               </div>
-
-               <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Relay Hostname</label>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 border-t border-gray-900/5 pt-6">
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Username</label>
+                  <div className="mt-2">
                     <input
                       type="text"
-                      value={state.smtpHost}
-                      onChange={(e) => set({ smtpHost: e.target.value })}
-                      placeholder="smtp.provider.com"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Port</label>
-                      <input
-                        type="number"
-                        value={state.smtpPort}
-                        onChange={(e) => set({ smtpPort: e.target.value })}
-                        placeholder="587"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Encryption</label>
-                      <select
-                        value={state.smtpEncryption}
-                        onChange={(e) => set({ smtpEncryption: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white appearance-none cursor-pointer"
-                      >
-                        {emailMeta.encryptionOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Authenticator Username</label>
-                    <input
-                      type="text"
-                      value={state.smtpUsername}
-                      onChange={(e) => set({ smtpUsername: e.target.value })}
+                      value={data.username}
+                      onChange={(e) => set({ username: e.target.value })}
                       placeholder="user@example.com"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white"
+                      className={baseInput}
                     />
                   </div>
+                </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Authenticator Password</label>
-                    <div className="relative">
-                      <input
-                        type={showPwd ? 'text' : 'password'}
-                        value={state.smtpPassword}
-                        onChange={(e) => set({ smtpPassword: e.target.value })}
-                        onFocus={() => {
-                          if (state.smtpPassword === PASSWORD_MASK) {
-                            set({ smtpPassword: '' })
-                          }
-                        }}
-                        placeholder="••••••••"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-blue-600 focus:bg-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPwd((v) => !v)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 transition-colors"
-                      >
-                        {showPwd ? <HiEyeSlash className="h-4 w-4" /> : <HiEye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    {originalPasswordWasMasked && (
-                      <p className="px-1 text-[9px] font-medium text-slate-400 italic">Leave unchanged for current security.</p>
-                    )}
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Password</label>
+                  <div className="mt-2">
+                    <input
+                      type="password"
+                      value={data.password}
+                      onChange={(e) => set({ password: e.target.value })}
+                      className={baseInput}
+                    />
                   </div>
-               </div>
-            </div>
-          )}
+                </div>
+              </div>
 
-          {/* Action Footer */}
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex w-[90%] md:w-full max-w-[400px] items-center justify-between rounded-2xl border border-slate-200 bg-white/80 p-2 shadow-xl backdrop-blur-xl animate-in fade-in zoom-in duration-500">
-             <div className="flex items-center gap-2 pl-3">
-                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Grid Synchronized</span>
-             </div>
-             <div className="flex gap-2">
-                <button 
-                  type="button"
-                  onClick={() => window.location.reload()}
-                  className="rounded-xl px-4 py-2 text-[10px] font-bold text-slate-500 hover:bg-slate-100 transition-all"
-                >
-                  Discard
-                </button>
+              <div className="pt-2">
                 <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-black text-white shadow-lg transition-all hover:bg-black active:scale-95 disabled:opacity-50"
+                  type="button"
+                  onClick={handleTest}
+                  disabled={testing}
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500 disabled:opacity-50"
                 >
-                  {saving ? (
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                  ) : (
-                    <span>Save Changes</span>
-                  )}
+                  {testing ? 'Testing connection...' : 'Test Connection'}
                 </button>
-             </div>
-          </div>
-        </form>
-      )}
+              </div>
 
-      <TestEmailModal open={testOpen} onClose={() => setTestOpen(false)} />
+            </div>
+
+            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
+              <button
+                type="button"
+                onClick={() => setData(deepClone(original.current))}
+                disabled={!isDirty || saving}
+                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
+              >
+                Discard
+              </button>
+              <button
+                type="submit"
+                disabled={!isDirty || saving}
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* System Sender */}
+        <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
+          <div className="px-4 sm:px-0">
+            <h2 className="text-base font-semibold leading-7 text-gray-900">System Sender</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-600">
+              The 'From' identity used for automated platform emails.
+            </p>
+          </div>
+
+          <form 
+            onSubmit={handleSave}
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+          >
+            <div className="px-4 py-6 sm:p-8 space-y-6">
+              
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">From Name</label>
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      value={data.fromName}
+                      onChange={(e) => set({ fromName: e.target.value })}
+                      placeholder="Acme Platform"
+                      className={baseInput}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">From Address</label>
+                  <div className="mt-2">
+                    <input
+                      type="email"
+                      value={data.fromEmail}
+                      onChange={(e) => set({ fromEmail: e.target.value })}
+                      placeholder="noreply@example.com"
+                      className={baseInput}
+                    />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
+              <button
+                type="button"
+                onClick={() => setData(deepClone(original.current))}
+                disabled={!isDirty || saving}
+                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
+              >
+                Discard
+              </button>
+              <button
+                type="submit"
+                disabled={!isDirty || saving}
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
     </div>
   )
 }

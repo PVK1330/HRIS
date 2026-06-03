@@ -96,7 +96,7 @@ export default function AuditLogs() {
       {/* Top Title Bar with Moved Actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Forensic Audit Logs</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Audit Logs</h1>
           <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
             <span>Platform</span>
             <span className="text-slate-400">&gt;</span>
@@ -125,9 +125,9 @@ export default function AuditLogs() {
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Action, admin, target..." className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium" />
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <select 
-              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer" 
-              value={orgFilter} 
+            <select
+              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer"
+              value={orgFilter}
               onChange={(e) => setOrgFilter(e.target.value)}
             >
               <option value="all">All Targets</option>
@@ -135,9 +135,9 @@ export default function AuditLogs() {
                 <option key={org} value={org}>{org}</option>
               ))}
             </select>
-            <select 
-              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer" 
-              value={actionFilter} 
+            <select
+              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer"
+              value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
             >
               <option value="all">Any Category</option>
@@ -166,7 +166,7 @@ export default function AuditLogs() {
             timestamp: (
               <div className="flex items-center gap-3 py-1">
                 <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                   <HiCalendarDays className="h-4 w-4" />
+                  <HiCalendarDays className="h-4 w-4" />
                 </div>
                 <span className="font-mono text-[11px] font-bold text-slate-500">
                   {new Date(log.timestamp).toLocaleString()}
@@ -174,25 +174,25 @@ export default function AuditLogs() {
               </div>
             ),
             admin: (
-               <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                     <HiFingerPrint className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm font-black text-slate-900 tracking-tight">{log.admin}</span>
-               </div>
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                  <HiFingerPrint className="h-4 w-4" />
+                </div>
+                <span className="text-sm font-black text-slate-900 tracking-tight">{log.admin}</span>
+              </div>
             ),
             action: <Badge label={log.action} color={log.action.includes('Organization') ? 'blue' : log.action.includes('Domain') ? 'indigo' : 'gray'} variant="glass" />,
             target: (
-               <div className="flex items-center gap-2">
-                  <HiGlobeAlt className="h-3.5 w-3.5 text-slate-300" />
-                  <span className="text-sm text-slate-700 font-bold tracking-tight">{log.target}</span>
-               </div>
+              <div className="flex items-center gap-2">
+                <HiGlobeAlt className="h-3.5 w-3.5 text-slate-300" />
+                <span className="text-sm text-slate-700 font-bold tracking-tight">{log.target}</span>
+              </div>
             ),
             ip: (
-               <div className="flex items-center gap-2">
-                  <HiCommandLine className="h-3.5 w-3.5 text-slate-300" />
-                  <span className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-widest">{log.ip}</span>
-               </div>
+              <div className="flex items-center gap-2">
+                <HiCommandLine className="h-3.5 w-3.5 text-slate-300" />
+                <span className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-widest">{log.ip}</span>
+              </div>
             ),
             result: (
               <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
@@ -202,20 +202,6 @@ export default function AuditLogs() {
             ),
           }))}
         />
-      </div>
-
-      {/* Security Advisory */}
-      <div className="rounded-none border border-slate-900 bg-slate-900 p-6 flex gap-4 items-start shadow-xl shadow-slate-200">
-        <div className="h-10 w-10 rounded-none bg-white/10 flex items-center justify-center text-white border border-white/5 shadow-inner">
-           <HiExclamationCircle className="h-6 w-6" />
-        </div>
-        <div>
-          <p className="text-xs font-bold text-white uppercase tracking-[0.2em] mb-2">Immutable Policy Enforcement</p>
-          <p className="text-xs font-medium text-white/70 leading-relaxed max-w-4xl">
-            Audit logs are cryptographically sealed and cannot be modified or deleted by any administrative user, including SuperAdmins. 
-            This ensures a complete, forensic-grade chain of custody for all platform kernel activities.
-          </p>
-        </div>
       </div>
     </div>
   )

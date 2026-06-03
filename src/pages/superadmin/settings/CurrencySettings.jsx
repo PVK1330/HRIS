@@ -1,127 +1,94 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-
 import settingsService from '../../../services/settingsService.js'
-import useSettingsMeta from './useSettingsMeta.js'
 
 const DEFAULTS = {
-  defaultCurrency: 'USD',
+  currencyCode: 'USD',
   currencySymbol: '$',
-  symbolPosition: 'before',
-  decimalSeparator: '.',
+  currencyPosition: 'left',
   thousandSeparator: ',',
+  decimalSeparator: '.',
+  decimalPlaces: 2,
 }
 
-const FALLBACK_META = {
-  options: [{ value: 'USD', label: 'USD ($)', symbol: '$' }],
-  symbolPositions: [{ value: 'before', label: 'Before Amount ($100)' }],
-  decimalOptions: [{ value: '.', label: 'Period (.)' }],
-  thousandOptions: [{ value: ',', label: 'Comma (,)' }],
-}
+const COMMON_CURRENCIES = [
+  { code: 'USD', symbol: '$', label: 'US Dollar' },
+  { code: 'EUR', symbol: '€', label: 'Euro' },
+  { code: 'GBP', symbol: '£', label: 'British Pound' },
+  { code: 'JPY', symbol: '¥', label: 'Japanese Yen' },
+  { code: 'INR', symbol: '₹', label: 'Indian Rupee' },
+  { code: 'AUD', symbol: 'A$', label: 'Australian Dollar' },
+  { code: 'CAD', symbol: 'C$', label: 'Canadian Dollar' },
+]
 
 function fromApi(api) {
   if (!api) return { ...DEFAULTS }
   return {
-    defaultCurrency: api.defaultCurrency || DEFAULTS.defaultCurrency,
-    currencySymbol: api.currencySymbol ?? DEFAULTS.currencySymbol,
-    symbolPosition: api.symbolPosition === 'after' ? 'after' : 'before',
-    decimalSeparator: api.decimalSeparator === ',' ? ',' : '.',
-    thousandSeparator:
-      api.thousandSeparator === null || api.thousandSeparator === undefined
-        ? ''
-        : String(api.thousandSeparator),
+    currencyCode: api.currencyCode || 'USD',
+    currencySymbol: api.currencySymbol || '$',
+    currencyPosition: api.currencyPosition || 'left',
+    thousandSeparator: api.thousandSeparator || ',',
+    decimalSeparator: api.decimalSeparator || '.',
+    decimalPlaces: Number(api.decimalPlaces) || 2,
   }
 }
 
-function deepClone(v) {
-  return JSON.parse(JSON.stringify(v))
-}
-
-function addThousandSeparators(intPart, sep) {
-  if (sep === '' || sep === undefined) return intPart
-  const neg = intPart.startsWith('-')
-  const digits = neg ? intPart.slice(1) : intPart
-  const parts = []
-  for (let i = digits.length; i > 0; i -= 3) {
-    parts.unshift(digits.slice(Math.max(0, i - 3), i))
-  }
-  return (neg ? '-' : '') + parts.join(sep)
-}
-
-function formatPreview(amount, s) {
-  const fixed = amount.toFixed(2)
-  const [intPart, decPart] = fixed.split('.')
-  const grouped = addThousandSeparators(intPart, s.thousandSeparator)
-  const numeral = `${grouped}${s.decimalSeparator}${decPart}`
-  if (s.symbolPosition === 'before') {
-    return `${s.currencySymbol}${numeral}`
-  }
-  return `${numeral}${s.currencySymbol}`
-}
-
-const selectCls =
-  'w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-900'
-
-function GridSkeleton() {
-  return <div className="h-[280px] animate-pulse rounded-lg bg-gray-100" />
-}
+function deepClone(v) { return JSON.parse(JSON.stringify(v)) }
 
 export default function CurrencySettings() {
-  const { meta } = useSettingsMeta()
-  const [settings, setSettings] = useState(null)
+  const [data, setData] = useState(null)
   const [saving, setSaving] = useState(false)
-  const originalRef = useRef(null)
+  const original = useRef(null)
 
   const load = useCallback(async () => {
     try {
       const res = await settingsService.getCurrency()
       const next = fromApi(res?.data)
-      setSettings(next)
-      originalRef.current = deepClone(next)
+      setData(next)
+      original.current = deepClone(next)
     } catch (err) {
-      toast.error(err?.message || 'Failed to load currency settings')
-      setSettings({ ...DEFAULTS })
-      originalRef.current = { ...DEFAULTS }
+      toast.error(err?.message || 'Failed to load settings')
+      setData({ ...DEFAULTS })
+      original.current = { ...DEFAULTS }
     }
   }, [])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  useEffect(() => { load() }, [load])
 
   const isDirty = useMemo(() => {
-    if (!settings || !originalRef.current) return false
-    return JSON.stringify(settings) !== JSON.stringify(originalRef.current)
-  }, [settings])
+    if (!data || !original.current) return false
+    return JSON.stringify(data) !== JSON.stringify(original.current)
+  }, [data])
 
-  const separatorsClash =
-    !!settings && settings.decimalSeparator === settings.thousandSeparator
-  const optionMeta = meta?.currency || FALLBACK_META
-  const currencyMap = useMemo(
-    () =>
-      optionMeta.options.reduce(
-        (acc, opt) => ({ ...acc, [opt.value]: opt.symbol }),
-        {}
-      ),
-    [optionMeta.options]
-  )
+  const separatorsClash = useMemo(() => {
+    if (!data) return false
+    return data.thousandSeparator === data.decimalSeparator
+  }, [data])
 
-  const set = (patch) => setSettings((prev) => ({ ...(prev || DEFAULTS), ...patch }))
+  const set = (patch) => setData((prev) => ({ ...(prev || DEFAULTS), ...patch }))
 
-  const handleDiscard = () => {
-    if (!originalRef.current) return
-    setSettings(deepClone(originalRef.current))
+  const handleCurrencySelect = (code) => {
+    const found = COMMON_CURRENCIES.find((c) => c.code === code)
+    if (found) {
+      set({ currencyCode: found.code, currencySymbol: found.symbol })
+    } else {
+      set({ currencyCode: code })
+    }
   }
 
-  const handleSave = async () => {
-    if (!settings || separatorsClash) return
+  const handleSave = async (e) => {
+    if (e) e.preventDefault()
+    if (!data || separatorsClash) return
     setSaving(true)
     try {
-      const res = await settingsService.updateCurrency(settings)
+      const res = await settingsService.updateCurrency({
+        ...data,
+        decimalPlaces: Math.max(0, Math.min(4, Math.floor(Number(data.decimalPlaces) || 0))),
+      })
       const next = fromApi(res?.data)
-      setSettings(next)
-      originalRef.current = deepClone(next)
-      toast.success('Currency settings saved')
+      setData(next)
+      original.current = deepClone(next)
+      toast.success('Settings saved')
     } catch (err) {
       toast.error(err?.message || 'Failed to save settings')
     } finally {
@@ -129,161 +96,178 @@ export default function CurrencySettings() {
     }
   }
 
-  const preview = settings ? formatPreview(1234567.89, settings) : ''
+  const formatPreview = () => {
+    if (!data) return ''
+    const { currencySymbol, currencyPosition, thousandSeparator, decimalSeparator, decimalPlaces } = data
+    const parts = `1${thousandSeparator}234${thousandSeparator}567${decimalPlaces > 0 ? decimalSeparator : ''}${'0'.repeat(decimalPlaces)}`
+    
+    if (currencyPosition === 'left') return `${currencySymbol}${parts}`
+    if (currencyPosition === 'left-space') return `${currencySymbol} ${parts}`
+    if (currencyPosition === 'right') return `${parts}${currencySymbol}`
+    if (currencyPosition === 'right-space') return `${parts} ${currencySymbol}`
+    return `${currencySymbol}${parts}`
+  }
 
-  return (
-    <div className="mx-auto max-w-3xl px-4 pb-24 md:px-0">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Financial Localization</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
-            Configure currency presentation and precision logic.
-          </p>
-        </div>
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-white shadow-md">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-            />
-          </svg>
+  const baseInput = "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+
+  if (data === null) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="animate-pulse space-y-8">
+          <div className="h-32 rounded-xl bg-gray-100"></div>
+          <div className="h-64 rounded-xl bg-gray-100"></div>
         </div>
       </div>
+    )
+  }
 
-      {settings === null ? (
-        <GridSkeleton />
-      ) : (
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-xs uppercase tracking-wider text-gray-400">
-                DEFAULT CURRENCY
-              </label>
-              <select
-                className={selectCls}
-                value={settings.defaultCurrency}
-                onChange={(e) => {
-                  const code = e.target.value
-                  const sym = currencyMap[code] ?? '$'
-                  set({ defaultCurrency: code, currencySymbol: sym })
-                }}
-              >
-                {optionMeta.options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs uppercase tracking-wider text-gray-400">
-                SYMBOL POSITION
-              </label>
-              <select
-                className={selectCls}
-                value={settings.symbolPosition}
-                onChange={(e) => set({ symbolPosition: e.target.value })}
-              >
-                {optionMeta.symbolPositions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs uppercase tracking-wider text-gray-400">
-                DECIMAL SEPARATOR
-              </label>
-              <select
-                className={selectCls}
-                value={settings.decimalSeparator}
-                onChange={(e) => set({ decimalSeparator: e.target.value })}
-              >
-                {optionMeta.decimalOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs uppercase tracking-wider text-gray-400">
-                THOUSAND SEPARATOR
-              </label>
-              <select
-                className={selectCls}
-                value={settings.thousandSeparator}
-                onChange={(e) => set({ thousandSeparator: e.target.value })}
-              >
-                {optionMeta.thousandOptions.map((opt) => (
-                  <option key={opt.label} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="space-y-10 divide-y divide-gray-900/10">
+        
+        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+          <div className="px-4 sm:px-0">
+            <h2 className="text-base font-semibold leading-7 text-gray-900">Currency Localization</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-600">
+              Configure global currency display formats and precision.
+            </p>
+            <div className="mt-6">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Live Preview</div>
+              <div className="text-xl font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 inline-block">
+                {formatPreview()}
+              </div>
             </div>
           </div>
 
-          {separatorsClash && (
-            <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-600">
-              Decimal and thousand separators cannot be the same
-            </div>
-          )}
+          <form 
+            onSubmit={handleSave}
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+          >
+            <div className="px-4 py-6 sm:p-8 space-y-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Currency Code</label>
+                  <div className="mt-2">
+                    <select
+                      value={data.currencyCode}
+                      onChange={(e) => handleCurrencySelect(e.target.value)}
+                      className={baseInput}
+                    >
+                      {COMMON_CURRENCIES.map((c) => (
+                        <option key={c.code} value={c.code}>{c.code} - {c.label}</option>
+                      ))}
+                      <option value="OTHER">Other...</option>
+                    </select>
+                  </div>
+                </div>
 
-          <div className="mt-4 rounded-lg bg-gray-50 p-4">
-            <div className="mb-2 text-xs uppercase tracking-wider text-gray-400">PREVIEW</div>
-            <div className="font-mono text-2xl font-bold text-gray-800">{preview}</div>
-          </div>
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Currency Symbol</label>
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      value={data.currencySymbol}
+                      onChange={(e) => set({ currencySymbol: e.target.value })}
+                      className={baseInput}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-2 border-t border-gray-900/5">
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Symbol Position</label>
+                  <div className="mt-2">
+                    <select
+                      value={data.currencyPosition}
+                      onChange={(e) => set({ currencyPosition: e.target.value })}
+                      className={baseInput}
+                    >
+                      <option value="left">Left ($99)</option>
+                      <option value="left-space">Left with space ($ 99)</option>
+                      <option value="right">Right (99$)</option>
+                      <option value="right-space">Right with space (99 $)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Decimal Places</label>
+                  <div className="mt-2">
+                    <select
+                      value={data.decimalPlaces.toString()}
+                      onChange={(e) => set({ decimalPlaces: Number(e.target.value) })}
+                      className={baseInput}
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-2 border-t border-gray-900/5">
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Thousand Separator</label>
+                  <div className="mt-2">
+                    <select
+                      value={data.thousandSeparator}
+                      onChange={(e) => set({ thousandSeparator: e.target.value })}
+                      className={baseInput}
+                    >
+                      <option value=",">Comma (,)</option>
+                      <option value=".">Dot (.)</option>
+                      <option value=" ">Space ( )</option>
+                      <option value="'">Apostrophe (')</option>
+                      <option value="">None</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium leading-6 text-gray-900">Decimal Separator</label>
+                  <div className="mt-2">
+                    <select
+                      value={data.decimalSeparator}
+                      onChange={(e) => set({ decimalSeparator: e.target.value })}
+                      className={baseInput}
+                    >
+                      <option value=".">Dot (.)</option>
+                      <option value=",">Comma (,)</option>
+                    </select>
+                  </div>
+                  {separatorsClash && (
+                    <p className="mt-2 text-sm text-red-600">Thousand separator and decimal separator cannot be the same.</p>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
+              <button
+                type="button"
+                onClick={() => setData(deepClone(original.current))}
+                disabled={!isDirty || saving}
+                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
+              >
+                Discard
+              </button>
+              <button
+                type="submit"
+                disabled={!isDirty || saving || separatorsClash}
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
 
-      {isDirty && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-gray-200 bg-white px-8 py-4 shadow-lg">
-          <div className="flex items-center">
-            <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
-            <span className="ml-2 text-xs uppercase tracking-wider text-gray-500">
-              PRICING MATRIX SYNCED
-            </span>
-          </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleDiscard}
-              disabled={saving}
-              className="rounded-lg border border-gray-300 px-6 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              Discard
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving || separatorsClash}
-              className="flex items-center gap-2 rounded-lg bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
-            >
-              {saving && (
-                <span
-                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
-                  aria-hidden
-                />
-              )}
-              Save Changes
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }

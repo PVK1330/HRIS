@@ -1,72 +1,37 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-
-import SettingsCard from '../../../../components/settings/SettingsCard.jsx'
-import FormField from '../../../../components/settings/FormField.jsx'
-import SaveButton from '../../../../components/settings/SaveButton.jsx'
-import SettingsInput from '../../../../components/settings/SettingsInput.jsx'
-import SettingsSelect from '../../../../components/settings/SettingsSelect.jsx'
-import SettingsToggle from '../../../../components/settings/SettingsToggle.jsx'
-import { Badge } from '../../../../components/ui/Badge.jsx'
-
+import { Toggle } from '../../../../components/ui/Toggle.jsx'
 import settingsService from '../../../../services/settingsService.js'
 
 function EmptyState() {
   return (
-    <div className="flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-200 bg-gray-50/40 px-6 py-12">
+    <div className="flex min-h-[300px] flex-col items-center justify-center rounded-lg border border-dashed border-gray-900/10 bg-gray-50 px-6 py-12">
       <svg
-        width="72"
-        height="56"
-        viewBox="0 0 72 56"
+        className="mx-auto h-12 w-12 text-gray-400"
         fill="none"
-        aria-hidden
-        className="text-blue-400"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
       >
-        <rect
-          x="2"
-          y="2"
-          width="68"
-          height="52"
-          rx="6"
-          stroke="currentColor"
-          strokeWidth="2"
-          fill="#EFF6FF"
-        />
         <path
-          d="M4 6 L36 32 L68 6"
-          stroke="currentColor"
-          strokeWidth="2"
+          vectorEffect="non-scaling-stroke"
+          strokeLinecap="round"
           strokeLinejoin="round"
-          fill="none"
-        />
-        <path
-          d="M4 50 L28 28"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        <path
-          d="M68 50 L44 28"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-          fill="none"
+          strokeWidth={2}
+          d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
         />
       </svg>
-      <p className="text-sm text-gray-500">
-        Select an email template from the dropdown menu
-      </p>
+      <h3 className="mt-2 text-sm font-semibold text-gray-900">No template selected</h3>
+      <p className="mt-1 text-sm text-gray-500">Select a template from the list to preview and edit its content.</p>
     </div>
   )
 }
 
 function EditorSkeleton() {
   return (
-    <div className="space-y-4">
-      <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
-      <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
-      <div className="h-64 w-full animate-pulse rounded bg-gray-200" />
+    <div className="space-y-6 animate-pulse">
+      <div className="h-10 w-full rounded-md bg-gray-200"></div>
+      <div className="h-64 w-full rounded-md bg-gray-200"></div>
     </div>
   )
 }
@@ -85,7 +50,6 @@ export default function EmailTemplates() {
   const [saving, setSaving] = useState(false)
   const textareaRef = useRef(null)
 
-  /* ---------- load template list once ---------- */
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -103,7 +67,6 @@ export default function EmailTemplates() {
     }
   }, [])
 
-  /* ---------- load full template when selection changes ---------- */
   const loadTemplate = useCallback(async (slug) => {
     if (!slug) return
     setTplLoading(true)
@@ -125,7 +88,6 @@ export default function EmailTemplates() {
     if (selectedSlug) loadTemplate(selectedSlug)
   }, [selectedSlug, loadTemplate])
 
-  /* ---------- insert variable at caret ---------- */
   const insertVariable = (variable) => {
     const token = `{{${variable}}}`
     const ta = textareaRef.current
@@ -144,8 +106,8 @@ export default function EmailTemplates() {
     })
   }
 
-  /* ---------- save ---------- */
-  const onSave = async () => {
+  const onSave = async (e) => {
+    if (e) e.preventDefault()
     if (!selectedSlug) return
     setSaving(true)
     try {
@@ -161,7 +123,7 @@ export default function EmailTemplates() {
         setBody(tpl.body || '')
         setIsActive(!!tpl.is_active)
       }
-      toast.success('Template saved successfully')
+      toast.success('Template saved')
     } catch (err) {
       toast.error(err?.message || 'Failed to save template')
     } finally {
@@ -169,159 +131,137 @@ export default function EmailTemplates() {
     }
   }
 
+  const baseInput = "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+
   return (
-    <div className="mx-auto max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700 px-4 md:px-0">
-      {/* Page Header */}
-      <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Notification Blueprints</h1>
-          <p className="mt-1 text-slate-500 text-xs font-medium">Design automated email communications.</p>
-        </div>
-        <div className="w-full md:w-64">
-           <div className="relative group">
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="space-y-10 divide-y divide-gray-900/10">
+        
+        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+          <div className="px-4 sm:px-0">
+            <h2 className="text-base font-semibold leading-7 text-gray-900">Email Templates</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-600">
+              Customize dynamic system email messages and styling.
+            </p>
+            
+            <div className="mt-6">
+              <label className="block text-sm font-medium leading-6 text-gray-900 mb-2">Select Template</label>
               <select
                 value={selectedSlug}
                 onChange={(e) => setSelectedSlug(e.target.value)}
                 disabled={listLoading}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[10px] font-black text-slate-900 uppercase tracking-widest outline-none transition-all focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 appearance-none cursor-pointer"
+                className={baseInput}
               >
-                <option value="">{listLoading ? 'SYNCING...' : 'SELECT BLUEPRINT'}</option>
+                <option value="">{listLoading ? 'Loading...' : 'Choose a template...'}</option>
                 {templates.map((t) => (
-                  <option key={t.slug} value={t.slug}>{t.name.toUpperCase()}</option>
+                  <option key={t.slug} value={t.slug}>{t.name}</option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
-                 </svg>
-              </div>
-           </div>
-        </div>
-      </div>
-
-      {!selectedSlug ? (
-        <EmptyState />
-      ) : tplLoading ? (
-        <EditorSkeleton />
-      ) : !template ? (
-        <EmptyState />
-      ) : (
-        <div className="space-y-6 pb-24">
-          {/* Main Editor Card */}
-          <div className="group relative rounded-[1.5rem] border border-slate-200 bg-white p-5 md:p-6 shadow-sm transition-all hover:shadow-md">
-             <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
+            </div>
+            
+            {template && (
+              <div className="mt-8 border-t border-gray-900/10 pt-6">
+                <h3 className="text-sm font-medium leading-6 text-gray-900">Variables for {template.name}</h3>
+                <p className="text-xs text-gray-500 mb-4">Click a variable to insert it at the cursor position.</p>
+                {Array.isArray(template.variables) && template.variables.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {template.variables.map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => insertVariable(v)}
+                        className="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                      >
+                        <span className="text-gray-400 mr-1">{"{{"}</span>
+                        {v}
+                        <span className="text-gray-400 ml-1">{"}}"}</span>
+                      </button>
+                    ))}
                   </div>
-                  <div>
-                    <h3 className="text-base font-black text-slate-900 tracking-tight">{template.name}</h3>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">ID: {template.slug}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                   <span className="hidden md:inline text-[9px] font-black text-slate-400 uppercase tracking-widest">Operational:</span>
-                   <button
-                     type="button"
-                     onClick={() => setIsActive(!isActive)}
-                     className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${isActive ? 'bg-emerald-500' : 'bg-slate-200'}`}
-                   >
-                     <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
-                   </button>
-                </div>
-             </div>
-
-             <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Email Subject Header</label>
-                  <input
-                    type="text"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Subject line..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/30 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all focus:border-slate-900 focus:bg-white"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Message Body (HTML)</label>
-                  <div className="relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-900 shadow-inner">
-                    <div className="flex items-center gap-2 border-b border-slate-800 bg-slate-900/50 px-4 py-2">
-                       <div className="flex gap-1.5">
-                          <div className="h-2 w-2 rounded-full bg-slate-700" />
-                          <div className="h-2 w-2 rounded-full bg-slate-700" />
-                          <div className="h-2 w-2 rounded-full bg-slate-700" />
-                       </div>
-                       <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-2">HTML Source</span>
-                    </div>
-                    <textarea
-                      ref={textareaRef}
-                      value={body}
-                      onChange={(e) => setBody(e.target.value)}
-                      className="block min-h-[18rem] w-full bg-transparent p-4 font-mono text-xs leading-relaxed text-blue-400 outline-none selection:bg-blue-500/30"
-                      spellCheck="false"
-                    />
-                  </div>
-                </div>
-
-                {/* Variables Panel */}
-                {Array.isArray(template.variables) && template.variables.length > 0 && (
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Injection Tokens</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {template.variables.map((v) => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => insertVariable(v)}
-                          className="group flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black text-slate-600 transition-all hover:border-slate-900 hover:text-slate-900 active:scale-95"
-                        >
-                          <span className="text-slate-300 transition-colors group-hover:text-slate-400">{"{{"}</span>
-                          {v}
-                          <span className="text-slate-300 transition-colors group-hover:text-slate-400">{"}}"}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No variables available</p>
                 )}
-             </div>
+              </div>
+            )}
           </div>
 
-          {/* Action Footer */}
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex w-[90%] md:w-full max-w-[400px] items-center justify-between rounded-2xl border border-slate-200 bg-white/80 p-2 shadow-xl backdrop-blur-xl animate-in fade-in zoom-in duration-500">
-             <div className="flex items-center gap-2 pl-3">
-                <div className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-pulse" />
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Blueprint Drafting</span>
-             </div>
-             <div className="flex gap-2">
-                <button 
-                  type="button"
-                  onClick={() => setSelectedSlug('')}
-                  className="rounded-xl px-4 py-2 text-[10px] font-bold text-slate-500 hover:bg-slate-100 transition-all"
-                >
-                  Discard
-                </button>
-                <button
-                  type="button"
-                  onClick={onSave}
-                  disabled={saving}
-                  className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-black text-white shadow-lg transition-all hover:bg-black active:scale-95 disabled:opacity-50"
-                >
-                  {saving ? (
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                  ) : (
-                    <span>Update Blueprint</span>
-                  )}
-                </button>
-             </div>
-          </div>
+          <form 
+            onSubmit={onSave}
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+          >
+            <div className="px-4 py-6 sm:p-8 space-y-6">
+              {!selectedSlug ? (
+                <EmptyState />
+              ) : tplLoading ? (
+                <EditorSkeleton />
+              ) : !template ? (
+                <EmptyState />
+              ) : (
+                <>
+                  <div className="flex items-center justify-between pb-6 border-b border-gray-900/5">
+                    <div>
+                      <h3 className="text-base font-semibold leading-6 text-gray-900">{template.name}</h3>
+                      <p className="mt-1 text-sm text-gray-500">ID: {template.slug}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-gray-900">Active</span>
+                      <Toggle checked={isActive} onChange={setIsActive} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium leading-6 text-gray-900">Email Subject</label>
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        placeholder="Subject line..."
+                        className={baseInput}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium leading-6 text-gray-900">Message Body (HTML)</label>
+                    <div className="mt-2 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600">
+                      <div className="bg-gray-50 px-3 py-2 border-b border-gray-300 rounded-t-md">
+                        <span className="text-xs font-medium text-gray-500">HTML Source</span>
+                      </div>
+                      <textarea
+                        ref={textareaRef}
+                        value={body}
+                        onChange={(e) => setBody(e.target.value)}
+                        className="block min-h-[400px] w-full resize-y border-0 bg-gray-900 rounded-b-md p-4 font-mono text-sm text-blue-300 focus:ring-0"
+                        spellCheck="false"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
+              <button
+                type="button"
+                onClick={() => setSelectedSlug('')}
+                disabled={saving}
+                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!selectedSlug || saving}
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Template'}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+
+      </div>
     </div>
   )
 }

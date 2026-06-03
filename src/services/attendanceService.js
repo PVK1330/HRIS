@@ -2,49 +2,93 @@ import api from './api.js'
 
 const BASE = '/attendance'
 
-/**
- * GET /api/v1/attendance
- * Admin list — all employees for a given date
- */
 export const listAttendance = async (params = {}) => {
   const { data } = await api.get(BASE, { params })
-  return data.data  // { records, total, summary, date, limit, page }
+  return data.data
 }
 
-/**
- * POST /api/v1/attendance
- * Manual punch — mark attendance for an employee
- */
 export const markAttendance = async (payload) => {
   const { data } = await api.post(BASE, payload)
   return data.data.record
 }
 
-/**
- * GET /api/v1/attendance/regularizations
- * All pending regularization requests
- */
-export const getPendingRegularizations = async (params = {}) => {
-  const { data } = await api.get(`${BASE}/regularizations`, { params })
-  return data.data  // { records, total }
+export const markAttendanceOverride = async (payload) => {
+  const { data } = await api.post(`${BASE}/override`, payload)
+  return data.data.record
 }
 
-/**
- * PATCH /api/v1/attendance/:id/regularize
- * Approve or reject a regularization request
- * @param {number} id
- * @param {{ action: 'approve'|'reject', reason?: string }} payload
- */
+export const getAttendanceDetail = async (id) => {
+  const { data } = await api.get(`${BASE}/${id}`)
+  return data.data
+}
+
+export const checkIn = async (payload = {}) => {
+  const { data } = await api.post(`${BASE}/check-in`, payload)
+  return data.data.record
+}
+
+export const checkOut = async (payload = {}) => {
+  const { data } = await api.post(`${BASE}/check-out`, payload)
+  return data.data.record
+}
+
+export const getMyToday = async () => {
+  const { data } = await api.get(`${BASE}/me/today`)
+  return data.data
+}
+
+export const getAttendanceDashboard = async (params = {}) => {
+  const { data } = await api.get(`${BASE}/dashboard`, { params })
+  return data.data
+}
+
+export const submitRegularization = async (payload) => {
+  const { data } = await api.post(`${BASE}/regularization`, payload)
+  return data.data.record
+}
+
+export const getPendingRegularizations = async (params = {}) => {
+  const { data } = await api.get(`${BASE}/regularizations`, { params })
+  return data.data
+}
+
+export const getRegularizationHistory = async (params = {}) => {
+  const { data } = await api.get(`${BASE}/regularizations/history`, { params })
+  return data.data
+}
+
 export const regularize = async (id, payload) => {
   const { data } = await api.patch(`${BASE}/${id}/regularize`, payload)
   return data.data.record
 }
 
-/**
- * GET /api/v1/employees/:employeeId/attendance
- * Employee-scoped attendance (used in EmployeeProfile)
- */
+export const getPayrollSummary = async (params) => {
+  const { data } = await api.get(`${BASE}/payroll-summary`, { params })
+  return data.data
+}
+
+export const getAttendanceReport = async (params = {}) => {
+  const { data } = await api.get(`${BASE}/reports/data`, { params })
+  return data.data
+}
+
+export const exportAttendancePdf = async (params = {}) => {
+  const res = await api.get(`${BASE}/reports/export/pdf`, {
+    params,
+    responseType: 'blob',
+  })
+  return res.data
+}
+
+export const exportAttendanceExcel = async (params = {}) => {
+  const res = await api.get(`${BASE}/reports/export/excel`, {
+    params,
+    responseType: 'blob',
+  })
+  return res.data
+}
+
 export const getEmployeeAttendance = async (employeeId, params = {}) => {
   const { data } = await api.get(`/employees/${employeeId}/attendance`, { params })
-  return data.data  // { records, summary, year, month }
+  return data.data
 }

@@ -309,7 +309,7 @@ export default function NotificationDropdown() {
               </button>
             )}
           </div>
-  
+
           <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
             <button
               onClick={() => setFilter('all')}
@@ -375,7 +375,6 @@ export default function NotificationDropdown() {
             )}
           </div>
 
-
           {/* Footer */}
           <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">
             <button
@@ -386,8 +385,7 @@ export default function NotificationDropdown() {
             </button>
           </div>
         </div>
-      )
-      }
+      )}
 
       {/* PopUp / Modal Overlay */}
       {

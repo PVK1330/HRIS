@@ -222,3 +222,8 @@ export const completeOnboardingWorkflow = async (id) => {
   const { data } = await api.post(`/employees/${id}/onboarding/complete`)
   return data.data
 }
+
+export const remindOnboardingDocuments = async (id) => {
+  const { data } = await api.post(`/employees/${id}/onboarding/remind-documents`)
+  return data.data
+}

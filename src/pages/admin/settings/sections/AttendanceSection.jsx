@@ -19,6 +19,7 @@ import {
   TextInput,
   Toggle,
 } from '../components/ui'
+import { seedUkHolidays } from '../../../../services/holidaysService.js'
 
 function buildDraft(data) {
   if (!data) return null
@@ -302,7 +303,76 @@ export default function AttendanceSection({ registerToolbar }) {
             />
           </FieldRow>
       </SectionCard>
+
+      <HolidaySeedPanel />
     </SettingsSection>
+  )
+}
+
+const UK_REGIONS = ['England', 'Scotland', 'Wales', 'Northern Ireland']
+
+function HolidaySeedPanel() {
+  const [year, setYear] = useState(String(new Date().getFullYear()))
+  const [regions, setRegions] = useState(['England'])
+  const [seeding, setSeeding] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const toggleRegion = (r) => {
+    setRegions((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]))
+  }
+
+  const handleSeed = async () => {
+    setSeeding(true)
+    setMsg('')
+    try {
+      const result = await seedUkHolidays({ year: parseInt(year, 10), regions })
+      setMsg(`Seeded ${result.seeded?.length || 0} calendar(s) for ${year}`)
+    } catch (err) {
+      setMsg(err?.response?.data?.message || err?.message || 'Seed failed')
+    } finally {
+      setSeeding(false)
+    }
+  }
+
+  return (
+    <SectionCard title="UK public holidays (database seed)">
+      <p className="mb-4 text-sm text-slate-500">
+        Loads public holidays from server configuration into your organization calendar. Add more years in the UK holidays data file on the server, then seed again.
+      </p>
+      <FieldRow label="Year">
+        <TextInput
+          type="number"
+          min={2020}
+          max={2100}
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+          className="max-w-[120px]"
+        />
+      </FieldRow>
+      <FieldRow label="Regions">
+        <div className="flex flex-wrap gap-3">
+          {UK_REGIONS.map((r) => (
+            <label key={r} className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={regions.includes(r)}
+                onChange={() => toggleRegion(r)}
+              />
+              {r}
+            </label>
+          ))}
+        </div>
+      </FieldRow>
+      <button
+        type="button"
+        disabled={seeding || !regions.length}
+        onClick={handleSeed}
+        className="mt-4 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+      >
+        {seeding ? 'Seeding…' : 'Seed UK holidays'}
+      </button>
+      {msg && <p className="mt-3 text-sm text-slate-600">{msg}</p>}
+    </SectionCard>
   )
 }
 
