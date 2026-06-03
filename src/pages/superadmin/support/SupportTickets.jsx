@@ -73,6 +73,19 @@ export default function SupportTickets() {
   const [ticketStatus, setTicketStatus] = useState('Waiting')
   const [replyText, setReplyText] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const conversationEndRef = useRef(null)
+
+  useEffect(() => {
+    if (showDetailsModal) {
+      setTimeout(() => {
+        conversationEndRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end',
+        })
+      }, 100)
+    }
+  }, [showDetailsModal, selectedTicket?.conversation?.length, selectedTicket?.messages?.length, selectedTicket?.replies?.length])
   const [loadingTicketDetails, setLoadingTicketDetails] = useState(false)
   const [pendingTicketId, setPendingTicketId] = useState(null)
 
@@ -360,7 +373,7 @@ export default function SupportTickets() {
         />
       </div>
 
-      {/* Ticket Details Modal */}
+            {/* Ticket Details Modal */}
       <Modal
         isOpen={showDetailsModal}
         onClose={() => {
@@ -369,125 +382,189 @@ export default function SupportTickets() {
             window.history.replaceState(null, '', window.location.pathname + window.location.search)
           }
         }}
+        size="custom"
+        showClose={true}
+        bodyClassName="p-0 bg-slate-50 overflow-hidden"
         header={
-          <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-bold text-slate-900">{selectedTicket?.subject || 'Ticket Details'}</h2>
-            <p className="text-sm text-slate-500">{selectedTicket ? (selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`) : ''}</p>
+          <div className="flex flex-col gap-2">
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Ticket Details</h2>
+            <p className="text-sm font-medium text-slate-500">
+              View ticket information, conversation history, and communicate directly regarding this support request.
+            </p>
           </div>
         }
-        size="2xl"
-        bodyClassName="overflow-hidden"
       >
         {selectedTicket && (
-          <div className="flex h-full min-h-[calc(90vh-140px)] flex-col overflow-hidden">
-            <div className="overflow-y-auto px-6 py-6 space-y-6">
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {/* Left Column: Ticket Info */}
-                <div className="space-y-4">
-                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Ticket ID</p>
-                        <p className="text-lg font-semibold text-slate-900 mt-1">{selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`}</p>
-                      </div>
-                      <Badge label={selectedTicket.status || 'Waiting'} color={getStatusColor(selectedTicket.status || 'Waiting')} />
-                    </div>
+          <div className="flex flex-col min-h-0 w-full max-w-[1200px] mx-auto">
+            <div className="p-6 overflow-y-auto">
+              {/* Information Card Section */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5"><HiTicket className="w-4 h-4" /> Ticket ID</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`}</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-orange-50/50 border border-orange-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-orange-600 flex items-center gap-1.5"><HiShieldExclamation className="w-4 h-4" /> Priority</p>
+                    <div><Badge label={selectedTicket.priority || 'Normal'} color={getPriorityColor(selectedTicket.priority)} /></div>
+                  </div>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-purple-50/50 border border-purple-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5"><HiLifebuoy className="w-4 h-4" /> Status</p>
+                    <div><Badge label={selectedTicket.status || 'Waiting'} color={getStatusColor(selectedTicket.status || 'Waiting')} /></div>
+                  </div>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5"><HiCalendarDays className="w-4 h-4" /> Created Date</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}</p>
+                  </div>
+                  <div className="col-span-2 flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><HiTag className="w-4 h-4 text-slate-400" /> Subject</p>
+                    <p className="text-sm font-bold text-slate-900 truncate">{selectedTicket.subject || '-'}</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><HiFolderOpen className="w-4 h-4 text-slate-400" /> Category</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedTicket.category || '-'}</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><HiBuildingOffice className="w-4 h-4 text-slate-400" /> Tenant Name</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedTicket.tenantName || '-'}</p>
+                  </div>
+                  <div className="col-span-2 md:col-span-4 flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><HiUser className="w-4 h-4 text-slate-400" /> Admin Name</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedTicket.adminName || '-'}</p>
+                  </div>
+                </div>
+              </div>
 
-                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-none border border-slate-100 bg-white p-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Category</p>
-                        <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.category || '-'}</p>
-                      </div>
-                      <div className="rounded-none border border-slate-100 bg-white p-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Priority</p>
-                        <Badge label={selectedTicket.priority || 'Normal'} color={getPriorityColor(selectedTicket.priority)} />
+              {/* Main Content Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Side (70%) */}
+                <div className="lg:col-span-8 flex flex-col gap-4">
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                    <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+                      <HiUserCircle className="w-5 h-5 text-[#0F766E]" />
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Conversation History</h3>
+                    </div>
+                    
+                    <div className="h-[450px] overflow-y-auto p-5 space-y-4 custom-scrollbar flex flex-col">
+                      <div className="space-y-4 flex-1">
+                        {(selectedTicket.conversation || []).length ? (
+                          (selectedTicket.conversation || []).map((msg, i, arr) => {
+                            const isLast = i === arr.length - 1;
+                            return (
+                              <div
+                                key={`${msg.id}-${msg.createdAt}-${msg.senderRole}`}
+                                className={`rounded-2xl border bg-white p-4 shadow-sm transition-all hover:shadow-md ${msg.senderRole === 'admin' ? 'border-sky-200 ml-4' : 'border-[#0F766E]/20 mr-4'} ${isLast ? 'ring-2 ring-[#0F766E]/20 ring-offset-2' : ''}`}
+                              >
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold ${msg.senderRole === 'admin' ? 'bg-sky-100 text-sky-700' : 'bg-[#0F766E]/10 text-[#0F766E]'}`}>
+                                    {msg.senderName ? msg.senderName.charAt(0).toUpperCase() : (msg.senderRole === 'admin' ? 'A' : 'S')}
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-bold text-slate-900 truncate">{msg.senderName || (msg.senderRole === 'admin' ? 'Admin' : 'Super Admin')}</span>
+                                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${msg.senderRole === 'admin' ? 'bg-sky-50 text-sky-600' : 'bg-[#0F766E]/10 text-[#0F766E]'}`}>
+                                        {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                      {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                      {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}
+                                    </div>
+                                  </div>
+                                </div>
+                                <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap ml-13">{msg.message}</p>
+                              </div>
+                            )
+                          })
+                        ) : (
+                          <div className="flex h-full items-center justify-center">
+                            <p className="text-sm text-slate-400 font-medium">No conversation history yet.</p>
+                          </div>
+                        )}
+                        <div ref={conversationEndRef} />
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5 space-y-4">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Admin Name</p>
-                      <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.adminName || '-'}</p>
+                  {/* Send Response */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mt-2">
+                    <div className="flex items-center gap-2 mb-4">
+                      <HiPaperClip className="w-5 h-5 text-[#0F766E]" />
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Send Response</h3>
                     </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Organization</p>
-                      <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.tenantName || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Created</p>
-                      <p className="mt-2 text-sm font-medium text-slate-900">{selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString() : '-'}</p>
+                    <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Type your response here..."
+                      className="w-full min-h-[120px] resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-4 focus:ring-[#0F766E]/10"
+                    />
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-slate-400">{replyText.length} characters</span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setReplyText('')}
+                          className="rounded-xl px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors"
+                        >
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveTicket}
+                          disabled={saving || loadingTicketDetails || !replyText.trim()}
+                          className="flex items-center gap-2 rounded-xl bg-[#0F766E] px-6 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#0c6b64] hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <HiPaperClip className="w-4 h-4" />
+                          {saving ? 'Sending...' : 'Send Response'}
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-3">Description</p>
-                    <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{selectedTicket.description || '-'}</p>
-                  </div>
-
-                  {(selectedTicket.attachmentUrl || selectedTicket.attachment_url) && (
-                    <div className="rounded-none border border-slate-200 bg-slate-50 p-5">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Attachment</p>
-                      <a
-                        href={selectedTicket.attachmentUrl || selectedTicket.attachment_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-[#0F766E]"
-                      >
-                        <HiPaperClip className="h-4 w-4 text-slate-500" />
-                        {selectedTicket.attachmentUrl?.split('/').pop() || selectedTicket.attachment_url?.split('/').pop() || 'Download attachment'}
-                      </a>
-                    </div>
-                  )}
                 </div>
 
-                {/* Right Column: Conversation and Reply */}
-                <div className="flex flex-col space-y-4 h-full max-h-full">
-                  <div className="flex-1 rounded-none border border-slate-200 bg-slate-50 p-4 flex flex-col min-h-[300px]">
-                    <div className="mb-4 flex items-center justify-between gap-3 shrink-0">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">Conversation History</p>
-                        <p className="text-[11px] text-slate-400">All messages related to this ticket</p>
+                {/* Right Side (30%) */}
+                <div className="lg:col-span-4">
+                  <div className="sticky top-0 bg-gradient-to-b from-slate-50 to-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-5">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide border-b border-slate-100 pb-3">Ticket Summary</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold text-slate-500">Ticket Number</span>
+                        <span className="text-sm font-bold text-slate-900">{selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`}</span>
                       </div>
-                      <span className="text-[11px] text-slate-500">{(selectedTicket.conversation || []).length} messages</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold text-slate-500">Priority</span>
+                        <Badge label={selectedTicket.priority || 'Normal'} color={getPriorityColor(selectedTicket.priority)} />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold text-slate-500">Status</span>
+                        <Badge label={selectedTicket.status || 'Waiting'} color={getStatusColor(selectedTicket.status || 'Waiting')} />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold text-slate-500">Category</span>
+                        <span className="text-sm font-bold text-slate-900">{selectedTicket.category || '-'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold text-slate-500">Tenant Name</span>
+                        <span className="text-sm font-bold text-slate-900">{selectedTicket.tenantName || '-'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold text-slate-500">Created Date</span>
+                        <span className="text-sm font-bold text-slate-900">{selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleDateString() : '-'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold text-slate-500">Last Updated</span>
+                        <span className="text-sm font-bold text-slate-900">{selectedTicket.updatedAt ? new Date(selectedTicket.updatedAt).toLocaleDateString() : '-'}</span>
+                      </div>
                     </div>
 
-                    <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                      {(selectedTicket.conversation || []).length ? (
-                        (selectedTicket.conversation || []).map((msg) => (
-                          <div
-                            key={`${msg.id}-${msg.createdAt}-${msg.senderRole}`}
-                            className={`rounded-none border-l-4 bg-white p-4 shadow-sm border border-slate-100 ${msg.senderRole === 'admin' ? 'border-l-sky-500' : 'border-l-[#0F766E]'}`}
-                          >
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                                <span className={`rounded-none px-2.5 py-1 text-[11px] font-bold uppercase ${msg.senderRole === 'admin' ? 'bg-sky-50 text-sky-700' : 'bg-[#0F766E]/10 text-[#0F766E]'}`}>
-                                  {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
-                                </span>
-                                <span className="text-xs font-semibold text-slate-700">{msg.senderName}</span>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                                <Badge label={msg.status || selectedTicket.status || 'Waiting'} color={getStatusColor(msg.status || selectedTicket.status || 'Waiting')} />
-                                <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
-                                <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}</span>
-                              </div>
-                            </div>
-                            <p className="mt-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{msg.message}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-slate-500">No conversation history yet.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-none border border-slate-200 bg-slate-50 p-5 space-y-4 shrink-0">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Update Status</p>
+                    <div className="pt-4 border-t border-slate-100">
+                      <p className="text-xs font-semibold text-slate-500 mb-2">Update Status</p>
                       <select
                         value={ticketStatus}
                         onChange={(e) => setTicketStatus(e.target.value)}
-                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-4 focus:ring-[#0F766E]/10"
                       >
                         {STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>{status}</option>
@@ -495,38 +572,22 @@ export default function SupportTickets() {
                       </select>
                     </div>
 
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 mb-2">Super Admin Response</p>
-                      <textarea
-                        className="w-full rounded-none border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20 resize-none"
-                        placeholder="Add response, notes, or resolution details..."
-                        rows={4}
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                      />
-                    </div>
+                    {(selectedTicket.attachmentUrl || selectedTicket.attachment_url) && (
+                      <div className="pt-4 border-t border-slate-100">
+                        <p className="text-xs font-semibold text-slate-500 mb-2">Attachment</p>
+                        <a
+                          href={selectedTicket.attachmentUrl || selectedTicket.attachment_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-[#0F766E] hover:bg-slate-100 transition-colors"
+                        >
+                          <HiPaperClip className="w-4 h-4" />
+                          <span className="truncate">{selectedTicket.attachmentUrl?.split('/').pop() || selectedTicket.attachment_url?.split('/').pop() || 'Download'}</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="sticky bottom-0 z-20 border-t border-slate-200 bg-white px-6 py-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowDetailsModal(false)}
-                  className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveTicket}
-                  disabled={saving || loadingTicketDetails || (!replyText.trim() && ticketStatus === selectedTicketStatus)}
-                  className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors"
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
               </div>
             </div>
           </div>
