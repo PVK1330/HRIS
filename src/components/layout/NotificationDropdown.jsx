@@ -202,8 +202,6 @@ export default function NotificationDropdown() {
   };
 
   const markAsRead = async (id) => {
-
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true, isRead: true } : n));
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true, read: true } : n));
     try {
       await api.patch(`/notifications/${id}/read`);
@@ -213,8 +211,6 @@ export default function NotificationDropdown() {
   };
 
   const markAllAsRead = async () => {
-
-    setNotifications(prev => prev.map(n => ({ ...n, read: true, isRead: true })));
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true, read: true })));
     try {
       await api.patch('/notifications/mark-all-read');
@@ -313,7 +309,7 @@ export default function NotificationDropdown() {
               </button>
             )}
           </div>
-          {/* Filter Tabs */}
+
           <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
             <button
               onClick={() => setFilter('all')}
@@ -392,87 +388,86 @@ export default function NotificationDropdown() {
       )}
 
       {/* PopUp / Modal Overlay */}
-      {selectedNotification && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300">
-          <div
-            className="relative w-full max-w-md mx-4 rounded-2xl border border-border-tertiary bg-background-primary p-6 shadow-2xl transition-all scale-100 animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-start gap-4 border-b border-border-tertiary pb-4 mb-4">
-              <div className="p-2.5 rounded-xl bg-background-secondary/50 self-start">
-                {getIcon(selectedNotification.type)}
+      {
+        selectedNotification && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+            <div
+              className="relative w-full max-w-md mx-4 rounded-2xl border border-border-tertiary bg-background-primary p-6 shadow-2xl transition-all scale-100 animate-in fade-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-start gap-4 border-b border-border-tertiary pb-4 mb-4">
+                <div className="p-2.5 rounded-xl bg-background-secondary/50 self-start">
+                  {getIcon(selectedNotification.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold text-text-primary leading-snug">
+                    {selectedNotification.title}
+                  </h3>
+                  <p className="text-xs text-text-tertiary mt-1 flex items-center gap-2">
+                    <span>{selectedNotification.time}</span>
+                    <span>•</span>
+                    <span className="capitalize font-semibold text-primary">{selectedNotification.type || 'info'}</span>
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-text-primary leading-snug">
-                  {selectedNotification.title}
-                </h3>
-                <p className="text-xs text-text-tertiary mt-1 flex items-center gap-2">
-                  <span>{selectedNotification.time}</span>
-                  <span>•</span>
-                  <span className="capitalize font-semibold text-primary">{selectedNotification.type || 'info'}</span>
-                </p>
+
+              {/* Modal Body */}
+              <div className="py-2 text-text-secondary text-sm leading-relaxed whitespace-pre-wrap max-h-[250px] overflow-y-auto pr-1">
+                {selectedNotification.message}
               </div>
-            </div>
 
-            {/* Modal Body */}
-            <div className="py-2 text-text-secondary text-sm leading-relaxed whitespace-pre-wrap max-h-[250px] overflow-y-auto pr-1">
-              {selectedNotification.message}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="mt-6 flex justify-end gap-3 border-t border-border-tertiary pt-4">
-              {selectedNotification.type === 'support_ticket' && selectedNotification.ticketId && !selectedNotification.redirectUrl && (
+              {/* Modal Footer */}
+              <div className="mt-6 flex justify-end gap-3 border-t border-border-tertiary pt-4">
+                {selectedNotification.type === 'support_ticket' && selectedNotification.ticketId && !selectedNotification.redirectUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedNotification(null);
+                      const supportPath = isSuperadmin ? `/superadmin/support` : `/admin/support`;
+                      navigate(`${supportPath}#ticket-${selectedNotification.ticketId}`);
+                    }}
+                    className="rounded-xl px-4 py-2 text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-all duration-150 flex items-center gap-1.5"
+                  >
+                    <HiTicket className="h-4 w-4" />
+                    View Ticket
+                  </button>
+                )}
+                {selectedNotification.redirectUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedNotification(null);
+                      navigate(selectedNotification.redirectUrl);
+                    }}
+                    className="rounded-xl px-4 py-2 text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-all duration-150 flex items-center gap-1.5"
+                  >
+                    View Details
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedNotification(null);
-                    const supportPath = isSuperadmin ? `/superadmin/support` : `/admin/support`;
-                    navigate(`${supportPath}#ticket-${selectedNotification.ticketId}`);
+                    deleteNotification(selectedNotification.id);
                   }}
-                  className="rounded-xl px-4 py-2 text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-all duration-150 flex items-center gap-1.5"
+                  className="rounded-xl px-4 py-2 text-xs font-semibold bg-danger-light text-danger-DEFAULT hover:bg-danger-DEFAULT hover:text-white transition-all duration-150 flex items-center gap-1.5"
                 >
-                  <HiTicket className="h-4 w-4" />
-                  View Ticket
+                  <HiTrash className="h-4.5 w-4.5" />
+                  Delete
                 </button>
-              )}
-              {selectedNotification.redirectUrl && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedNotification(null);
-                    navigate(selectedNotification.redirectUrl);
-                  }}
-                  className="rounded-xl px-4 py-2 text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-all duration-150 flex items-center gap-1.5"
+                  onClick={() => setSelectedNotification(null)}
+                  className="rounded-xl px-5 py-2 text-xs font-bold border border-border-tertiary text-text-secondary hover:bg-background-secondary hover:text-text-primary transition-all duration-150"
                 >
-                  View Details
+                  Close
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  deleteNotification(selectedNotification.id);
-                }}
-                className="rounded-xl px-4 py-2 text-xs font-semibold bg-danger-light text-danger-DEFAULT hover:bg-danger-DEFAULT hover:text-white transition-all duration-150 flex items-center gap-1.5"
-              >
-                <HiTrash className="h-4.5 w-4.5" />
-                Delete
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedNotification(null)}
-                className="rounded-xl px-5 py-2 text-xs font-bold border border-border-tertiary text-text-secondary hover:bg-background-secondary hover:text-text-primary transition-all duration-150"
-              >
-                Close
-              </button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )
+      }
     </div>
   );
 }
-  
-
-
