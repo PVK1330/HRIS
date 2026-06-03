@@ -332,9 +332,15 @@ export function AuthProvider({ children }) {
   const hasPermission = useCallback(
     (permission) => {
       if (!user) return false;
-      const userPermissions = PERMISSIONS[user.role] || [];
+      const userPermissions = user.permissions || PERMISSIONS[user.role] || [];
       if (userPermissions.includes("*")) return true;
-      return userPermissions.includes(permission);
+      if (userPermissions.includes(permission)) return true;
+      // Check for module wildcard (e.g. assets.* for assets.create)
+      const parts = permission.split('.');
+      if (parts.length > 1 && userPermissions.includes(`${parts[0]}.*`)) {
+        return true;
+      }
+      return false;
     },
     [user],
   );
@@ -390,6 +396,7 @@ export function AuthProvider({ children }) {
           plan_details: planDetails,
           plan_features: planFeatures,
           tenant_features: tenantFeatures,
+          permissions: arg1.permissions || [],
         };
         const nextMods = Array.isArray(allowedModulesFromResponse)
           ? allowedModulesFromResponse
@@ -434,6 +441,7 @@ export function AuthProvider({ children }) {
           ...prev,
           plan_details: data.plan_details || [],
           tenant_features: data.tenant_features || [],
+          permissions: data.permissions || prev.permissions || [],
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         return next;

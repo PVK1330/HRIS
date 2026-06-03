@@ -25,18 +25,20 @@ function colLabel(text) {
 }
 
 function statusColor(status) {
-  if (status === 'Available') return 'bg-green-100 text-green-700 ring-green-600/20';
-  if (status === 'Issued') return 'bg-blue-100 text-blue-700 ring-blue-600/20';
-  if (status === 'Damaged' || status === 'Lost') return 'bg-red-100 text-red-700 ring-red-600/20';
-  if (status === 'In Repair') return 'bg-orange-100 text-orange-700 ring-orange-600/20';
+  const s = String(status || '').toLowerCase();
+  if (s === 'available') return 'bg-green-100 text-green-700 ring-green-600/20';
+  if (s === 'issued') return 'bg-blue-100 text-blue-700 ring-blue-600/20';
+  if (s === 'damaged' || s === 'lost') return 'bg-red-100 text-red-700 ring-red-600/20';
+  if (s === 'in repair') return 'bg-orange-100 text-orange-700 ring-orange-600/20';
   return 'bg-slate-100 text-slate-700 ring-slate-600/20';
 }
 
 function conditionColor(condition) {
-  if (condition === 'New') return 'bg-emerald-100 text-emerald-700 ring-emerald-600/20';
-  if (condition === 'Good') return 'bg-blue-100 text-blue-700 ring-blue-600/20';
-  if (condition === 'Fair') return 'bg-orange-100 text-orange-700 ring-orange-600/20';
-  if (condition === 'Damaged') return 'bg-red-100 text-red-700 ring-red-600/20';
+  const c = String(condition || '').toLowerCase();
+  if (c === 'new') return 'bg-emerald-100 text-emerald-700 ring-emerald-600/20';
+  if (c === 'good') return 'bg-blue-100 text-blue-700 ring-blue-600/20';
+  if (c === 'fair') return 'bg-orange-100 text-orange-700 ring-orange-600/20';
+  if (c === 'damaged') return 'bg-red-100 text-red-700 ring-red-600/20';
   return 'bg-slate-100 text-slate-700 ring-slate-600/20';
 }
 
@@ -55,7 +57,7 @@ const getCategoryIcon = (iconName) => {
 };
 
 export default function AssetManagement() {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -80,7 +82,7 @@ export default function AssetManagement() {
     status: 'Available'
   });
 
-  const canManage = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin';
+  const canManage = hasPermission('assets.create') || hasPermission('assets.edit') || hasPermission('assets.delete') || user?.role === 'superadmin' || user?.role === 'hr_admin' || user?.role === 'admin';
 
   useEffect(() => {
     loadInitialData();
@@ -108,9 +110,12 @@ export default function AssetManagement() {
   const stats = useMemo(() => {
     return {
       total: assets.length,
-      issued: assets.filter(a => a.status === 'Issued').length,
-      available: assets.filter(a => a.status === 'Available').length,
-      damaged: assets.filter(a => a.status === 'Damaged' || a.status === 'Lost' || a.status === 'In Repair').length
+      issued: assets.filter(a => String(a.status || '').toLowerCase() === 'issued').length,
+      available: assets.filter(a => String(a.status || '').toLowerCase() === 'available').length,
+      damaged: assets.filter(a => {
+        const s = String(a.status || '').toLowerCase();
+        return s === 'damaged' || s === 'lost' || s === 'in repair';
+      }).length
     }
   }, [assets]);
 
