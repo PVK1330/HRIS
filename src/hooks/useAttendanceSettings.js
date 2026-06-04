@@ -15,7 +15,7 @@ export function useAttendanceSettings() {
     setError(null)
     try {
       const res = await fetchAttendanceSettings()
-      setSettings(res.data ?? null)
+      setSettings(res ?? null)
     } catch (e) {
       setError(e.message || 'Failed to load attendance settings')
       setSettings(null)
@@ -33,9 +33,9 @@ export function useAttendanceSettings() {
     setError(null)
     try {
       const res = await putAttendanceSettings(payload)
-      setSettings(res.data ?? null)
+      setSettings(res ?? null)
       setError(null)
-      return res
+      return { data: res }
     } catch (e) {
       setError(e.message || 'Failed to save attendance settings')
       throw e

@@ -12,7 +12,9 @@ import {
   RiDatabase2Line,
   RiLogoutBoxRLine,
   RiMacbookLine,
-  RiUserAddLine
+  RiUserAddLine,
+  RiCalendarCheckLine,
+  RiCalendarEventLine
 } from 'react-icons/ri';
 
 export const settingsTabs = [
@@ -21,6 +23,18 @@ export const settingsTabs = [
     label: 'General',
     icon: RiSettings3Line,
     desc: 'Company & policies'
+  },
+  {
+    id: 'attendance',
+    label: 'Attendance',
+    icon: RiCalendarCheckLine,
+    desc: 'Work hours & rules'
+  },
+  {
+    id: 'holidays',
+    label: 'Holidays',
+    icon: RiCalendarEventLine,
+    desc: 'Company holiday calendar'
   },
   {
     id: 'roles',

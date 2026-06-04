@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { HiChevronRight } from "react-icons/hi2";
 import SettingsTabs, { settingsTabs } from "../../../components/admin/settings/SettingsTabs.jsx";
 import GeneralSection from "./sections/GeneralSection.jsx";
+import AttendanceSection from "./sections/AttendanceSection.jsx";
+import HolidaysSection from "./sections/HolidaysSection.jsx";
 import RolesPermissions from "./RolesPermissions.jsx";
 import SensitiveData from "./SensitiveData.jsx";
 import PasswordSecurity from "./PasswordSecurity.jsx";
@@ -22,6 +24,10 @@ function ActiveSection({
   switch (active) {
     case "general":
       return <GeneralSection registerToolbar={registerGeneralToolbar} />;
+    case "attendance":
+      return <AttendanceSection registerToolbar={registerGeneralToolbar} />;
+    case "holidays":
+      return <HolidaysSection />;
     case "roles":
       return <RolesPermissions />;
     case "sensitive":
