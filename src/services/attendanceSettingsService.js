@@ -48,5 +48,5 @@ export const getAttendanceSettings = fetchAttendanceSettings
 
 export async function updateAttendanceSettings(payload) {
   const { data } = await client.put('/', payload)
-  return data
+  return data?.data ?? data
 }
