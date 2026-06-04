@@ -30,11 +30,17 @@ const EMPTY_FORM = {
 };
 
 function statusColor(s) {
-  if (s === 'Approved')  return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-  if (s === 'Pending')   return 'bg-orange-50 text-orange-700 border-orange-100';
-  if (s === 'Rejected')  return 'bg-red-50 text-red-700 border-red-100';
-  if (s === 'Cancelled') return 'bg-slate-50 text-slate-600 border-slate-100';
+  if (s === 'Approved')         return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+  if (s === 'Manager_Approved') return 'bg-blue-50 text-blue-700 border-blue-100';
+  if (s === 'Pending')          return 'bg-orange-50 text-orange-700 border-orange-100';
+  if (s === 'Rejected')         return 'bg-red-50 text-red-700 border-red-100';
+  if (s === 'Cancelled')        return 'bg-slate-50 text-slate-600 border-slate-100';
   return 'bg-slate-50 text-slate-600 border-slate-100';
+}
+
+// Friendly label for the status pill (e.g. Manager_Approved → "MANAGER APPROVED").
+function statusLabel(s) {
+  return String(s || '').replace(/_/g, ' ');
 }
 
 function countDays(from, to) {
@@ -207,9 +213,10 @@ export default function LeaveAbsence() {
     setSelected(row); setActionType(type); setActionReason(''); setActionModal(true);
   };
 
-  const pendingReqs  = useMemo(() => requests.filter(r => r.status === 'Pending'),  [requests]);
-  const approvedReqs = useMemo(() => requests.filter(r => r.status === 'Approved'), [requests]);
-  const rejectedReqs = useMemo(() => requests.filter(r => r.status === 'Rejected'), [requests]);
+  const pendingReqs   = useMemo(() => requests.filter(r => r.status === 'Pending'),          [requests]);
+  const mgrApprovedReqs = useMemo(() => requests.filter(r => r.status === 'Manager_Approved'), [requests]);
+  const approvedReqs  = useMemo(() => requests.filter(r => r.status === 'Approved'),         [requests]);
+  const rejectedReqs  = useMemo(() => requests.filter(r => r.status === 'Rejected'),         [requests]);
 
   const formDays = countDays(form.fromDate, form.toDate);
   const selectedTypeCfg = leaveTypes.find(t => t.name === form.leaveType);
@@ -258,7 +265,7 @@ export default function LeaveAbsence() {
     },
     {
       key: 'status', label: colLabel('LIFECYCLE'),
-      render: (v) => <span className={`inline-flex items-center rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border ${statusColor(v)}`}>{v}</span>,
+      render: (v) => <span className={`inline-flex items-center rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border ${statusColor(v)}`}>{statusLabel(v)}</span>,
     },
     {
       key: 'actions', label: 'COMMAND',
@@ -267,12 +274,12 @@ export default function LeaveAbsence() {
           <button type="button" onClick={() => { setSelected(row); setViewModal(true); }} className="h-8 w-8 flex items-center justify-center rounded-none border border-slate-200 bg-white text-slate-400 hover:text-[#0F766E] shadow-sm">
             <HiEye className="h-4 w-4" />
           </button>
-          {showActions && row.status === 'Pending' && (
+          {showActions && (row.status === 'Pending' || row.status === 'Manager_Approved') && (
             <>
-              <button type="button" onClick={() => openAction(row, 'Approve')} className="h-8 w-8 flex items-center justify-center rounded-none bg-[#0F766E] text-white hover:bg-[#0c6b64] shadow-sm">
+              <button type="button" title={row.status === 'Pending' ? 'Manager approve' : 'HR final approve'} onClick={() => openAction(row, 'Approve')} className="h-8 w-8 flex items-center justify-center rounded-none bg-[#0F766E] text-white hover:bg-[#0c6b64] shadow-sm">
                 <HiCheck className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => openAction(row, 'Reject')} className="h-8 w-8 flex items-center justify-center rounded-none bg-red-600 text-white hover:bg-red-700 shadow-sm">
+              <button type="button" title="Reject" onClick={() => openAction(row, 'Reject')} className="h-8 w-8 flex items-center justify-center rounded-none bg-red-600 text-white hover:bg-red-700 shadow-sm">
                 <HiXMark className="h-4 w-4" />
               </button>
             </>
@@ -407,7 +414,7 @@ export default function LeaveAbsence() {
             <label className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lifecycle Status</label>
             <select value={statusF} onChange={e => setStatusF(e.target.value)} className="h-12 w-full rounded-none border border-slate-200 bg-slate-50/50 px-4 text-[11px] font-bold uppercase tracking-widest focus:border-[#0F766E] outline-none appearance-none cursor-pointer">
                 <option value="">ALL_STATUS_PROTOCOLS</option>
-                {['Pending','Approved','Rejected','Cancelled'].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+                {['Pending','Manager_Approved','Approved','Rejected','Cancelled'].map(s => <option key={s} value={s}>{statusLabel(s).toUpperCase()}</option>)}
             </select>
         </div>
         <div className="w-full md:w-32">
@@ -433,7 +440,8 @@ export default function LeaveAbsence() {
       {activeTab === 'requests' && (
         <div className="space-y-10">
           {[
-            { label: 'Awaiting Verification', data: pendingReqs, borderColor: 'border-orange-500', bgHeader: 'bg-orange-500', showActions: true },
+            { label: 'Awaiting Manager Verification', data: pendingReqs, borderColor: 'border-orange-500', bgHeader: 'bg-orange-500', showActions: true },
+            { label: 'Awaiting HR Approval', data: mgrApprovedReqs, borderColor: 'border-blue-500', bgHeader: 'bg-blue-500', showActions: true },
             { label: 'Authorization History', data: approvedReqs, borderColor: 'border-[#0F766E]', bgHeader: 'bg-[#0F766E]', showActions: true },
             { label: 'Excision Records', data: rejectedReqs, borderColor: 'border-red-500', bgHeader: 'bg-red-500', showActions: false },
           ].map(({ label, data, borderColor, bgHeader, showActions }) => (
@@ -594,10 +602,12 @@ export default function LeaveAbsence() {
                 <p className="text-[11px] font-black text-red-800 uppercase tracking-tight">{selected.rejection_reason}</p>
               </div>
             )}
-            {selected.status === 'Pending' && (
+            {(selected.status === 'Pending' || selected.status === 'Manager_Approved') && (
               <div className="flex items-center justify-end gap-4 pt-8 border-t border-slate-100">
                 <button onClick={() => { setViewModal(false); openAction(selected, 'Reject'); }} className="h-12 px-8 rounded-none bg-red-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-700">REJECT_AUDIT</button>
-                <button onClick={() => { setViewModal(false); openAction(selected, 'Approve'); }} className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64]">AUTHORIZE</button>
+                <button onClick={() => { setViewModal(false); openAction(selected, 'Approve'); }} className="h-12 px-12 rounded-none bg-[#0F766E] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64]">
+                  {selected.status === 'Pending' ? 'MANAGER_AUTHORIZE' : 'HR_FINAL_AUTHORIZE'}
+                </button>
               </div>
             )}
             {selected.status === 'Approved' && (

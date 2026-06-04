@@ -16,8 +16,16 @@ export const listExitRequests = (params = {}) =>
 export const getExitRequest = (id) =>
   api.get(`/exit-management/${id}`).then(unwrap)
 
-export const submitExitRequest = (payload) =>
-  api.post('/exit-management', payload).then(unwrap)
+export const submitExitRequest = (payload, file = null) => {
+  if (!file) return api.post('/exit-management', payload).then(unwrap)
+  // Multipart: attach the scanned resignation letter alongside the request fields.
+  const fd = new FormData()
+  Object.entries(payload).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) fd.append(k, v)
+  })
+  fd.append('resignation_letter', file)
+  return api.post('/exit-management', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(unwrap)
+}
 
 export const approveStage = (id, comments) =>
   api.put(`/exit-management/${id}/approve`, { comments }).then(unwrap)

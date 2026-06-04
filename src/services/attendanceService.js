@@ -62,6 +62,17 @@ export const regularize = async (id, payload) => {
   return data.data.record
 }
 
+export const getPendingOvertime = async (params = {}) => {
+  const { data } = await api.get(`${BASE}/overtime/pending`, { params })
+  return data.data
+}
+
+// action: 'approve' | 'reject'  (reject may include a reason)
+export const processOvertime = async (id, payload) => {
+  const { data } = await api.patch(`${BASE}/${id}/overtime`, payload)
+  return data.data.record
+}
+
 export const getPayrollSummary = async (params) => {
   const { data } = await api.get(`${BASE}/payroll-summary`, { params })
   return data.data

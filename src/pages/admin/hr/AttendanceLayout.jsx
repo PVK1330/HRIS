@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { HiCalendarDays, HiChartBar, HiClipboardDocumentList, HiTableCells } from 'react-icons/hi2'
+import { HiCalendarDays, HiChartBar, HiClipboardDocumentList, HiTableCells, HiClock } from 'react-icons/hi2'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import {
   canManageAttendanceOverride,
@@ -13,6 +13,7 @@ const tabs = [
   { to: '/admin/attendance', label: 'Daily Log', icon: HiTableCells, end: true, kind: 'log' },
   { to: '/admin/attendance/dashboard', label: 'Dashboard', icon: HiChartBar, kind: 'team' },
   { to: '/admin/attendance/regularization', label: 'Regularization', icon: HiClipboardDocumentList, kind: 'regularization' },
+  { to: '/admin/attendance/overtime', label: 'Overtime', icon: HiClock, kind: 'manage' },
   { to: '/admin/attendance/reports', label: 'Reports', icon: HiCalendarDays, kind: 'team' },
   { to: '/admin/attendance/override', label: 'Override', icon: HiClipboardDocumentList, kind: 'manage' },
 ]

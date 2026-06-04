@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import {
   HiInboxArrowDown, HiBuildingOffice2, HiExclamationTriangle, HiCheckCircle,
   HiXCircle, HiArrowUturnLeft, HiPlus, HiArrowRight, HiArrowPath, HiMagnifyingGlass,
-  HiClipboardDocumentCheck, HiCheck,
+  HiClipboardDocumentCheck, HiCheck, HiPaperClip, HiXMark,
 } from 'react-icons/hi2'
 
 const fmtDate = (d) => {
@@ -49,9 +49,10 @@ function SubmitModal({ open, onClose, onDone }) {
   const [termTypes, setTermTypes] = useState([])
   const [employees, setEmployees] = useState([])
   const [employeeSearch, setEmployeeSearch] = useState('')
+  const [letterFile, setLetterFile] = useState(null)
 
   useEffect(() => {
-    if (!open) { setForm(EMPTY_FORM); setEmployeeSearch(''); return }
+    if (!open) { setForm(EMPTY_FORM); setEmployeeSearch(''); setLetterFile(null); return }
     svc.getTerminationTypes()
       .then((d) => setTermTypes(Array.isArray(d) ? d : (d?.records || [])))
       .catch(() => setTermTypes([]))
@@ -102,6 +103,14 @@ function SubmitModal({ open, onClose, onDone }) {
     return fullName.includes(q) || empId.includes(q) || email.includes(q)
   })
 
+  const onPickLetter = (e) => {
+    const f = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file
+    if (!f) return
+    if (f.size > 10 * 1024 * 1024) { toast.error('File must be 10 MB or smaller'); return }
+    setLetterFile(f)
+  }
+
   const submit = async () => {
     if (isTermination && termTypes.length > 0 && !form.termination_type_id) {
       toast.error('Select a termination type'); return
@@ -117,7 +126,8 @@ function SubmitModal({ open, onClose, onDone }) {
         termination_type_id: isTermination && form.termination_type_id ? Number(form.termination_type_id) : undefined,
         employee_id: isTermination && form.employee_id ? Number(form.employee_id) : undefined
       }
-      await svc.submitExitRequest(payload)
+      // Scanned resignation letter applies to voluntary resignations only.
+      await svc.submitExitRequest(payload, isTermination ? null : letterFile)
       toast.success('Exit request submitted'); onDone()
     } catch (e) { toast.error(e?.response?.data?.message || 'Failed to submit') }
     finally { setBusy(false) }
@@ -190,6 +200,27 @@ function SubmitModal({ open, onClose, onDone }) {
             <label className="mb-1 block text-xs font-semibold text-slate-600">Reason</label>
             <textarea value={form.exit_reason} onChange={(e) => setForm({ ...form, exit_reason: e.target.value })} rows={3} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Reason for leaving…" />
           </div>
+
+          {!isTermination && (
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-600">Resignation letter <span className="font-normal text-slate-400">(optional, scanned copy)</span></label>
+              {letterFile ? (
+                <div className="flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm">
+                  <HiPaperClip className="h-4 w-4 shrink-0 text-[#0F766E]" />
+                  <span className="min-w-0 flex-1 truncate text-slate-700">{letterFile.name}</span>
+                  <button type="button" onClick={() => setLetterFile(null)} className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-teal-100 hover:text-slate-600" title="Remove">
+                    <HiXMark className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-2.5 text-sm text-slate-500 hover:border-[#0F766E] hover:bg-slate-50">
+                  <HiPaperClip className="h-4 w-4" />
+                  <span>Attach scanned letter (PDF, JPG, PNG — max 10 MB)</span>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" className="hidden" onChange={onPickLetter} />
+                </label>
+              )}
+            </div>
+          )}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">Cancel</button>
