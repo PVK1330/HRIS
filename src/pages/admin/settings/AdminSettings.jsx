@@ -4,6 +4,7 @@ import SettingsTabs, { settingsTabs } from "../../../components/admin/settings/S
 import GeneralSection from "./sections/GeneralSection.jsx";
 import AttendanceSection from "./sections/AttendanceSection.jsx";
 import HolidaysSection from "./sections/HolidaysSection.jsx";
+import LeaveSettings from "./LeaveSettings.jsx";
 import RolesPermissions from "./RolesPermissions.jsx";
 import SensitiveData from "./SensitiveData.jsx";
 import PasswordSecurity from "./PasswordSecurity.jsx";
@@ -28,6 +29,8 @@ function ActiveSection({
       return <AttendanceSection registerToolbar={registerGeneralToolbar} />;
     case "holidays":
       return <HolidaysSection />;
+    case "leave":
+      return <LeaveSettings registerToolbar={registerGeneralToolbar} />;
     case "roles":
       return <RolesPermissions />;
     case "sensitive":

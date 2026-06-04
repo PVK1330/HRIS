@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   HiEye, HiCheck, HiXMark,
   HiClock, HiGlobeAlt, HiBuildingOffice,
-  HiMagnifyingGlass, HiExclamationTriangle,
+  HiMagnifyingGlass, HiExclamationTriangle, HiCalendar
 } from 'react-icons/hi2';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { Table } from '../../../components/ui/Table.jsx';
@@ -20,6 +20,7 @@ import {
 } from '../../../utils/rbac.js';
 import AttendanceDetailModal from '../../../components/attendance/AttendanceDetailModal.jsx';
 import AttendancePunchCard from '../../../components/attendance/AttendancePunchCard.jsx';
+import HolidayListWidget from '../../../components/attendance/HolidayListWidget.jsx';
 
 const inputClass =
   'w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:border-teal-600 focus:ring-1 focus:ring-teal-600 outline-none';
@@ -73,6 +74,7 @@ export default function Attendance() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showHolidays, setShowHolidays] = useState(false);
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -256,6 +258,7 @@ export default function Attendance() {
     { id: 'present', label: 'Present today', count: summary?.present ?? '—', icon: HiBuildingOffice, filter: 'Present', accent: 'border-slate-800' },
     { id: 'remote', label: 'Remote', count: summary?.remote ?? '—', icon: HiGlobeAlt, filter: 'Remote', accent: 'border-teal-600' },
     { id: 'late', label: 'Late', count: summary?.late ?? '—', icon: HiClock, filter: 'Late', accent: 'border-orange-500' },
+    { id: 'holidays', label: 'Holiday listing', count: 'View', icon: HiCalendar, filter: 'Holidays', accent: 'border-emerald-500', action: () => setShowHolidays(!showHolidays) },
     { id: 'pending', label: 'Pending approvals', count: pending.length, icon: HiExclamationTriangle, filter: null, accent: 'border-red-500' },
   ];
 
@@ -268,20 +271,23 @@ export default function Attendance() {
           : 'Your attendance for the selected date.'}
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {metricCards.map((card) => {
           const active = card.filter && statusFilter === card.filter;
           return (
             <button
               key={card.id}
               type="button"
-              onClick={() => card.filter && setStatus(card.filter)}
+              onClick={() => {
+                if (card.action) card.action();
+                else if (card.filter) setStatus(card.filter);
+              }}
               className={`flex items-center gap-4 rounded-xl border p-4 text-left transition-all ${
-                active ? `${card.accent} bg-teal-50/40 ring-1 ring-teal-600` : 'border-slate-200 bg-white hover:border-slate-300'
+                active ? `${card.accent} bg-teal-50/40 ring-1 ring-teal-600` : card.id === 'holidays' && showHolidays ? `${card.accent} bg-emerald-50/40 ring-1 ring-emerald-600` : 'border-slate-200 bg-white hover:border-slate-300'
               }`}
             >
               <div className={`flex h-11 w-11 items-center justify-center rounded-lg text-white ${
-                card.id === 'present' ? 'bg-slate-800' : card.id === 'remote' ? 'bg-teal-700' : card.id === 'late' ? 'bg-orange-500' : 'bg-red-500'
+                card.id === 'present' ? 'bg-slate-800' : card.id === 'remote' ? 'bg-teal-700' : card.id === 'late' ? 'bg-orange-500' : card.id === 'holidays' ? 'bg-emerald-600' : 'bg-red-500'
               }`}>
                 <card.icon className="h-5 w-5" />
               </div>
@@ -297,6 +303,8 @@ export default function Attendance() {
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
+
+      {showHolidays && <HolidayListWidget />}
 
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">

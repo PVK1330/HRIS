@@ -37,6 +37,12 @@ export const settingsTabs = [
     desc: 'Company holiday calendar'
   },
   {
+    id: 'leave',
+    label: 'Leave Settings',
+    icon: RiCalendarEventLine,
+    desc: 'Leave types and rules'
+  },
+  {
     id: 'roles',
     label: 'Roles & Permissions',
     icon: RiShieldUserLine,
@@ -124,7 +130,7 @@ export default function SettingsTabs({ activeTab, setActiveTab }) {
             className={`inline-flex items-center gap-1.5 px-3 py-2 font-bold text-xs transition-all ${isActive
               ? 'bg-[#0F766E] text-white shadow-2xs'
               : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
-            }`}
+              }`}
           >
             <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
             <span>{tab.label}</span>

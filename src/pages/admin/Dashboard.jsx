@@ -127,96 +127,115 @@ export default function Dashboard() {
   if (isManager) return <ManagerDashboard />
   if (isEmployee) {
     return (
-      <div className="space-y-6 pb-10">
-        <DashboardHeader
-          title="My Dashboard"
-          subtitle={todayLabel}
-          dateRange={dateRange}
-          onDateChange={setDateRange}
+      <EmployeeDashboard
+        dashboardData={dashboardData}
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        todayLabel={todayLabel}
+        showPunchCard={showPunchCard}
+        setSelectedAnnouncement={setSelectedAnnouncement}
+      />
+    )
+  }
+
+function EmployeeDashboard({ dashboardData, dateRange, setDateRange, todayLabel, showPunchCard, setSelectedAnnouncement }) {
+  const announcements = dashboardData.announcements || []
+  const notifications = dashboardData.notifications || []
+  const notificationsUnread = dashboardData.notificationsUnread || 0
+  const unreadMessages = dashboardData.unreadMessages || 0
+  const recentConversations = dashboardData.recentConversations || []
+
+  return (
+    <div className="space-y-6 pb-10">
+      <DashboardHeader
+        title="My Dashboard"
+        subtitle={todayLabel}
+        dateRange={dateRange}
+        onDateChange={setDateRange}
+      />
+
+      {showPunchCard ? <AttendancePunchCard /> : null}
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard
+          label="Leave Balance"
+          value={dashboardData?.personal?.leaveBalance || 0}
+          subtitle="Available leave days"
+          tone="emerald"
         />
+        <MetricCard
+          label="Attendance Rate"
+          value={dashboardData?.personal?.attendanceRate || '—'}
+          subtitle="Current month"
+          tone="blue"
+        />
+        <MetricCard
+          label="Pending Tasks"
+          value={dashboardData?.personal?.pendingTasks || 0}
+          subtitle="Claims / actions pending"
+          tone="amber"
+        />
+      </div>
 
-        {showPunchCard ? <AttendancePunchCard /> : null}
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          <MetricCard
-            label="Leave Balance"
-            value={dashboardData?.personal?.leaveBalance || 0}
-            subtitle="Available leave days"
-            tone="emerald"
-          />
-          <MetricCard
-            label="Attendance Rate"
-            value={dashboardData?.personal?.attendanceRate || '—'}
-            subtitle="Current month"
-            tone="blue"
-          />
-          <MetricCard
-            label="Pending Tasks"
-            value={dashboardData?.personal?.pendingTasks || 0}
-            subtitle="Claims / actions pending"
-            tone="amber"
-          />
+      <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-900">My Announcements</h3>
+          <HiMegaphone className="h-4 w-4 text-[#0F766E]" />
         </div>
+        <div className="space-y-3">
+          {announcements.length > 0 ? (
+            announcements.map((ann) => (
+              <button
+                key={ann.id}
+                type="button"
+                onClick={() => setSelectedAnnouncement(ann)}
+                className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
+              >
+                <p className="text-xs font-semibold text-slate-900">{ann.title}</p>
+                <p className="mt-1 line-clamp-1 text-xs text-slate-500">{ann.content}</p>
+              </button>
+            ))
+          ) : (
+            <p className="text-sm text-slate-500">No announcements yet.</p>
+          )}
+        </div>
+      </div>
 
+      <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-900">My Announcements</h3>
-            <HiMegaphone className="h-4 w-4 text-[#0F766E]" />
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">My Notifications</h3>
+            <Badge label={notificationsUnread} color={notificationsUnread > 0 ? 'amber' : 'blue'} />
           </div>
-          <div className="space-y-3">
-            {announcements.length > 0 ? (
-              announcements.map((ann) => (
-                <button
-                  key={ann.id}
-                  type="button"
-                  onClick={() => setSelectedAnnouncement(ann)}
-                  className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
-                >
-                  <p className="text-xs font-semibold text-slate-900">{ann.title}</p>
-                  <p className="mt-1 line-clamp-1 text-xs text-slate-500">{ann.content}</p>
-                </button>
-              ))
-            ) : (
-              <p className="text-sm text-slate-500">No announcements yet.</p>
-            )}
+          <div className="space-y-2">
+            {notifications.slice(0, 4).map((n) => (
+              <div key={n.id || n.notificationId} className="rounded-none border border-slate-200 bg-slate-50/60 p-3">
+                <p className="text-xs font-semibold text-slate-900">{n.title || 'Notification'}</p>
+                <p className="mt-1 line-clamp-1 text-xs text-slate-500">{n.message || n.body || '—'}</p>
+              </div>
+            ))}
+            {!notifications.length ? <p className="text-sm text-slate-500">No notifications.</p> : null}
           </div>
         </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900">My Notifications</h3>
-              <Badge label={notificationsUnread} color={notificationsUnread > 0 ? 'amber' : 'blue'} />
-            </div>
-            <div className="space-y-2">
-              {notifications.slice(0, 4).map((n) => (
-                <div key={n.id || n.notificationId} className="rounded-none border border-slate-200 bg-slate-50/60 p-3">
-                  <p className="text-xs font-semibold text-slate-900">{n.title || 'Notification'}</p>
-                  <p className="mt-1 line-clamp-1 text-xs text-slate-500">{n.message || n.body || '—'}</p>
-                </div>
-              ))}
-              {!notifications.length ? <p className="text-sm text-slate-500">No notifications.</p> : null}
-            </div>
+        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">My Messages</h3>
+            <Badge label={unreadMessages} color={unreadMessages > 0 ? 'emerald' : 'blue'} />
           </div>
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900">My Messages</h3>
-              <Badge label={unreadMessages} color={unreadMessages > 0 ? 'emerald' : 'blue'} />
-            </div>
-            <div className="space-y-2">
-              {recentConversations.slice(0, 4).map((c) => (
-                <div key={c.id || c.conversationId} className="rounded-none border border-slate-200 bg-slate-50/60 p-3">
-                  <p className="text-xs font-semibold text-slate-900">{c.other?.full_name || c.otherName || 'Conversation'}</p>
-                  <p className="mt-1 line-clamp-1 text-xs text-slate-500">{c.last_message?.body || c.lastMessage || 'No recent message'}</p>
-                </div>
-              ))}
-              {!recentConversations.length ? <p className="text-sm text-slate-500">No messages yet.</p> : null}
-            </div>
+          <div className="space-y-2">
+            {recentConversations.slice(0, 4).map((c) => (
+              <div key={c.id || c.conversationId} className="rounded-none border border-slate-200 bg-slate-50/60 p-3">
+                <p className="text-xs font-semibold text-slate-900">{c.other?.full_name || c.otherName || 'Conversation'}</p>
+                <p className="mt-1 line-clamp-1 text-xs text-slate-500">{c.last_message?.body || c.lastMessage || 'No recent message'}</p>
+              </div>
+            ))}
+            {!recentConversations.length ? <p className="text-sm text-slate-500">No messages yet.</p> : null}
           </div>
         </div>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   const statsItems = [
     {

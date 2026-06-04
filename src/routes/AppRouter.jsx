@@ -25,6 +25,7 @@ const AttendanceReports = lazy(() => import("../pages/admin/hr/attendance/Attend
 const AttendanceOverride = lazy(() => import("../pages/admin/hr/attendance/AttendanceOverride.jsx"));
 const OvertimeApprovals = lazy(() => import("../pages/admin/hr/attendance/OvertimeApprovals.jsx"));
 const LeaveAbsence = lazy(() => import("../pages/admin/hr/LeaveAbsence.jsx"));
+const AbsenceManagement = lazy(() => import("../pages/admin/hr/AbsenceManagement.jsx"));
 const Documents = lazy(() => import("../pages/admin/documents/Documents.jsx"));
 const VisaNationality = lazy(() => import("../pages/admin/compliance/VisaNationality.jsx"));
 const Performance = lazy(() => import("../pages/admin/hr/Performance.jsx"));
@@ -187,6 +188,14 @@ export const router = createBrowserRouter([
             element: (
               <AdminModuleGate moduleKey="leave-absence">
                 <LeaveAbsence />
+              </AdminModuleGate>
+            ),
+          },
+          {
+            path: "absences",
+            element: (
+              <AdminModuleGate moduleKey="leave-absence">
+                <AbsenceManagement />
               </AdminModuleGate>
             ),
           },

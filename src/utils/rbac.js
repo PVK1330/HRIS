@@ -62,6 +62,14 @@ export function canRequestRegularization(allowedModules) {
   return hasRbacSlug(allowedModules, 'attendance.regularization.request')
 }
 
+export function canApproveLeave(allowedModules) {
+  return hasRbacSlug(allowedModules, 'leave.approve')
+}
+
+export function canApplyLeave(allowedModules) {
+  return hasRbacSlug(allowedModules, 'leave.apply') || canApproveLeave(allowedModules)
+}
+
 /** Sidebar / route gate: legacy module key OR any attendance.* slug */
 export function canAccessAttendanceModule(allowedModules) {
   const mods = asSet(allowedModules)

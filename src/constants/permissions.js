@@ -40,6 +40,7 @@ const ACTION_TO_LEGACY = {
   'attendance.settings.manage': [LEGACY_MODULE_KEYS.ATTENDANCE],
   'time-tracking': [LEGACY_MODULE_KEYS.ATTENDANCE],
   'leave.view': [LEGACY_MODULE_KEYS.LEAVE],
+  'leave.apply': [LEGACY_MODULE_KEYS.LEAVE],
   'leave.approve': [LEGACY_MODULE_KEYS.LEAVE],
   'document.view': [LEGACY_MODULE_KEYS.DOCUMENTS],
   'document.upload': [LEGACY_MODULE_KEYS.DOCUMENTS],
