@@ -179,6 +179,18 @@ export default function NotificationDropdown() {
 
     socket.on('notification:new', (notification) => {
       console.log('[NOTIFICATION DROPDOWN] Received notification:new event', notification);
+      
+      // Play a sound for exit management notifications, high priority, or critical
+      if (notification && (notification.type === 'exit_management' || notification.priority === 'HIGH' || notification.priority === 'CRITICAL')) {
+        try {
+          const audio = new Audio('/assets/sounds/notification.mp3');
+          audio.volume = 0.6;
+          audio.play().catch(e => console.warn('Audio play failed (browser policy)', e));
+        } catch (err) {
+          // Ignore audio errors
+        }
+      }
+      
       fetchNotifications();
     });
 

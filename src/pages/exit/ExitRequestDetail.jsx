@@ -141,6 +141,7 @@ export default function ExitRequestDetail() {
   const [docs, setDocs] = useState([])
   const [showDocsModal, setShowDocsModal] = useState(false)
   const [reqTasks, setReqTasks] = useState([])
+  const [auditLog, setAuditLog] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -174,6 +175,11 @@ export default function ExitRequestDetail() {
     try { setReqTasks(await svc.listRequestTasks(id) || []) } catch { /* none */ }
   }, [id])
   useEffect(() => { if (data) loadReqTasks() }, [data, loadReqTasks])
+
+  const loadAudit = useCallback(async () => {
+    try { setAuditLog(await svc.getAuditLog(id) || []) } catch { /* none */ }
+  }, [id])
+  useEffect(() => { if (data) loadAudit() }, [data, loadAudit])
 
   const downloadDoc = async (doc) => {
     try {
@@ -432,7 +438,42 @@ export default function ExitRequestDetail() {
         <div className="mt-2 rounded-xl border border-red-200 bg-red-50 p-4 text-center text-sm font-semibold text-red-700">This exit request was rejected{data.rejection_reason ? `: ${data.rejection_reason}` : ''}.</div>
       )}
 
-      <GenerateDocsModal id={id} open={showDocsModal} onClose={() => setShowDocsModal(false)} onDone={() => { setShowDocsModal(false); loadDocs() }} />
+      {/* Unified Timeline / Audit Log */}
+      {auditLog.length > 0 && (
+        <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-slate-400">Activity Timeline</h2>
+          <div className="relative border-l border-slate-200 pl-4 space-y-4">
+            {auditLog.map((log, i) => (
+              <div key={`${log.source}-${log.event_id}-${i}`} className="relative">
+                <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-slate-300"></span>
+                <div className="text-sm">
+                  <span className="font-semibold text-slate-700">{log.actor_name || 'System'}</span>
+                  <span className="text-slate-500 mx-1">
+                    {log.action_type === 'PENDING' ? 'was assigned to stage' :
+                     log.action_type === 'APPROVE' ? 'approved stage' :
+                     log.action_type === 'REJECT' ? 'rejected stage' :
+                     log.action_type === 'COMPLETE' ? 'completed stage' :
+                     log.action_type === 'assigned' ? 'was assigned task' :
+                     log.action_type === 'completed' && log.source === 'task' ? 'completed task' :
+                     log.action_type === 'uploaded' ? 'uploaded document' :
+                     log.action_type === 'COMPLETED' && log.source === 'checklist' ? 'completed checklist item' :
+                     log.action_type === 'submitted' ? 'submitted exit request' :
+                     log.action_type}
+                  </span>
+                  {log.stage_name && <span className="font-medium text-slate-600">"{log.stage_name}"</span>}
+                  
+                  {log.metadata && log.metadata.label && <span className="ml-1 text-slate-500">({log.metadata.label})</span>}
+                  {log.metadata && log.metadata.title && <span className="ml-1 text-slate-500">({log.metadata.title})</span>}
+                  {log.metadata && log.metadata.file_name && <span className="ml-1 font-mono text-xs bg-slate-50 px-1 rounded">[{log.metadata.file_name}]</span>}
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">{fmtDate(log.created_at)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <GenerateDocsModal id={id} open={showDocsModal} onClose={() => setShowDocsModal(false)} onDone={() => { setShowDocsModal(false); loadDocs(); loadAudit(); }} />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
@@ -96,7 +96,7 @@ export default function SupportTickets() {
       const response = await superadminService.getSupportTickets()
       const payload = response?.data?.data
       setTickets(Array.isArray(payload) ? payload : [])
-    } catch (error) {
+    } catch (err) {
       setTickets([])
       setError('Unable to load support tickets. Please refresh or try again later.')
     } finally {
@@ -154,8 +154,8 @@ export default function SupportTickets() {
         setSelectedTicket(data)
         setTicketStatus(data.status || 'Waiting')
       }
-    } catch (error) {
-      toast.error('Unable to load ticket details')
+    } catch (err) {
+      toast.error('Failed to load ticket details')
     } finally {
       setLoadingTicketDetails(false)
     }
@@ -232,8 +232,6 @@ export default function SupportTickets() {
     inProgress: tickets.filter(t => t.status === 'In Progress').length,
     resolved: tickets.filter(t => t.status === 'Resolved').length,
   }
-
-  const selectedTicketStatus = selectedTicket?.status || 'Waiting'
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500">

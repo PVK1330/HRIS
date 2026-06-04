@@ -33,14 +33,13 @@ const WIDGETS = [
 
 const initials = (n) => (n || '?').split(' ').map((x) => x[0]).slice(0, 2).join('').toUpperCase()
 
-const DEFAULT_NOTICE_DAYS = 30
 const EMPTY_FORM = {
   exit_type: 'resignation',
   termination_type_id: '',
   exit_reason: '',
   notice_date: '',
   last_working_day: '',
-  notice_period_days: DEFAULT_NOTICE_DAYS,
+  notice_period_days: 30, // Default initially, but editable
 }
 
 function SubmitModal({ open, onClose, onDone }) {
@@ -82,15 +81,14 @@ function SubmitModal({ open, onClose, onDone }) {
     if (form.exit_type !== 'resignation') return
     const notice = new Date(form.notice_date)
     if (Number.isNaN(notice.getTime())) return
+    const days = parseInt(form.notice_period_days, 10) || 0
     const lwd = new Date(notice)
-    lwd.setDate(lwd.getDate() + DEFAULT_NOTICE_DAYS)
+    lwd.setDate(lwd.getDate() + days)
     const lwdIso = lwd.toISOString().slice(0, 10)
     setForm((prev) => (
-      prev.last_working_day === lwdIso
-        ? prev
-        : { ...prev, last_working_day: lwdIso, notice_period_days: DEFAULT_NOTICE_DAYS }
+      prev.last_working_day === lwdIso ? prev : { ...prev, last_working_day: lwdIso }
     ))
-  }, [form.notice_date, form.exit_type])
+  }, [form.notice_date, form.exit_type, form.notice_period_days])
 
   if (!open) return null
   const isTermination = form.exit_type === 'termination'
@@ -122,7 +120,7 @@ function SubmitModal({ open, onClose, onDone }) {
         exit_reason: form.exit_reason || undefined,
         notice_date: form.notice_date || undefined,
         last_working_day: form.last_working_day || undefined,
-        notice_period_days: isTermination ? 0 : DEFAULT_NOTICE_DAYS,
+        notice_period_days: isTermination ? 0 : (parseInt(form.notice_period_days, 10) || 0),
         termination_type_id: isTermination && form.termination_type_id ? Number(form.termination_type_id) : undefined,
         employee_id: isTermination && form.employee_id ? Number(form.employee_id) : undefined
       }
@@ -186,24 +184,39 @@ function SubmitModal({ open, onClose, onDone }) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-600">Notice date</label>
-              <input type="date" value={form.notice_date} onChange={(e) => setForm({ ...form, notice_date: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+            {form.exit_type === 'resignation' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Notice Date</label>
+                <input type="date" value={form.notice_date} onChange={(e) => setForm({ ...form, notice_date: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Notice Period (Days)</label>
+                <select value={form.notice_period_days} onChange={(e) => setForm({ ...form, notice_period_days: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white">
+                  <option value="30">30 days</option>
+                  <option value="45">45 days</option>
+                  <option value="60">60 days</option>
+                  <option value="90">90 days</option>
+                  <option value="0">Custom (enter LWD manually)</option>
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Last Working Day</label>
+                <input type="date" value={form.last_working_day} onChange={(e) => setForm({ ...form, last_working_day: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-600">Last working day</label>
-              <input type="date" value={form.last_working_day} onChange={(e) => setForm({ ...form, last_working_day: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-            </div>
-          </div>
-          <div>
+          )}
+          
+          <div className="mt-3">
             <label className="mb-1 block text-xs font-semibold text-slate-600">Reason</label>
             <textarea value={form.exit_reason} onChange={(e) => setForm({ ...form, exit_reason: e.target.value })} rows={3} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Reason for leaving…" />
           </div>
 
           {!isTermination && (
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-600">Resignation letter <span className="font-normal text-slate-400">(optional, scanned copy)</span></label>
+            <div className="mt-3">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">Resignation letter <span className="font-normal text-slate-400">(Required if mandated by HR policy)</span></label>
               {letterFile ? (
                 <div className="flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm">
                   <HiPaperClip className="h-4 w-4 shrink-0 text-[#0F766E]" />
