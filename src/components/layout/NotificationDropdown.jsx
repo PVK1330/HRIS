@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { io } from 'socket.io-client';
+// Socket is managed by useSocket hook — no direct io() import needed
 import {
   HiBell,
   HiBellAlert,
@@ -13,6 +13,7 @@ import {
   HiXCircle,
   HiTicket,
   HiArrowLeftOnRectangle,
+  HiCog6Tooth,
 } from 'react-icons/hi2';
 import api from '../../services/api.js';
 import { useSocket } from '../../hooks/useSocket.js';
@@ -35,6 +36,43 @@ export default function NotificationDropdown() {
   const role = String(user?.role || user?.panel || '').toLowerCase().replace(/_/g, '');
   const isSuperadmin = role === 'superadmin';
 
+  // Sound settings state
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem('hris_notification_sound_enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [soundVolume, setSoundVolume] = useState(() => {
+    const saved = localStorage.getItem('hris_notification_sound_volume');
+    return saved !== null ? parseFloat(saved) : 0.6;
+  });
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Persist sound settings
+  useEffect(() => {
+    localStorage.setItem('hris_notification_sound_enabled', soundEnabled);
+    localStorage.setItem('hris_notification_sound_volume', soundVolume);
+  }, [soundEnabled, soundVolume]);
+
+  const lastSoundTime = useRef(0);
+
+  const playNotificationSound = useCallback((priority) => {
+    if (!soundEnabled) return;
+    const now = Date.now();
+    // Deduplication: prevent stacking within 1.5 seconds
+    if (now - lastSoundTime.current < 1500) return;
+    lastSoundTime.current = now;
+
+    try {
+      // In a real app we'd load different sounds based on priority, e.g., high.mp3 vs normal.mp3
+      // We will use standard notification.mp3 and adjust logic if needed.
+      const audio = new Audio('/assets/sounds/notification.mp3');
+      audio.volume = soundVolume;
+      audio.play().catch(e => console.warn('Audio play failed (browser policy)', e));
+    } catch (err) {
+      // Ignore audio errors
+    }
+  }, [soundEnabled, soundVolume]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -50,6 +88,7 @@ export default function NotificationDropdown() {
   const fetchNotifications = useCallback(async () => {
     try {
 
+      console.log('[API FETCH] /notifications for user', user?.id);
       console.log('[NOTIFICATION DROPDOWN] Fetching notifications for user', {
         userId: user?.id,
         userRole: user?.role,
@@ -112,6 +151,7 @@ export default function NotificationDropdown() {
       });
 
       setNotifications(mappedNotifications);
+      console.log('[STATE UPDATE] Notifications state set, count:', mappedNotifications.length);
       console.log('[NOTIFICATION DROPDOWN] Set notifications:', mappedNotifications.length, 'items', {
         titles: mappedNotifications.map(n => n.title),
       });
@@ -146,62 +186,33 @@ export default function NotificationDropdown() {
 
 
 
+  // Use the shared authenticated socket from useSocket().
+  // The previous implementation created a SECOND socket here with auth: { token: `Bearer ${token}` }
+  // which the backend correctly rejected (JWT verify fails on "Bearer xxx" prefix) — so the
+  // new_notification listener was always attached to a dead/disconnected socket.
   useEffect(() => {
-    if (!user?.id) return;
+    if (!socket || !connected) return;
 
-    const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    const token = localStorage.getItem('hris_token');
-    if (!token) return;
-
-
-
-    const socket = io(socketUrl, {
-      auth: {
-        token: `Bearer ${token}`,
-      },
-      reconnection: true,
-      transports: ['websocket', 'polling'],
-    });
-
-    socket.on('connect', () => {
-      console.log('[NOTIFICATION DROPDOWN] Socket connected');
-    });
-
-    socket.on('ticket:created', () => {
-      console.log('[NOTIFICATION DROPDOWN] Received ticket:created event');
-      fetchNotifications();
-    });
-
-    socket.on('ticket:updated', () => {
-      console.log('[NOTIFICATION DROPDOWN] Received ticket:updated event');
-      fetchNotifications();
-    });
-
-    socket.on('notification:new', (notification) => {
-      console.log('[NOTIFICATION DROPDOWN] Received notification:new event', notification);
-      
-      // Play a sound for exit management notifications, high priority, or critical
-      if (notification && (notification.type === 'exit_management' || notification.priority === 'HIGH' || notification.priority === 'CRITICAL')) {
-        try {
-          const audio = new Audio('/assets/sounds/notification.mp3');
-          audio.volume = 0.6;
-          audio.play().catch(e => console.warn('Audio play failed (browser policy)', e));
-        } catch (err) {
-          // Ignore audio errors
-        }
+    const handleNewNotification = (notification) => {
+      console.log('[SOCKET RECEIVE]', notification);
+      if (notification?.priority === 'HIGH' || notification?.priority === 'NORMAL') {
+        playNotificationSound(notification.priority);
       }
-      
       fetchNotifications();
-    });
+    };
 
-    socket.on('disconnect', () => {
-      console.log('[NOTIFICATION DROPDOWN] Socket disconnected');
-    });
+    socket.on('new_notification', handleNewNotification);
+    socket.on('ticket:created', fetchNotifications);
+    socket.on('ticket:updated', fetchNotifications);
 
     return () => {
-      socket.disconnect();
+      socket.off('new_notification', handleNewNotification);
+      socket.off('ticket:created', fetchNotifications);
+      socket.off('ticket:updated', fetchNotifications);
     };
-  }, [user, fetchNotifications]);
+  }, [socket, connected, fetchNotifications, playNotificationSound]);
+
+  console.log('[RENDER] NotificationDropdown rendering, count:', notifications.length, 'isOpen:', isOpen);
 
   const toggleDropdown = () => {
     const nextState = !isOpen;
@@ -310,9 +321,18 @@ export default function NotificationDropdown() {
 
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
-            <h3 className="font-bold text-slate-900">Notifications</h3>
+            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+              Notifications
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                title="Settings"
+              >
+                <HiCog6Tooth className="h-4 w-4" />
+              </button>
+            </h3>
 
-            {notifications.length > 0 && (
+            {notifications.length > 0 && !showSettings && (
               <button
                 className="text-xs font-semibold text-slate-600 hover:text-slate-900"
                 onClick={markAllAsRead}
@@ -322,29 +342,77 @@ export default function NotificationDropdown() {
             )}
           </div>
 
-          <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
-            <button
-              onClick={() => setFilter('all')}
-              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
-            >
-              All ({allCount})
-            </button>
-            <button
-              onClick={() => setFilter('unread')}
-              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'unread' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
-            >
-              Unread ({unreadCount})
-            </button>
-            <button
-              onClick={() => setFilter('read')}
-              className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'read' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
-            >
-              Read ({readCount})
-            </button>
-          </div>
+          {!showSettings && (
+            <div className="flex border-b border-slate-200 px-2 py-1 bg-slate-50/80 gap-1">
+              <button
+                onClick={() => setFilter('all')}
+                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'all' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+              >
+                All ({allCount})
+              </button>
+              <button
+                onClick={() => setFilter('unread')}
+                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'unread' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+              >
+                Unread ({unreadCount})
+              </button>
+              <button
+                onClick={() => setFilter('read')}
+                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${filter === 'read' ? 'bg-background-primary text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-background-secondary/50'}`}
+              >
+                Read ({readCount})
+              </button>
+            </div>
+          )}
+
+          {/* Settings Panel */}
+          {showSettings && (
+            <div className="p-4 bg-white max-h-[380px] overflow-y-auto">
+              <h4 className="text-sm font-bold text-slate-800 mb-4">Sound Preferences</h4>
+              
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-slate-600 font-medium">Enable Sounds</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={soundEnabled}
+                    onChange={(e) => setSoundEnabled(e.target.checked)}
+                  />
+                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
+              <div className="mb-4">
+                <div className="flex justify-between text-xs text-slate-500 mb-2">
+                  <span>Volume</span>
+                  <span>{Math.round(soundVolume * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={soundVolume}
+                  onChange={(e) => setSoundVolume(parseFloat(e.target.value))}
+                  disabled={!soundEnabled}
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+                />
+              </div>
+
+              <button
+                onClick={() => playNotificationSound('NORMAL')}
+                disabled={!soundEnabled}
+                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+              >
+                Test Sound
+              </button>
+            </div>
+          )}
 
           {/* Notification List */}
-          <div className="max-h-[380px] overflow-y-auto bg-white">
+          {!showSettings && (
+            <div className="max-h-[380px] overflow-y-auto bg-white">
             {filteredNotifications.length > 0 ? (
               <div className="divide-y divide-slate-200">
                 {filteredNotifications.map((n) => (
@@ -385,7 +453,8 @@ export default function NotificationDropdown() {
                 <p className="text-sm text-text-tertiary capitalize">No {filter !== 'all' ? filter : ''} notifications</p>
               </div>
             )}
-          </div>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="p-3 border-t border-border-tertiary bg-background-secondary/30 text-center">

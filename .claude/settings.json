@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(node --check src/modules/employees/attendance/attendanceCron.service.js)",
-      "Bash(node --check src/jobs/attendanceCron.job.js)"
-    ]
-  }
-}

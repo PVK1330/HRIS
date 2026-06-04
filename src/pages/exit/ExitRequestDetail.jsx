@@ -8,6 +8,7 @@ import {
   HiComputerDesktop, HiDocumentText, HiArrowDownTray, HiEnvelope,
 } from 'react-icons/hi2'
 import svc from '../../services/exitWorkflowService'
+import { useExitSocket } from '../../hooks/useExitSocket'
 
 function GenerateDocsModal({ id, open, onClose, onDone }) {
   const [templates, setTemplates] = useState([])
@@ -142,6 +143,17 @@ export default function ExitRequestDetail() {
   const [showDocsModal, setShowDocsModal] = useState(false)
   const [reqTasks, setReqTasks] = useState([])
   const [auditLog, setAuditLog] = useState([])
+
+  useExitSocket(id, {
+    onWorkflowUpdated: () => {
+      console.log('[EXIT] Socket received: Workflow updated');
+      load(); loadReqTasks(); loadAudit();
+    },
+    onTaskUpdated: () => {
+      console.log('[EXIT] Socket received: Task updated');
+      loadReqTasks(); loadAudit();
+    }
+  });
 
   const load = useCallback(async () => {
     setLoading(true)
