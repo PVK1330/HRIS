@@ -574,8 +574,8 @@ export default function AdminLayout() {
 
             <Link
               to="/admin/security"
-              title="Security & two-factor authentication"
-              aria-label="Security settings"
+              title="My Account — profile, password & two-factor authentication"
+              aria-label="My account"
               className={`rounded-lg p-2 transition-all ${
                 location.pathname === "/admin/security"
                   ? "bg-[#0E9F6E]/10 text-[#0E9F6E]"
