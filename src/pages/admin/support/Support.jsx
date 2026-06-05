@@ -124,20 +124,8 @@ export default function SupportManagement() {
   const [replyText, setReplyText] = useState('')
   const [saving, setSaving] = useState(false)
   const [loadingTicketDetails, setLoadingTicketDetails] = useState(false)
-  const conversationEndRef = useRef(null)
 
   const isSuperAdmin = user?.role === 'superadmin' || user?.role === 'super_admin'
-
-  useEffect(() => {
-    if (viewModalOpen) {
-      setTimeout(() => {
-        conversationEndRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'end',
-        })
-      }, 100)
-    }
-  }, [viewModalOpen, selectedTicket?.conversation?.length, selectedTicket?.messages?.length, selectedTicket?.replies?.length])
 
   const fileInputRef = useRef(null)
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -945,7 +933,6 @@ export default function SupportManagement() {
                             <p className="text-sm text-slate-400 font-medium">No conversation history yet.</p>
                           </div>
                         )}
-                        <div ref={conversationEndRef} />
                       </div>
                     </div>
                   </div>

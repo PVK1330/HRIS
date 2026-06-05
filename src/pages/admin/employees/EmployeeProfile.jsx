@@ -371,7 +371,7 @@ export default function EmployeeProfile() {
 
   /** EmployeeDirectory view modal — basic tab */
   const renderBasic = () => (
-    <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-300">
       {[
         ['Employee ID', emp?.emp_id],
         ['Full Name', emp?.full_name],
@@ -382,9 +382,9 @@ export default function EmployeeProfile() {
         ['Join Date', emp?.join_date],
         ['Portal Role', emp?.rbac_role_name],
       ].map(([label, val]) => (
-        <div key={label}>
+        <div key={label} className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-          <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+          <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val || '—'}</p>
         </div>
       ))}
     </div>
@@ -513,9 +513,8 @@ export default function EmployeeProfile() {
     </div>
   )
 
-  /** EmployeeDirectory view modal — personal tab */
   const renderPersonalInfo = () => (
-    <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-300">
       {[
         ['Gender', emp?.gender],
         ['Date of Birth', emp?.date_of_birth],
@@ -527,9 +526,9 @@ export default function EmployeeProfile() {
         ['Country of Residence', emp?.country_of_residence],
         ['Home Address', emp?.home_address],
       ].map(([label, val]) => (
-        <div key={label} className={label === 'Home Address' ? 'col-span-2' : ''}>
+        <div key={label} className={`min-w-0 ${label === 'Home Address' ? 'sm:col-span-2' : ''}`}>
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-          <p className="mt-0.5 text-sm font-medium text-slate-900">{val ?? '—'}</p>
+          <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val ?? '—'}</p>
         </div>
       ))}
     </div>
@@ -598,7 +597,7 @@ export default function EmployeeProfile() {
         ['IFSC Code', emp?.ifsc_code],
         ['Branch Address', emp?.branch_address],
       ].map(([label, val]) => (
-        <div key={label}>
+        <div key={label} className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
           <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val || '—'}</p>
         </div>
@@ -633,16 +632,16 @@ export default function EmployeeProfile() {
       return <p className="text-sm text-slate-400">No secondary contact recorded</p>
     }
     return (
-      <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-300">
         {[
           ['Name', sc.name],
           ['Relationship', sc.relationship],
           ['Phone 1', sc.phone_no1 || sc.phoneNo1],
           ['Phone 2', sc.phone_no2 || sc.phoneNo2],
         ].map(([label, val]) => (
-          <div key={label}>
+          <div key={label} className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-            <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+            <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val || '—'}</p>
           </div>
         ))}
       </div>

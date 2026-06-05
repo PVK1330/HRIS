@@ -274,10 +274,8 @@ const adminNavGroups = [
       },
       {
         label: "Support",
-        icon: HiLifebuoy,
+        icon: HiQuestionMarkCircle,
         path: "/admin/support#support",
-        key: "support",
-        permission: "view_support",
       },
     ],
   },

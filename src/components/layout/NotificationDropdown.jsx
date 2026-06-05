@@ -88,17 +88,7 @@ export default function NotificationDropdown() {
   const fetchNotifications = useCallback(async () => {
     try {
 
-      console.log('[API FETCH] /notifications for user', user?.id);
-      console.log('[NOTIFICATION DROPDOWN] Fetching notifications for user', {
-        userId: user?.id,
-        userRole: user?.role,
-        userPanel: user?.panel,
-        isSuperadmin,
-      });
-
-      const response = await api.get('/notifications');
-
-      console.log('[NOTIFICATION DROPDOWN] Received response:', response.data);
+      const response = await api.get('/notifications')
 
       // Extract notifications from various possible response structures
       const notificationsList = Array.isArray(response.data)
@@ -110,8 +100,6 @@ export default function NotificationDropdown() {
             : Array.isArray(response.data?.data)
               ? response.data.data
               : [];
-
-      console.log('[NOTIFICATION DROPDOWN] Parsed notifications list:', notificationsList.length, 'items');
 
       const mappedNotifications = notificationsList.map((n) => {
         const mapped = {
@@ -151,10 +139,6 @@ export default function NotificationDropdown() {
       });
 
       setNotifications(mappedNotifications);
-      console.log('[STATE UPDATE] Notifications state set, count:', mappedNotifications.length);
-      console.log('[NOTIFICATION DROPDOWN] Set notifications:', mappedNotifications.length, 'items', {
-        titles: mappedNotifications.map(n => n.title),
-      });
     } catch (err) {
       console.error('[NOTIFICATION DROPDOWN] Error fetching notifications:', err);
       // Keep silent on client feed sync errors
@@ -194,7 +178,6 @@ export default function NotificationDropdown() {
     if (!socket || !connected) return;
 
     const handleNewNotification = (notification) => {
-      console.log('[SOCKET RECEIVE]', notification);
       if (notification?.priority === 'HIGH' || notification?.priority === 'NORMAL') {
         playNotificationSound(notification.priority);
       }
@@ -212,7 +195,7 @@ export default function NotificationDropdown() {
     };
   }, [socket, connected, fetchNotifications, playNotificationSound]);
 
-  console.log('[RENDER] NotificationDropdown rendering, count:', notifications.length, 'isOpen:', isOpen);
+
 
   const toggleDropdown = () => {
     const nextState = !isOpen;
@@ -317,7 +300,7 @@ export default function NotificationDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 rounded-3xl border border-slate-200 bg-white shadow-2xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-3 w-[380px] rounded-2xl border border-slate-200 bg-white shadow-2xl z-[9999] max-h-[520px] overflow-y-auto overflow-x-hidden max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-14 max-sm:mt-0 max-sm:w-auto max-sm:max-w-[calc(100vw-24px)] max-sm:max-h-[80vh]">
 
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
@@ -369,7 +352,7 @@ export default function NotificationDropdown() {
           {showSettings && (
             <div className="p-4 bg-white max-h-[380px] overflow-y-auto">
               <h4 className="text-sm font-bold text-slate-800 mb-4">Sound Preferences</h4>
-              
+
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-slate-600 font-medium">Enable Sounds</span>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -413,46 +396,46 @@ export default function NotificationDropdown() {
           {/* Notification List */}
           {!showSettings && (
             <div className="max-h-[380px] overflow-y-auto bg-white">
-            {filteredNotifications.length > 0 ? (
-              <div className="divide-y divide-slate-200">
-                {filteredNotifications.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${isNotificationUnread(n) ? 'bg-primary/5' : 'bg-white'} hover:bg-slate-100`}
-                    onClick={() => handleNotificationClick(n)}
-                  >
-                    <div className="flex gap-3">
-                      <div className="mt-0.5">{getIcon(n.type)}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm truncate ${isNotificationUnread(n) ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
-                          {n.title}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                          {n.message}
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-                          {n.time}
-                        </p>
+              {filteredNotifications.length > 0 ? (
+                <div className="divide-y divide-slate-200">
+                  {filteredNotifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${isNotificationUnread(n) ? 'bg-primary/5' : 'bg-white'} hover:bg-slate-100`}
+                      onClick={() => handleNotificationClick(n)}
+                    >
+                      <div className="flex gap-3">
+                        <div className="mt-0.5">{getIcon(n.type)}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm truncate ${isNotificationUnread(n) ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
+                            {n.title}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                            {n.message}
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
+                            {n.time}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-text-tertiary hover:text-danger-DEFAULT transition-all"
+                        >
+                          <HiTrash className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-text-tertiary hover:text-danger-DEFAULT transition-all"
-                      >
-                        <HiTrash className="h-4 w-4" />
-                      </button>
+                      {isNotificationUnread(n) && (
+                        <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary shadow-md" />
+                      )}
                     </div>
-                    {isNotificationUnread(n) && (
-                      <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary shadow-md" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 text-center">
-                <HiBell className="h-10 w-10 text-text-tertiary mx-auto opacity-20 mb-3 animate-pulse" />
-                <p className="text-sm text-text-tertiary capitalize">No {filter !== 'all' ? filter : ''} notifications</p>
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <HiBell className="h-10 w-10 text-text-tertiary mx-auto opacity-20 mb-3 animate-pulse" />
+                  <p className="text-sm text-text-tertiary capitalize">No {filter !== 'all' ? filter : ''} notifications</p>
+                </div>
+              )}
             </div>
           )}
 

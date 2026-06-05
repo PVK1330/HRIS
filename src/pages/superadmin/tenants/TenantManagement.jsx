@@ -850,22 +850,22 @@ export default function TenantManagement() {
       >
         {selectedOrg && (
           <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80 min-w-0">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Admin Email</span>
-                <p className="mt-0.5 text-xs font-bold text-slate-700 truncate">{selectedOrg.adminEmail}</p>
+                <p className="mt-0.5 text-xs font-bold text-slate-700 break-words">{selectedOrg.adminEmail}</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80 min-w-0">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Database Name</span>
-                <p className="mt-0.5 text-[11px] font-mono font-bold text-indigo-500">{selectedOrg.dbName}</p>
+                <p className="mt-0.5 text-[11px] font-mono font-bold text-indigo-500 break-words">{selectedOrg.dbName}</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80 min-w-0">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Billing Plan</span>
-                <p className="mt-0.5 text-xs font-bold text-slate-700">{selectedOrg.plan} ({selectedOrg.billingCycle})</p>
+                <p className="mt-0.5 text-xs font-bold text-slate-700 break-words">{selectedOrg.plan} ({selectedOrg.billingCycle})</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80 min-w-0">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Join Date</span>
-                <p className="mt-0.5 text-xs font-bold text-slate-700">{selectedOrg.created}</p>
+                <p className="mt-0.5 text-xs font-bold text-slate-700 break-words">{selectedOrg.created}</p>
               </div>
             </div>
 
@@ -968,8 +968,8 @@ export default function TenantManagement() {
         <div className="space-y-6">
           <Input label="Organization Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
           <Input label="Root Admin Email" value={editForm.adminEmail} onChange={(e) => setEditForm({ ...editForm, adminEmail: e.target.value })} />
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="min-w-0">
               <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Ecosystem Plan</label>
               <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all" value={editForm.plan} onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}>
                 {plans.map(plan => (
@@ -977,7 +977,7 @@ export default function TenantManagement() {
                 ))}
               </select>
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Operational Status</label>
               <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
                 <option>Active</option><option>Trial</option><option>Suspended</option><option>SSL Issue</option>
