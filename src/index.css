@@ -33,15 +33,20 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    @apply w-1.5 h-1.5;
+    @apply w-2 h-2;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    @apply bg-slate-100/50 rounded-full;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+    @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+  }
+
+  .custom-scrollbar {
+    scrollbar-color: rgb(203 213 225) transparent;
+    scrollbar-width: thin;
   }
 
   /* Superadmin visual system */

@@ -25,7 +25,6 @@ import {
   HiIdentification,
   HiChatBubbleLeftRight,
   HiQuestionMarkCircle,
-  HiLifebuoy,
 } from "react-icons/hi2";
 import { Sidebar } from "../components/ui/Sidebar.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
@@ -273,10 +272,8 @@ const adminNavGroups = [
       },
       {
         label: "Support",
-        icon: HiLifebuoy,
+        icon: HiQuestionMarkCircle,
         path: "/admin/support#support",
-        key: "support",
-        permission: "view_support",
       },
     ],
   },

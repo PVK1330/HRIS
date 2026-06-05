@@ -73,19 +73,8 @@ export default function SupportTickets() {
   const [ticketStatus, setTicketStatus] = useState('Waiting')
   const [replyText, setReplyText] = useState('')
   const [saving, setSaving] = useState(false)
+  const conversationContainerRef = useRef(null)
 
-  const conversationEndRef = useRef(null)
-
-  useEffect(() => {
-    if (showDetailsModal) {
-      setTimeout(() => {
-        conversationEndRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'end',
-        })
-      }, 100)
-    }
-  }, [showDetailsModal, selectedTicket?.conversation?.length, selectedTicket?.messages?.length, selectedTicket?.replies?.length])
   const [loadingTicketDetails, setLoadingTicketDetails] = useState(false)
   const [pendingTicketId, setPendingTicketId] = useState(null)
 
@@ -126,16 +115,16 @@ export default function SupportTickets() {
 
   useEffect(() => {
     if (!pendingTicketId || tickets.length === 0) return
-    const ticket = tickets.find((t) => Number(t.id) === pendingTicketId || Number(t.ticketId) === pendingTicketId)
+    const ticket = tickets.find(
+      (t) => Number(t.id) === pendingTicketId || Number(t.ticketId) === pendingTicketId
+    )
     if (ticket) {
       handleViewTicket(ticket, { setHash: false })
       setPendingTicketId(null)
     }
   }, [pendingTicketId, tickets])
 
-  useEffect(() => {
-
-  }, [tickets])
+  // FIX: Removed empty useEffect(() => {}, [tickets]) — it served no purpose.
 
   const handleViewTicket = async (ticket, { setHash = true } = {}) => {
     if (setHash && ticket?.id) {
@@ -178,7 +167,6 @@ export default function SupportTickets() {
         message: replyText.trim(),
       }
       if (ticketStatus && ticketStatus !== selectedTicket.status) payload.status = ticketStatus
-
 
       const response = await superadminService.updateSupportTicket(selectedTicket.id, payload)
       const updated = response?.data?.data?.ticket || response?.data?.data || response?.data
@@ -228,18 +216,19 @@ export default function SupportTickets() {
   // Calculate stats
   const stats = {
     total: tickets.length,
-    waiting: tickets.filter(t => (t.status || 'Waiting') === 'Waiting').length,
-    inProgress: tickets.filter(t => t.status === 'In Progress').length,
-    resolved: tickets.filter(t => t.status === 'Resolved').length,
+    waiting: tickets.filter((t) => (t.status || 'Waiting') === 'Waiting').length,
+    inProgress: tickets.filter((t) => t.status === 'In Progress').length,
+    resolved: tickets.filter((t) => t.status === 'Resolved').length,
   }
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
       {/* Header */}
-      {/* Top Title Bar with Moved Actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Support Tickets</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">
+            Support Tickets
+          </h1>
           <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
             <span>Support</span>
             <span className="text-slate-400">&gt;</span>
@@ -247,48 +236,114 @@ export default function SupportTickets() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button type="button" onClick={fetchTickets} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
+          <button
+            type="button"
+            onClick={fetchTickets}
+            className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm"
+          >
             <HiArrowPath className="h-4 w-4" /> Refresh
           </button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      {/* Stats Section */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
-          { label: 'New Tickets', count: stats.total.toString(), color: 'text-orange-500', borderColor: 'border-orange-200', bgColor: 'bg-orange-50', icon: HiTicket, barColor: 'bg-orange-500', trendBg: 'bg-orange-50', trendColor: 'text-orange-500', trend: '+19.01%' },
-          { label: 'Open Tickets', count: stats.waiting.toString(), color: 'text-purple-500', borderColor: 'border-purple-200', bgColor: 'bg-purple-50', icon: HiFolderOpen, barColor: 'bg-purple-500', trendBg: 'bg-slate-100', trendColor: 'text-slate-700', trend: '+19.01%' },
-          { label: 'Solved Tickets', count: stats.resolved.toString(), color: 'text-green-500', borderColor: 'border-green-200', bgColor: 'bg-green-50', icon: HiCheckCircle, barColor: 'bg-green-500', trendBg: 'bg-blue-100', trendColor: 'text-blue-500', trend: '+19.01%' },
-          { label: 'Pending Tickets', count: stats.inProgress.toString(), color: 'text-blue-500', borderColor: 'border-blue-200', bgColor: 'bg-blue-50', icon: HiExclamationCircle, barColor: 'bg-cyan-500', trendBg: 'bg-slate-100', trendColor: 'text-slate-700', trend: '+19.01%' }
+          {
+            label: 'New Tickets',
+            count: stats.total.toString(),
+            color: 'text-orange-500',
+            borderColor: 'border-orange-200',
+            bgColor: 'bg-orange-50',
+            icon: HiTicket,
+            barColor: 'bg-orange-500',
+            trendBg: 'bg-orange-50',
+            trendColor: 'text-orange-500',
+            trend: '+19.01%',
+          },
+          {
+            label: 'Open Tickets',
+            count: stats.waiting.toString(),
+            color: 'text-purple-500',
+            borderColor: 'border-purple-200',
+            bgColor: 'bg-purple-50',
+            icon: HiFolderOpen,
+            barColor: 'bg-purple-500',
+            trendBg: 'bg-slate-100',
+            trendColor: 'text-slate-700',
+            trend: '+19.01%',
+          },
+          {
+            label: 'Solved Tickets',
+            count: stats.resolved.toString(),
+            color: 'text-green-500',
+            borderColor: 'border-green-200',
+            bgColor: 'bg-green-50',
+            icon: HiCheckCircle,
+            barColor: 'bg-green-500',
+            trendBg: 'bg-blue-100',
+            trendColor: 'text-blue-500',
+            trend: '+19.01%',
+          },
+          {
+            label: 'Pending Tickets',
+            count: stats.inProgress.toString(),
+            color: 'text-blue-500',
+            borderColor: 'border-blue-200',
+            bgColor: 'bg-blue-50',
+            icon: HiExclamationCircle,
+            barColor: 'bg-cyan-500',
+            trendBg: 'bg-slate-100',
+            trendColor: 'text-slate-700',
+            trend: '+19.01%',
+          },
         ].map((card, idx) => (
-            <div
-              key={idx}
-              className="rounded-xl border border-slate-100 bg-white p-5 flex flex-col justify-between shadow-sm min-w-0"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className={`flex h-14 w-14 items-center justify-center rounded-full border border-dashed ${card.borderColor} ${card.bgColor} shrink-0`}>
-                  <card.icon className={`h-6 w-6 ${card.color}`} />
-                </div>
-                <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold ${card.trendBg} ${card.trendColor}`}>
-                  <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 10.5C3.5 10.5 5 7.5 7 8.5C9 9.5 11 4.5 14 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  {card.trend}
-                </div>
+          <div
+            key={idx}
+            className="rounded-xl border border-slate-100 bg-white p-5 flex flex-col justify-between shadow-sm min-w-0"
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div
+                className={`flex h-14 w-14 items-center justify-center rounded-full border border-dashed ${card.borderColor} ${card.bgColor} shrink-0`}
+              >
+                <card.icon className={`h-6 w-6 ${card.color}`} />
               </div>
-              <div className="flex justify-between items-end">
-                <div>
-                  <div className="text-xs font-medium text-slate-500 mb-1">{card.label}</div>
-                  <div className="text-2xl font-bold text-slate-800">{card.count}</div>
-                </div>
-                <div className="flex items-end gap-0.5 h-10 w-24">
-                   {[40, 60, 30, 80, 50, 90, 70, 40, 60, 100].map((h, i) => (
-                     <div key={i} className={`w-full rounded-[1px] ${card.barColor}`} style={{ height: `${h}%` }}></div>
-                   ))}
-                </div>
+              <div
+                className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold ${card.trendBg} ${card.trendColor}`}
+              >
+                <svg
+                  className="h-3 w-3"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M2 10.5C3.5 10.5 5 7.5 7 8.5C9 9.5 11 4.5 14 5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {card.trend}
               </div>
             </div>
+            <div className="flex justify-between items-end">
+              <div>
+                <div className="text-xs font-medium text-slate-500 mb-1">{card.label}</div>
+                <div className="text-2xl font-bold text-slate-800">{card.count}</div>
+              </div>
+              <div className="flex items-end gap-0.5 h-10 w-24">
+                {[40, 60, 30, 80, 50, 90, 70, 40, 60, 100].map((h, i) => (
+                  <div
+                    key={i}
+                    className={`w-full rounded-[1px] ${card.barColor}`}
+                    style={{ height: `${h}%` }}
+                  ></div>
+                ))}
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
@@ -300,24 +355,30 @@ export default function SupportTickets() {
       )}
 
       {/* Main Table Registry Area */}
-      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+      <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
           <h2 className="text-sm font-semibold text-white">Ticket Registry</h2>
         </div>
         <Table
-          maxHeightClass="max-h-full"
+          maxHeightClass="max-h-[600px]"
           loading={loading}
-          emptyMessage={tickets.length === 0 && !loading ? 'No support tickets found' : 'No data to display'}
+          emptyMessage={
+            tickets.length === 0 && !loading ? 'No support tickets found' : 'No data to display'
+          }
           columns={[
             {
               key: 'ticket',
               label: 'Ticket ID & Subject',
               render: (_, ticket) => (
                 <div className="space-y-1">
-                  <div className="text-sm font-bold text-blue-600">{ticket.ticketId || `TKT-${String(ticket.id).padStart(3, '0')}`}</div>
-                  <div className="text-xs text-slate-500 truncate max-w-[200px]">{ticket.subject || '-'}</div>
+                  <div className="text-sm font-bold text-blue-600">
+                    {ticket.ticketId || `TKT-${String(ticket.id).padStart(3, '0')}`}
+                  </div>
+                  <div className="text-xs text-slate-500 truncate max-w-[200px]">
+                    {ticket.subject || '-'}
+                  </div>
                 </div>
-              )
+              ),
             },
             {
               key: 'org',
@@ -325,9 +386,11 @@ export default function SupportTickets() {
               render: (_, ticket) => (
                 <div className="flex items-center gap-2">
                   <HiBuildingOffice className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm text-slate-700">{ticket.tenantName || ticket.organization || '-'}</span>
+                  <span className="text-sm text-slate-700">
+                    {ticket.tenantName || ticket.organization || '-'}
+                  </span>
                 </div>
-              )
+              ),
             },
             {
               key: 'createdAt',
@@ -337,7 +400,7 @@ export default function SupportTickets() {
                   <HiCalendarDays className="h-4 w-4 text-slate-400" />
                   {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '-'}
                 </div>
-              )
+              ),
             },
             {
               key: 'priority',
@@ -345,7 +408,7 @@ export default function SupportTickets() {
               render: (_, ticket) => {
                 const color = getPriorityColor(ticket.priority)
                 return <Badge label={ticket.priority || 'Normal'} color={color} />
-              }
+              },
             },
             {
               key: 'status',
@@ -353,17 +416,31 @@ export default function SupportTickets() {
               render: (_, ticket) => {
                 const color = getStatusColor(ticket.status || 'Waiting')
                 return <Badge label={ticket.status || 'Waiting'} color={color} />
-              }
+              },
             },
             {
               key: 'actions',
               label: 'Control',
               render: (_, ticket) => (
                 <div className="flex items-center justify-start gap-2">
-                  <button type="button" onClick={() => handleViewTicket(ticket)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-500 text-white transition-colors hover:bg-slate-600" title="View Details"><HiEye className="h-4 w-4" /></button>
-                  <button type="button" onClick={() => handleDeleteTicket(ticket.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600" title="Delete Ticket"><HiTrash className="h-4 w-4" /></button>
+                  <button
+                    type="button"
+                    onClick={() => handleViewTicket(ticket)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-500 text-white transition-colors hover:bg-slate-600"
+                    title="View Details"
+                  >
+                    <HiEye className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTicket(ticket.id)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600"
+                    title="Delete Ticket"
+                  >
+                    <HiTrash className="h-4 w-4" />
+                  </button>
                 </div>
-              )
+              ),
             },
           ]}
           data={tickets}
@@ -371,7 +448,7 @@ export default function SupportTickets() {
         />
       </div>
 
-            {/* Ticket Details Modal */}
+      {/* Ticket Details Modal */}
       <Modal
         isOpen={showDetailsModal}
         onClose={() => {
@@ -382,12 +459,15 @@ export default function SupportTickets() {
         }}
         size="custom"
         showClose={true}
-        bodyClassName="p-0 bg-slate-50 overflow-hidden"
+        bodyClassName="p-0 bg-slate-50 overscroll-contain"
         header={
           <div className="flex flex-col gap-2">
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Ticket Details</h2>
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Ticket Details
+            </h2>
             <p className="text-sm font-medium text-slate-500">
-              View ticket information, conversation history, and communicate directly regarding this support request.
+              View ticket information, conversation history, and communicate directly regarding this
+              support request.
             </p>
           </div>
         }
@@ -397,163 +477,282 @@ export default function SupportTickets() {
             <div className="p-6 overflow-y-auto">
               {/* Information Card Section */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow mb-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5"><HiTicket className="w-4 h-4" /> Ticket ID</p>
-                    <p className="text-sm font-bold text-slate-900">{selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-blue-50/50 border border-blue-100 min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5 font-medium">
+                      <HiTicket className="w-4 h-4" /> Ticket ID
+                    </p>
+                    <p className="text-sm font-bold text-slate-900 break-words">
+                      {selectedTicket.ticketId ||
+                        `TKT-${String(selectedTicket.id).padStart(3, '0')}`}
+                    </p>
                   </div>
-                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-orange-50/50 border border-orange-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-orange-600 flex items-center gap-1.5"><HiShieldExclamation className="w-4 h-4" /> Priority</p>
-                    <div><Badge label={selectedTicket.priority || 'Normal'} color={getPriorityColor(selectedTicket.priority)} /></div>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-orange-50/50 border border-orange-100 min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-orange-600 flex items-center gap-1.5 font-medium">
+                      <HiShieldExclamation className="w-4 h-4" /> Priority
+                    </p>
+                    <div>
+                      <Badge
+                        label={selectedTicket.priority || 'Normal'}
+                        color={getPriorityColor(selectedTicket.priority)}
+                      />
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-purple-50/50 border border-purple-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5"><HiLifebuoy className="w-4 h-4" /> Status</p>
-                    <div><Badge label={selectedTicket.status || 'Waiting'} color={getStatusColor(selectedTicket.status || 'Waiting')} /></div>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-purple-50/50 border border-purple-100 min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5 font-medium">
+                      <HiLifebuoy className="w-4 h-4" /> Status
+                    </p>
+                    <div>
+                      <Badge
+                        label={selectedTicket.status || 'Waiting'}
+                        color={getStatusColor(selectedTicket.status || 'Waiting')}
+                      />
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-emerald-50/50 border border-emerald-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5"><HiCalendarDays className="w-4 h-4" /> Created Date</p>
-                    <p className="text-sm font-bold text-slate-900">{selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}</p>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5 font-medium">
+                      <HiCalendarDays className="w-4 h-4" /> Created Date
+                    </p>
+                    <p className="text-sm font-bold text-slate-900 break-words">
+                      {selectedTicket.createdAt
+                        ? new Date(selectedTicket.createdAt).toLocaleString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true,
+                        })
+                        : '-'}
+                    </p>
                   </div>
-                  <div className="col-span-2 flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><HiTag className="w-4 h-4 text-slate-400" /> Subject</p>
-                    <p className="text-sm font-bold text-slate-900 truncate">{selectedTicket.subject || '-'}</p>
+                  <div className="min-w-0 sm:col-span-2 flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 font-medium">
+                      <HiTag className="w-4 h-4 text-slate-400" /> Subject
+                    </p>
+                    <p className="text-sm font-bold text-slate-900 truncate">
+                      {selectedTicket.subject || '-'}
+                    </p>
                   </div>
-                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><HiFolderOpen className="w-4 h-4 text-slate-400" /> Category</p>
-                    <p className="text-sm font-bold text-slate-900">{selectedTicket.category || '-'}</p>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 font-medium">
+                      <HiFolderOpen className="w-4 h-4 text-slate-400" /> Category
+                    </p>
+                    <p className="text-sm font-bold text-slate-900 break-words">
+                      {selectedTicket.category || '-'}
+                    </p>
                   </div>
-                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><HiBuildingOffice className="w-4 h-4 text-slate-400" /> Tenant Name</p>
-                    <p className="text-sm font-bold text-slate-900">{selectedTicket.tenantName || '-'}</p>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 font-medium">
+                      <HiBuildingOffice className="w-4 h-4 text-slate-400" /> Tenant Name
+                    </p>
+                    <p className="text-sm font-bold text-slate-900 break-words">
+                      {selectedTicket.tenantName || '-'}
+                    </p>
                   </div>
-                  <div className="col-span-2 md:col-span-4 flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><HiUser className="w-4 h-4 text-slate-400" /> Admin Name</p>
-                    <p className="text-sm font-bold text-slate-900">{selectedTicket.adminName || '-'}</p>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 font-medium">
+                      <HiUser className="w-4 h-4 text-slate-400" /> Admin Name
+                    </p>
+                    <p className="text-sm font-bold text-slate-900 break-words">
+                      {selectedTicket.adminName || '-'}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Main Content Layout */}
+              {/* FIX: Main Content Layout — right side panel is now a proper sibling column */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left Side (70%) */}
+                {/* Left Side (col-span-8) */}
                 <div className="lg:col-span-8 flex flex-col gap-4">
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                     <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
                       <HiUserCircle className="w-5 h-5 text-[#0F766E]" />
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Conversation History</h3>
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                        Conversation History
+                      </h3>
                     </div>
-                    
-                    <div className="h-[450px] overflow-y-auto p-5 space-y-4 custom-scrollbar flex flex-col">
+
+                    <div
+                      className="h-[450px] overflow-y-auto p-5 space-y-4 custom-scrollbar flex flex-col"
+                      ref={conversationContainerRef}
+                    >
                       <div className="space-y-4 flex-1">
-                        {(selectedTicket.conversation || []).length ? (
+                        {(selectedTicket.conversation || []).length > 0 ? (
                           (selectedTicket.conversation || []).map((msg, i, arr) => {
-                            const isLast = i === arr.length - 1;
+                            const isLast = i === arr.length - 1
+
                             return (
                               <div
-                                key={`${msg.id}-${msg.createdAt}-${msg.senderRole}`}
-                                className={`rounded-2xl border bg-white p-4 shadow-sm transition-all hover:shadow-md ${msg.senderRole === 'admin' ? 'border-sky-200 ml-4' : 'border-[#0F766E]/20 mr-4'} ${isLast ? 'ring-2 ring-[#0F766E]/20 ring-offset-2' : ''}`}
+                                key={`${msg.id || i}-${msg.createdAt}-${msg.senderRole}`}
+                                className={`rounded-2xl border bg-white p-4 shadow-sm transition-all hover:shadow-md ${msg.senderRole === 'admin'
+                                    ? 'border-sky-200 ml-4'
+                                    : 'border-[#0F766E]/20 mr-4'
+                                  } ${isLast ? 'ring-2 ring-[#0F766E]/20 ring-offset-2' : ''}`}
                               >
                                 <div className="flex items-center gap-3 mb-3">
-                                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold ${msg.senderRole === 'admin' ? 'bg-sky-100 text-sky-700' : 'bg-[#0F766E]/10 text-[#0F766E]'}`}>
-                                    {msg.senderName ? msg.senderName.charAt(0).toUpperCase() : (msg.senderRole === 'admin' ? 'A' : 'S')}
+                                  <div
+                                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold ${msg.senderRole === 'admin'
+                                        ? 'bg-sky-100 text-sky-700'
+                                        : 'bg-[#0F766E]/10 text-[#0F766E]'
+                                      }`}
+                                  >
+                                    {msg.senderName
+                                      ? msg.senderName.charAt(0).toUpperCase()
+                                      : msg.senderRole === 'admin'
+                                        ? 'A'
+                                        : 'S'}
                                   </div>
+
                                   <div className="flex flex-col min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-sm font-bold text-slate-900 truncate">{msg.senderName || (msg.senderRole === 'admin' ? 'Admin' : 'Super Admin')}</span>
-                                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${msg.senderRole === 'admin' ? 'bg-sky-50 text-sky-600' : 'bg-[#0F766E]/10 text-[#0F766E]'}`}>
+                                      <span className="text-sm font-bold text-slate-900 truncate">
+                                        {msg.senderName ||
+                                          (msg.senderRole === 'admin' ? 'Admin' : 'Super Admin')}
+                                      </span>
+                                      <span
+                                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${msg.senderRole === 'admin'
+                                            ? 'bg-sky-50 text-sky-600'
+                                            : 'bg-[#0F766E]/10 text-[#0F766E]'
+                                          }`}
+                                      >
                                         {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
                                       </span>
                                     </div>
+
                                     <div className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5 mt-0.5">
-                                      {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                      {msg.createdAt
+                                        ? new Date(msg.createdAt).toLocaleDateString('en-GB', {
+                                          day: '2-digit',
+                                          month: 'short',
+                                          year: 'numeric',
+                                        })
+                                        : '-'}
                                       <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                      {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}
+                                      {msg.createdAt
+                                        ? new Date(msg.createdAt).toLocaleTimeString('en-GB', {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                          hour12: true,
+                                        })
+                                        : ''}
                                     </div>
                                   </div>
                                 </div>
-                                <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap ml-13">{msg.message}</p>
+
+                                <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
+                                  {msg.message}
+                                </p>
                               </div>
                             )
                           })
                         ) : (
                           <div className="flex h-full items-center justify-center">
-                            <p className="text-sm text-slate-400 font-medium">No conversation history yet.</p>
+                            <p className="text-sm text-slate-400 font-medium">
+                              No conversation history yet.
+                            </p>
                           </div>
                         )}
-                        <div ref={conversationEndRef} />
                       </div>
                     </div>
-                  </div>
 
-                  {/* Send Response */}
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mt-2">
-                    <div className="flex items-center gap-2 mb-4">
-                      <HiPaperClip className="w-5 h-5 text-[#0F766E]" />
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Send Response</h3>
-                    </div>
-                    <textarea
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="Type your response here..."
-                      className="w-full min-h-[120px] resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-4 focus:ring-[#0F766E]/10"
-                    />
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-[11px] font-medium text-slate-400">{replyText.length} characters</span>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setReplyText('')}
-                          className="rounded-xl px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors"
-                        >
-                          Clear
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSaveTicket}
-                          disabled={saving || loadingTicketDetails || !replyText.trim()}
-                          className="flex items-center gap-2 rounded-xl bg-[#0F766E] px-6 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#0c6b64] hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <HiPaperClip className="w-4 h-4" />
-                          {saving ? 'Sending...' : 'Send Response'}
-                        </button>
+                    {/* Send Response */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mt-2">
+                      <div className="flex items-center gap-2 mb-4">
+                        <HiPaperClip className="w-5 h-5 text-[#0F766E]" />
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                          Send Response
+                        </h3>
+                      </div>
+                      <textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Type your response here..."
+                        className="w-full min-h-[120px] resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-4 focus:ring-[#0F766E]/10"
+                      />
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {replyText.length} characters
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setReplyText('')}
+                            className="rounded-xl px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors"
+                          >
+                            Clear
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveTicket}
+                            disabled={saving || loadingTicketDetails || !replyText.trim()}
+                            className="flex items-center gap-2 rounded-xl bg-[#0F766E] px-6 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#0c6b64] hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <HiPaperClip className="w-4 h-4" />
+                            {saving ? 'Sending...' : 'Send Response'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Side (30%) */}
+                {/* FIX: Right Side (col-span-4) — moved out of left column, now a proper sibling */}
                 <div className="lg:col-span-4">
                   <div className="sticky top-0 bg-gradient-to-b from-slate-50 to-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-5">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide border-b border-slate-100 pb-3">Ticket Summary</h3>
-                    
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide border-b border-slate-100 pb-3">
+                      Ticket Summary
+                    </h3>
+
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-semibold text-slate-500">Ticket Number</span>
-                        <span className="text-sm font-bold text-slate-900">{selectedTicket.ticketId || `TKT-${String(selectedTicket.id).padStart(3, '0')}`}</span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {selectedTicket.ticketId ||
+                            `TKT-${String(selectedTicket.id).padStart(3, '0')}`}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-semibold text-slate-500">Priority</span>
-                        <Badge label={selectedTicket.priority || 'Normal'} color={getPriorityColor(selectedTicket.priority)} />
+                        <Badge
+                          label={selectedTicket.priority || 'Normal'}
+                          color={getPriorityColor(selectedTicket.priority)}
+                        />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-semibold text-slate-500">Status</span>
-                        <Badge label={selectedTicket.status || 'Waiting'} color={getStatusColor(selectedTicket.status || 'Waiting')} />
+                        <Badge
+                          label={selectedTicket.status || 'Waiting'}
+                          color={getStatusColor(selectedTicket.status || 'Waiting')}
+                        />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-semibold text-slate-500">Category</span>
-                        <span className="text-sm font-bold text-slate-900">{selectedTicket.category || '-'}</span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {selectedTicket.category || '-'}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-semibold text-slate-500">Tenant Name</span>
-                        <span className="text-sm font-bold text-slate-900">{selectedTicket.tenantName || '-'}</span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {selectedTicket.tenantName || '-'}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-semibold text-slate-500">Created Date</span>
-                        <span className="text-sm font-bold text-slate-900">{selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleDateString() : '-'}</span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {selectedTicket.createdAt
+                            ? new Date(selectedTicket.createdAt).toLocaleDateString()
+                            : '-'}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-semibold text-slate-500">Last Updated</span>
-                        <span className="text-sm font-bold text-slate-900">{selectedTicket.updatedAt ? new Date(selectedTicket.updatedAt).toLocaleDateString() : '-'}</span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {selectedTicket.updatedAt
+                            ? new Date(selectedTicket.updatedAt).toLocaleDateString()
+                            : '-'}
+                        </span>
                       </div>
                     </div>
 
@@ -565,7 +764,9 @@ export default function SupportTickets() {
                         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-4 focus:ring-[#0F766E]/10"
                       >
                         {STATUS_OPTIONS.map((status) => (
-                          <option key={status} value={status}>{status}</option>
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -580,7 +781,11 @@ export default function SupportTickets() {
                           className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-[#0F766E] hover:bg-slate-100 transition-colors"
                         >
                           <HiPaperClip className="w-4 h-4" />
-                          <span className="truncate">{selectedTicket.attachmentUrl?.split('/').pop() || selectedTicket.attachment_url?.split('/').pop() || 'Download'}</span>
+                          <span className="truncate">
+                            {selectedTicket.attachmentUrl?.split('/').pop() ||
+                              selectedTicket.attachment_url?.split('/').pop() ||
+                              'Download'}
+                          </span>
                         </a>
                       </div>
                     )}
@@ -594,6 +799,3 @@ export default function SupportTickets() {
     </div>
   )
 }
-
-
-
