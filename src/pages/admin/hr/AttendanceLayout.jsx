@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { HiCalendarDays, HiChartBar, HiClipboardDocumentList, HiTableCells, HiClock, HiUserCircle } from 'react-icons/hi2'
+import { HiClipboardDocumentList, HiClock, HiUserCircle } from 'react-icons/hi2'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import {
   canManageAttendanceOverride,
@@ -12,18 +12,20 @@ import { useAttendanceSettings } from '../../../hooks/useAttendanceSettings.js'
 
 const tabs = [
   { to: '/admin/attendance', label: 'My Attendance', icon: HiUserCircle, end: true, kind: 'own' },
-  { to: '/admin/attendance/log', label: 'Daily Log', icon: HiTableCells, kind: 'team' },
-  { to: '/admin/attendance/dashboard', label: 'Dashboard', icon: HiChartBar, kind: 'team' },
   { to: '/admin/attendance/regularization', label: 'Regularization', icon: HiClipboardDocumentList, kind: 'regularization' },
   { to: '/admin/attendance/overtime', label: 'Overtime', icon: HiClock, kind: 'overtime' },
-  { to: '/admin/attendance/reports', label: 'Reports', icon: HiCalendarDays, kind: 'team' },
-  { to: '/admin/attendance/override', label: 'Override', icon: HiClipboardDocumentList, kind: 'manage' },
+  { to: '/admin/attendance/override', label: 'Manual Attendance', icon: HiClipboardDocumentList, kind: 'manage' },
 ]
 
-function tabVisible(tab, mods, overtimeEnabled) {
+function tabVisible(tab, mods, overtimeEnabled, user) {
+  if (user?.dataScope === 'self') {
+    if (tab.kind === 'team' || tab.kind === 'manage') return false;
+  }
+  
   if (tab.kind === 'manage') return canManageAttendanceOverride(mods)
-  // Overtime tab is shown only when overtime is enabled in settings AND the user can manage it.
-  if (tab.kind === 'overtime') return overtimeEnabled && canManageAttendanceOverride(mods)
+  // Overtime tab shows when overtime is enabled in settings, to any user with attendance
+  // access (employees add/track their own; managers/HR also approve/manage).
+  if (tab.kind === 'overtime') return overtimeEnabled && canViewOwnAttendance(mods)
   if (tab.kind === 'team') return canViewTeamAttendance(mods) || canViewAllAttendance(mods)
   if (tab.kind === 'regularization') {
     return canRequestRegularization(mods) || canViewTeamAttendance(mods) || canViewAllAttendance(mods)
@@ -32,11 +34,11 @@ function tabVisible(tab, mods, overtimeEnabled) {
 }
 
 export default function AttendanceLayout() {
-  const { allowedModules } = useAuth()
+  const { allowedModules, user } = useAuth()
   const { settings } = useAttendanceSettings()
   const mods = allowedModules || []
   const overtimeEnabled = settings?.overtimeSettings?.overtimeEligibility === true
-  const visibleTabs = tabs.filter((t) => tabVisible(t, mods, overtimeEnabled))
+  const visibleTabs = tabs.filter((t) => tabVisible(t, mods, overtimeEnabled, user))
 
   return (
     <div className="space-y-6 pb-10">

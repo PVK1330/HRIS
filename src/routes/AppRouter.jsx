@@ -22,7 +22,6 @@ const Attendance = lazy(() => import("../pages/admin/hr/Attendance.jsx"));
 const MyAttendance = lazy(() => import("../pages/admin/hr/attendance/MyAttendance.jsx"));
 const AttendanceDashboard = lazy(() => import("../pages/admin/hr/attendance/AttendanceDashboard.jsx"));
 const AttendanceRegularization = lazy(() => import("../pages/admin/hr/attendance/AttendanceRegularization.jsx"));
-const AttendanceReports = lazy(() => import("../pages/admin/hr/attendance/AttendanceReports.jsx"));
 const AttendanceOverride = lazy(() => import("../pages/admin/hr/attendance/AttendanceOverride.jsx"));
 const OvertimeApprovals = lazy(() => import("../pages/admin/hr/attendance/OvertimeApprovals.jsx"));
 const LeaveAbsence = lazy(() => import("../pages/admin/hr/LeaveAbsence.jsx"));
@@ -181,7 +180,6 @@ export const router = createBrowserRouter([
               { path: "dashboard", element: <AttendanceDashboard /> },
               { path: "regularization", element: <AttendanceRegularization /> },
               { path: "overtime", element: <OvertimeApprovals /> },
-              { path: "reports", element: <AttendanceReports /> },
               { path: "override", element: <AttendanceOverride /> },
             ],
           },

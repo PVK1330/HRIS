@@ -52,7 +52,11 @@ export default function AddLeaveModal({ isOpen, onClose, leaveTypes, empList, li
               </label>
               <select
                 value={form.leaveTypeId || ''}
-                onChange={(e) => setForm({ ...form, leaveTypeId: e.target.value })}
+                onChange={(e) => {
+                  const typeId = e.target.value;
+                  const typeObj = leaveTypes.find(t => String(t.id) === String(typeId));
+                  setForm({ ...form, leaveTypeId: typeId, leaveType: typeObj ? typeObj.name : '' });
+                }}
                 required
                 className="w-full rounded border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]"
               >

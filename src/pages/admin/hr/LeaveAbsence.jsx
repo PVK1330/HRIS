@@ -52,6 +52,7 @@ export default function LeaveAbsence() {
   const [search, setSearch] = useState('');
   const [dept, setDept] = useState('');
   const [statusF, setStatusF] = useState('');
+  const [leaveTypeF, setLeaveTypeF] = useState('');
   const [year, setYear] = useState(currentYear);
 
   const [requests, setRequests] = useState([]);
@@ -83,13 +84,13 @@ export default function LeaveAbsence() {
   const fetchRequests = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const data = await listLeave({ year, status: statusF, department: dept, search });
+      const data = await listLeave({ year, status: statusF, department: dept, search, leaveType: leaveTypeF });
       setRequests(data.requests || []);
       setStats(data.stats || null);
     } catch (err) {
       setError(err?.message || 'Failed to load leave requests');
     } finally { setLoading(false); }
-  }, [year, statusF, dept, search]);
+  }, [year, statusF, dept, search, leaveTypeF]);
 
   const fetchBalances = useCallback(async () => {
     setLoadingBal(true);
@@ -123,8 +124,9 @@ export default function LeaveAbsence() {
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
   useEffect(() => { if (activeTab === 'balances') fetchBalances(); }, [activeTab, fetchBalances]);
+  useEffect(() => { fetchLeaveTypes(); }, [fetchLeaveTypes]);
 
-  useEffect(() => { setCurrentPage(1); setBalancesPage(1); }, [search, dept, statusF, year]);
+  useEffect(() => { setCurrentPage(1); setBalancesPage(1); }, [search, dept, statusF, year, leaveTypeF]);
 
   useEffect(() => {
     if (!form.fromDate || !form.toDate) return;
@@ -368,13 +370,21 @@ export default function LeaveAbsence() {
               <option value="">All Statuses</option>
               {['Draft','Pending Manager Approval','Pending HR Approval','Approved','Rejected by Manager','Rejected by HR','Cancelled'].map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
             </select>
+            <select
+              value={leaveTypeF}
+              onChange={(e) => setLeaveTypeF(e.target.value)}
+              className="h-10 min-w-[150px] cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]"
+            >
+              <option value="">All Leave Types</option>
+              {leaveTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+            </select>
           </div>
           <div className="flex items-center gap-3">
             <p className="text-xs font-medium text-slate-500">{requests.length} records shown</p>
-            {(search || statusF || year !== currentYear) ? (
+            {(search || statusF || leaveTypeF || year !== currentYear) ? (
               <button
                 type="button"
-                onClick={() => { setSearch(''); setStatusF(''); setYear(currentYear); }}
+                onClick={() => { setSearch(''); setStatusF(''); setLeaveTypeF(''); setYear(currentYear); }}
                 className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
               >
                 Reset Filters
