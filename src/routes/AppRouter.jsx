@@ -5,6 +5,7 @@ import {
   Navigate,
   Outlet,
   RouterProvider,
+  useLocation,
 } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import PermissionGate from "../components/PermissionGate.jsx";
@@ -19,6 +20,7 @@ const EmployeeDirectory = lazy(() => import("../pages/admin/employees/EmployeeDi
 const EmployeeProfile = lazy(() => import("../pages/admin/employees/EmployeeProfile.jsx"));
 const AttendanceLayout = lazy(() => import("../pages/admin/hr/AttendanceLayout.jsx"));
 const Attendance = lazy(() => import("../pages/admin/hr/Attendance.jsx"));
+const MyAttendance = lazy(() => import("../pages/admin/hr/attendance/MyAttendance.jsx"));
 const AttendanceDashboard = lazy(() => import("../pages/admin/hr/attendance/AttendanceDashboard.jsx"));
 const AttendanceRegularization = lazy(() => import("../pages/admin/hr/attendance/AttendanceRegularization.jsx"));
 const AttendanceReports = lazy(() => import("../pages/admin/hr/attendance/AttendanceReports.jsx"));
@@ -42,6 +44,8 @@ const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemp
 const LetterBuilder = lazy(() => import("../pages/admin/documents/LetterBuilder.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
 const AdminSettings = lazy(() => import("../pages/admin/settings/AdminSettings.jsx"));
+const AccountSecurity = lazy(() => import("../pages/admin/account/AccountSecurity.jsx"));
+const PaymentPage = lazy(() => import("../pages/admin/account/PaymentPage.jsx"));
 const RolesPermissions = lazy(() => import("../pages/admin/settings/RolesPermissions.jsx"));
 const DepartmentManagement = lazy(() => import("../pages/admin/settings/Departments.jsx"));
 const DesignationsManagement = lazy(() => import("../pages/admin/settings/Designations.jsx"));
@@ -111,6 +115,19 @@ function AdminModuleGate({ moduleKey, children }) {
   );
 }
 
+/**
+ * When the org's subscription requires payment (trial expired / unpaid), every admin
+ * route is redirected to the payment page until payment is completed.
+ */
+function PaymentGate({ children }) {
+  const { paymentRequired } = useAuth();
+  const location = useLocation();
+  if (paymentRequired && location.pathname !== "/admin/payment") {
+    return <Navigate to="/admin/payment" replace />;
+  }
+  return children;
+}
+
 function RootLayout() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full"></div></div>}>
@@ -141,10 +158,21 @@ export const router = createBrowserRouter([
       { path: "onboarding/sign", element: <CandidateSign /> },
       { path: "onboarding/documents", element: <CandidateDocuments /> },
       {
+        // Full-screen payment page (outside the admin layout/sidebar).
+        path: "admin/payment",
+        element: (
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+            <PaymentPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "admin",
         element: (
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
-            <AdminLayout />
+            <PaymentGate>
+              <AdminLayout />
+            </PaymentGate>
           </ProtectedRoute>
         ),
         children: [
@@ -175,7 +203,8 @@ export const router = createBrowserRouter([
               </AttendanceModuleGate>
             ),
             children: [
-              { index: true, element: <Attendance /> },
+              { index: true, element: <MyAttendance /> },
+              { path: "log", element: <Attendance /> },
               { path: "dashboard", element: <AttendanceDashboard /> },
               { path: "regularization", element: <AttendanceRegularization /> },
               { path: "overtime", element: <OvertimeApprovals /> },
@@ -331,6 +360,8 @@ export const router = createBrowserRouter([
               </AdminModuleGate>
             ),
           },
+          // Self-service security (2FA) — available to every org user, no module gate.
+          { path: "security", element: <AccountSecurity /> },
           {
             path: "settings/roles-permissions",
             element: (

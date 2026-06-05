@@ -2,19 +2,16 @@ import React from 'react';
 import {
   RiSettings3Line,
   RiShieldUserLine,
-  RiLockPasswordLine,
   RiShieldCheckLine,
   RiNotification3Line,
   RiMailSettingsLine,
-  RiLinksLine,
   RiBankCardLine,
   RiHistoryLine,
-  RiDatabase2Line,
   RiLogoutBoxRLine,
   RiMacbookLine,
-  RiUserAddLine,
   RiCalendarCheckLine,
-  RiCalendarEventLine
+  RiCalendarEventLine,
+  RiFileList3Line
 } from 'react-icons/ri';
 
 export const settingsTabs = [
@@ -49,12 +46,6 @@ export const settingsTabs = [
     desc: 'Access control'
   },
   {
-    id: 'sensitive',
-    label: 'Sensitive Data',
-    icon: RiLockPasswordLine,
-    desc: 'Data permissions'
-  },
-  {
     id: 'security',
     label: 'Security',
     icon: RiShieldCheckLine,
@@ -71,12 +62,6 @@ export const settingsTabs = [
     label: 'Email Settings',
     icon: RiMailSettingsLine,
     desc: 'Email configuration'
-  },
-  {
-    id: 'integrations',
-    label: 'Integrations',
-    icon: RiLinksLine,
-    desc: 'Third-party integrations'
   },
   {
     id: 'billing',
@@ -97,10 +82,10 @@ export const settingsTabs = [
   //   desc: 'Data backup & recovery'
   // },
   {
-    id: 'onboarding',
-    label: 'Onboarding',
-    icon: RiUserAddLine,
-    desc: 'Handover departments'
+    id: 'documents',
+    label: 'Documents',
+    icon: RiFileList3Line,
+    desc: 'Onboarding document types & roles'
   },
   {
     id: 'exit',

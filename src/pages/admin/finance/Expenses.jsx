@@ -22,6 +22,7 @@ import { Badge } from '../../../components/ui/Badge.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { Table } from '../../../components/ui/Table.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
+import { useCurrency } from '../../../context/CurrencyContext.jsx';
 import * as expenseService from '../../../services/expenseService.js';
 import * as expenseCategoryService from '../../../services/expenseCategoryService.js';
 import { listEmployees } from '../../../services/employeeService.js';
@@ -103,6 +104,7 @@ function mapCategoryRow(row) {
 
 export default function Expenses() {
   const { user } = useAuth();
+  const { format: fmt } = useCurrency();
   const [viewMode, setViewMode] = useState('claims'); // 'claims' or 'categories'
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
@@ -558,7 +560,7 @@ export default function Expenses() {
       label: 'Amount',
       render: (_, row) => (
         <span className="font-bold text-slate-900">
-          {row.currency} {row.amount.toLocaleString()}
+          {fmt(row.amount, { from: row.currency })}
         </span>
       ),
     },
@@ -934,7 +936,7 @@ export default function Expenses() {
                 <div>
                   <p className="text-[10px] font-bold uppercase text-slate-400">Amount</p>
                   <p className="mt-1 text-lg font-black text-[#0F766E]">
-                    {selectedClaim.currency} {selectedClaim.amount.toLocaleString()}
+                    {fmt(selectedClaim.amount, { from: selectedClaim.currency })}
                   </p>
                 </div>
                 <div>

@@ -1409,7 +1409,7 @@ export const initialDocumentSubmissions = [
 export const initialDocumentAuditLog = [
   { id: 'da-1', at: '2026-05-02T08:30:00', actor: 'System', detail: 'Emily Clarke submitted Education Certificate (pending review).' },
   { id: 'da-2', at: '2026-05-02T09:15:00', actor: 'Sarah Ahmed', detail: 'Michael Brown\'s National ID rejected — unclear scan.' },
-  { id: 'da-3', at: '2026-05-02T09:45:00', actor: 'Neha Jain', detail: 'Sarah Johnson\'s Contract v3.1 approved by HR.' },
+  { id: 'da-3', at: '2026-05-02T09:45:00', actor: 'John Jain', detail: 'Sarah Johnson\'s Contract v3.1 approved by HR.' },
   { id: 'da-4', at: '2026-05-02T10:30:00', actor: 'John Doe', detail: 'Passport v2.0 uploaded for compliance review.' },
 ]
 
@@ -1424,6 +1424,6 @@ export const payrollData = [
   { id: 1, name: 'Sarah Ahmed', empId: 'EMP-001', department: 'HR', basic: 15000, allowances: 4000, deductions: 1000, net: 18000 },
   { id: 2, name: 'Michael Chen', empId: 'EMP-002', department: 'Product', basic: 18000, allowances: 3000, deductions: 1500, net: 19500 },
   { id: 3, name: 'John Doe', empId: 'EMP-003', department: 'Engineering', basic: 20000, allowances: 5000, deductions: 2000, net: 23000 },
-  { id: 4, name: 'Neha Jain', empId: 'EMP-004', department: 'Sales', basic: 12000, allowances: 6000, deductions: 800, net: 17200 },
+  { id: 4, name: 'John Jain', empId: 'EMP-004', department: 'Sales', basic: 12000, allowances: 6000, deductions: 800, net: 17200 },
   { id: 5, name: 'David Smith', empId: 'EMP-005', department: 'IT', basic: 16000, allowances: 3500, deductions: 1200, net: 18300 },
 ]

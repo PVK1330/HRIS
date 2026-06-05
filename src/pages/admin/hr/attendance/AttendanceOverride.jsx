@@ -87,13 +87,16 @@ export default function AttendanceOverride() {
   }
 
   return (
-    <div className="max-w-3xl rounded-xl border border-amber-200 bg-amber-50/30 p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">Attendance override</h2>
-      <p className="mt-1 text-sm text-slate-600">
-        HR and admins only. Manual dates, punch times, and status corrections are audited.
-      </p>
+    <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+        <h2 className="text-sm font-semibold text-white">Attendance Override</h2>
+      </div>
+      <div className="p-6">
+        <p className="mb-6 text-sm text-slate-500">
+          HR and admins only. Manual dates, punch times, and status corrections are audited.
+        </p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className={labelClass}>Employee</label>
           <div className="relative mt-1">
@@ -180,6 +183,7 @@ export default function AttendanceOverride() {
           </Tooltip>
         </div>
       </form>
+      </div>
     </div>
   )
 }

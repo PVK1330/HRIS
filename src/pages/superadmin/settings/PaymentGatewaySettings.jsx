@@ -73,13 +73,18 @@ export default function PaymentGatewaySettings() {
     }
   }
 
-  const handleTestConnection = async (gateway) => {
-    setTesting(gateway)
+  const handleTestConnection = async (slug, label) => {
+    setTesting(label)
     try {
-      await settingsService.testPaymentGateway(gateway)
-      toast.success(`${gateway} connection successful!`)
+      const res = await settingsService.testPaymentGateway(slug)
+      const result = res?.data ?? res
+      if (result?.verified) {
+        toast.success(`${label} connection successful!`)
+      } else {
+        toast.error(`${label} test failed: ${result?.message || 'Verification failed'}`)
+      }
     } catch (err) {
-      toast.error(`${gateway} test failed: ${err.message}`)
+      toast.error(`${label} test failed: ${err?.response?.data?.message || err.message}`)
     } finally {
       setTesting(null)
     }
@@ -168,7 +173,7 @@ export default function PaymentGatewaySettings() {
                   <div className="pt-2">
                     <button
                       type="button"
-                      onClick={() => handleTestConnection('Stripe')}
+                      onClick={() => handleTestConnection('stripe', 'Stripe')}
                       disabled={testing === 'Stripe'}
                       className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
                     >
@@ -259,7 +264,7 @@ export default function PaymentGatewaySettings() {
                         className={baseInput}
                       >
                         <option value="sandbox">Sandbox (Testing)</option>
-                        <option value="production">Production (Live)</option>
+                        <option value="live">Production (Live)</option>
                       </select>
                     </div>
                   </div>
@@ -267,7 +272,7 @@ export default function PaymentGatewaySettings() {
                   <div className="pt-2">
                     <button
                       type="button"
-                      onClick={() => handleTestConnection('PayPal')}
+                      onClick={() => handleTestConnection('paypal', 'PayPal')}
                       disabled={testing === 'PayPal'}
                       className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
                     >

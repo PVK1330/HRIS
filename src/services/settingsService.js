@@ -91,8 +91,64 @@ export const settingsService = {
   getSettingsMeta: () => client.get('/meta').then((r) => r.data),
 
   /* -------------------- Payment Gateways -------------------- */
-  getPaymentGateways: () =>
-    apiV1.get('/payment-gateways').then((r) => r.data),
+  // The backend is a per-slug REST API returning an array of gateways with
+  // snake_case credentials. These adapters map that to/from the page's
+  // { stripe, paypal } camelCase shape.
+  getPaymentGateways: async () => {
+    const body = await apiV1.get('/payment-gateways').then((r) => r.data)
+    const list = Array.isArray(body?.data) ? body.data : Array.isArray(body) ? body : []
+    const bySlug = Object.fromEntries(list.map((g) => [g.slug, g]))
+    const s = bySlug.stripe || {}
+    const p = bySlug.paypal || {}
+    const sCred = s.credentials || {}
+    const pCred = p.credentials || {}
+    return {
+      data: {
+        stripe: {
+          enabled: !!s.isEnabled,
+          publicKey: sCred.publishable_key || '',
+          secretKey: sCred.secret_key || '',
+          webhookSecret: sCred.webhook_secret || '',
+        },
+        paypal: {
+          enabled: !!p.isEnabled,
+          clientId: pCred.client_id || '',
+          clientSecret: pCred.client_secret || '',
+          mode: pCred.mode || 'sandbox',
+        },
+      },
+    }
+  },
+  updatePaymentGateways: async ({ stripe, paypal } = {}) => {
+    const calls = []
+    if (stripe) {
+      calls.push(
+        apiV1.put('/payment-gateways/stripe', {
+          isEnabled: !!stripe.enabled,
+          credentials: {
+            publishable_key: stripe.publicKey || '',
+            secret_key: stripe.secretKey || '',
+            webhook_secret: stripe.webhookSecret || '',
+          },
+        }),
+      )
+    }
+    if (paypal) {
+      calls.push(
+        apiV1.put('/payment-gateways/paypal', {
+          isEnabled: !!paypal.enabled,
+          testMode: paypal.mode === 'sandbox',
+          credentials: {
+            client_id: paypal.clientId || '',
+            client_secret: paypal.clientSecret || '',
+            mode: paypal.mode || 'sandbox',
+          },
+        }),
+      )
+    }
+    await Promise.all(calls)
+    return { success: true }
+  },
   getEnabledPaymentGateways: () =>
     apiV1.get('/payment-gateways/enabled').then((r) => r.data),
   getPaymentGateway: (slug) =>
@@ -100,7 +156,9 @@ export const settingsService = {
   updatePaymentGateway: (slug, payload) =>
     apiV1.put(`/payment-gateways/${encodeURIComponent(slug)}`, payload).then((r) => r.data),
   testPaymentGateway: (slug) =>
-    apiV1.post(`/payment-gateways/${encodeURIComponent(slug)}/test`).then((r) => r.data),
+    apiV1
+      .post(`/payment-gateways/${encodeURIComponent(String(slug).toLowerCase())}/test`)
+      .then((r) => r.data),
 
   /* -------------------- reCAPTCHA -------------------- */
   getRecaptcha: () => apiV1.get('/recaptcha').then((r) => r.data),
@@ -119,6 +177,7 @@ export const settingsService = {
   /* -------------------- Currency -------------------- */
   getCurrency: () => apiV1.get('/currency').then((r) => r.data),
   updateCurrency: (payload) => apiV1.put('/currency', payload).then((r) => r.data),
+  refreshCurrencyRates: () => apiV1.post('/currency/refresh-rates').then((r) => r.data),
 }
 
 export default settingsService

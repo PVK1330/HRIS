@@ -25,6 +25,8 @@ import {
   HiIdentification,
   HiChatBubbleLeftRight,
   HiQuestionMarkCircle,
+  HiLifebuoy,
+  HiShieldCheck,
 } from "react-icons/hi2";
 import { Sidebar } from "../components/ui/Sidebar.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
@@ -312,7 +314,7 @@ const FEATURE_PATH_MAP = {
   expense_management: ["/admin/expenses"],
   expenses: ["/admin/expenses"],
   policies: ["/admin/policies", "/admin/my-policies"],
-  announcements: ["/admin/announcements"],
+  announcements: ["/admin/announcements", "/admin/support"],
   visa_management: ["/admin/visa"],
   visa: ["/admin/visa"],
   visa_nationality: ["/admin/visa"],
@@ -340,7 +342,6 @@ const FEATURE_PATH_MAP = {
   overtime_management: ["/admin/attendance"],
   training_development: ["/admin/performance"],
   billing_invoicing: ["/admin/payroll"],
-  announcements: ["/admin/announcements", "/admin/support"],
 };
 
 function normalizeFeatureCode(code) {
@@ -353,7 +354,9 @@ function normalizeFeatureCode(code) {
 }
 
 export default function AdminLayout() {
-  const { user, logout, hasModule, hasFeatureAccess, switchRole } = useAuth();
+  const { user, logout, hasModule, hasFeatureAccess, switchRole, billing } = useAuth();
+  const showTrialBanner =
+    billing?.trial_active && billing?.days_left != null && billing.days_left <= 7;
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
@@ -567,6 +570,18 @@ export default function AdminLayout() {
               </div>
             )}
 
+            <Link
+              to="/admin/security"
+              title="Security & two-factor authentication"
+              aria-label="Security settings"
+              className={`rounded-lg p-2 transition-all ${
+                location.pathname === "/admin/security"
+                  ? "bg-[#0E9F6E]/10 text-[#0E9F6E]"
+                  : "text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#0E9F6E]"
+              }`}
+            >
+              <HiShieldCheck className="h-5 w-5" />
+            </Link>
             <NotificationDropdown />
             <Link
               to="/admin/employee-profile"
@@ -595,6 +610,20 @@ export default function AdminLayout() {
             </button>
           </div>
         </header>
+        {showTrialBanner && (
+          <div className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-1.5 text-xs font-semibold text-amber-800">
+            <span>
+              {billing.days_left > 0
+                ? `Your free trial ends in ${billing.days_left} day${billing.days_left === 1 ? "" : "s"}.`
+                : "Your free trial ends today."}
+            </span>
+            {user?.role === "admin" && (
+              <Link to="/admin/payment" className="underline hover:text-amber-900">
+                Upgrade now
+              </Link>
+            )}
+          </div>
+        )}
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-[#F9FAFB] p-4">
           <div className="mx-auto min-w-0 max-w-[1600px]">
             <Outlet />

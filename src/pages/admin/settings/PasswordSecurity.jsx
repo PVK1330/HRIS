@@ -10,6 +10,7 @@ import {
   Toggle,
 } from './components/ui'
 import { usePasswordSecurity } from '../../../hooks/settings/usePasswordSecurity'
+import MfaCard from './MfaCard'
 
 const RECOVERY_OPTIONS = ['Email recovery', 'Admin reset', 'Both']
 
@@ -80,13 +81,18 @@ export default function PasswordSecurity({ registerToolbar }) {
             className="max-w-[120px]"
           />
         </FieldRow>
-        <FieldRow label="Two-factor authentication">
+        <FieldRow
+          label="Recommend two-factor authentication"
+          hint="Organization-wide policy to encourage 2FA. Each user enrolls their own authenticator below."
+        >
           <Toggle
             checked={settings.passwordPolicy.twoFactorAuth}
             onChange={(v) => patchPolicy({ twoFactorAuth: v })}
           />
         </FieldRow>
       </SectionCard>
+
+      <MfaCard />
 
       <SectionCard title="Account security">
         <FieldRow label="Session timeout (minutes)">

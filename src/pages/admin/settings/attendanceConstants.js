@@ -10,6 +10,8 @@ export const OVERTIME_CALC_RULES = ['1.5x hourly', '2x hourly', 'Flat rate', 'Cu
 
 export const OVERTIME_APPROVAL = ['Manager → HR', 'HR only', 'Manager only', 'Auto-approve']
 
+export const OVERTIME_APPROVERS = ['HR Department', 'Direct Manager', 'HOD', 'Manager + HR']
+
 export const BREAK_DURATION_OPTIONS = [
   { label: '30 minutes', value: 30 },
   { label: '45 minutes', value: 45 },
