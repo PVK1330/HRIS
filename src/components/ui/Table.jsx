@@ -16,6 +16,7 @@ export function Table({
   currentPage,
   onPageChange,
   square = false,
+  theme = 'gray',
   /** Optional Tailwind classes per data row (server-side pagination). */
   rowClassName,
 }) {
@@ -52,25 +53,27 @@ export function Table({
   }
 
   return (
-    <div className={`flex min-w-0 max-w-full flex-col overflow-hidden border border-gray-200 bg-white shadow-sm ${square ? 'rounded-none' : 'rounded-xl'}`}>
+    <div className={`flex min-w-0 max-w-full flex-col overflow-hidden border ${theme === 'teal' ? 'border-[#0F766E]/20' : 'border-gray-200'} bg-white shadow-sm ${square ? 'rounded-none' : 'rounded-xl'}`}>
       <div
         className={`min-w-0 overflow-auto overscroll-contain ${maxHeightClass}`}
       >
-        <table className="min-w-max w-full divide-y divide-gray-200">
-          <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_rgb(229_231_235)]">
+        <table className={`min-w-max w-full divide-y ${theme === 'teal' ? 'divide-teal-50' : 'divide-gray-200'}`}>
+          <thead className={`sticky top-0 z-10 ${theme === 'teal' ? 'bg-[#0F766E]' : 'bg-gray-50 shadow-[0_1px_0_0_rgb(229_231_235)]'}`}>
             <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
                   scope="col"
-                  className={`whitespace-nowrap border-b border-gray-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600 sm:px-4 ${col.className || ''}`}
+                  className={`whitespace-nowrap px-3 py-3 text-left text-xs font-bold uppercase tracking-wide sm:px-4 ${
+                    theme === 'teal' ? 'border-b border-[#0F766E] text-white' : 'border-b border-gray-200 text-gray-600'
+                  } ${col.className || ''}`}
                 >
                   {col.label}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
+          <tbody className={`divide-y bg-white ${theme === 'teal' ? 'divide-teal-50' : 'divide-gray-100'}`}>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={`sk-${i}`}>
@@ -95,7 +98,7 @@ export function Table({
                 <tr
                   key={row.id ?? ri}
                   onClick={() => onRowClick?.(row)}
-                  className={`${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''} ${rowClassName ? rowClassName(row) : ''}`.trim()}
+                  className={`${onRowClick ? (theme === 'teal' ? 'cursor-pointer hover:bg-teal-50/50' : 'cursor-pointer hover:bg-gray-50') : ''} ${rowClassName ? rowClassName(row) : ''}`.trim()}
                 >
                   {columns.map((col) => {
                     const raw = row[col.key]
@@ -112,8 +115,10 @@ export function Table({
           </tbody>
         </table>
       </div>
-      <div className="flex shrink-0 flex-col gap-3 border-t border-gray-200 bg-gray-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-        <p className="text-xs text-gray-600">
+      <div className={`flex shrink-0 flex-col gap-3 border-t px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 ${
+        theme === 'teal' ? 'border-[#0F766E]/10 bg-teal-50/30' : 'border-gray-200 bg-gray-50'
+      }`}>
+        <p className={`text-xs ${theme === 'teal' ? 'text-teal-800 font-medium' : 'text-gray-600'}`}>
           Showing {showingFrom}–{showingTo} of {total}
         </p>
         <div className="flex items-center gap-2">

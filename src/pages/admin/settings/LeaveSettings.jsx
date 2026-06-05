@@ -20,8 +20,10 @@ import {
 } from '../../../services/adminSettingsService';
 
 const PAID_UNPAID = ['Paid', 'Unpaid'];
-const ACCRUAL = ['Monthly', 'Annually', 'Upfront', 'Hourly'];
-const LOP = ['No LOP', 'Deduct from Salary'];
+// Must match backend VALID_ACCRUAL / VALID_LOP_RULES (leaveSettings.service.js) —
+// previously-listed values (Annually/Upfront/Hourly, Deduct from Salary) were rejected with HTTP 400.
+const ACCRUAL = ['Monthly', 'Yearly', 'None'];
+const LOP = ['No LOP', 'Full LOP', 'Half LOP'];
 const GENDER_RESTRICTIONS = ['Both', 'Male', 'Female'];
 
 const initialFormData = {

@@ -93,12 +93,15 @@ export default function AttendanceRegularization() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {canSubmit && (
-        <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Submit regularization</h2>
-          <p className="mt-1 text-sm text-slate-500">Request a correction for a past attendance date.</p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <form onSubmit={handleSubmit} className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+            <h2 className="text-sm font-semibold text-white">Submit Regularization</h2>
+          </div>
+          <div className="p-6">
+            <p className="mb-4 text-sm text-slate-500">Request a correction for a past attendance date.</p>
+            <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className={labelClass}>Date</label>
               <input required type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className={inputClass} />
@@ -126,29 +129,30 @@ export default function AttendanceRegularization() {
           </div>
           {error && <p className="mt-3 text-sm text-red-600" role="alert">{error}</p>}
           <div className="mt-6 flex flex-wrap gap-3">
-            <Tooltip content="Send regularization request to approver">
-              <Button
-                type="submit"
-                variant="teal"
-                size="md"
-                label="Submit Request"
-                icon={HiPaperAirplane}
-                loading={submitting}
-                disabled={submitting}
-                className="mt-0"
-              />
-            </Tooltip>
-            <Tooltip content="Clear the form">
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                label="Cancel"
-                icon={HiXMark}
-                disabled={submitting}
-                onClick={() => { setForm(EMPTY); setError('') }}
-              />
-            </Tooltip>
+              <Tooltip content="Send regularization request to approver">
+                <Button
+                  type="submit"
+                  variant="teal"
+                  size="md"
+                  label="Submit Request"
+                  icon={HiPaperAirplane}
+                  loading={submitting}
+                  disabled={submitting}
+                  className="mt-0"
+                />
+              </Tooltip>
+              <Tooltip content="Clear the form">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  label="Cancel"
+                  icon={HiXMark}
+                  disabled={submitting}
+                  onClick={() => { setForm(EMPTY); setError('') }}
+                />
+              </Tooltip>
+            </div>
           </div>
         </form>
       )}
@@ -160,10 +164,13 @@ export default function AttendanceRegularization() {
       )}
 
       {canApprove && (
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Approval inbox</h2>
+        <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+            <h2 className="text-sm font-semibold text-white">Approval Inbox</h2>
+          </div>
           <Table
             loading={loading}
+            square
             columns={[
               { key: 'employee_name', label: 'Employee' },
               { key: 'date', label: 'Date' },
@@ -199,13 +206,16 @@ export default function AttendanceRegularization() {
             data={pending}
             emptyMessage="No pending regularizations"
           />
-        </section>
+        </div>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">History</h2>
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+          <h2 className="text-sm font-semibold text-white">History</h2>
+        </div>
         <Table
           loading={loading}
+          square
           columns={[
             { key: 'employee_name', label: 'Employee' },
             { key: 'date', label: 'Date' },
@@ -219,7 +229,7 @@ export default function AttendanceRegularization() {
           data={history}
           emptyMessage="No history"
         />
-      </section>
+      </div>
 
       <Modal
         isOpen={!!actionRow}
