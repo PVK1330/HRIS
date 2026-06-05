@@ -2261,7 +2261,7 @@ export default function EmployeeDirectory() {
             {/* Tab Contents */}
             <div className="py-4">
               {viewActiveTab === 'basic' && (
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-300">
                   {[
                     ['Employee Name', selectedEmployee.name],
                     ['Employee Code', formatEmpIdDisplay(selectedEmployee.empId)],
@@ -2273,16 +2273,16 @@ export default function EmployeeDirectory() {
                     ['Join Date', formatJoinDateDisplay(selectedEmployee.joinDate)],
                     ['Portal Role', selectedEmployee.rbacRoleName || selectedEmployee.portalRole],
                   ].map(([label, val]) => (
-                    <div key={label}>
+                    <div key={label} className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                      <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val || '—'}</p>
                     </div>
                   ))}
                 </div>
               )}
-
+ 
               {viewActiveTab === 'personal' && (
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-300">
                   {[
                     ['Gender', selectedEmployee.gender],
                     ['Date of Birth', selectedEmployee.dateOfBirth],
@@ -2294,40 +2294,40 @@ export default function EmployeeDirectory() {
                     ['Country of Residence', selectedEmployee.countryOfResidence],
                     ['Home Address', selectedEmployee.homeAddress],
                   ].map(([label, val]) => (
-                    <div key={label} className={label === 'Home Address' ? 'col-span-2' : ''}>
+                    <div key={label} className={`min-w-0 ${label === 'Home Address' ? 'sm:col-span-2' : ''}`}>
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                      <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val || '—'}</p>
                     </div>
                   ))}
                 </div>
               )}
-
+ 
               {viewActiveTab === 'bank' && (
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-300">
                   {[
                     ['Bank Name', selectedEmployee.bankName],
                     ['Account Number', selectedEmployee.bankAccountNo],
                     ['IFSC Code', selectedEmployee.ifscCode],
                     ['Branch Address', selectedEmployee.branchAddress],
                   ].map(([label, val]) => (
-                    <div key={label}>
+                    <div key={label} className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                      <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val || '—'}</p>
                     </div>
                   ))}
                 </div>
               )}
-
+ 
               {viewActiveTab === 'family' && (
                 <div className="animate-in fade-in duration-300">
                   {selectedEmployee.familyMembers?.length > 0 ? (
                     <div className="space-y-3">
                       {selectedEmployee.familyMembers.map((m, i) => (
-                        <div key={i} className="grid grid-cols-3 gap-4 rounded-none bg-slate-50 border border-slate-100 px-4 py-3">
+                        <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-4 rounded-none bg-slate-50 border border-slate-100 px-4 py-3">
                           {[['Name', m.name], ['Relationship', m.relationship], ['Phone', m.phone]].map(([label, val]) => (
-                            <div key={label}>
+                            <div key={label} className="min-w-0">
                               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                              <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                              <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val || '—'}</p>
                             </div>
                           ))}
                         </div>
@@ -2338,18 +2338,18 @@ export default function EmployeeDirectory() {
                   )}
                 </div>
               )}
-
+ 
               {viewActiveTab === 'secondary' && (
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-300">
                   {[
                     ['Name', selectedEmployee.secondaryContact?.name],
                     ['Relationship', selectedEmployee.secondaryContact?.relationship],
                     ['Phone 1', selectedEmployee.secondaryContact?.phoneNo1],
                     ['Phone 2', selectedEmployee.secondaryContact?.phoneNo2],
                   ].map(([label, val]) => (
-                    <div key={label}>
+                    <div key={label} className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                      <p className="mt-0.5 text-sm font-medium text-slate-900">{val || '—'}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-900 break-words">{val || '—'}</p>
                     </div>
                   ))}
                 </div>

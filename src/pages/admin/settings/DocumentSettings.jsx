@@ -1,318 +1,360 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Badge, FieldRow, SectionCard, SelectInput, SettingsSection, TextInput, Toggle } from './components/ui'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  HiOutlinePlus,
+  HiOutlinePencilSquare,
+  HiOutlineTrash,
+  HiOutlineDocumentText,
+} from 'react-icons/hi2'
+import { Modal } from '../../../components/ui/Modal.jsx'
 import { useDocumentSettings } from '../../../hooks/settings/useDocumentSettings'
+import { adminSettingsService } from '../../../services/adminSettingsService'
 
-const MANDATORY_OPTS = ['Mandatory', 'Optional']
+const REQUIRED_OPTS = ['Mandatory', 'Optional']
 const WHO_OPTS = ['Employee', 'HR', 'Both']
 const VIS_OPTS = ['HR only', 'Manager + HR', 'All', 'Employee (own only)']
 
-export default function DocumentSettings() {
-  const {
-    list,
-    loading,
-    saving,
-    error,
-    selectedDocId,
-    selectedDoc,
-    selectDoc,
-    addDoc,
-    updateDoc,
-    removeDoc,
-  } = useDocumentSettings()
+const EMPTY_FORM = {
+  name: '',
+  mandatoryOrOptional: 'Mandatory',
+  whoMustUpload: 'Employee',
+  appliesToRoles: [],
+  expiryTracking: false,
+  reminderBeforeExpiryDays: 30,
+  hrApprovalRequired: false,
+  visibility: 'HR only',
+}
 
-  const [showAdd, setShowAdd] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [form, setForm] = useState(null)
+const inputCls =
+  'block w-full rounded-lg border-0 py-2 px-3 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-[#0F766E] transition'
+const labelCls = 'block text-xs font-semibold text-slate-600 mb-1.5'
+
+function isMandatory(doc) {
+  return doc.mandatoryOrOptional === 'Mandatory' || (doc.mandatoryOrOptional == null && doc.isRequired)
+}
+
+export default function DocumentSettings() {
+  const { list, loading, saving, error, addDoc, updateDoc, removeDoc } = useDocumentSettings()
+
+  const [roles, setRoles] = useState([])
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {
-    if (!selectedDoc) {
-      setForm(null)
-      return
-    }
-    setForm({
-      mandatoryOrOptional: selectedDoc.mandatoryOrOptional ?? 'Mandatory',
-      whoMustUpload: selectedDoc.whoMustUpload ?? 'Employee',
-      expiryTracking: Boolean(selectedDoc.expiryTracking),
-      reminderBeforeExpiryDays: selectedDoc.reminderBeforeExpiryDays ?? 30,
-      hrApprovalRequired: Boolean(selectedDoc.hrApprovalRequired),
-      visibility: selectedDoc.visibility ?? 'HR only',
-    })
-  }, [selectedDoc])
-
-  const patchField = useCallback((partial) => {
-    setForm((f) => (f ? { ...f, ...partial } : f))
+    let cancelled = false
+    adminSettingsService
+      .getAllRoles()
+      .then((res) => {
+        if (cancelled) return
+        const r = res?.data?.data || res?.data || []
+        setRoles(Array.isArray(r) ? r : [])
+      })
+      .catch(() => setRoles([]))
+    return () => { cancelled = true }
   }, [])
 
-  const handleSave = async () => {
-    if (!selectedDocId || !form) return
+  const roleNameById = useMemo(() => {
+    const m = new Map()
+    roles.forEach((r) => m.set(String(r.id), r.name))
+    return m
+  }, [roles])
+
+  const patch = useCallback((partial) => setForm((f) => ({ ...f, ...partial })), [])
+
+  const toggleRole = useCallback((id) => {
+    const key = String(id)
+    setForm((f) => {
+      const cur = f.appliesToRoles || []
+      return { ...f, appliesToRoles: cur.includes(key) ? cur.filter((x) => x !== key) : [...cur, key] }
+    })
+  }, [])
+
+  const openAdd = () => {
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    setModalOpen(true)
+  }
+
+  const openEdit = (doc) => {
+    setEditingId(doc.id)
+    setForm({
+      name: doc.name ?? '',
+      mandatoryOrOptional: isMandatory(doc) ? 'Mandatory' : 'Optional',
+      whoMustUpload: doc.whoMustUpload ?? 'Employee',
+      appliesToRoles: Array.isArray(doc.appliesToRoles) ? doc.appliesToRoles.map(String) : [],
+      expiryTracking: Boolean(doc.expiryTracking),
+      reminderBeforeExpiryDays: doc.reminderBeforeExpiryDays ?? 30,
+      hrApprovalRequired: Boolean(doc.hrApprovalRequired),
+      visibility: doc.visibility ?? 'HR only',
+    })
+    setModalOpen(true)
+  }
+
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault()
+    const payload = {
+      name: form.name.trim(),
+      mandatoryOrOptional: form.mandatoryOrOptional,
+      isRequired: form.mandatoryOrOptional === 'Mandatory',
+      whoMustUpload: form.whoMustUpload,
+      appliesToRoles: form.appliesToRoles || [],
+      expiryTracking: form.expiryTracking,
+      reminderBeforeExpiryDays: Number(form.reminderBeforeExpiryDays) || 30,
+      hrApprovalRequired: form.hrApprovalRequired,
+      visibility: form.visibility,
+    }
+    if (payload.name.length < 2) return
     try {
-      await updateDoc(selectedDocId, {
-        mandatoryOrOptional: form.mandatoryOrOptional,
-        whoMustUpload: form.whoMustUpload,
-        expiryTracking: form.expiryTracking,
-        reminderBeforeExpiryDays: form.reminderBeforeExpiryDays,
-        hrApprovalRequired: form.hrApprovalRequired,
-        visibility: form.visibility,
-      })
+      if (editingId) await updateDoc(editingId, payload)
+      else await addDoc(payload)
+      setModalOpen(false)
     } catch {
-      /* toast in updateDoc */
+      /* toast handled in hook */
     }
   }
 
-  const handleDelete = async () => {
-    if (!selectedDocId || !selectedDoc) return
-    const ok = window.confirm(
-      `Delete document type "${selectedDoc.name}"? This cannot be undone.`,
-    )
-    if (!ok) return
+  const handleDelete = async (doc) => {
+    if (!window.confirm(`Delete document type "${doc.name}"? This cannot be undone.`)) return
     try {
-      await removeDoc(selectedDocId)
+      await removeDoc(doc.id)
     } catch {
-      /* toast in removeDoc */
+      /* toast handled in hook */
     }
-  }
-
-  const handleAddSubmit = async (e) => {
-    e.preventDefault()
-    const name = newName.trim()
-    if (name.length < 2) return
-    try {
-      await addDoc(name)
-      setNewName('')
-      setShowAdd(false)
-    } catch {
-      /* errors surfaced via toast in addDoc */
-    }
-  }
-
-  if (loading && list.length === 0) {
-    return (
-      <div className="rounded-none border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
-        Synchronizing document catalog…
-      </div>
-    )
   }
 
   return (
-    <SettingsSection>
-      {error && list.length === 0 ? (
-        <div className="rounded-none border border-red-100 bg-red-50 p-4 text-sm text-red-700 font-medium">
-          {error}
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-base font-bold text-slate-900">Onboarding Documents</h3>
+          <p className="mt-0.5 text-sm text-slate-500">
+            The documents new hires are asked to upload during onboarding. Target each one to specific roles if needed.
+          </p>
         </div>
-      ) : null}
+        <button
+          type="button"
+          onClick={openAdd}
+          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0c6b64]"
+        >
+          <HiOutlinePlus className="h-4 w-4" /> Add document
+        </button>
+      </div>
 
-      <SectionCard title="Document types" noTable>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {list.map((doc) => {
-            const selected = doc.id === selectedDocId
-            return (
-              <button
-                key={doc.id}
-                type="button"
-                onClick={() => selectDoc(doc.id)}
-                className={`flex flex-col gap-2 rounded-none border p-3 text-left transition-all ${
-                  selected
-                    ? 'border-[#0F766E] bg-emerald-50/50 ring-1 ring-[#0F766E]'
-                    : 'border-slate-100 bg-slate-50/30 hover:border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                <span className={`text-sm font-bold ${selected ? 'text-[#0F766E]' : 'text-slate-800'}`}>{doc.name}</span>
-                <div className="flex items-center gap-2">
-                   <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 border ${
-                      doc.isRequired ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'
-                   }`}>
-                      {doc.isRequired ? 'Mandatory' : 'Optional'}
-                   </span>
-                </div>
-              </button>
-            )
-          })}
+      {error && list.length === 0 && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+      )}
 
-          {showAdd ? (
-            <div className="col-span-full rounded-none border border-dashed border-[#0F766E] bg-emerald-50/20 p-4 animate-in slide-in-from-top-2 duration-300">
-              <form onSubmit={handleAddSubmit} className="flex flex-col sm:flex-row items-end gap-3">
-                <div className="flex-1 w-full">
-                  <label htmlFor="new-doc-name" className="mb-1.5 block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                    New Classification Name
-                  </label>
-                  <TextInput
-                    id="new-doc-name"
-                    placeholder="e.g. Health Certificate"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    disabled={saving}
-                    className="h-10 rounded-none border-slate-200 bg-white"
-                  />
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                   <button
-                     type="submit"
-                     disabled={saving || newName.trim().length < 2}
-                     className="flex-1 sm:flex-none h-10 rounded-none bg-[#0F766E] px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] disabled:opacity-40 transition-colors"
-                   >
-                     Initialize
-                   </button>
-                   <button
-                     type="button"
-                     disabled={saving}
-                     onClick={() => {
-                       setShowAdd(false)
-                       setNewName('')
-                     }}
-                     className="flex-1 sm:flex-none h-10 rounded-none border border-slate-200 bg-white px-6 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors"
-                   >
-                     Cancel
-                   </button>
-                </div>
-              </form>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowAdd(true)}
-              className="col-span-full rounded-none border-2 border-dashed border-slate-200 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 transition-all hover:border-[#0F766E] hover:text-[#0F766E] hover:bg-slate-50"
-            >
-              + Register New Document Type
-            </button>
-          )}
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Overview" noTable>
-        {list.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-8">No document types configured.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Document</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Mandatory</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Uploaded by</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Expiry</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">HR approval</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-5">Visibility</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 bg-white text-gray-700">
-                {list.map((doc) => (
-                  <tr key={doc.id} className="border-b border-slate-50 hover:bg-slate-50/30 transition-colors">
-                    <td className="py-3 px-4 font-black text-slate-900">{doc.name}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 border ${
-                         (doc.mandatoryOrOptional === 'Mandatory' || doc.isRequired) ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'
+      {/* List */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="min-w-full divide-y divide-slate-100 text-sm">
+          <thead className="bg-slate-50">
+            <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-5 py-3">Document</th>
+              <th className="px-5 py-3">Required</th>
+              <th className="px-5 py-3">Uploaded by</th>
+              <th className="px-5 py-3">Applies to</th>
+              <th className="px-5 py-3">Expiry</th>
+              <th className="px-5 py-3">HR approval</th>
+              <th className="px-5 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 text-slate-700">
+            {loading && list.length === 0 ? (
+              <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-400">Loading documents…</td></tr>
+            ) : list.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-5 py-12 text-center">
+                  <HiOutlineDocumentText className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+                  <p className="text-sm font-medium text-slate-500">No documents yet</p>
+                  <p className="text-xs text-slate-400">Click “Add document” to create your first one.</p>
+                </td>
+              </tr>
+            ) : (
+              list.map((doc) => {
+                const roleIds = Array.isArray(doc.appliesToRoles) ? doc.appliesToRoles.map(String) : []
+                return (
+                  <tr key={doc.id} className="hover:bg-slate-50/60">
+                    <td className="px-5 py-3 font-semibold text-slate-900">{doc.name}</td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                        isMandatory(doc) ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
                       }`}>
-                         {doc.mandatoryOrOptional || (doc.isRequired ? 'Mandatory' : 'Optional')}
+                        {isMandatory(doc) ? 'Mandatory' : 'Optional'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-500">{doc.whoMustUpload || '—'}</td>
-                    <td className="py-3 px-4 text-slate-500 font-mono">
-                      {doc.expiryTracking
-                        ? `ON (${doc.reminderBeforeExpiryDays ?? 30}D)`
-                        : 'OFF'}
+                    <td className="px-5 py-3 text-slate-600">{doc.whoMustUpload || '—'}</td>
+                    <td className="px-5 py-3">
+                      {roleIds.length === 0 ? (
+                        <span className="text-slate-500">All roles</span>
+                      ) : (
+                        <span className="text-slate-600">
+                          {roleIds.map((id) => roleNameById.get(id) || id).join(', ')}
+                        </span>
+                      )}
                     </td>
-                    <td className="py-3 px-4 text-slate-500">{doc.hrApprovalRequired ? 'REQUIRED' : 'NONE'}</td>
-                    <td className="py-3 px-4 text-slate-500">{doc.visibility || '—'}</td>
+                    <td className="px-5 py-3 text-slate-600">
+                      {doc.expiryTracking ? `${doc.reminderBeforeExpiryDays ?? 30}d reminder` : '—'}
+                    </td>
+                    <td className="px-5 py-3 text-slate-600">{doc.hrApprovalRequired ? 'Required' : '—'}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(doc)}
+                          className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-[#0F766E]"
+                          title="Edit"
+                        >
+                          <HiOutlinePencilSquare className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(doc)}
+                          className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          title="Delete"
+                        >
+                          <HiOutlineTrash className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {selectedDoc && form ? (
-        <SectionCard title={`Audit Configuration: ${selectedDoc.name}`}>
-          <div className="divide-y divide-slate-50">
-            <FieldRow label="Compliance Mode">
-              <SelectInput
-                options={MANDATORY_OPTS}
-                value={form.mandatoryOrOptional}
-                onChange={(e) => patchField({ mandatoryOrOptional: e.target.value })}
-                disabled={saving}
-              />
-            </FieldRow>
-            <FieldRow label="Filing Responsibility">
-              <SelectInput
-                options={WHO_OPTS}
-                value={form.whoMustUpload}
-                onChange={(e) => patchField({ whoMustUpload: e.target.value })}
-                disabled={saving}
-              />
-            </FieldRow>
-            <FieldRow label="Track Expiration">
-              <div className="flex h-10 items-center">
-                <Toggle
-                  checked={form.expiryTracking}
-                  onChange={(v) => patchField({ expiryTracking: v })}
-                  disabled={saving}
-                />
+      {/* Add / Edit modal */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingId ? 'Edit document' : 'Add document'}
+        size="lg"
+      >
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className={labelCls}>Document name <span className="text-rose-500">*</span></label>
+            <input
+              autoFocus
+              type="text"
+              value={form.name}
+              onChange={(e) => patch({ name: e.target.value })}
+              placeholder="e.g. Passport Copy"
+              className={inputCls}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelCls}>Requirement</label>
+              <select value={form.mandatoryOrOptional} onChange={(e) => patch({ mandatoryOrOptional: e.target.value })} className={inputCls}>
+                {REQUIRED_OPTS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Uploaded by</label>
+              <select value={form.whoMustUpload} onChange={(e) => patch({ whoMustUpload: e.target.value })} className={inputCls}>
+                {WHO_OPTS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className={labelCls}>Applies to roles</label>
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+              <p className="mb-2 text-xs text-slate-500">
+                Pick the roles that must provide this document. Leave empty to require it from <strong>everyone</strong>.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {roles.length === 0 && <span className="text-xs text-slate-400">No roles found.</span>}
+                {roles.map((r) => {
+                  const id = String(r.id)
+                  const checked = (form.appliesToRoles || []).includes(id)
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => toggleRole(id)}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                        checked ? 'border-[#0F766E] bg-emerald-50 text-[#0F766E]' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                      }`}
+                    >
+                      {r.name}
+                    </button>
+                  )
+                })}
               </div>
-            </FieldRow>
-            {form.expiryTracking ? (
-              <FieldRow label="Advanced Notice (Days)">
-                <TextInput
+              {(form.appliesToRoles || []).length === 0 && roles.length > 0 && (
+                <p className="mt-2 text-xs font-medium text-slate-400">All roles</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelCls}>Visibility</label>
+              <select value={form.visibility} onChange={(e) => patch({ visibility: e.target.value })} className={inputCls}>
+                {VIS_OPTS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <label className="inline-flex cursor-pointer items-center gap-2.5 pb-2">
+                <input
+                  type="checkbox"
+                  checked={form.hrApprovalRequired}
+                  onChange={(e) => patch({ hrApprovalRequired: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+                />
+                <span className="text-sm font-medium text-slate-700">Require HR approval</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 p-3">
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                checked={form.expiryTracking}
+                onChange={(e) => patch({ expiryTracking: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300 text-[#0F766E] focus:ring-[#0F766E]"
+              />
+              <span className="text-sm font-medium text-slate-700">Track expiry date</span>
+            </label>
+            {form.expiryTracking && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-sm text-slate-500">Remind</span>
+                <input
                   type="number"
                   min={1}
                   max={365}
                   value={form.reminderBeforeExpiryDays}
-                  onChange={(e) =>
-                    patchField({
-                      reminderBeforeExpiryDays: parseInt(e.target.value, 10) || 1,
-                    })
-                  }
-                  disabled={saving}
+                  onChange={(e) => patch({ reminderBeforeExpiryDays: parseInt(e.target.value, 10) || 1 })}
+                  className={`${inputCls} max-w-[6rem]`}
                 />
-              </FieldRow>
-            ) : null}
-            <FieldRow label="Mandatory Verification">
-              <div className="flex h-10 items-center">
-                <Toggle
-                  checked={form.hrApprovalRequired}
-                  onChange={(v) => patchField({ hrApprovalRequired: v })}
-                  disabled={saving}
-                />
+                <span className="text-sm text-slate-500">days before expiry</span>
               </div>
-            </FieldRow>
-            <FieldRow label="Identity Visibility">
-              <SelectInput
-                options={VIS_OPTS}
-                value={form.visibility}
-                onChange={(e) => patchField({ visibility: e.target.value })}
-                disabled={saving}
-              />
-            </FieldRow>
+            )}
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6">
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
             <button
               type="button"
-              disabled={saving}
-              onClick={() => handleDelete()}
-              className="w-full sm:w-auto h-10 rounded-none border border-red-200 bg-white px-6 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors shadow-xs"
+              onClick={() => setModalOpen(false)}
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
             >
-              Purge Document Type
+              Cancel
             </button>
             <button
-              type="button"
-              disabled={saving}
-              onClick={() => handleSave()}
-              className="w-full sm:w-auto h-10 rounded-none bg-[#0F766E] px-8 text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#0c6b64] disabled:opacity-40 transition-all shadow-md"
+              type="submit"
+              disabled={saving || form.name.trim().length < 2}
+              className="rounded-lg bg-[#0F766E] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0c6b64] disabled:opacity-50"
             >
-              {saving ? 'Syncing...' : 'Commit Changes'}
+              {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add document'}
             </button>
           </div>
-        </SectionCard>
-      ) : (
-        !loading && list.length > 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 bg-slate-50/50 border border-dashed border-slate-200">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-               Select a Document classification to edit parameters
-             </p>
-          </div>
-        ) : null
-      )}
-    </SettingsSection>
+        </form>
+      </Modal>
+    </div>
   )
 }
-

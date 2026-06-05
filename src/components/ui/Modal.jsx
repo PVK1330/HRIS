@@ -61,7 +61,7 @@ export function Modal({
       />
 
       <div
-        className={`relative w-full ${maxW} max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden rounded-lg bg-white shadow-2xl ring-1 ring-slate-200 transition-all duration-300 ease-out animate-in fade-in zoom-in-95`}
+        className={`relative w-full ${maxW} max-h-[90vh] sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden rounded-lg bg-white shadow-2xl z-[9999]`}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
@@ -79,24 +79,24 @@ export function Modal({
 
         <div className="flex flex-col flex-1 min-h-0">
           {/* Header */}
-          <div className="px-5 pt-6 pb-2 sm:px-6">
+          <div className="px-4 sm:px-5 pt-5 sm:pt-6 pb-2 sm:pb-2">
             {header ? (
-              <div className="pr-10">{header}</div>
+              <div className="pr-8 sm:pr-10">{header}</div>
             ) : (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 {Icon && (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                    <Icon className="h-6 w-6" />
+                  <div className="flex h-10 sm:h-12 w-10 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                    <Icon className="h-5 sm:h-6 w-5 sm:w-6" />
                   </div>
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                  <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
                     {title}
                   </h2>
 
                   {description && (
-                    <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                    <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-500">
                       {description}
                     </p>
                   )}
@@ -105,11 +105,11 @@ export function Modal({
             )}
           </div>
 
-          <div className={`flex-1 px-5 py-1 sm:px-6 custom-scrollbar ${bodyClassName.includes('overflow-') ? bodyClassName : 'overflow-y-auto ' + bodyClassName}`}>
-            <div className="pb-8">{children}</div>
+          <div className={`flex-1 px-4 sm:px-5 py-2 sm:py-1 custom-scrollbar ${bodyClassName.includes('overflow-') ? bodyClassName : 'overflow-y-auto ' + bodyClassName}`}>
+            <div className="pb-6 sm:pb-8">{children}</div>
           </div>
           {footer && (
-            <div className="rounded-b-lg border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+            <div className="rounded-b-lg border-t border-slate-200 bg-slate-50 px-3 sm:px-4 py-2 sm:py-3 sm:flex sm:flex-row-reverse sm:px-6">
               {footer}
             </div>
           )}

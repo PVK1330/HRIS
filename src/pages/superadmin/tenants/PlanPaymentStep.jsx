@@ -4,6 +4,7 @@ import {
   HiBuildingLibrary,
   HiSparkles,
 } from 'react-icons/hi2'
+import { useCurrency } from '../../../context/CurrencyContext.jsx'
 
 const GATEWAY_ICONS = {
   stripe: HiCreditCard,
@@ -11,12 +12,6 @@ const GATEWAY_ICONS = {
   razorpay: HiCreditCard,
   offline: HiBuildingLibrary,
   manual: HiBuildingLibrary,
-}
-
-function formatMoney(amount) {
-  const n = Number(amount)
-  if (!Number.isFinite(n)) return '0.00'
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 export default function PlanPaymentStep({
@@ -33,8 +28,9 @@ export default function PlanPaymentStep({
   paymentReference,
   onPaymentReferenceChange,
   stripeCheckoutLoading = false,
-  currencyCode = 'AED',
 }) {
+  const { format: fmt, breakdown } = useCurrency()
+
   const selectedPlan = plans.find((p) => String(p.id) === String(selectedPlanId))
 
   const displayPrice =
@@ -108,7 +104,7 @@ export default function PlanPaymentStep({
               )}
               <p className="pr-6 text-sm font-bold text-slate-900">{plan.plan_name}</p>
               <p className="mt-1 text-lg font-black text-indigo-600">
-                {currencyCode} {formatMoney(price)}
+                {fmt(price)}
                 <span className="text-xs font-semibold text-slate-400">
                   /{billingCycle === 'annual' ? 'yr' : 'mo'}
                 </span>
@@ -243,14 +239,44 @@ export default function PlanPaymentStep({
             <option value="pending">Record pending payment (awaiting collection)</option>
             <option value="completed">Mark as paid now (manual / offline receipt)</option>
           </select>
-          {selectedPlan && Number(displayPrice) > 0 && (
-            <p className="mt-2 text-xs text-slate-500">
-              Amount due: <strong className="text-slate-800">{currencyCode} {formatMoney(displayPrice)}</strong>
-              {paymentCollection === 'trial' && selectedPlan.trial_days > 0
-                ? ` after ${selectedPlan.trial_days}-day trial`
-                : ''}
-            </p>
-          )}
+          {selectedPlan && Number(displayPrice) > 0 && (() => {
+            const bill = breakdown(displayPrice)
+            const showTax = bill.taxEnabled && bill.taxRate > 0
+            return (
+              <div className="mt-2 text-xs text-slate-500">
+                {showTax ? (
+                  <div className="space-y-0.5">
+                    <p className="flex items-center justify-between">
+                      <span>Subtotal</span>
+                      <span className="text-slate-700">{fmt(bill.subtotal)}</span>
+                    </p>
+                    <p className="flex items-center justify-between">
+                      <span>
+                        {bill.taxLabel} ({bill.taxRate}%)
+                      </span>
+                      <span className="text-slate-700">{fmt(bill.tax)}</span>
+                    </p>
+                    <p className="flex items-center justify-between">
+                      <span>
+                        Amount due
+                        {paymentCollection === 'trial' && selectedPlan.trial_days > 0
+                          ? ` after ${selectedPlan.trial_days}-day trial`
+                          : ''}
+                      </span>
+                      <strong className="text-slate-800">{fmt(bill.total)}</strong>
+                    </p>
+                  </div>
+                ) : (
+                  <p>
+                    Amount due: <strong className="text-slate-800">{fmt(displayPrice)}</strong>
+                    {paymentCollection === 'trial' && selectedPlan.trial_days > 0
+                      ? ` after ${selectedPlan.trial_days}-day trial`
+                      : ''}
+                  </p>
+                )}
+              </div>
+            )
+          })()}
           {paymentGateway === 'stripe' && (
             <p className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/80 px-3 py-2 text-xs text-indigo-800">
               {stripeCheckoutLoading

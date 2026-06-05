@@ -26,6 +26,7 @@ import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import {
   listOnboardingEmployees,
+  listEmployeesDropdown,
   createEmployee,
   getNextEmployeeId,
   getFilterOptions,
@@ -34,6 +35,7 @@ import {
   updateEmployee,
   getEmployee,
 } from '../../../services/employeeService.js'
+import { useCurrency } from '../../../context/CurrencyContext.jsx'
 import * as onboardingApi from '../../../services/onboardingApi.js'
 import { useAsyncAction } from '../../../hooks/useAsyncAction.js'
 import {
@@ -44,6 +46,15 @@ import {
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
 import { listDesignations } from '../../../services/designationService.js'
+
+// Accepts an optional leading +, digits, spaces, dashes, parentheses; requires
+// 7–15 actual digits (E.164-ish, lenient about formatting).
+function isValidPhone(value) {
+  const v = String(value || '').trim()
+  if (!/^\+?[0-9\s\-()]+$/.test(v)) return false
+  const digits = v.replace(/\D/g, '')
+  return digits.length >= 7 && digits.length <= 15
+}
 
 function formatJoinDate(value) {
   if (!value || value === '-') return '-'
@@ -124,9 +135,12 @@ export default function Onboarding() {
   const [onboardingMode, setOnboardingMode] = useState('create')
   const [wizardForm, setWizardForm] = useState(INITIAL_FORM)
   const [tenantRoles, setTenantRoles] = useState([])
+  const [managerOptions, setManagerOptions] = useState([])
+  const { settings: currencySettings } = useCurrency()
   const [metaOptions, setMetaOptions] = useState({
     departments: [],
     jobTitles: [],
+    nationalities: [],
     workLocations: [],
     workModes: [],
   })
@@ -141,6 +155,7 @@ export default function Onboarding() {
   const [signedOfferHrFile, setSignedOfferHrFile] = useState(null)
   const [rejectItemId, setRejectItemId] = useState(null)
   const [rejectComment, setRejectComment] = useState("")
+  const [reviewingId, setReviewingId] = useState(null)
 
   const { execute: execUploadOffer, loading: uploadingSignedOffer } = useAsyncAction();
   const { execute: execApproveAll, loading: approvingAll } = useAsyncAction();
@@ -225,6 +240,7 @@ export default function Onboarding() {
       setMetaOptions({
         departments: filters.departments || [],
         jobTitles: filters.jobTitles || [],
+        nationalities: filters.nationalities || [],
         workLocations: filters.workLocations || [],
         workModes: filters.workModes || [],
       })
@@ -265,6 +281,14 @@ export default function Onboarding() {
     if (departmentsCatalog.length) return departmentsCatalog
     return (metaOptions.departments || []).map((name) => ({ id: name, name }))
   }, [departmentsCatalog, metaOptions.departments])
+
+  // Salary currency choices: platform default first, then common currencies,
+  // plus whatever the record already has — deduped.
+  const currencyChoices = useMemo(() => {
+    const base = ['AED', 'INR', 'USD', 'EUR', 'GBP', 'SAR', 'QAR', 'KWD', 'BHD', 'OMR']
+    const ordered = [currencySettings?.defaultCurrency, ...base, wizardForm.currency].filter(Boolean)
+    return [...new Set(ordered.map((c) => String(c).toUpperCase()))]
+  }, [currencySettings, wizardForm.currency])
 
   const designationRowsForDept = useMemo(() => {
     if (deptDesignations.length) return deptDesignations
@@ -328,6 +352,17 @@ export default function Onboarding() {
       setDirectoryOptions(list)
     } catch {
       setDirectoryOptions([])
+    }
+  }, [])
+
+  // Active employees who can be selected as a reporting manager (excludes
+  // onboarding-stage candidates — that's handled server-side by /employees/dropdown).
+  const loadManagerOptions = useCallback(async () => {
+    try {
+      const list = await listEmployeesDropdown({ limit: 500 })
+      setManagerOptions(Array.isArray(list) ? list : (list?.records || list?.employees || []))
+    } catch {
+      setManagerOptions([])
     }
   }, [])
 
@@ -407,15 +442,20 @@ export default function Onboarding() {
   }
 
   const handleReviewChecklistItem = async (itemId, hrReviewStatus, hrReviewComment = '') => {
-    if (!selectedEmployeeId) return
-    await execReview(async () => {
-      await onboardingApi.approveChecklistItem(Number(selectedEmployeeId), itemId, {
-        hrReviewStatus,
-        hrReviewComment,
-      })
-      toast.success('Document review saved')
-      await loadOnboardingChecklist(selectedEmployeeId)
-    });
+    if (!selectedEmployeeId || reviewingItem) return
+    setReviewingId(itemId)
+    try {
+      await execReview(async () => {
+        await onboardingApi.approveChecklistItem(Number(selectedEmployeeId), itemId, {
+          hrReviewStatus,
+          hrReviewComment,
+        })
+        toast.success('Document review saved')
+        await loadOnboardingChecklist(selectedEmployeeId)
+      });
+    } finally {
+      setReviewingId(null)
+    }
   }
 
   const loadTenantRoles = useCallback(async () => {
@@ -435,10 +475,21 @@ export default function Onboarding() {
   useEffect(() => {
     if (modalOpen) {
       loadDirectoryForPick()
+      loadManagerOptions()
       loadMetaOptions()
       loadTenantRoles()
     }
-  }, [modalOpen, loadDirectoryForPick, loadMetaOptions, loadTenantRoles])
+  }, [modalOpen, loadDirectoryForPick, loadManagerOptions, loadMetaOptions, loadTenantRoles])
+
+  // Default the salary currency to the platform's configured currency when
+  // starting a fresh candidate (create mode).
+  useEffect(() => {
+    if (modalOpen && onboardingMode === 'create' && currencySettings?.defaultCurrency) {
+      setWizardForm((prev) =>
+        prev.currency && prev.currency !== 'AED' ? prev : { ...prev, currency: currencySettings.defaultCurrency },
+      )
+    }
+  }, [modalOpen, onboardingMode, currencySettings])
 
   /* â”€â”€â”€ Stats & filtering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
@@ -506,6 +557,7 @@ export default function Onboarding() {
     if (!f.personalEmail.trim()) { toast.error('Personal Email is required.'); return false }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.personalEmail.trim())) { toast.error('Enter a valid personal email.'); return false }
     if (!f.phoneNumber.trim()) { toast.error('Phone Number is required.'); return false }
+    if (!isValidPhone(f.phoneNumber)) { toast.error('Enter a valid phone number (7–15 digits, may start with +).'); return false }
     if (!f.nationality) { toast.error('Nationality is required.'); return false }
     if (!f.departmentId && !f.department) { toast.error('Department is required.'); return false }
     if (!f.jobTitle.trim()) { toast.error('Designation is required.'); return false }
@@ -831,34 +883,55 @@ export default function Onboarding() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-2">
-            <div className="space-y-6">
-              <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
-                <HiClipboardDocumentCheck className="h-5 w-5 text-[#0F766E]" /> HR checklist
-              </h4>
-              <div className="space-y-4">
-                {['Offer letter issued', 'Policy acknowledgement', 'Document verification'].map((task, i) => (
-                  <label key={task} className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E]/30 cursor-pointer transition-all">
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{task}</span>
-                    <input type="checkbox" className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-0 focus:ring-offset-0" defaultChecked={i < 2} />
-                  </label>
-                ))}
+          {(() => {
+            // Real progress derived from the candidate's actual workflow state.
+            const WF_RANK = { draft: 0, offer_sent: 1, rejected: 1, accepted_pending_upload: 2, documents_pending: 3, onboarding_complete: 4 }
+            const rank = WF_RANK[selectedHire?.workflowStatus] ?? 0
+            const rejected = selectedHire?.workflowStatus === 'rejected'
+            const docMeta = onboardingReviewMeta?.progress
+            const hrSteps = [
+              { label: 'Offer letter issued', done: rank >= 1 },
+              { label: 'Offer accepted & signed', done: rank >= 2, note: rejected ? 'Rejected' : null },
+              {
+                label: 'Documents submitted',
+                done: rank >= 3,
+                note: docMeta ? `${docMeta.approvedCount ?? 0}/${docMeta.mandatoryCount ?? 0} approved` : null,
+              },
+              { label: 'Onboarding completed', done: rank >= 4 },
+            ]
+            const itSteps = [
+              { label: 'Work email configured', done: !!selectedHire?.email },
+              { label: 'Account activated', done: rank >= 4 },
+            ]
+            const StatusRow = ({ label, done, note }) => (
+              <div className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50">
+                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{label}</span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${done ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
+                  {done ? 'Done' : note || 'Pending'}
+                </span>
               </div>
-            </div>
-            <div className="space-y-6">
-              <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
-                <HiCpuChip className="h-5 w-5 text-[#0F766E]" /> IT checklist
-              </h4>
-              <div className="space-y-4">
-                {['Work email configured', 'Hardware allocation'].map((task, i) => (
-                  <label key={task} className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E]/30 cursor-pointer transition-all">
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{task}</span>
-                    <input type="checkbox" className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-0 focus:ring-offset-0" defaultChecked={Boolean(selectedHire?.email) && i === 0} />
-                  </label>
-                ))}
+            )
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-2">
+                <div className="space-y-6">
+                  <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
+                    <HiClipboardDocumentCheck className="h-5 w-5 text-[#0F766E]" /> HR progress
+                  </h4>
+                  <div className="space-y-4">
+                    {hrSteps.map((s) => <StatusRow key={s.label} {...s} />)}
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
+                    <HiCpuChip className="h-5 w-5 text-[#0F766E]" /> IT / Access
+                  </h4>
+                  <div className="space-y-4">
+                    {itSteps.map((s) => <StatusRow key={s.label} {...s} />)}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )
+          })()}
 
           <div className="rounded-none border border-amber-100 bg-amber-50/80 px-4 py-3 text-xs text-amber-900">
             <strong>Complete onboarding</strong> requires offer acceptance, signed offer, and all mandatory documents approved.
@@ -942,7 +1015,7 @@ export default function Onboarding() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className={labelCls}>First Name <span className="text-rose-500">*</span></label>
-                      <input type="text" value={wizardForm.firstName} onChange={(e) => fw({ firstName: e.target.value })} placeholder="e.g. Neha" className={inputCls} />
+                      <input type="text" value={wizardForm.firstName} onChange={(e) => fw({ firstName: e.target.value })} placeholder="e.g. John" className={inputCls} />
                     </div>
                     <div>
                       <label className={labelCls}>Last Name <span className="text-rose-500">*</span></label>
@@ -956,13 +1029,24 @@ export default function Onboarding() {
                     </div>
                     <div>
                       <label className={labelCls}>Personal Email <span className="text-rose-500">*</span></label>
-                      <input type="email" value={wizardForm.personalEmail} onChange={(e) => fw({ personalEmail: e.target.value })} placeholder="neha@gmail.com" className={inputCls} />
+                      <input type="email" value={wizardForm.personalEmail} onChange={(e) => fw({ personalEmail: e.target.value })} placeholder="John@gmail.com" className={inputCls} />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className={labelCls}>Phone Number <span className="text-rose-500">*</span></label>
-                      <input type="tel" value={wizardForm.phoneNumber} onChange={(e) => fw({ phoneNumber: e.target.value })} placeholder="+91 98765 43210" className={inputCls} />
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        maxLength={20}
+                        value={wizardForm.phoneNumber}
+                        onChange={(e) => fw({ phoneNumber: e.target.value })}
+                        placeholder="+91 98765 43210"
+                        className={inputCls}
+                      />
+                      {wizardForm.phoneNumber && !isValidPhone(wizardForm.phoneNumber) && (
+                        <p className="mt-1 text-[10px] text-rose-600">Enter 7–15 digits (an optional leading + is allowed).</p>
+                      )}
                     </div>
                     <div>
                       <label className={labelCls}>Gender</label>
@@ -979,11 +1063,20 @@ export default function Onboarding() {
                       <label className={labelCls}>Nationality <span className="text-rose-500">*</span></label>
                       <select value={wizardForm.nationality} onChange={(e) => fw({ nationality: e.target.value })} className={selectCls}>
                         <option value="">Select</option>
-                        <option value="Indian">Indian</option>
-                        <option value="Emirati">Emirati</option>
-                        <option value="British">British</option>
-                        <option value="American">American</option>
-                        <option value="Other">Other</option>
+                        {(metaOptions.nationalities.length > 0
+                          ? metaOptions.nationalities
+                          : ['Indian', 'Emirati', 'British', 'American', 'Other']
+                        ).map((nat) => (
+                          <option key={nat} value={nat}>{nat}</option>
+                        ))}
+                        {/* keep the saved value selectable even if it's not in the seeded list */}
+                        {wizardForm.nationality &&
+                          !(metaOptions.nationalities.length > 0
+                            ? metaOptions.nationalities
+                            : ['Indian', 'Emirati', 'British', 'American', 'Other']
+                          ).includes(wizardForm.nationality) && (
+                            <option value={wizardForm.nationality}>{wizardForm.nationality}</option>
+                          )}
                       </select>
                     </div>
                     <div>
@@ -1106,8 +1199,10 @@ export default function Onboarding() {
                     <div>
                       <label className={labelCls}>Reporting Manager</label>
                       <select value={wizardForm.reportingManagerEmpId} onChange={(e) => fw({ reportingManagerEmpId: e.target.value })} className={selectCls}>
-                        <option value="">Select Manager (Optional)</option>
-                        {directoryOptions.map((e) => (
+                        <option value="">
+                          {managerOptions.length > 0 ? 'Select Manager (Optional)' : 'No employees yet — optional'}
+                        </option>
+                        {managerOptions.map((e) => (
                           <option key={e.id} value={e.emp_id || e.empId}>
                             {(e.full_name || e.fullName) ?? 'Employee'} ({e.emp_id || e.empId})
                           </option>
@@ -1145,11 +1240,11 @@ export default function Onboarding() {
                     <div>
                       <label className={labelCls}>Currency</label>
                       <select value={wizardForm.currency} onChange={(e) => fw({ currency: e.target.value })} className={selectCls}>
-                        <option value="AED">UAE Dirham (AED)</option>
-                        <option value="INR">Indian Rupee (INR)</option>
-                        <option value="USD">US Dollar (USD)</option>
-                        <option value="EUR">Euro (EUR)</option>
-                        <option value="GBP">British Pound (GBP)</option>
+                        {currencyChoices.map((c) => (
+                          <option key={c} value={c}>
+                            {c}{c === currencySettings?.defaultCurrency ? ' — platform default' : ''}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -1376,9 +1471,11 @@ export default function Onboarding() {
                         <button
                           type="button"
                           onClick={handleApproveAllUploaded}
-                          className="h-9 px-4 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 transition-colors text-white rounded-md"
+                          disabled={approvingAll || reviewingItem}
+                          className="h-9 px-4 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 transition-colors text-white rounded-md disabled:opacity-60 flex items-center gap-2"
                         >
-                          Approve all uploaded
+                          {approvingAll && <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+                          {approvingAll ? 'Approving…' : 'Approve all uploaded'}
                         </button>
                       </div>
                       <div className="space-y-3">
@@ -1424,15 +1521,16 @@ export default function Onboarding() {
                                 <>
                                   <button
                                     type="button"
-                                    disabled={item.upload_status !== 'Uploaded'}
+                                    disabled={item.upload_status !== 'Uploaded' || reviewingItem}
                                     onClick={() => handleReviewChecklistItem(item.id, 'Approved')}
-                                    className="h-8 px-3 text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 rounded border border-emerald-100 transition-colors"
+                                    className="h-8 px-3 text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 rounded border border-emerald-100 transition-colors flex items-center gap-1.5"
                                   >
-                                    Approve
+                                    {reviewingId === item.id && <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+                                    {reviewingId === item.id ? 'Saving…' : 'Approve'}
                                   </button>
                                   <button
                                     type="button"
-                                    disabled={item.upload_status !== 'Uploaded'}
+                                    disabled={item.upload_status !== 'Uploaded' || reviewingItem}
                                     onClick={() => {
                                       setRejectComment('')
                                       setRejectItemId(item.id)
@@ -1524,18 +1622,22 @@ export default function Onboarding() {
             </button>
             <button
               type="button"
-              onClick={() => {
+              disabled={reviewingItem}
+              onClick={async () => {
                 if (!rejectComment.trim()) {
                   toast.error('Comment is required for rejection')
                   return
                 }
-                handleReviewChecklistItem(rejectItemId, 'Rejected', rejectComment.trim())
+                const id = rejectItemId
+                const comment = rejectComment.trim()
+                await handleReviewChecklistItem(id, 'Rejected', comment)
                 setRejectItemId(null)
                 setRejectComment('')
               }}
-              className="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-sm"
+              className="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-sm disabled:opacity-60 flex items-center gap-2"
             >
-              Confirm Reject
+              {reviewingItem && <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              {reviewingItem ? 'Rejecting…' : 'Confirm Reject'}
             </button>
           </div>
         </div>

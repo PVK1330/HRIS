@@ -103,27 +103,6 @@ export default function TenantManagement() {
     }
   }
 
-  const openPaymentTab = () => {
-    const tab = window.open('about:blank', '_blank', 'noopener,noreferrer')
-    if (!tab) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Popup blocked',
-        text: 'Allow popups for this site so Stripe Checkout can open in a new tab.',
-        confirmButtonColor: '#4f46e5',
-      })
-      return null
-    }
-    try {
-      tab.document.write(
-        '<!DOCTYPE html><html><head><title>Stripe Checkout</title></head><body style="font-family:system-ui,sans-serif;padding:2rem;color:#334155"><p><strong>Opening Stripe Checkout…</strong></p><p>Leave this tab open.</p></body></html>',
-      )
-      tab.document.close()
-    } catch {
-      /* ignore */
-    }
-    return tab
-  }
 
   const openNewOrgModal = () => {
     setAddOrgTab('details')
@@ -525,9 +504,43 @@ export default function TenantManagement() {
   }
 
   const handleCreateOrganization = async () => {
-    const openStripe = newForm.paymentGateway === 'stripe'
-    const checkoutTab = openStripe ? openPaymentTab() : null
-    await provisionOrganization({ openStripe, checkoutTab })
+    // Superadmin provisions the org as a free trial and never collects payment here.
+    // The org admin pays later from Settings → Billing (or superadmin can use
+    // "Mark as Paid" to activate an org offline).
+    await provisionOrganization({ openStripe: false })
+  }
+
+  // Manual "mark as paid": superadmin activates an org on a chosen plan without
+  // collecting money through a gateway (offline / bank transfer / comp).
+  const handleMarkPaid = async (org) => {
+    if (!org) return
+    const planOptions = {}
+    plans.forEach((p) => { planOptions[String(p.id)] = p.plan_name })
+    if (Object.keys(planOptions).length === 0) {
+      Swal.fire({ icon: 'warning', title: 'No plans', text: 'No subscription plans are available.' })
+      return
+    }
+    const preselect = String(plans.find((p) => p.plan_name === org.plan)?.id || plans[0]?.id || '')
+    const { value: planId, isConfirmed } = await Swal.fire({
+      title: `Mark "${org.name}" as paid`,
+      text: 'Select the plan to activate. This marks the organization as paid (offline) and unlocks the plan immediately.',
+      input: 'select',
+      inputOptions: planOptions,
+      inputValue: preselect,
+      showCancelButton: true,
+      confirmButtonText: 'Mark as Paid',
+      confirmButtonColor: '#0F766E',
+      inputValidator: (v) => (!v ? 'Please select a plan' : undefined),
+    })
+    if (!isConfirmed || !planId) return
+    try {
+      await api.post(`/tenant-billing/${org.id}/activate`, { planId })
+      await Swal.fire({ icon: 'success', title: 'Marked as paid', text: `${org.name} is now active on the selected plan.`, confirmButtonColor: '#0F766E' })
+      setShowDetailModal(false)
+      fetchTenants(currentPage)
+    } catch (e) {
+      Swal.fire({ icon: 'error', title: 'Failed', text: e?.response?.data?.message || e.message })
+    }
   }
 
   const handleAction = (type, org) => {
@@ -707,7 +720,7 @@ export default function TenantManagement() {
           columns={[
             { key: 'org', label: 'Organization' },
             { key: 'plan', label: 'Tier', className: 'hidden md:table-cell' },
-            { key: 'users', label: 'Nodes', className: 'hidden lg:table-cell' },
+            // { key: 'users', label: 'Nodes', className: 'hidden lg:table-cell' },
             { key: 'status', label: 'Status', className: 'hidden sm:table-cell' },
             { key: 'created', label: 'Onboarded', className: 'hidden xl:table-cell' },
             { key: 'actions', label: 'Actions' },
@@ -816,7 +829,7 @@ export default function TenantManagement() {
             )}
             {addOrgTab === 'subscription' && (
               <button type="button" onClick={handleCreateOrganization} disabled={isLoading || stripeCheckoutLoading} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors disabled:opacity-50">
-                {isLoading || stripeCheckoutLoading ? (stripeCheckoutLoading ? 'Opening Stripe…' : 'Creating…') : (newForm.paymentGateway === 'stripe' ? 'Create & pay with Stripe' : 'Create organization')}
+                {isLoading || stripeCheckoutLoading ? 'Creating…' : 'Create organization (trial)'}
               </button>
             )}
           </div>
@@ -837,22 +850,22 @@ export default function TenantManagement() {
       >
         {selectedOrg && (
           <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80 min-w-0">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Admin Email</span>
-                <p className="mt-0.5 text-xs font-bold text-slate-700 truncate">{selectedOrg.adminEmail}</p>
+                <p className="mt-0.5 text-xs font-bold text-slate-700 break-words">{selectedOrg.adminEmail}</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80 min-w-0">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Database Name</span>
-                <p className="mt-0.5 text-[11px] font-mono font-bold text-indigo-500">{selectedOrg.dbName}</p>
+                <p className="mt-0.5 text-[11px] font-mono font-bold text-indigo-500 break-words">{selectedOrg.dbName}</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80 min-w-0">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Billing Plan</span>
-                <p className="mt-0.5 text-xs font-bold text-slate-700">{selectedOrg.plan} ({selectedOrg.billingCycle})</p>
+                <p className="mt-0.5 text-xs font-bold text-slate-700 break-words">{selectedOrg.plan} ({selectedOrg.billingCycle})</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80 min-w-0">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Join Date</span>
-                <p className="mt-0.5 text-xs font-bold text-slate-700">{selectedOrg.created}</p>
+                <p className="mt-0.5 text-xs font-bold text-slate-700 break-words">{selectedOrg.created}</p>
               </div>
             </div>
 
@@ -879,6 +892,11 @@ export default function TenantManagement() {
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[9px] font-bold rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">Manage Features</div>
                 </div>
               </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Billing</span>
+              <button type="button" onClick={() => handleMarkPaid(selectedOrg)} className="rounded-none border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors inline-flex items-center gap-1.5"><HiCreditCard className="h-4 w-4" /> Mark as Paid (select plan)</button>
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
@@ -950,8 +968,8 @@ export default function TenantManagement() {
         <div className="space-y-6">
           <Input label="Organization Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
           <Input label="Root Admin Email" value={editForm.adminEmail} onChange={(e) => setEditForm({ ...editForm, adminEmail: e.target.value })} />
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="min-w-0">
               <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Ecosystem Plan</label>
               <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all" value={editForm.plan} onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}>
                 {plans.map(plan => (
@@ -959,7 +977,7 @@ export default function TenantManagement() {
                 ))}
               </select>
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-2 block text-[11px] font-black text-slate-400 uppercase tracking-widest">Operational Status</label>
               <select className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
                 <option>Active</option><option>Trial</option><option>Suspended</option><option>SSL Issue</option>
