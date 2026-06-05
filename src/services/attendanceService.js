@@ -67,9 +67,21 @@ export const getPendingOvertime = async (params = {}) => {
   return data.data
 }
 
+// All overtime records (history) for the Overtime Management page. Optional { status, search }.
+export const getOvertimeRecords = async (params = {}) => {
+  const { data } = await api.get(`${BASE}/overtime`, { params })
+  return data.data
+}
+
 // action: 'approve' | 'reject'  (reject may include a reason)
 export const processOvertime = async (id, payload) => {
   const { data } = await api.patch(`${BASE}/${id}/overtime`, payload)
+  return data.data.record
+}
+
+// Manually add an overtime entry: { employeeId, date, overtimeHours, description?, status? }
+export const addOvertime = async (payload) => {
+  const { data } = await api.post(`${BASE}/overtime`, payload)
   return data.data.record
 }
 

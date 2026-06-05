@@ -90,7 +90,9 @@ export default function AdminSettings() {
 
   const currentTab = settingsTabs.find((t) => t.id === activeTab) || settingsTabs[0];
 
-  const toolbar = activeTab === "general" ? generalToolbar : null;
+  // Any section that registers a toolbar (general, attendance, leave, assets) drives the
+  // Save/Discard buttons. It resets to null on unmount, so reading it directly is safe.
+  const toolbar = generalToolbar;
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-500 min-w-0">

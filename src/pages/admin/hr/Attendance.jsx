@@ -14,12 +14,10 @@ import {
 import { formatHours } from '../../../utils/attendanceLabels.js';
 import {
   canApproveRegularization,
-  canPunchAttendance,
   canViewTeamAttendance,
   canViewAllAttendance,
 } from '../../../utils/rbac.js';
 import AttendanceDetailModal from '../../../components/attendance/AttendanceDetailModal.jsx';
-import AttendancePunchCard from '../../../components/attendance/AttendancePunchCard.jsx';
 import HolidayListWidget from '../../../components/attendance/HolidayListWidget.jsx';
 
 const inputClass =
@@ -47,9 +45,8 @@ function StatusBadge({ status }) {
 }
 
 export default function Attendance() {
-  const { user, allowedModules } = useAuth();
+  const { allowedModules } = useAuth();
   const mods = allowedModules || [];
-  const showPunch = Boolean(user?.employeeId || user?.id);
   const showTeamLog = canViewTeamAttendance(mods) || canViewAllAttendance(mods);
   const showApproverInbox = canApproveRegularization(mods);
 
@@ -264,7 +261,6 @@ export default function Attendance() {
 
   return (
     <div className="space-y-6 min-w-0">
-      {showPunch ? <AttendancePunchCard /> : null}
       <p className="text-sm text-slate-500">
         {showTeamLog
           ? 'Daily attendance log. Use the Override tab for manual corrections when you have manage permission.'

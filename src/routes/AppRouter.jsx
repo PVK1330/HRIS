@@ -20,6 +20,7 @@ const EmployeeDirectory = lazy(() => import("../pages/admin/employees/EmployeeDi
 const EmployeeProfile = lazy(() => import("../pages/admin/employees/EmployeeProfile.jsx"));
 const AttendanceLayout = lazy(() => import("../pages/admin/hr/AttendanceLayout.jsx"));
 const Attendance = lazy(() => import("../pages/admin/hr/Attendance.jsx"));
+const MyAttendance = lazy(() => import("../pages/admin/hr/attendance/MyAttendance.jsx"));
 const AttendanceDashboard = lazy(() => import("../pages/admin/hr/attendance/AttendanceDashboard.jsx"));
 const AttendanceRegularization = lazy(() => import("../pages/admin/hr/attendance/AttendanceRegularization.jsx"));
 const AttendanceReports = lazy(() => import("../pages/admin/hr/attendance/AttendanceReports.jsx"));
@@ -202,7 +203,8 @@ export const router = createBrowserRouter([
               </AttendanceModuleGate>
             ),
             children: [
-              { index: true, element: <Attendance /> },
+              { index: true, element: <MyAttendance /> },
+              { path: "log", element: <Attendance /> },
               { path: "dashboard", element: <AttendanceDashboard /> },
               { path: "regularization", element: <AttendanceRegularization /> },
               { path: "overtime", element: <OvertimeApprovals /> },
