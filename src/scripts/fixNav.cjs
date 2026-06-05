@@ -3,7 +3,7 @@ const p = 'c:/Users/pkk22/OneDrive/Desktop/TECHNOWEB/HRIS PROJECT/HRIS_PROJECT/H
 let code = fs.readFileSync(p, 'utf8');
 
 // Fix openEdit
-const editRegex = /const openEdit = \(row\) => \{[\s\S]*?navigate\(\`/admin\/letters\/builder\/\$\{row\.id\}\`\)[\s\S]*?setSelectedTemplate\(row\)[\s\S]*?setEditForm\(\{[\s\S]*?body: row\.body \|\| '',[\s\S]*?status: row\.status,[\s\S]*?\}\)[\s\S]*?setEditModalOpen\(true\)[\s\S]*?\}/;
+const editRegex = new RegExp("const openEdit = \\\\(row\\\\) => \\\\{[\\\\s\\\\S]*?navigate\\\\(`\\\\/admin\\\\/letters\\\\/builder\\\\/\\\\$\\\\{row\\\\.id\\\\}`\\\\)[\\\\s\\\\S]*?setSelectedTemplate\\\\(row\\\\)[\\\\s\\\\S]*?setEditForm\\\\(\\\\{[\\\\s\\\\S]*?body: row\\\\.body \\\\|\\\\| '',[\\\\s\\\\S]*?status: row\\\\.status,[\\\\s\\\\S]*?\\\\}\\\\)[\\\\s\\\\S]*?setEditModalOpen\\\\(true\\\\)[\\\\s\\\\S]*?\\\\}");
 code = code.replace(editRegex, 'const openEdit = (row) => { navigate(`/admin/letters/builder/${row.id}`); }');
 
 // Fix Create button that was mangled with TagPicker

@@ -157,7 +157,7 @@ export function TicketDetailsModal({ isOpen, onClose, ticket, onReply }) {
                                 <div className="flex flex-col min-w-0">
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-slate-900 truncate">{msg.senderName || msg.sender || (msg.senderRole === 'admin' ? 'Admin' : 'Super Admin')}</span>
-                                    <span className={\`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider \${msg.senderRole === 'admin' ? 'bg-sky-50 text-sky-600' : 'bg-[#0F766E]/10 text-[#0F766E]'}\`}>
+                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${msg.senderRole === 'admin' ? 'bg-sky-50 text-sky-600' : 'bg-[#0F766E]/10 text-[#0F766E]'}`}>
                                       {msg.senderRole === 'admin' ? 'Admin' : 'Super Admin'}
                                     </span>
                                   </div>

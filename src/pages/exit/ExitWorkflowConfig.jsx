@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import Swal from 'sweetalert2'
 import {
@@ -308,7 +308,6 @@ export default function ExitWorkflowConfig() {
   }
 
   const addStage = () => {
-    if (form.stages.length >= 6) { toast.error('A workflow can have at most 6 stages'); return }
     setForm((f) => ({ ...f, stages: [...f.stages, blankStage(f.stages.length + 1)] }))
   }
   const updateStage = (i, s) => setForm((f) => ({ ...f, stages: f.stages.map((x, idx) => idx === i ? s : x) }))
@@ -405,14 +404,7 @@ export default function ExitWorkflowConfig() {
       <div className="mx-auto max-w-4xl p-4">
         <button onClick={() => { setView('list'); setEditingId(null); setLocked(false) }} className="mb-3 flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-[#0F766E]"><HiArrowLeft /> Back</button>
         <h1 className="mb-1 text-xl font-bold text-slate-800">{editingId ? 'Edit Exit Workflow' : 'New Exit Workflow'}</h1>
-        <p className="mb-4 text-sm text-slate-500">Define up to 6 sequential stages. A submitted resignation is routed to stage 1's owners, then advances stage by stage as each approves.</p>
-
-        {locked && (
-          <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-            <HiLockClosed className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>This workflow is already used by existing exit requests, so its stages are locked (changing them would break approval history). You can still rename it or change the default flag. To revise the stages, create a new workflow.</span>
-          </div>
-        )}
+        <p className="mb-4 text-sm text-slate-500">Define sequential stages. A submitted resignation is routed to stage 1's owners, then advances stage by stage as each approves.</p>
 
         <div className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-2">
           <div>
@@ -431,20 +423,16 @@ export default function ExitWorkflowConfig() {
 
         <div className="space-y-3">
           {form.stages.map((s, i) => (
-            locked
-              ? <StageReadOnly key={i} stage={s} index={i} depts={depts} roles={roles} />
-              : <StageEditor key={i} stage={s} index={i} total={form.stages.length} depts={depts} roles={roles} catalog={catalog}
-                onChange={(ns) => updateStage(i, ns)} onRemove={removeStage} onMove={moveStage} />
+            <StageEditor key={i} stage={s} index={i} total={form.stages.length} depts={depts} roles={roles} catalog={catalog}
+              onChange={(ns) => updateStage(i, ns)} onRemove={removeStage} onMove={moveStage} />
           ))}
         </div>
 
         <div className="mt-4 flex items-center justify-between">
-          {!locked ? (
-            <button onClick={addStage} disabled={form.stages.length >= 6}
-              className="flex items-center gap-1.5 rounded-lg border border-dashed border-[#0F766E] px-3 py-2 text-sm font-semibold text-[#0F766E] hover:bg-teal-50 disabled:opacity-40">
-              <HiPlus /> Add stage ({form.stages.length}/6)
-            </button>
-          ) : <span />}
+          <button onClick={addStage}
+            className="flex items-center gap-1.5 rounded-lg border border-dashed border-[#0F766E] px-3 py-2 text-sm font-semibold text-[#0F766E] hover:bg-teal-50">
+            <HiPlus /> Add stage ({form.stages.length})
+          </button>
           <button onClick={save} disabled={saving} className="rounded-lg bg-[#0F766E] px-5 py-2 text-sm font-bold text-white hover:bg-teal-800 disabled:opacity-50">
             {saving ? 'Saving…' : editingId ? 'Save changes' : 'Save workflow'}
           </button>
