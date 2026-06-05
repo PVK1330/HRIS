@@ -45,6 +45,23 @@ function formatTime(ts) {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
+// Merge a real (server) message into the list: drop the matching optimistic
+// placeholder (matched by body — its sender_id differs for admins) and add the
+// real message only if it is not already present (de-dupe by id).
+function mergeIncomingMessage(prev, msg) {
+  const withoutOptimistic = prev.filter(m => !(m.optimistic && m.body === msg.body))
+  if (withoutOptimistic.some(m => String(m.id) === String(msg.id))) return withoutOptimistic
+  return [...withoutOptimistic, msg]
+}
+
+// Replace a specific optimistic placeholder with its confirmed server message,
+// without creating a duplicate if a socket event already added that message.
+function replaceOptimisticMessage(prev, optimisticId, msg) {
+  const without = prev.filter(m => m.id !== optimisticId)
+  if (without.some(m => String(m.id) === String(msg.id))) return without
+  return [...without, msg]
+}
+
 export default function Messages() {
   const { user } = useAuth()
   const socketRef = useRef(null)
@@ -176,13 +193,7 @@ export default function Messages() {
       const viewing = activeConvIdRef.current
       const same = isNumericConvId(viewing) && String(cid ?? '') === String(viewing)
       if (same) {
-        setMessages(prev => {
-          const withoutOptimistic = prev.filter(m =>
-            !(m.optimistic && m.body === msg.body && Number(m.sender_id) === Number(msg.sender_id))
-          )
-          if (withoutOptimistic.some(m => m.id === msg.id)) return withoutOptimistic
-          return [...withoutOptimistic, msg]
-        })
+        setMessages(prev => mergeIncomingMessage(prev, msg))
         socket.emit('mark_read', { conversationId: Number(cid) })
       }
       setConversations(prev => {
@@ -233,10 +244,7 @@ export default function Messages() {
       const same = isNumericConvId(viewing) && String(cid ?? '') === String(viewing)
 
       if (same && message) {
-        setMessages(prev => {
-          if (prev.some(m => m.id === message.id)) return prev
-          return [...prev, message]
-        })
+        setMessages(prev => mergeIncomingMessage(prev, message))
         socket.emit('mark_read', { conversationId: Number(cid) })
       }
 
@@ -384,7 +392,7 @@ export default function Messages() {
         await new Promise((resolve, reject) => {
           socketRef.current.emit('send_message', { conversationId: convId, body }, (ack) => {
             if (ack?.ok && ack.message) {
-              setMessages(prev => prev.map(m => m.id === optimistic.id ? ack.message : m))
+              setMessages(prev => replaceOptimisticMessage(prev, optimistic.id, ack.message))
               setConversations(prev => prev.map(c =>
                 String(c.id) === String(convId)
                   ? { ...c, last_message: body, last_message_at: ack.message.created_at, unread_count: 0 }
@@ -398,7 +406,7 @@ export default function Messages() {
         })
       } else {
         const msg = await sendMessageRest(convId, body)
-        setMessages(prev => prev.map(m => m.id === optimistic.id ? msg : m))
+        setMessages(prev => replaceOptimisticMessage(prev, optimistic.id, msg))
         setConversations(prev => prev.map(c =>
           String(c.id) === String(convId)
             ? { ...c, last_message: body, last_message_at: msg.created_at, unread_count: 0 }
@@ -610,7 +618,13 @@ export default function Messages() {
                     </div>
                   )}
                   {messages.map((msg) => {
-                    const isMine = Number(msg.sender_id) === resolveSelfEmployeeId(user)
+                    // A message is "mine" when its sender is NOT the other participant.
+                    // This works for both portal employees and org admins, whose own
+                    // messaging employee id (sender_id) is not exposed as user.id.
+                    const otherId = Number(activeConv?.other_id)
+                    const isMine = Number.isInteger(otherId) && otherId > 0
+                      ? Number(msg.sender_id) !== otherId
+                      : Number(msg.sender_id) === resolveSelfEmployeeId(user)
                     const key = msg.optimistic ? msg.id : `msg-${msg.id}`
                     const isImage = msg.message_type === 'image' && msg.attachment_url
                     const fileUrl = attachmentUrl(msg.attachment_url)
