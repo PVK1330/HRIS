@@ -1,12 +1,15 @@
 import {Toaster} from "react-hot-toast"
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { CurrencyProvider } from "./context/CurrencyContext.jsx";
 import AppRouter from './routes/AppRouter.jsx'
 
 export default function App() {
   return (
     <>
       <AuthProvider>
-        <AppRouter />
+        <CurrencyProvider>
+          <AppRouter />
+        </CurrencyProvider>
       </AuthProvider>
       <Toaster
         position="top-right"

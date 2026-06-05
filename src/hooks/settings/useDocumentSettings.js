@@ -55,11 +55,12 @@ export function useDocumentSettings() {
   }, [])
 
   const addDoc = useCallback(
-    async (name) => {
+    async (payload) => {
       setSaving(true)
       setError(null)
       try {
-        const res = await createDocumentType({ name })
+        const body = typeof payload === 'string' ? { name: payload } : (payload || {})
+        const res = await createDocumentType(body)
         toast.success('Document type created')
         await load()
         const created = res?.data

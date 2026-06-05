@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { HiChevronRight } from "react-icons/hi2";
 import SettingsTabs, { settingsTabs } from "../../../components/admin/settings/SettingsTabs.jsx";
 import GeneralSection from "./sections/GeneralSection.jsx";
@@ -6,16 +7,14 @@ import AttendanceSection from "./sections/AttendanceSection.jsx";
 import HolidaysSection from "./sections/HolidaysSection.jsx";
 import LeaveSettings from "./LeaveSettings.jsx";
 import RolesPermissions from "./RolesPermissions.jsx";
-import SensitiveData from "./SensitiveData.jsx";
 import PasswordSecurity from "./PasswordSecurity.jsx";
 import NotificationSettings from "./NotificationSettings.jsx";
 import EmailSettings from "./sections/EmailSettings.jsx";
-import IntegrationSettings from "./sections/IntegrationSettings.jsx";
 import BillingSettings from "./sections/BillingSettings.jsx";
+import DocumentSettings from "./DocumentSettings.jsx";
 import AuditLogs from "./sections/AuditLogs.jsx";
 import BackupRestore from "./sections/BackupRestore.jsx";
 import ExitSettingsSection from "./sections/ExitSettingsSection.jsx";
-import OnboardingSettingsSection from "./sections/OnboardingSettingsSection.jsx";
 import AssetSettingsSection from "./sections/AssetSettingsSection.jsx";
 
 function ActiveSection({
@@ -33,24 +32,20 @@ function ActiveSection({
       return <LeaveSettings registerToolbar={registerGeneralToolbar} />;
     case "roles":
       return <RolesPermissions />;
-    case "sensitive":
-      return <SensitiveData />;
     case "security":
       return <PasswordSecurity />;
     case "notifications":
       return <NotificationSettings />;
     case "email":
       return <EmailSettings />;
-    case "integrations":
-      return <IntegrationSettings />;
     case "billing":
       return <BillingSettings />;
+    case "documents":
+      return <DocumentSettings />;
     case "audit":
       return <AuditLogs />;
     case "backup":
       return <BackupRestore />;
-    case "onboarding":
-      return <OnboardingSettingsSection />;
     case "exit":
       return <ExitSettingsSection />;
     case "assets":
@@ -61,9 +56,30 @@ function ActiveSection({
 }
 
 export default function AdminSettings() {
-  const [activeTab, setActiveTab] = useState("general");
+  const [params, setParams] = useSearchParams();
+  // Keep the active tab in the URL so deep links (e.g. returning from Stripe to
+  // ?tab=billing) land on the right section.
+  const urlTab = params.get("tab");
+  const initialTab = settingsTabs.some((t) => t.id === urlTab) ? urlTab : "general";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [generalToolbar, setGeneralToolbar] = useState(null);
   const [fade, setFade] = useState(true);
+
+  const handleTabChange = (id) => {
+    setActiveTab(id);
+    // Preserve any other query params (e.g. stripe return params) the page carries.
+    const next = new URLSearchParams(params);
+    next.set("tab", id);
+    setParams(next, { replace: true });
+  };
+
+  // Follow back/forward navigation that changes ?tab=.
+  useEffect(() => {
+    if (urlTab && urlTab !== activeTab && settingsTabs.some((t) => t.id === urlTab)) {
+      setActiveTab(urlTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTab]);
 
   // Smooth fade transition on tab switch
   useEffect(() => {
@@ -112,7 +128,7 @@ export default function AdminSettings() {
       {/* Tabs and Content Container */}
       <div className="rounded-none border border-slate-200 bg-white shadow-sm min-w-0">
         <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:p-5 min-w-0">
-          <SettingsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+          <SettingsTabs activeTab={activeTab} setActiveTab={handleTabChange} />
         </div>
 
         <div className="min-w-0 p-4 sm:p-6">

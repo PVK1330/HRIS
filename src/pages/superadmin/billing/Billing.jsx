@@ -7,6 +7,7 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { superadminService } from '../../../services/superadminService.js'
+import { useCurrency } from '../../../context/CurrencyContext.jsx'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { 
@@ -26,6 +27,7 @@ import {
 } from 'react-icons/hi2'
 
 export default function Billing() {
+  const { format: fmt, breakdown } = useCurrency()
   const [invoices, setInvoices] = useState([])
   const [stats, setStats] = useState({
     monthly_revenue: 0,
@@ -307,9 +309,9 @@ export default function Billing() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
-          { label: 'MONTHLY REVENUE', count: `AED ${Number(stats.monthly_revenue).toLocaleString()}`, bgColor: 'bg-[#10B981]', icon: HiCurrencyDollar },
-          { label: 'ANNUAL REVENUE', count: `AED ${Number(stats.annual_revenue).toLocaleString()}`, bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
-          { label: 'OUTSTANDING', count: `AED ${Number(stats.outstanding_amount).toLocaleString()}`, bgColor: 'bg-[#F59E0B]', icon: HiBellAlert },
+          { label: 'MONTHLY REVENUE', count: fmt(Number(stats.monthly_revenue)), bgColor: 'bg-[#10B981]', icon: HiCurrencyDollar },
+          { label: 'ANNUAL REVENUE', count: fmt(Number(stats.annual_revenue)), bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
+          { label: 'OUTSTANDING', count: fmt(Number(stats.outstanding_amount)), bgColor: 'bg-[#F59E0B]', icon: HiBellAlert },
           { label: 'FAILED ATTEMPTS', count: stats.failed_count, bgColor: 'bg-[#EF4444]', icon: HiArrowTrendingDown }
         ].map((card, idx) => (
             <div
@@ -391,9 +393,8 @@ export default function Billing() {
               amount: (
                  <div className="flex flex-col">
                     <span className={`text-sm font-black ${invoice.status === 'completed' ? 'text-slate-900' : 'text-amber-600'}`}>
-                      {Number(invoice.amount).toLocaleString()}
+                      {fmt(Number(invoice.amount))}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{invoice.currency}</span>
                  </div>
               ),
               dates: (
@@ -436,7 +437,17 @@ export default function Billing() {
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-none bg-slate-50 border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Due</span>
-                <p className="mt-1 text-lg font-black text-slate-900">{selectedInvoice.currency} {Number(selectedInvoice.amount).toLocaleString()}</p>
+                <p className="mt-1 text-lg font-black text-slate-900">{fmt(Number(selectedInvoice.amount))}</p>
+                {(() => {
+                  const b = breakdown(Number(selectedInvoice.amount))
+                  return b.taxEnabled && b.taxRate > 0 ? (
+                    <div className="mt-2 space-y-0.5 text-[11px] font-medium text-slate-500">
+                      <div className="flex justify-between"><span>Subtotal</span><span>{fmt(b.subtotal)}</span></div>
+                      <div className="flex justify-between"><span>{b.taxLabel} ({b.taxRate}%)</span><span>{fmt(b.tax)}</span></div>
+                      <div className="flex justify-between font-black text-slate-700"><span>Total</span><span>{fmt(b.total)}</span></div>
+                    </div>
+                  ) : null
+                })()}
               </div>
               <div className="p-4 rounded-none bg-slate-50 border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Status</span>

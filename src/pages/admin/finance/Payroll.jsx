@@ -27,8 +27,10 @@ import { Input } from '../../../components/ui/Input.jsx';
 import payrollService from '../../../services/payrollService';
 import { listEmployees } from '../../../services/employeeService';
 import { toast } from 'react-hot-toast';
+import { useCurrency } from '../../../context/CurrencyContext.jsx';
 
 export default function Payroll() {
+   const { format: fmt } = useCurrency();
    const [mainTab, setMainTab] = useState('salary'); // 'salary' | 'items'
    const [employees, setEmployees] = useState([]);
    const [salaries, setSalaries] = useState([]);
@@ -141,7 +143,7 @@ export default function Payroll() {
       },
       { key: 'email', label: 'Email', render: (v) => <span className="text-slate-600 truncate max-w-[150px] inline-block">{v}</span> },
       { key: 'phone', label: 'Phone', render: (v) => <span className="text-slate-600">{v}</span> },
-      { key: 'net_salary', label: <div className="text-right">Net Salary</div>, render: (v) => <div className="text-right font-black text-[#0F766E]">${Number(v).toLocaleString()}</div> },
+      { key: 'net_salary', label: <div className="text-right">Net Salary</div>, render: (v) => <div className="text-right font-black text-[#0F766E]">{fmt(Number(v))}</div> },
       {
          key: 'payslip',
          label: <div className="text-center">Payslip</div>,
@@ -175,7 +177,7 @@ export default function Payroll() {
       {
          key: 'amount',
          label: <div className="text-right inline-flex items-center gap-1.5 w-full justify-end uppercase tracking-wider text-[11px] font-bold">Value <HiArrowsUpDown className="h-3 w-3 opacity-45" /></div>,
-         render: (v) => <div className="text-right font-black text-[#0F766E]">{activeSettingsTab === 'Overtime' ? v : `$${Number(v).toLocaleString()}`}</div>
+         render: (v) => <div className="text-right font-black text-[#0F766E]">{activeSettingsTab === 'Overtime' ? v : fmt(Number(v))}</div>
       },
       {
          key: 'actions',
@@ -234,7 +236,7 @@ export default function Payroll() {
             <>
                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
                   {[
-                     { label: 'TOTAL SALARY PAID', count: `$${salaries.reduce((acc, s) => acc + Number(s.net_salary), 0).toLocaleString()}`, bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
+                     { label: 'TOTAL SALARY PAID', count: fmt(salaries.reduce((acc, s) => acc + Number(s.net_salary), 0)), bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
                      { label: 'ACTIVE PAYROLL', count: salaries.length, bgColor: 'bg-[#10B981]', icon: HiCheckBadge },
                      { label: 'TOTAL EMPLOYEES', count: employees.length, bgColor: 'bg-[#3B82F6]', icon: HiUserGroup },
                      { label: 'PENDING RECORDS', count: employees.length - salaries.length, bgColor: 'bg-[#EF4444]', icon: HiClock }

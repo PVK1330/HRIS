@@ -49,6 +49,24 @@ export const SUPERADMIN_ENDPOINTS = {
 }
 
 export const superadminService = {
+  // Self-service 2FA (TOTP) for the logged-in superadmin / sub-admin
+  async getMfaStatus() {
+    const { data } = await api.get('/superadmin/mfa/status')
+    return data.data
+  },
+  async setupMfa() {
+    const { data } = await api.post('/superadmin/mfa/setup')
+    return data.data
+  },
+  async enableMfa(code) {
+    const { data } = await api.post('/superadmin/mfa/enable', { code })
+    return data.data
+  },
+  async disableMfa(code) {
+    const { data } = await api.post('/superadmin/mfa/disable', { code })
+    return data.data
+  },
+
   // Admin Users
   getAdminUsers() {
     return api.get(SUPERADMIN_ENDPOINTS.ADMIN_USERS)

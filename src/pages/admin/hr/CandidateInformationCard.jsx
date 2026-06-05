@@ -49,7 +49,7 @@ export default function CandidateInformationCard({ onSubmit, initialData = {} })
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              placeholder="e.g. Neha Joshi"
+              placeholder="e.g. John Joshi"
               required
               className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/25"
             />
@@ -81,7 +81,7 @@ export default function CandidateInformationCard({ onSubmit, initialData = {} })
               name="personalEmail"
               value={formData.personalEmail}
               onChange={handleChange}
-              placeholder="neha@gmail.com"
+              placeholder="John@gmail.com"
               required
               className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/25"
             />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { HiBuildingOffice2, HiCheckCircle, HiEye, HiEyeSlash, HiLockClosed, HiUser, HiArrowLeft } from 'react-icons/hi2'
+import { HiBuildingOffice2, HiEye, HiEyeSlash, HiLockClosed, HiArrowLeft } from 'react-icons/hi2'
 import { Button } from '../../components/ui/Button.jsx'
 import { Input } from '../../components/ui/Input.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
@@ -11,9 +11,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const LAST_TENANT_ID_KEY = 'hris_last_tenant_id'
 
-const ROLE_TABS = [
-  { id: 'admin', label: 'Organization Admin', defaultEmail: '', defaultPassword: '', icon: HiBuildingOffice2 },
-  { id: 'superadmin', label: 'Super Admin', defaultEmail: 'superadmin@hris.com', defaultPassword: 'SuperAdmin123', icon: HiLockClosed },
+// Account-type tabs. These control which login endpoint is used
+// (`/auth/login` for an organization, `/superadmin/login` for the platform).
+// NOTE: demo credentials / quick-login prefill have been removed for production.
+const ACCOUNT_TABS = [
+  { id: 'admin', label: 'Organization', icon: HiBuildingOffice2 },
+  { id: 'superadmin', label: 'Super Admin', icon: HiLockClosed },
 ]
 
 const POST_LOGIN = {
@@ -41,6 +44,7 @@ export default function Login() {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState(null)
+  const [mfaToken, setMfaToken] = useState(null)
   const tenantSlugFromHost =
     typeof window !== 'undefined' ? parseTenantSlugFromHostname(window.location.hostname) : null
 
@@ -67,7 +71,44 @@ export default function Login() {
   // If already logged in, don't show the form to avoid flicker
   if (user) return null
 
-  const handleSignIn = async () => {
+  const selectTab = (id) => {
+    if (id === activeTab) return
+    setActiveTab(id)
+    setEmail('')
+    setPassword('')
+    setError('')
+  }
+
+  // Applies a successful login response (shared by password login and MFA verification)
+  const applyLoginResult = (result, isSuperAdmin) => {
+    const baseUser = isSuperAdmin ? result.data.superadmin : result.data.user
+    // Carry the org's billing/trial state so the paywall gate can react immediately.
+    const userData =
+      !isSuperAdmin && baseUser
+        ? { ...baseUser, billing: result.data.billing ?? null }
+        : baseUser
+    if (!isSuperAdmin && userData) {
+      const tid = userData.tenantId ?? userData.tenant_id
+      if (tid != null && tid !== '') {
+        try {
+          localStorage.setItem(LAST_TENANT_ID_KEY, String(tid))
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    login(
+      userData,
+      result.data.token,
+      result.data.plan_details || [],
+      result.data.plan_features || [],
+      result.data.tenant_features || [],
+      result.data.allowedModules ?? result.data.allowed_modules,
+    )
+  }
+
+  const handleSignIn = async (e) => {
+    if (e) e.preventDefault()
     setError('')
     setLoading(true)
     try {
@@ -102,31 +143,16 @@ export default function Login() {
       }
 
       if (result.data.mfaRequired) {
-        setUserId(result.data.userId)
+        // Superadmin returns a userId; org login returns a short-lived mfaToken.
+        setUserId(result.data.userId ?? null)
+        setMfaToken(result.data.mfaToken ?? null)
+        setOtp(['', '', '', '', '', ''])
         setStage('twoFactor')
         return
       }
 
       // Standard login success
-      const userData = isSuperAdmin ? result.data.superadmin : result.data.user
-      if (!isSuperAdmin && userData) {
-        const tid = userData.tenantId ?? userData.tenant_id
-        if (tid != null && tid !== '') {
-          try {
-            localStorage.setItem(LAST_TENANT_ID_KEY, String(tid))
-          } catch {
-            /* ignore */
-          }
-        }
-      }
-      login(
-        userData, 
-        result.data.token, 
-        result.data.plan_details || [], 
-        result.data.plan_features || [],
-        result.data.tenant_features || [],
-        result.data.allowedModules ?? result.data.allowed_modules,
-      )
+      applyLoginResult(result, isSuperAdmin)
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Login failed'
       setError(msg)
@@ -135,29 +161,29 @@ export default function Login() {
     }
   }
 
-  const handleVerify2FA = async () => {
+  const handleVerify2FA = async (e) => {
+    if (e) e.preventDefault()
     setError('')
     setLoading(true)
     try {
       const fullOtp = otp.join('')
-      const response = await axios.post(`${API_URL}/api/v1/superadmin/verify-2fa`, {
-        userId,
-        code: fullOtp
-      })
+      if (fullOtp.length < 6) {
+        throw new Error('Please enter the full 6-digit code.')
+      }
+      const isSuperAdmin = activeTab === 'superadmin'
+      const endpoint = isSuperAdmin ? '/superadmin/verify-2fa' : '/auth/verify-2fa'
+      const payload = isSuperAdmin
+        ? { userId, code: fullOtp }
+        : { mfaToken, code: fullOtp }
+
+      const response = await axios.post(`${API_URL}/api/v1${endpoint}`, payload)
       const result = response.data
 
       if (!result.success) {
         throw new Error(result.message || 'Verification failed')
       }
 
-      login(
-        result.data.superadmin, 
-        result.data.token, 
-        result.data.plan_details || [], 
-        result.data.plan_features || [],
-        result.data.tenant_features || [],
-        result.data.allowedModules,
-      )
+      applyLoginResult(result, isSuperAdmin)
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Verification failed'
       setError(msg)
@@ -168,11 +194,18 @@ export default function Login() {
 
   const handleOtpChange = (index, value) => {
     if (value.length > 1) return
+    if (value && !/^\d$/.test(value)) return
     const newOtp = [...otp]
     newOtp[index] = value
     setOtp(newOtp)
     if (value && index < 5) {
       document.getElementById(`otp-${index + 1}`)?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      document.getElementById(`otp-${index - 1}`)?.focus()
     }
   }
 
@@ -235,15 +268,15 @@ export default function Login() {
       <div className="flex w-full flex-1 flex-col items-center justify-center bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
+          <div className="mb-6 flex items-center justify-center gap-2 lg:hidden">
             <HiBuildingOffice2 className="h-8 w-8 text-[#0F766E]" />
             <div className="font-display text-2xl font-bold text-[#0F766E]">HRIS</div>
           </div>
 
-          <div className="rounded-2xl bg-white p-8 shadow-xl sm:p-10">
+          <div className="rounded-2xl bg-white p-6 shadow-xl sm:p-8 lg:p-10">
             {stage === 'login' ? (
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="mb-8">
+                <div className="mb-6">
                   <h1 className="font-display text-2xl font-bold text-gray-900 sm:text-3xl">
                     Welcome back
                   </h1>
@@ -252,7 +285,38 @@ export default function Login() {
                   </p>
                 </div>
 
-                <div className="space-y-5">
+                {/* Account type selector (replaces the old "Quick Login Roles" demo block) */}
+                <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1">
+                  {ACCOUNT_TABS.map((tab) => {
+                    const Icon = tab.icon
+                    const active = activeTab === tab.id
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        disabled={loading}
+                        onClick={() => selectTab(tab.id)}
+                        className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-all ${
+                          active
+                            ? 'bg-white text-[#0F766E] shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{tab.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/*
+                  REMOVED: "Quick Login Roles" + "Demo Credentials" prefill block.
+                  It auto-filled demo accounts (e.g. superadmin@hris.com / SuperAdmin123),
+                  which is not appropriate for production. Account-type switching is now
+                  handled by the clean selector above. Restore from git history if needed.
+                */}
+
+                <form className="space-y-5" onSubmit={handleSignIn} noValidate>
                   <Input
                     label={tenantSlugFromHost && activeTab === 'admin' ? 'Work email or username' : 'Email Address'}
                     labelClassName={labelUpper}
@@ -266,35 +330,30 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    disabled={loading}
-                    icon={<HiUser className="h-5 w-5" />}
                   />
 
                   <div>
-                    <div className="relative">
-                      <Input
-                        label="Password"
-                        labelClassName={labelUpper}
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                        icon={<HiLockClosed className="h-5 w-5" />}
-                        suffix={
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="text-gray-400 hover:text-gray-600"
-                            disabled={loading}
-                          >
-                            {showPassword ? <HiEyeSlash className="h-5 w-5" /> : <HiEye className="h-5 w-5" />}
-                          </button>
-                        }
-                      />
-                    </div>
+                    <Input
+                      label="Password"
+                      labelClassName={labelUpper}
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      suffix={
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="text-gray-400 hover:text-gray-600"
+                          disabled={loading}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? <HiEyeSlash className="h-5 w-5" /> : <HiEye className="h-5 w-5" />}
+                        </button>
+                      }
+                    />
                     <div className="mt-2 flex justify-end">
                       <Link
                         to="/forgot-password"
@@ -315,7 +374,6 @@ export default function Login() {
                       helpText="Required on localhost when not using your company subdomain (e.g. your-org.localhost:5173). Org admins can also sign in on the main URL with their organization email only."
                       value={organizationId}
                       onChange={(e) => setOrganizationId(e.target.value)}
-                      disabled={loading}
                     />
                   ) : null}
                   {activeTab === 'admin' && tenantSlugFromHost ? (
@@ -325,51 +383,6 @@ export default function Login() {
                     </p>
                   ) : null}
 
-                  <div>
-                    <p className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wider text-[10px]">Quick Login Roles</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {ROLE_TABS.map((tab) => {
-                        const Icon = tab.icon
-                        const active = activeTab === tab.id
-                        return (
-                          <button
-                            key={tab.id}
-                            type="button"
-                            disabled={loading}
-                            onClick={() => {
-                              setActiveTab(tab.id)
-                              setEmail(tab.defaultEmail)
-                              setPassword(tab.defaultPassword)
-                            }}
-                            className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-2.5 transition-all ${active
-                                ? 'border-[#0F766E] bg-[#0F766E]/5 text-[#0F766E]'
-                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                              }`}
-                          >
-                            <Icon className="h-4 w-4" />
-                            <span className="text-[10px] font-bold truncate w-full text-center">{tab.label}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Demo Credentials</span>
-                        <span className="text-[10px] font-bold text-[#0F766E] uppercase">{activeTab.replace('_', ' ')}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="text-[10px] text-gray-400">Email</p>
-                          <p className="text-xs font-mono font-medium text-gray-700 truncate">{email}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-[10px] text-gray-400">Password</p>
-                          <p className="text-xs font-mono font-medium text-gray-700">{password}</p>
-                        </div>
-                      </div>
-                    </div>                  </div>
-
                   {error && (
                     <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                       <span>{error}</span>
@@ -377,11 +390,12 @@ export default function Login() {
                   )}
 
                   <Button
-                    label={loading ? "Signing in..." : "Sign In to Workspace"}
-                    variant="primary"
+                    type="submit"
+                    label="Sign In to Workspace"
+                    variant="teal"
+                    loading={loading}
                     disabled={loading}
-                    className="w-full justify-center py-4 rounded-xl shadow-xl shadow-emerald-600/20 text-lg font-bold"
-                    onClick={handleSignIn}
+                    className="w-full justify-center py-3.5 rounded-xl shadow-lg shadow-teal-700/20 text-base font-bold"
                   />
 
                   <div className="text-center">
@@ -395,7 +409,7 @@ export default function Login() {
                       </Link>
                     </p>
                   </div>
-                </div>
+                </form>
               </div>
             ) : (
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -408,31 +422,42 @@ export default function Login() {
                   </p>
                 </div>
 
-                <div className="space-y-6">
-                  <div className="flex justify-between gap-2">
+                <form className="space-y-6" onSubmit={handleVerify2FA} noValidate>
+                  <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
                     {otp.map((digit, idx) => (
                       <input
                         key={idx}
                         id={`otp-${idx}`}
                         type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
                         maxLength={1}
                         value={digit}
                         disabled={loading}
                         onChange={(e) => handleOtpChange(idx, e.target.value)}
-                        className="w-12 h-14 text-center text-xl font-bold rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 focus:outline-none transition-all"
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        className="h-12 w-full text-center text-xl font-bold rounded-xl border border-gray-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 focus:outline-none transition-all sm:h-14"
                       />
                     ))}
                   </div>
 
+                  {error && (
+                    <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      <span>{error}</span>
+                    </div>
+                  )}
+
                   <Button
-                    label={loading ? "Verifying..." : "Verify & Continue"}
-                    variant="primary"
+                    type="submit"
+                    label="Verify & Continue"
+                    variant="teal"
+                    loading={loading}
                     disabled={loading}
-                    className="w-full justify-center py-4 rounded-xl shadow-xl shadow-emerald-600/20 text-lg font-bold"
-                    onClick={handleVerify2FA}
+                    className="w-full justify-center py-3.5 rounded-xl shadow-lg shadow-teal-700/20 text-base font-bold"
                   />
 
                   <button
+                    type="button"
                     onClick={() => setStage('login')}
                     disabled={loading}
                     className="w-full text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-2"
@@ -440,7 +465,7 @@ export default function Login() {
                     <HiArrowLeft className="h-4 w-4" />
                     Back to Login
                   </button>
-                </div>
+                </form>
               </div>
             )}
           </div>

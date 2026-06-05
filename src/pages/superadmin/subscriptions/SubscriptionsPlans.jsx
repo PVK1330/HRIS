@@ -5,6 +5,7 @@ import { Input } from '../../../components/ui/Input.jsx'
 import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { superadminService } from '../../../services/superadminService.js'
+import { useCurrency } from '../../../context/CurrencyContext.jsx'
 import {
   HiCheck,
   HiCurrencyDollar,
@@ -26,6 +27,8 @@ import {
 } from 'react-icons/hi2'
 
 export default function SubscriptionsPlans() {
+  const { format: fmt, settings: currency } = useCurrency()
+  const ccy = currency?.currencySymbol || '$'
   // Modal states
   const [showAddPlanModal, setShowAddPlanModal] = useState(false)
   const [showEditPlanModal, setShowEditPlanModal] = useState(false)
@@ -59,13 +62,8 @@ export default function SubscriptionsPlans() {
   const [newPlan, setNewPlan] = useState(initialForm)
   const [editForm, setEditForm] = useState(initialForm)
 
-  // Helper functions
-  const formatPrice = (price) => {
-    return Number(price).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })
-  }
+  // Helper functions — formats in the platform's global currency (with symbol).
+  const formatPrice = (price) => fmt(price)
 
   const formatQuota = (value, unit = '') => {
     if (value === -1) return 'Unlimited'
@@ -272,8 +270,8 @@ export default function SubscriptionsPlans() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
           { label: 'ACTIVE PLANS', count: activePlansCount.toString(), bgColor: 'bg-[#10B981]', icon: HiCheckCircle },
-          { label: 'MONTHLY POTENTIAL', count: `$${formatPrice(totalMonthlyRevenue)}`, bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
-          { label: 'ANNUAL POTENTIAL', count: `$${formatPrice(totalAnnualRevenue)}`, bgColor: 'bg-[#3B82F6]', icon: HiChartBar }
+          { label: 'MONTHLY POTENTIAL', count: formatPrice(totalMonthlyRevenue), bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
+          { label: 'ANNUAL POTENTIAL', count: formatPrice(totalAnnualRevenue), bgColor: 'bg-[#3B82F6]', icon: HiChartBar }
         ].map((card, idx) => (
             <div
               key={idx}
@@ -371,11 +369,11 @@ export default function SubscriptionsPlans() {
                 </div>
 
                 <div className="mb-2">
-                  <span className="text-4xl font-black text-slate-900">${formatPrice(plan.monthly_price)}</span>
+                  <span className="text-4xl font-black text-slate-900">{formatPrice(plan.monthly_price)}</span>
                   <span className="text-sm font-medium text-slate-500 ml-1">/month</span>
                 </div>
                 <div className="text-sm font-semibold text-emerald-600 bg-emerald-50 inline-block px-3 py-1 rounded-full">
-                  ${formatPrice(plan.annual_price)}/year
+                  {formatPrice(plan.annual_price)}/year
                   {plan.monthly_price > 0 && ` (save ${Math.round((1 - plan.annual_price / (plan.monthly_price * 12)) * 100)}%)`}
                 </div>
               </div>
@@ -470,7 +468,7 @@ export default function SubscriptionsPlans() {
               required
             />
             <div>
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Monthly Price ($) *</label>
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Monthly Price ({ccy}) *</label>
               <input
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
                 type="number"
@@ -488,7 +486,7 @@ export default function SubscriptionsPlans() {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Annual Price ($)</label>
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Annual Price ({ccy})</label>
               <input
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
                 type="number"
@@ -498,7 +496,7 @@ export default function SubscriptionsPlans() {
                 onChange={(e) => setNewPlan({ ...newPlan, annual_price: parseFloat(e.target.value) || 0 })}
               />
               <p className="mt-1 text-[10px] text-emerald-600 font-semibold">
-                Recommended: ${Math.round(newPlan.monthly_price * 10.8 * 100) / 100} (10% discount)
+                Recommended: {formatPrice(Math.round(newPlan.monthly_price * 10.8 * 100) / 100)} (10% discount)
               </p>
             </div>
             <Input
@@ -592,7 +590,7 @@ export default function SubscriptionsPlans() {
               onChange={(e) => setEditForm({ ...editForm, plan_code: e.target.value.toLowerCase().replace(/\s/g, '_') })}
             />
             <div>
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Monthly Price ($) *</label>
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Monthly Price ({ccy}) *</label>
               <input
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
                 type="number"
@@ -605,7 +603,7 @@ export default function SubscriptionsPlans() {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Annual Price ($)</label>
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Annual Price ({ccy})</label>
               <input
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
                 type="number"
@@ -614,7 +612,7 @@ export default function SubscriptionsPlans() {
                 onChange={(e) => setEditForm({ ...editForm, annual_price: parseFloat(e.target.value) || 0 })}
               />
               <p className="mt-1 text-[10px] text-emerald-600 font-semibold">
-                Recommended: ${Math.round(editForm.monthly_price * 10.8 * 100) / 100} (10% discount)
+                Recommended: {formatPrice(Math.round(editForm.monthly_price * 10.8 * 100) / 100)} (10% discount)
               </p>
             </div>
             <Input
@@ -723,11 +721,11 @@ export default function SubscriptionsPlans() {
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between">
                     <span className="text-sm text-slate-600">Monthly</span>
-                    <span className="text-sm font-bold text-slate-900">${formatPrice(selectedPlan.monthly_price)}</span>
+                    <span className="text-sm font-bold text-slate-900">{formatPrice(selectedPlan.monthly_price)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-slate-600">Annual</span>
-                    <span className="text-sm font-bold text-slate-900">${formatPrice(selectedPlan.annual_price)}</span>
+                    <span className="text-sm font-bold text-slate-900">{formatPrice(selectedPlan.annual_price)}</span>
                   </div>
                 </div>
               </div>

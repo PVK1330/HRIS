@@ -30,7 +30,7 @@ const accounts = {
   "hr_exec@hris.com": {
     password: "hrexec123",
     user: {
-      name: "Neha Jain",
+      name: "John Jain",
       email: "hr_exec@hris.com",
       role: "hr_executive",
       panel: "admin",
@@ -442,6 +442,7 @@ export function AuthProvider({ children }) {
           plan_details: data.plan_details || [],
           tenant_features: data.tenant_features || [],
           permissions: data.permissions || prev.permissions || [],
+          billing: data.billing ?? prev.billing ?? null,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         return next;
@@ -495,6 +496,12 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const billing = user?.billing ?? null;
+  // Only tenant users (admin/employee) can be paywalled; superadmins never are.
+  const paymentRequired =
+    !!billing?.payment_required &&
+    (user?.role === "admin" || user?.role === "employee");
+
   const value = useMemo(
     () => ({
       user,
@@ -506,6 +513,8 @@ export function AuthProvider({ children }) {
       refreshAccessProfile,
       allowedModules,
       hasModule,
+      billing,
+      paymentRequired,
     }),
     [
       user,
@@ -517,6 +526,8 @@ export function AuthProvider({ children }) {
       refreshAccessProfile,
       allowedModules,
       hasModule,
+      billing,
+      paymentRequired,
     ],
   );
 
