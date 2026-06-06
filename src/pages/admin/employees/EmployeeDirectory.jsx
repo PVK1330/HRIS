@@ -16,7 +16,7 @@ import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import {
-  getEmployeeStats, getFilterOptions, listEmployees,
+  getEmployeeStats, getFilterOptions, listEmployees, listEmployeesDropdown,
   getEmployee, createEmployee, updateEmployee, deleteEmployee, getNextEmployeeId,
 } from '../../../services/employeeService.js'
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
@@ -77,6 +77,7 @@ function mapEmployeeList(e) {
     jobTitle: e.job_title,
     department: e.department,
     location: e.work_location || '',
+    departmentHead: e.managerName || 'N/A',
     manager: e.manager_name || e.reporting_manager || 'N/A',
     status: e.employment_status || 'Active',
     joinDate: e.join_date || '',
@@ -276,6 +277,7 @@ export default function EmployeeDirectory() {
   const [departmentsCatalog, setDepartmentsCatalog] = useState([])
   const [designationsCatalog, setDesignationsCatalog] = useState([])
   const [deptsLoading, setDeptsLoading] = useState(false)
+  const [managerOptions, setManagerOptions] = useState([])
 
   const departmentRows = useMemo(() => {
     if (departmentsCatalog.length) return departmentsCatalog
@@ -440,6 +442,22 @@ export default function EmployeeDirectory() {
       })()
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    if (!modalOpen) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await listEmployeesDropdown()
+        if (cancelled) return
+        const list = res?.records || res?.employees || res || []
+        setManagerOptions(Array.isArray(list) ? list : [])
+      } catch (err) {
+        console.error(err)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [modalOpen])
 
   useEffect(() => {
     if (!modalOpen) return
@@ -1021,6 +1039,29 @@ export default function EmployeeDirectory() {
       ),
     },
     {
+      key: 'departmentHead',
+      label: colLabel('Department Head'),
+      render: (v) => (
+        <span className="text-sm text-slate-700">{v || '—'}</span>
+      ),
+    },
+    {
+      key: 'manager',
+      label: colLabel('Reporting Manager'),
+      render: (v) => (
+        <span className="text-sm text-slate-700">{v || '—'}</span>
+      ),
+    },
+    {
+      key: 'rbacRoleName',
+      label: colLabel('Role'),
+      render: (v) => (
+        <span className="text-sm font-medium text-slate-700 capitalize">
+          {v ? v.replace('_', ' ') : '—'}
+        </span>
+      ),
+    },
+    {
       key: 'joinDate',
       label: colLabel('Joining Date'),
       render: (v) => (
@@ -1527,6 +1568,27 @@ export default function EmployeeDirectory() {
                     readOnly
                     disabled
                   />
+                </div>
+                <div>
+                  <label htmlFor="emp-reporting-manager" className="mb-1 block text-sm font-medium text-slate-800">
+                    Reporting Manager
+                  </label>
+                  <select
+                    id="emp-reporting-manager"
+                    name="reportingManager"
+                    value={formData.reportingManager || ''}
+                    onChange={handleFormChange}
+                    className={`${basicFieldClass} mt-0`}
+                  >
+                    <option value="">
+                      {managerOptions.length > 0 ? 'Select Manager (Optional)' : 'No employees yet — optional'}
+                    </option>
+                    {managerOptions.map((e) => (
+                      <option key={e.id} value={e.emp_id || e.empId || e.employeeCode}>
+                        {(e.full_name || e.fullName || e.employeeName) ?? 'Employee'} ({e.emp_id || e.empId || e.employeeCode})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="emp-desig" className="mb-1 block text-sm font-medium text-slate-800">
