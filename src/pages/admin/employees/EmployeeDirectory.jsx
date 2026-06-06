@@ -21,7 +21,7 @@ import {
 } from '../../../services/employeeService.js'
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
-import { listDesignations } from '../../../services/designationService.js'
+import { listDesignationsByDepartmentId } from '../../../services/designationService.js'
 import { triggerExport } from '../../../utils/exportHelper.js'
 import { todayIsoDate, formatEmpIdDisplay } from '../../../utils/employeeId.js'
 
@@ -288,17 +288,17 @@ export default function EmployeeDirectory() {
   const isFirstEmployeeStep = safeFormStepIdx === 0
 
   const designationRowsForDept = useMemo(() => {
-    const dept = String(formData.department || '').trim()
-    if (!dept) return []
+    const deptId = formData.departmentId
+    if (!deptId) return []
     return designationsCatalog.filter((row) => {
-      const rowDept = String(row.department_name ?? row.departmentName ?? '').trim()
-      if (rowDept !== dept) return false
+      const rowDeptId = row.department_id ?? row.departmentId
+      if (rowDeptId != null && String(rowDeptId) !== String(deptId)) return false
       if (row.is_active === false) return false
       const st = String(row.status ?? '').toLowerCase()
       if (st === 'inactive') return false
       return true
     })
-  }, [designationsCatalog, formData.department])
+  }, [designationsCatalog, formData.departmentId])
 
   // Helper functions for dynamic arrays
   const handleFamilyMemberChange = (index, field, value) => {
@@ -447,15 +447,13 @@ export default function EmployeeDirectory() {
     setDeptsLoading(true)
       ; (async () => {
         try {
-          const [depts, desigs] = await Promise.all([listDepartments(), listDesignations()])
+          const depts = await listDepartments()
           if (cancelled) return
           setDepartmentsCatalog(depts?.departments ?? depts?.records ?? [])
-          setDesignationsCatalog(desigs?.designations ?? desigs?.records ?? [])
         } catch {
           if (!cancelled) {
             setDepartmentsCatalog([])
-            setDesignationsCatalog([])
-            toast.error('Could not load departments or designations.')
+            toast.error('Could not load departments.')
           }
         } finally {
           if (!cancelled) {
@@ -467,6 +465,27 @@ export default function EmployeeDirectory() {
       cancelled = true
     }
   }, [modalOpen])
+
+  // Load ALL active designations for the selected department by ID (unpaginated,
+  // server-filtered). Avoids the old bug where only the first paginated page
+  // of designations was preloaded and then filtered client-side.
+  useEffect(() => {
+    if (!modalOpen) return
+    const deptId = formData.departmentId
+    if (!deptId) { setDesignationsCatalog([]); return }
+    let cancelled = false
+      ; (async () => {
+        try {
+          const res = await listDesignationsByDepartmentId(deptId)
+          if (cancelled) return
+          const rows = Array.isArray(res) ? res : (res?.designations ?? res?.records ?? [])
+          setDesignationsCatalog(rows)
+        } catch {
+          if (!cancelled) setDesignationsCatalog([])
+        }
+      })()
+    return () => { cancelled = true }
+  }, [modalOpen, formData.departmentId])
 
   // ── Form handlers ──────────────────────────────────────────────────────────
 

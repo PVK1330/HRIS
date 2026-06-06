@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   HiPlus, HiEye, HiCheck, HiXMark,
-  HiMagnifyingGlass, HiUsers, HiClock, HiCheckCircle, HiXCircle,
-  HiInformationCircle, HiArrowsUpDown, HiOutlineHome, HiArrowDownTray
+  HiMagnifyingGlass, HiUsers, HiClock, HiCheckCircle,
+  HiArrowDownTray, HiCalendarDays
 } from 'react-icons/hi2';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { Table } from '../../../components/ui/Table.jsx';
@@ -11,8 +11,10 @@ import {
   listLeave, applyLeave, processLeave, listBalances, getLeaveTypes,
   getEmployeeLeave,
 } from '../../../services/leaveService.js';
+import { getAttendanceDashboard } from '../../../services/attendanceService.js';
 import { listEmployees } from '../../../services/employeeService.js';
 import AddLeaveModal from '../../../components/leave/AddLeaveModal.jsx';
+import HolidayListWidget from '../../../components/attendance/HolidayListWidget.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { canApproveLeave, canApplyLeave } from '../../../utils/rbac.js';
 
@@ -57,6 +59,7 @@ export default function LeaveAbsence() {
 
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState(null);
+  const [attendance, setAttendance] = useState(null);
   const [balances, setBalances] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [empList, setEmpList] = useState([]);
@@ -101,6 +104,13 @@ export default function LeaveAbsence() {
     finally { setLoadingBal(false); }
   }, [year, dept, search]);
 
+  const fetchAttendanceSummary = useCallback(async () => {
+    try {
+      const res = await getAttendanceDashboard();
+      setAttendance(res?.widgets || null);
+    } catch { /* attendance snapshot is best-effort */ }
+  }, []);
+
   const fetchLeaveTypes = useCallback(async () => {
     if (leaveTypes.length > 0) return;
     try {
@@ -125,6 +135,7 @@ export default function LeaveAbsence() {
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
   useEffect(() => { if (activeTab === 'balances') fetchBalances(); }, [activeTab, fetchBalances]);
   useEffect(() => { fetchLeaveTypes(); }, [fetchLeaveTypes]);
+  useEffect(() => { fetchAttendanceSummary(); }, [fetchAttendanceSummary]);
 
   useEffect(() => { setCurrentPage(1); setBalancesPage(1); }, [search, dept, statusF, year, leaveTypeF]);
 
@@ -317,25 +328,75 @@ export default function LeaveAbsence() {
         </div>
       </div>
 
-      {/* KPI Cards styled matching flat design */}
+      {/* KPI Cards — driven by live attendance snapshot + leave stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
-          { label: 'Total Present', count: '180/200', bgClass: 'bg-emerald-50 border-emerald-200 text-emerald-700', icon: HiUsers },
-          { label: 'Planned Leaves', count: '10', bgClass: 'bg-indigo-50 border-indigo-200 text-indigo-700', icon: HiClock },
-          { label: 'Unplanned Leaves', count: '10', bgClass: 'bg-rose-50 border-rose-200 text-rose-700', icon: HiXCircle },
-          { label: 'Pending Requests', count: String(stats?.pending || 15), bgClass: 'bg-sky-50 border-sky-200 text-sky-700', icon: HiInformationCircle }
+          {
+            label: 'Present Today',
+            value: attendance ? `${attendance.present_today ?? 0}/${attendance.total_employees ?? 0}` : '—',
+            sub: attendance?.attendance_rate != null ? `${attendance.attendance_rate}% attendance rate` : 'Live attendance snapshot',
+            accent: 'bg-emerald-50 text-[#0F766E] border-emerald-100',
+            icon: HiUsers,
+          },
+          {
+            label: 'On Leave Today',
+            value: attendance ? String(attendance.on_leave ?? 0) : '—',
+            sub: 'Employees absent on approved leave',
+            accent: 'bg-amber-50 text-amber-600 border-amber-100',
+            icon: HiCalendarDays,
+          },
+          {
+            label: 'Approved Leaves',
+            value: stats ? String(stats.approved ?? 0) : '—',
+            sub: `${year} calendar year`,
+            accent: 'bg-sky-50 text-sky-600 border-sky-100',
+            icon: HiCheckCircle,
+          },
+          {
+            label: 'Pending Requests',
+            value: stats ? String(stats.pending ?? 0) : '—',
+            sub: 'Awaiting manager / HR approval',
+            accent: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+            icon: HiClock,
+          },
         ].map((card, idx) => (
-          <div key={idx} className={`${card.bgClass} flex flex-col justify-between rounded-none border p-4 shadow-sm relative overflow-hidden`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-bold uppercase tracking-widest opacity-80">{card.label}</div>
-              <card.icon className="h-5 w-5 opacity-75" />
+          <div key={idx} className="flex items-center justify-between gap-3 rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{card.label}</div>
+              <div className="mt-1.5 text-2xl font-black text-slate-900">{card.value}</div>
+              <div className="mt-0.5 truncate text-[10px] font-medium text-slate-400">{card.sub}</div>
             </div>
-            <div className="text-2xl font-black">{card.count}</div>
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none border ${card.accent}`}>
+              <card.icon className="h-5 w-5" />
+            </div>
           </div>
         ))}
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-slate-200">
+        {[
+          { key: 'requests', label: 'Leave Requests' },
+          { key: 'holidays', label: 'Holiday Listing' },
+        ].map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setActiveTab(t.key)}
+            className={`relative px-4 py-2.5 text-sm font-semibold transition-colors ${
+              activeTab === t.key ? 'text-[#0F766E]' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            {t.label}
+            {activeTab === t.key && (
+              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-[#0F766E]" />
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Main Panel matching Table layout */}
+      {activeTab === 'requests' && (
       <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
           <h2 className="text-sm font-semibold text-white">Leave Listing</h2>
@@ -403,8 +464,11 @@ export default function LeaveAbsence() {
           onPageChange={(idx) => setCurrentPage(idx + 1)}
         />
       </div>
+      )}
 
-      <AddLeaveModal 
+      {activeTab === 'holidays' && <HolidayListWidget />}
+
+      <AddLeaveModal
         isOpen={applyModal}
         onClose={closeApplyModal}
         leaveTypes={leaveTypes}

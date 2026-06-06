@@ -57,6 +57,12 @@ export const listDesignationsByDepartment = async (departmentName) => {
   return data.data
 }
 
+/** Active designations for a department id (Employee Directory). */
+export const listDesignationsByDepartmentId = async (departmentId) => {
+  const { data } = await api.get(`/designations/by-department-id/${departmentId}`)
+  return data.data
+}
+
 export const getDesignation = async (id) => {
   const { data } = await api.get(`/designations/${id}`)
   return data.data
