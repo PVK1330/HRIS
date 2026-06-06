@@ -16,20 +16,32 @@ import {
 import AddOvertimeModal from '../../../../components/attendance/AddOvertimeModal.jsx'
 import { useAttendanceSettings } from '../../../../hooks/useAttendanceSettings.js'
 
+const STATUS_LABELS = {
+  Pending:          'Awaiting Manager',
+  Manager_Approved: 'Awaiting Dept Head',
+  Dept_Approved:    'Awaiting HR',
+  Approved:         'Approved',
+  Rejected:         'Rejected',
+}
+
 function statusTone(s) {
-  if (s === 'Approved') return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
-  if (s === 'Rejected') return 'bg-red-50 text-red-700 ring-red-600/20'
-  if (s === 'Pending') return 'bg-amber-50 text-amber-700 ring-amber-600/20'
+  if (s === 'Approved')         return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+  if (s === 'Rejected')         return 'bg-red-50 text-red-700 ring-red-600/20'
+  if (s === 'Dept_Approved')    return 'bg-blue-50 text-blue-700 ring-blue-600/20'
+  if (s === 'Manager_Approved') return 'bg-indigo-50 text-indigo-700 ring-indigo-600/20'
+  if (s === 'Pending')          return 'bg-amber-50 text-amber-700 ring-amber-600/20'
   return 'bg-slate-50 text-slate-600 ring-slate-500/20'
 }
 
 function StatusPill({ status }) {
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${statusTone(status)}`}>
-      {status || '—'}
+      {STATUS_LABELS[status] || status || '—'}
     </span>
   )
 }
+
+const ACTIONABLE = new Set(['Pending', 'Manager_Approved', 'Dept_Approved'])
 
 export default function OvertimeApprovals() {
   const { user, allowedModules } = useAuth()
@@ -110,11 +122,10 @@ export default function OvertimeApprovals() {
   }
 
   const metrics = useMemo(() => {
-    const pending = records.filter((r) => r.overtime_status === 'Pending')
+    const pending  = records.filter((r) => ACTIONABLE.has(r.overtime_status))
     const approved = records.filter((r) => r.overtime_status === 'Approved')
-    const processed = records.filter((r) => r.overtime_status === 'Approved' || r.overtime_status === 'Rejected')
     const approvedHours = approved.reduce((a, r) => a + Number(r.overtime_hours || 0), 0)
-    return { pending: pending.length, approvedHours: Math.round(approvedHours * 100) / 100, processed: processed.length }
+    return { pending: pending.length, approvedHours: Math.round(approvedHours * 100) / 100 }
   }, [records])
 
   const filtered = useMemo(() => {
@@ -149,7 +160,6 @@ export default function OvertimeApprovals() {
             bgColor: 'bg-[#EF4444]',
             icon: HiXMark,
             onClickFilter: () => setStatusFilter('Rejected'),
-            filterId: 'Rejected'
           }
         ].map((card, idx) => (
           <button
@@ -205,7 +215,9 @@ export default function OvertimeApprovals() {
               className="h-10 rounded-none border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]"
             >
               <option value="">All statuses</option>
-              <option value="Pending">Pending</option>
+              <option value="Pending">Awaiting Manager</option>
+              <option value="Manager_Approved">Awaiting Dept Head</option>
+              <option value="Dept_Approved">Awaiting HR</option>
               <option value="Approved">Approved</option>
               <option value="Rejected">Rejected</option>
             </select>
@@ -246,7 +258,7 @@ export default function OvertimeApprovals() {
               key: 'actions',
               label: 'Actions',
               render: (_, r) => {
-                const isPending = r.overtime_status === 'Pending'
+                const isActionable = ACTIONABLE.has(r.overtime_status)
                 const own = isOwn(r)
                 return (
                   <div className="flex items-center justify-center gap-2">
@@ -258,7 +270,7 @@ export default function OvertimeApprovals() {
                     >
                       <HiEye className="h-4 w-4" />
                     </button>
-                    {isPending && canApprove && !own && (
+                    {isActionable && canApprove && !own && (
                       <>
                         <button
                           type="button"
@@ -278,7 +290,7 @@ export default function OvertimeApprovals() {
                         </button>
                       </>
                     )}
-                    {isPending && canManage && !own && (
+                    {isActionable && canManage && !own && (
                       <button
                         type="button"
                         onClick={() => setEditRow(r)}
@@ -288,7 +300,7 @@ export default function OvertimeApprovals() {
                         <HiPencil className="h-4 w-4" />
                       </button>
                     )}
-                    {isPending && canManage && !own && (
+                    {isActionable && canManage && !own && (
                       <button
                         type="button"
                         onClick={() => setDeleteRow(r)}
@@ -350,12 +362,12 @@ export default function OvertimeApprovals() {
         />
       </Modal>
 
-      {/* View details — Approve/Reject available here for approvers while Pending */}
+      {/* View details — Approve/Reject available here for approvers when actionable */}
       <Modal
         isOpen={!!viewRow}
         onClose={() => setViewRow(null)}
         title="Overtime details"
-        footer={viewRow && viewRow.overtime_status === 'Pending' && canApprove && !isOwn(viewRow) ? (
+        footer={viewRow && ACTIONABLE.has(viewRow.overtime_status) && canApprove && !isOwn(viewRow) ? (
           <div className="flex flex-wrap justify-end gap-3">
             <Button variant="danger" size="md" label="Reject" icon={HiXMark} onClick={() => startAction(viewRow, 'reject')} />
             <Button variant="Approve" size="md" label="Approve" icon={HiCheck} onClick={() => startAction(viewRow, 'approve')} />
@@ -374,10 +386,37 @@ export default function OvertimeApprovals() {
             <dd className="col-span-2 text-slate-800">{Number(viewRow.overtime_hours || 0)} h</dd>
             <dt className="font-medium text-slate-500">Status</dt>
             <dd className="col-span-2"><StatusPill status={viewRow.overtime_status} /></dd>
-            <dt className="font-medium text-slate-500">Approver</dt>
-            <dd className="col-span-2 text-slate-800">{viewRow.overtime_status === 'Pending' ? '—' : (viewRow.approver_name || '—')}</dd>
             <dt className="font-medium text-slate-500">Description</dt>
             <dd className="col-span-2 text-slate-800 whitespace-pre-wrap">{viewRow.reason || '—'}</dd>
+
+            {/* Approval trail */}
+            <dt className="col-span-3 font-semibold text-slate-600 border-t border-slate-100 pt-2 mt-1">Approval Trail</dt>
+
+            <dt className="font-medium text-slate-500">Manager</dt>
+            <dd className="col-span-2 text-slate-800">
+              {viewRow.overtime_manager_approved_by
+                ? <span className="text-emerald-700 font-medium">✓ Approved</span>
+                : <span className="text-slate-400">Pending</span>}
+            </dd>
+
+            <dt className="font-medium text-slate-500">Dept Head</dt>
+            <dd className="col-span-2 text-slate-800">
+              {viewRow.overtime_dept_approved_by
+                ? <span className="text-emerald-700 font-medium">✓ Approved</span>
+                : viewRow.overtime_manager_approved_by
+                  ? <span className="text-amber-600">Pending</span>
+                  : <span className="text-slate-300">—</span>}
+            </dd>
+
+            <dt className="font-medium text-slate-500">HR</dt>
+            <dd className="col-span-2 text-slate-800">
+              {viewRow.overtime_hr_approved_by
+                ? <span className="text-emerald-700 font-medium">✓ Approved</span>
+                : viewRow.overtime_dept_approved_by
+                  ? <span className="text-amber-600">Pending</span>
+                  : <span className="text-slate-300">—</span>}
+            </dd>
+
             {viewRow.overtime_rejection_reason && (
               <>
                 <dt className="font-medium text-red-600">Rejection Reason</dt>

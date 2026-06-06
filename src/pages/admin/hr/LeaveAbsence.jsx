@@ -24,12 +24,14 @@ const EMPTY_FORM = {
 };
 
 function statusColor(s) {
-  if (s === 'Approved') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-  if (s === 'Pending HR Approval') return 'bg-blue-50 text-blue-700 border-blue-100';
-  if (s === 'Pending Manager Approval') return 'bg-amber-50 text-amber-700 border-amber-100';
-  if (s === 'Draft') return 'bg-slate-50 text-slate-700 border-slate-200';
-  if (s === 'Rejected by Manager' || s === 'Rejected by HR') return 'bg-red-50 text-red-700 border-red-100';
-  if (s === 'Cancelled') return 'bg-slate-50 text-slate-600 border-slate-100';
+  if (s === 'Approved')                  return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+  if (s === 'Pending HR Approval')       return 'bg-blue-50 text-blue-700 border-blue-100';
+  if (s === 'Pending Dept Approval')     return 'bg-indigo-50 text-indigo-700 border-indigo-100';
+  if (s === 'Pending Manager Approval')  return 'bg-amber-50 text-amber-700 border-amber-100';
+  if (s === 'Draft')                     return 'bg-slate-50 text-slate-700 border-slate-200';
+  if (s === 'Rejected by Manager' || s === 'Rejected by Dept' || s === 'Rejected by HR')
+                                         return 'bg-red-50 text-red-700 border-red-100';
+  if (s === 'Cancelled')                 return 'bg-slate-50 text-slate-600 border-slate-100';
   return 'bg-slate-50 text-slate-600 border-slate-100';
 }
 
@@ -284,7 +286,7 @@ export default function LeaveAbsence() {
           <button type="button" onClick={() => { setSelected(row); setViewModal(true); }} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700" title="View details">
             <HiEye className="h-4 w-4" />
           </button>
-          {canApprove && (row.status === 'Pending Manager Approval' || row.status === 'Pending HR Approval') && (
+          {canApprove && (row.status === 'Pending Manager Approval' || row.status === 'Pending Dept Approval' || row.status === 'Pending HR Approval') && (
             <>
               <button type="button" title="Approve" onClick={() => openAction(row, 'Approve')} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors">
                 <HiCheck className="h-4 w-4" />
@@ -299,7 +301,7 @@ export default function LeaveAbsence() {
                <HiCheck className="h-4 w-4" />
             </button>
           )}
-          {canApply && canManageRequest(row) && (row.status === 'Pending Manager Approval' || row.status === 'Pending HR Approval' || row.status === 'Draft' || row.status === 'Approved') && (
+          {canApply && canManageRequest(row) && (row.status === 'Pending Manager Approval' || row.status === 'Pending Dept Approval' || row.status === 'Pending HR Approval' || row.status === 'Draft' || row.status === 'Approved') && (
             <button type="button" title="Cancel" onClick={() => openAction(row, 'Cancel')} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700">
                <HiArrowDownTray className="h-4 w-4 rotate-180" />
             </button>
@@ -429,7 +431,7 @@ export default function LeaveAbsence() {
               className="h-10 min-w-[150px] cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]"
             >
               <option value="">All Statuses</option>
-              {['Draft','Pending Manager Approval','Pending HR Approval','Approved','Rejected by Manager','Rejected by HR','Cancelled'].map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
+              {['Draft','Pending Manager Approval','Pending Dept Approval','Pending HR Approval','Approved','Rejected by Manager','Rejected by Dept','Rejected by HR','Cancelled'].map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
             </select>
             <select
               value={leaveTypeF}
