@@ -83,36 +83,6 @@ const reviews = employees.slice(0, 10).map((e, idx) => ({
   status: idx % 2 === 0 ? 'Completed' : 'Pending',
 }))
 
-const analyticsData = {
-  headcount: [
-    { name: 'Engineering', value: 45 },
-    { name: 'Marketing', value: 25 },
-    { name: 'Sales', value: 38 },
-    { name: 'HR', value: 12 },
-    { name: 'Finance', value: 18 },
-  ],
-  attendance: [
-    { day: 'Mon', rate: 94 },
-    { day: 'Tue', rate: 96 },
-    { day: 'Wed', rate: 92 },
-    { day: 'Thu', rate: 95 },
-    { day: 'Fri', rate: 91 },
-  ],
-  attrition: [
-    { month: 'Jan', rate: 1.2 },
-    { month: 'Feb', rate: 1.5 },
-    { month: 'Mar', rate: 1.1 },
-    { month: 'Apr', rate: 0.8 },
-    { month: 'May', rate: 0.5 },
-  ],
-  performanceDist: [
-    { name: 'Exceeds', count: 25 },
-    { name: 'Meets', count: 45 },
-    { name: 'Developing', count: 15 },
-    { name: 'Unsatisfactory', count: 5 },
-  ]
-}
-
 function StarRating({ label, value, onChange }) {
   return (
     <div className="w-full">
@@ -297,6 +267,7 @@ export default function Performance() {
   const [files, setFiles] = useState({})
   const [competencies, setCompetencies] = useState([])
   const [compForm, setCompForm] = useState({ competencyName: '' })
+  const [editingCompId, setEditingCompId] = useState(null)
   const [compSearch, setCompSearch] = useState('')
   const [compsLoading, setCompsLoading] = useState(false)
   const [compsError, setCompsError] = useState(null)
@@ -333,6 +304,16 @@ export default function Performance() {
   const [cycleDropdownList, setCycleDropdownList] = useState([])
   const [employeeDropdownList, setEmployeeDropdownList] = useState([])
 
+  // Performance Reports / analytics state (real, tenant-scoped)
+  const [analytics, setAnalytics] = useState({
+    byDepartment: [],
+    performanceDist: [],
+    byStatus: [],
+    ratingTrend: [],
+    summary: { total: 0, avgRating: 0, completed: 0, approved: 0 }
+  })
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+
   const isHR = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin'
 
   // Fetch performance cycles and summary on component mount
@@ -368,6 +349,33 @@ export default function Performance() {
       fetchCompetencies(compSearch)
     }
   }, [compSearch, isHR])
+
+  // Fetch analytics when the Performance Reports tab is opened
+  useEffect(() => {
+    if (isHR && activeTab === 'analytics') {
+      fetchAnalytics()
+    }
+  }, [activeTab, isHR])
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true)
+    try {
+      const response = await performanceAssessmentAPI.getAnalytics()
+      if (response.success && response.data) {
+        setAnalytics({
+          byDepartment: response.data.byDepartment || [],
+          performanceDist: response.data.performanceDist || [],
+          byStatus: response.data.byStatus || [],
+          ratingTrend: response.data.ratingTrend || [],
+          summary: response.data.summary || { total: 0, avgRating: 0, completed: 0, approved: 0 }
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load performance analytics:', error)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }
 
   /**
    * Fetch all performance cycles from API
@@ -1046,22 +1054,40 @@ export default function Performance() {
     }
   }
 
-  const handleAddCompetency = async (e) => {
+  const openCompModalForCreate = () => {
+    setEditingCompId(null)
+    setCompForm({ competencyName: '' })
+    setCompModalOpen(true)
+  }
+
+  const openCompModalForEdit = (comp) => {
+    setEditingCompId(comp.id)
+    setCompForm({ competencyName: comp.competencyName || comp.name || '' })
+    setCompModalOpen(true)
+  }
+
+  const closeCompModal = () => {
+    setCompModalOpen(false)
+    setEditingCompId(null)
+    setCompForm({ competencyName: '' })
+  }
+
+  const handleSaveCompetency = async (e) => {
     e.preventDefault()
     if (!compForm.competencyName.trim()) return
     try {
-      const response = await competenciesAPI.createCompetency({
-        competencyName: compForm.competencyName.trim()
-      })
+      const payload = { competencyName: compForm.competencyName.trim() }
+      const response = editingCompId
+        ? await competenciesAPI.updateCompetency(editingCompId, payload)
+        : await competenciesAPI.createCompetency(payload)
       if (response.success) {
-        setCompForm({ competencyName: '' })
-        setCompModalOpen(false)
+        closeCompModal()
         await fetchCompetencies(compSearch)
         await fetchCompsSummary()
         await fetchDropdownData()
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to add competency')
+      alert(error.response?.data?.message || `Failed to ${editingCompId ? 'update' : 'add'} competency`)
     }
   }
 
@@ -1533,7 +1559,7 @@ export default function Performance() {
                 <h2 className="text-sm font-semibold text-white">Competency Registry</h2>
                 {isHR && (
                   <button
-                    onClick={() => { setCompForm({ competencyName: '' }); setCompModalOpen(true) }}
+                    onClick={openCompModalForCreate}
                     className="inline-flex items-center gap-1.5 rounded-none bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20"
                   >
                     <HiPlus className="h-3.5 w-3.5" /> Add Competency
@@ -1597,7 +1623,14 @@ export default function Performance() {
                         </td>
                         {isHR && (
                           <td className="px-5 py-4">
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => openCompModalForEdit(comp)}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+                                aria-label="Edit"
+                              >
+                                <HiPencilSquare className="h-4 w-4" />
+                              </button>
                               <button
                                 onClick={() => handleDeleteCompetency(comp.id)}
                                 className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-50 text-red-500 transition hover:bg-red-100"
@@ -1626,26 +1659,31 @@ export default function Performance() {
 
         {activeTab === 'analytics' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {analyticsLoading && (
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                <HiClock className="h-4 w-4 animate-pulse text-[#0F766E]" /> Loading analytics…
+              </div>
+            )}
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    <HiUserGroup className="h-4 w-4 text-[#0F766E]" /> Headcount Distribution
+                    <HiUserGroup className="h-4 w-4 text-[#0F766E]" /> Assessments by Department
                   </h3>
                   <div className="h-2 w-8 bg-slate-100" />
                 </div>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analyticsData.headcount}>
+                    <BarChart data={analytics.byDepartment}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900, textAnchor: 'middle' }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} allowDecimals={false} />
                       <Tooltip
                         contentStyle={{ borderRadius: '0px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }}
                         cursor={{ fill: '#f8fafc' }}
                       />
                       <Bar dataKey="value" radius={[0, 0, 0, 0]}>
-                        {analyticsData.headcount.map((entry, index) => (
+                        {analytics.byDepartment.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Bar>
@@ -1665,7 +1703,7 @@ export default function Performance() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={analyticsData.performanceDist}
+                        data={analytics.performanceDist}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -1675,7 +1713,7 @@ export default function Performance() {
                         stroke="#fff"
                         strokeWidth={2}
                       >
-                        {analyticsData.performanceDist.map((entry, index) => (
+                        {analytics.performanceDist.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -1684,7 +1722,7 @@ export default function Performance() {
                   </ResponsiveContainer>
                 </div>
                 <div className="grid grid-cols-4 gap-4 mt-4 border-t border-slate-50 pt-6">
-                  {analyticsData.performanceDist.map((d, i) => (
+                  {analytics.performanceDist.map((d, i) => (
                     <div key={i} className="text-center">
                       <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">{d.name}</div>
                       <div className="text-sm font-black text-slate-900 tracking-tight">{d.count}</div>
@@ -1697,11 +1735,11 @@ export default function Performance() {
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-50 pb-4">
-                  <HiClock className="h-4 w-4 text-[#0F766E]" /> Attendance Velocity
+                  <HiClock className="h-4 w-4 text-[#0F766E]" /> Average Rating by Cycle
                 </h3>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={analyticsData.attendance}>
+                    <AreaChart data={analytics.ratingTrend}>
                       <defs>
                         <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#0F766E" stopOpacity={0.15} />
@@ -1709,8 +1747,8 @@ export default function Performance() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
-                      <YAxis domain={[80, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
+                      <XAxis dataKey="cycle" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
+                      <YAxis domain={[0, 5]} axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
                       <Tooltip contentStyle={{ borderRadius: '0px', border: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '900' }} />
                       <Area type="monotone" dataKey="rate" stroke="#0F766E" strokeWidth={2} fillOpacity={1} fill="url(#colorRate)" />
                     </AreaChart>
@@ -1719,18 +1757,22 @@ export default function Performance() {
               </div>
 
               <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-50 pb-4 text-red-600">
-                  <HiArrowTrendingUp className="h-4 w-4" /> Systemic Attrition Risk
+                <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-50 pb-4">
+                  <HiArrowTrendingUp className="h-4 w-4 text-[#0F766E]" /> Assessment Status Breakdown
                 </h3>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={analyticsData.attrition}>
+                    <BarChart data={analytics.byStatus}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
-                      <Tooltip contentStyle={{ borderRadius: '0px', border: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '900' }} />
-                      <Line type="step" dataKey="rate" stroke="#EF4444" strokeWidth={2} dot={{ fill: '#EF4444', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
-                    </LineChart>
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b', fontWeight: 900 }} allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: '0px', border: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '900' }} cursor={{ fill: '#f8fafc' }} />
+                      <Bar dataKey="count" radius={[0, 0, 0, 0]}>
+                        {analytics.byStatus.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -1738,19 +1780,27 @@ export default function Performance() {
 
             <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
               <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">
-                <HiClipboardDocumentCheck className="h-4 w-4 text-[#0F766E]" /> Compliance Quota Report
+                <HiClipboardDocumentCheck className="h-4 w-4 text-[#0F766E]" /> Performance Snapshot
               </h3>
               <div className="grid gap-6 md:grid-cols-4">
-                {[
-                  { label: 'Visa Authentication', value: 95, color: 'bg-emerald-500' },
-                  { label: 'Insurance Verification', value: 82, color: 'bg-amber-500' },
-                  { label: 'Contract Integrity', value: 100, color: 'bg-[#0F766E]' },
-                  { label: 'KYC Documentation', value: 98, color: 'bg-teal-500' }
-                ].map((item, i) => (
+                {(() => {
+                  const total = analytics.summary.total || 0
+                  const completed = analytics.summary.completed || 0
+                  const approved = analytics.summary.approved || 0
+                  const completedPct = total ? Math.round((completed / total) * 100) : 0
+                  const approvedPct = total ? Math.round((approved / total) * 100) : 0
+                  const avgPct = Math.round(((analytics.summary.avgRating || 0) / 5) * 100)
+                  return [
+                    { label: 'Total Assessments', display: String(total), value: total ? 100 : 0, color: 'bg-[#0F766E]' },
+                    { label: 'Avg Rating (/5)', display: Number(analytics.summary.avgRating || 0).toFixed(2), value: avgPct, color: 'bg-emerald-500' },
+                    { label: 'Completed', display: `${completedPct}%`, value: completedPct, color: 'bg-teal-500' },
+                    { label: 'Approved', display: `${approvedPct}%`, value: approvedPct, color: 'bg-amber-500' }
+                  ]
+                })().map((item, i) => (
                   <div key={i} className="rounded-none border border-slate-100 p-5 bg-slate-50/30">
                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">{item.label}</div>
                     <div className="flex items-end justify-between gap-4">
-                      <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{item.value}%</div>
+                      <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{item.display}</div>
                       <div className="flex-1 h-1.5 bg-slate-200 rounded-none overflow-hidden mb-1">
                         <div className={`h-full ${item.color}`} style={{ width: `${item.value}%` }} />
                       </div>
@@ -2119,16 +2169,16 @@ export default function Performance() {
       {/* ── Add Competency Modal ─────────────────────────────────────────── */}
       <Modal
         isOpen={compModalOpen}
-        onClose={() => { setCompModalOpen(false); setCompForm({ competencyName: '' }) }}
+        onClose={closeCompModal}
         size="sm"
         header={
           <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-bold text-slate-900">Add Competency</h2>
-            <p className="text-xs font-medium text-slate-500">Enter a new competency to add to the registry.</p>
+            <h2 className="text-lg font-bold text-slate-900">{editingCompId ? 'Edit Competency' : 'Add Competency'}</h2>
+            <p className="text-xs font-medium text-slate-500">{editingCompId ? 'Update the competency name.' : 'Enter a new competency to add to the registry.'}</p>
           </div>
         }
       >
-        <form onSubmit={handleAddCompetency} className="pt-2">
+        <form onSubmit={handleSaveCompetency} className="pt-2">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-800">Competency Name</label>
             <input
@@ -2144,7 +2194,7 @@ export default function Performance() {
           <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
             <button
               type="button"
-              onClick={() => { setCompModalOpen(false); setCompForm({ competencyName: '' }) }}
+              onClick={closeCompModal}
               className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Cancel
@@ -2153,7 +2203,7 @@ export default function Performance() {
               type="submit"
               className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors"
             >
-              Add Competency
+              {editingCompId ? 'Save Changes' : 'Add Competency'}
             </button>
           </div>
         </form>
