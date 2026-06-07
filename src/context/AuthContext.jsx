@@ -442,6 +442,7 @@ export function AuthProvider({ children }) {
           plan_details: data.plan_details || [],
           tenant_features: data.tenant_features || [],
           permissions: data.permissions || prev.permissions || [],
+          dataScope: data.dataScope ?? prev.dataScope ?? null,
           billing: data.billing ?? prev.billing ?? null,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));

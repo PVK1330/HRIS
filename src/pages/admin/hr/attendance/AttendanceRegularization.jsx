@@ -3,6 +3,7 @@ import {
   HiCheck,
   HiPaperAirplane,
   HiXMark,
+  HiEye,
   HiMagnifyingGlass,
 } from 'react-icons/hi2'
 import { Badge } from '../../../../components/ui/Badge.jsx'
@@ -41,6 +42,7 @@ export default function AttendanceRegularization() {
   const [actionRow, setActionRow] = useState(null)
   const [actionType, setActionType] = useState('')
   const [reason, setReason] = useState('')
+  const [viewRow, setViewRow] = useState(null)
   
   const [modalOpen, setModalOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -181,9 +183,20 @@ export default function AttendanceRegularization() {
               label: 'Actions',
               render: (_, r) => {
                 const isPending = r.regularization_status === 'Pending'
+                // Never allow acting on your own request (no self-approval),
+                // even if you hold approve/reject permission.
+                const isOwn = r.is_self === true
                 return (
                   <div className="flex items-center justify-center gap-2">
-                    {isPending && canApprove && (
+                    <button
+                      type="button"
+                      onClick={() => setViewRow(r)}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                      title="View details"
+                    >
+                      <HiEye className="h-4 w-4" />
+                    </button>
+                    {isPending && canApprove && !isOwn && (
                       <>
                         <button
                           type="button"
@@ -312,6 +325,64 @@ export default function AttendanceRegularization() {
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           rows={3}
         />
+      </Modal>
+
+      {/* View details */}
+      <Modal
+        isOpen={!!viewRow}
+        onClose={() => setViewRow(null)}
+        size="md"
+        showClose
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Regularization Details</h2>
+            <p className="text-xs font-medium text-slate-500">Request submitted for attendance correction.</p>
+          </div>
+        }
+      >
+        {viewRow && (
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 pt-2 sm:grid-cols-2">
+            <div>
+              <dt className={labelClass}>Employee</dt>
+              <dd className="mt-1 text-sm text-slate-800">{viewRow.employee_name || '—'}</dd>
+            </div>
+            <div>
+              <dt className={labelClass}>Employee ID</dt>
+              <dd className="mt-1 text-sm text-slate-800">{viewRow.emp_id || '—'}</dd>
+            </div>
+            <div>
+              <dt className={labelClass}>Department</dt>
+              <dd className="mt-1 text-sm text-slate-800">{viewRow.department || '—'}</dd>
+            </div>
+            <div>
+              <dt className={labelClass}>Date</dt>
+              <dd className="mt-1 text-sm text-slate-800">{viewRow.date || '—'}</dd>
+            </div>
+            <div>
+              <dt className={labelClass}>Status</dt>
+              <dd className="mt-1"><Badge>{viewRow.regularization_status}</Badge></dd>
+            </div>
+            <div>
+              <dt className={labelClass}>Approver level</dt>
+              <dd className="mt-1 text-sm text-slate-800">
+                {viewRow.pending_approver_role
+                  || (viewRow.regularization_status === 'Pending'
+                    ? `Level ${viewRow.pending_level || viewRow.current_approval_level || '—'}`
+                    : '—')}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className={labelClass}>Reason</dt>
+              <dd className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{viewRow.regularization_reason || '—'}</dd>
+            </div>
+            {viewRow.regularization_remarks && (
+              <div className="sm:col-span-2">
+                <dt className={labelClass}>Approver remarks</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{viewRow.regularization_remarks}</dd>
+              </div>
+            )}
+          </dl>
+        )}
       </Modal>
     </div>
   )
