@@ -278,6 +278,9 @@ export default function EmployeeDirectory() {
   const [designationsCatalog, setDesignationsCatalog] = useState([])
   const [deptsLoading, setDeptsLoading] = useState(false)
   const [managerOptions, setManagerOptions] = useState([])
+  // Incrementing either tick aborts any in-flight request and starts a fresh one.
+  const [refreshTick, setRefreshTick] = useState(0)
+  const [statsTick, setStatsTick] = useState(0)
 
   const departmentRows = useMemo(() => {
     if (departmentsCatalog.length) return departmentsCatalog
@@ -360,26 +363,7 @@ export default function EmployeeDirectory() {
     setFormData(prev => ({ ...prev, workExperience: updated }))
   }
 
-  // ── Data fetching ──────────────────────────────────────────────────────────
-
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const data = await listEmployees({
-        page: currentPage, limit: 8, search,
-        department: dept, status, workMode, jobTitle: job, workLocation: loc,
-      })
-      if (data) {
-        const rows = data.employees || data.records || []
-        setEmployeeList(rows.map(mapEmployeeList))
-        setTotalRecords(data.total ?? data.pagination?.total ?? 0)
-      }
-    } catch (err) {
-      console.error(err)
-      toast.error('Could not load employees.')
-    }
-    finally { setLoading(false) }
-  }
+  // ── Data fetching — see useEffects below ──────────────────────────────────
 
   const runEmployeeExport = async (type) => {
     const ext = type === 'pdf' ? 'pdf' : 'xlsx'
@@ -407,14 +391,6 @@ export default function EmployeeDirectory() {
     }
   }
 
-  const fetchStatsAndFilters = async () => {
-    try {
-      const [s, f] = await Promise.all([getEmployeeStats(), getFilterOptions()])
-      if (s) setStats(s)
-      if (f) setFilterOptions(f)
-    } catch (err) { console.error(err) }
-  }
-
   useEffect(() => {
     const onOutside = (e) => {
       if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false)
@@ -423,11 +399,60 @@ export default function EmployeeDirectory() {
     return () => document.removeEventListener('mousedown', onOutside)
   }, [exportOpen])
 
-  useEffect(() => { fetchStatsAndFilters() }, [])
+  // Fetch stats + filter options; re-runs when statsTick increments (post-create/delete).
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+    ;(async () => {
+      try {
+        const [s, f] = await Promise.all([
+          getEmployeeStats({ signal }),
+          getFilterOptions({ signal }),
+        ])
+        if (signal.aborted) return
+        if (s) setStats(s)
+        if (f) setFilterOptions(f)
+      } catch (err) {
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return
+        console.error(err)
+      }
+    })()
+    return () => controller.abort()
+  }, [statsTick])
+
   useEffect(() => {
     setCurrentPage(1)
   }, [search, dept, job, loc, status, workMode])
-  useEffect(() => { fetchData() }, [currentPage, search, dept, job, loc, status, workMode])
+
+  // Fetch paginated employee list; aborts previous request on filter/page change or unmount.
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+    ;(async () => {
+      setLoading(true)
+      try {
+        const data = await listEmployees({
+          signal,
+          page: currentPage, limit: 8, search,
+          department: dept, status, workMode, jobTitle: job, workLocation: loc,
+        })
+        if (signal.aborted) return
+        if (data) {
+          const rows = data.employees || data.records || []
+          setEmployeeList(rows.map(mapEmployeeList))
+          setTotalRecords(data.total ?? data.pagination?.total ?? 0)
+        }
+      } catch (err) {
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return
+        console.error(err)
+        toast.error('Could not load employees.')
+      } finally {
+        if (!signal.aborted) setLoading(false)
+      }
+    })()
+    return () => controller.abort()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, search, dept, job, loc, status, workMode, refreshTick])
 
   useEffect(() => {
     let cancelled = false
@@ -837,8 +862,8 @@ export default function EmployeeDirectory() {
       }
       profileFileRef.current = null
       handleCloseModal()
-      fetchData()
-      fetchStatsAndFilters()
+      setRefreshTick((t) => t + 1)
+      setStatsTick((t) => t + 1)
     } catch (err) {
       console.error(err)
       const apiErrors = err?.response?.data?.errors
@@ -975,8 +1000,8 @@ export default function EmployeeDirectory() {
       try {
         await deleteEmployee(employee.id)
         setViewModalOpen(false)
-        fetchData()
-        fetchStatsAndFilters()
+        setRefreshTick((t) => t + 1)
+        setStatsTick((t) => t + 1)
         toast.success('Employee archived.')
       } catch (err) {
         console.error(err)

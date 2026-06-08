@@ -18,7 +18,7 @@ import {
   TextInput,
   Toggle,
 } from '../components/ui'
-import { seedUkHolidays } from '../../../../services/holidaysService.js'
+import { seedHolidays } from '../../../../services/holidayService.js'
 
 function buildDraft(data) {
   if (!data) return null
@@ -563,7 +563,7 @@ function HolidaySeedPanel() {
     setSeeding(true)
     setMsg('')
     try {
-      const result = await seedUkHolidays({ year: parseInt(year, 10), regions })
+      const result = await seedHolidays({ year: parseInt(year, 10), regions })
       setMsg(`Seeded ${result.seeded?.length || 0} calendar(s) for ${year}`)
     } catch (err) {
       setMsg(err?.response?.data?.message || err?.message || 'Seed failed')

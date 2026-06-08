@@ -25,6 +25,7 @@ import { listEmployees } from '../../../services/employeeService.js'
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { useAuth } from '../../../context/AuthContext.jsx'
+import { sanitizeHtml } from '../../../utils/sanitizeHtml.js'
 
 const CATEGORIES  = ['Recruitment', 'Compliance', 'Performance', 'Exit', 'HR', 'Finance', 'Leave', 'Disciplinary']
 const TYPES       = ['Letter', 'Form', 'Certificate', 'Report']
@@ -674,7 +675,7 @@ export default function LettersTemplates() {
                 onChange={(e) => setForm(f => ({ ...f, body: e.target.value }))}
               />
               <div className="absolute right-6 bottom-6 flex items-center gap-2">
-                <button onClick={() => navigate('/admin/letters/builder/new')} className="h-11 px-8 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all shadow-xl shadow-slate-900/10 flex items-center gap-2">
+                <button type="button" onClick={() => navigate('/admin/letters/builder/new')} className="h-11 px-8 rounded-none bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black transition-all shadow-xl shadow-slate-900/10 flex items-center gap-2">
                   <HiPlus className="h-4 w-4" /> DRAFT_PROTOCOL
                 </button>
                 <TagPicker
@@ -968,9 +969,9 @@ export default function LettersTemplates() {
                     <div 
                       className="text-[13px] text-slate-800 leading-relaxed max-w-none font-sans [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-6 [&_h2]:text-center [&_h2]:text-[#0F766E] [&_p]:mb-4 [&_p]:leading-relaxed [&_strong]:font-bold [&_em]:italic [&_table]:w-full [&_table]:border-collapse [&_table]:my-6 [&_td]:border-b [&_td]:border-slate-200 [&_td]:py-3 [&_td]:px-4"
                       dangerouslySetInnerHTML={{
-                        __html: dispatchEmployeeId
+                        __html: sanitizeHtml(dispatchEmployeeId
                           ? renderBody(selectedTemplate.body, empList.find(e => String(e.id) === String(dispatchEmployeeId)))
-                          : selectedTemplate.body
+                          : selectedTemplate.body)
                       }}
                     />
                   </div>

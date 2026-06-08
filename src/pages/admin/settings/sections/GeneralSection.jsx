@@ -173,7 +173,7 @@ export default function GeneralSection({ registerToolbar }) {
             className="font-medium"
           />
         </FieldRow>
-        <FieldRow label="Identity Asset (Logo)" hint="PNG, JPG, SVG • Max 2MB" align="left">
+        <FieldRow label="Identity Asset (Logo)" hint="PNG, JPG • Max 2MB" align="left">
           <div className="flex flex-wrap items-center gap-3">
             {draft.logoUrl ? (
               <div className="group relative">
@@ -188,7 +188,7 @@ export default function GeneralSection({ registerToolbar }) {
                 No Asset
               </div>
             )}
-            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml" className="hidden" onChange={onLogoPick} />
+            <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={onLogoPick} />
             <button
               type="button"
               disabled={uploadingLogo}

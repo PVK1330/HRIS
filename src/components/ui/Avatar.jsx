@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 const presets = [
   'bg-blue-600 text-white',
   'bg-emerald-600 text-white',
@@ -23,7 +25,7 @@ function getInitials(name) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
-export function Avatar({ name, size = 'md', bgColor }) {
+export const Avatar = memo(function Avatar({ name, size = 'md', bgColor }) {
   const initials = getInitials(name)
   const hash = name ? name.charCodeAt(0) % presets.length : 0
   const palette = bgColor ?? presets[hash]
@@ -37,4 +39,4 @@ export function Avatar({ name, size = 'md', bgColor }) {
       {initials}
     </div>
   )
-}
+})

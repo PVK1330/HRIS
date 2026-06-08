@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { io } from 'socket.io-client'
+import { useSocket } from '../../../hooks/useSocket.js'
 import {
   HiMagnifyingGlass, HiChatBubbleLeftRight, HiPaperAirplane,
   HiPlus, HiCheckBadge, HiArrowPath, HiPaperClip, HiDocument,
@@ -64,8 +64,9 @@ function replaceOptimisticMessage(prev, optimisticId, msg) {
 
 export default function Messages() {
   const { user } = useAuth()
+  const { socket, connected } = useSocket()
   const socketRef = useRef(null)
-  const [connected, setConnected] = useState(false)
+  socketRef.current = socket
 
   const [conversations, setConversations] = useState([])
   const [empList, setEmpList] = useState([])
@@ -164,31 +165,20 @@ export default function Messages() {
     activeConvIdRef.current = activeConvId
   }, [activeConvId])
 
-  // ── Socket (single connection; use activeConvIdRef so switching chats does not reconnect) ──
+  // ── Socket event listeners (attach to shared socket; clean up on unmount) ──
   useEffect(() => {
-    const token = localStorage.getItem('hris_token')
-    if (!token) return
-
-    const socket = io(SOCKET_URL, {
-      path: '/socket.io',
-      auth: { token },
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-    })
-    socketRef.current = socket
+    if (!socket) return
 
     const joinCurrentRoom = () => {
       const cid = activeConvIdRef.current
       if (isNumericConvId(cid)) socket.emit('join_conversation', Number(cid))
     }
+    // Re-join the active room after a reconnect
+    socket.on('connect', joinCurrentRoom)
+    // Join immediately if the socket is already connected when Messages mounts
+    if (socket.connected) joinCurrentRoom()
 
-    socket.on('connect', () => {
-      setConnected(true)
-      joinCurrentRoom()
-    })
-    socket.on('disconnect', () => setConnected(false))
-
-    socket.on('new_message', (msg) => {
+    function handleNewMessage(msg) {
       const cid = msg.conversation_id
       const viewing = activeConvIdRef.current
       const same = isNumericConvId(viewing) && String(cid ?? '') === String(viewing)
@@ -198,77 +188,66 @@ export default function Messages() {
       }
       setConversations(prev => {
         const exists = prev.some(c => String(c.id) === String(cid))
-        if (!exists) {
-          loadConversationsRef.current?.()
-          return prev
-        }
+        if (!exists) { loadConversationsRef.current?.(); return prev }
         return prev.map(c =>
           String(c.id) === String(cid)
-            ? {
-              ...c, last_message: msg.body, last_message_at: msg.created_at,
-              unread_count: same ? 0 : (c.unread_count || 0) + 1,
-            }
+            ? { ...c, last_message: msg.body, last_message_at: msg.created_at, unread_count: same ? 0 : (c.unread_count || 0) + 1 }
             : c
         )
       })
-    })
-
-    socket.on('online_users_list', ({ onlineIds }) => {
-      setOnlineUserIds(new Set(onlineIds))
-    })
-    socket.on('user:online', ({ userId }) => {
-      setOnlineUserIds(prev => {
-        const next = new Set(prev)
-        next.add(userId)
-        return next
-      })
-    })
-    socket.on('user:offline', ({ userId }) => {
-      setOnlineUserIds(prev => {
-        const next = new Set(prev)
-        next.delete(userId)
-        return next
-      })
-    })
-    socket.on('user_typing', ({ conversationId, isTyping }) => {
+    }
+    function handleOnlineList({ onlineIds }) { setOnlineUserIds(new Set(onlineIds)) }
+    function handleUserOnline({ userId }) {
+      setOnlineUserIds(prev => { const next = new Set(prev); next.add(userId); return next })
+    }
+    function handleUserOffline({ userId }) {
+      setOnlineUserIds(prev => { const next = new Set(prev); next.delete(userId); return next })
+    }
+    function handleUserTyping({ conversationId, isTyping }) {
       if (String(conversationId ?? '') === String(activeConvIdRef.current ?? '')) setTyping(isTyping)
-    })
-    socket.on('messages_read', ({ conversationId }) => {
+    }
+    function handleMessagesRead({ conversationId }) {
       if (String(conversationId ?? '') === String(activeConvIdRef.current ?? ''))
         setMessages(prev => prev.map(m => ({ ...m, is_read: true })))
-    })
-
-    socket.on('conversation:updated', ({ conversationId, lastMessage, lastMessageAt, message }) => {
+    }
+    function handleConvUpdated({ conversationId, lastMessage, lastMessageAt, message }) {
       const viewing = activeConvIdRef.current
       const cid = conversationId
       const same = isNumericConvId(viewing) && String(cid ?? '') === String(viewing)
-
       if (same && message) {
         setMessages(prev => mergeIncomingMessage(prev, message))
         socket.emit('mark_read', { conversationId: Number(cid) })
       }
-
       setConversations(prev => {
         const exists = prev.some(c => String(c.id) === String(cid))
-        if (!exists) {
-          loadConversationsRef.current?.()
-          return prev
-        }
+        if (!exists) { loadConversationsRef.current?.(); return prev }
         return prev.map(c =>
           String(c.id) === String(cid)
-            ? {
-              ...c,
-              last_message: lastMessage,
-              last_message_at: lastMessageAt,
-              unread_count: same ? 0 : (c.unread_count || 0) + 1,
-            }
+            ? { ...c, last_message: lastMessage, last_message_at: lastMessageAt, unread_count: same ? 0 : (c.unread_count || 0) + 1 }
             : c
         )
       })
-    })
+    }
 
-    return () => { socket.disconnect(); socketRef.current = null }
-  }, [])
+    socket.on('new_message', handleNewMessage)
+    socket.on('online_users_list', handleOnlineList)
+    socket.on('user:online', handleUserOnline)
+    socket.on('user:offline', handleUserOffline)
+    socket.on('user_typing', handleUserTyping)
+    socket.on('messages_read', handleMessagesRead)
+    socket.on('conversation:updated', handleConvUpdated)
+
+    return () => {
+      socket.off('connect', joinCurrentRoom)
+      socket.off('new_message', handleNewMessage)
+      socket.off('online_users_list', handleOnlineList)
+      socket.off('user:online', handleUserOnline)
+      socket.off('user:offline', handleUserOffline)
+      socket.off('user_typing', handleUserTyping)
+      socket.off('messages_read', handleMessagesRead)
+      socket.off('conversation:updated', handleConvUpdated)
+    }
+  }, [socket])
 
   // Join / leave conversation rooms when selection changes (without tearing down the socket)
   useEffect(() => {
