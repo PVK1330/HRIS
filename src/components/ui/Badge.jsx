@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 const colorClasses = {
   green: 'bg-green-100 text-green-700',
   red: 'bg-red-100 text-red-600',
@@ -13,7 +15,7 @@ const colorClasses = {
   coral: 'bg-rose-100 text-rose-600',
 }
 
-export function Badge({ label, color = 'gray', className = '' }) {
+export const Badge = memo(function Badge({ label, color = 'gray', className = '' }) {
   const c = colorClasses[color] ?? colorClasses.gray
   return (
     <span
@@ -22,4 +24,4 @@ export function Badge({ label, color = 'gray', className = '' }) {
       {label}
     </span>
   )
-}
+})

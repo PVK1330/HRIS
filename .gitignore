@@ -12,6 +12,10 @@ dist.zip
 dist-ssr
 *.local
 
+# Backup / stale copies
+*.bak
+*.old
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

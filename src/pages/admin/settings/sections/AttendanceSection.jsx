@@ -18,7 +18,7 @@ import {
   TextInput,
   Toggle,
 } from '../components/ui'
-import { seedUkHolidays } from '../../../../services/holidaysService.js'
+import { seedHolidays } from '../../../../services/holidayService.js'
 
 function buildDraft(data) {
   if (!data) return null
@@ -205,7 +205,7 @@ export default function AttendanceSection({ registerToolbar }) {
               onChange={(e) =>
                 updateWorkHours({ breakDurationMinutes: parseInt(e.target.value, 10) })
               }
-              className="h-10 w-full max-w-[200px] rounded-none border border-gray-200 bg-white px-3 text-sm text-gray-800 shadow-sm focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15"
+              className="h-9 w-full max-w-[200px] cursor-pointer rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 shadow-2xs outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]"
             >
               {BREAK_DURATION_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -228,7 +228,7 @@ export default function AttendanceSection({ registerToolbar }) {
             />
           </FieldRow>
           <FieldRow label="Automated Quota Calculus">
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.workHours.autoCalculateHours}
                 onChange={(v) => updateWorkHours({ autoCalculateHours: v })}
@@ -252,7 +252,7 @@ export default function AttendanceSection({ registerToolbar }) {
             />
           </FieldRow>
           <FieldRow label="Chronological Grace (10M)" hint="Late mark buffer">
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.attendanceRules.tenMinuteBuffer}
                 onChange={(v) => updateAttendanceRules({ tenMinuteBuffer: v })}
@@ -260,7 +260,7 @@ export default function AttendanceSection({ registerToolbar }) {
             </div>
           </FieldRow>
           <FieldRow label="Automated Punctuality Audit">
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.attendanceRules.lateMarkAutoCalculation}
                 onChange={(v) => updateAttendanceRules({ lateMarkAutoCalculation: v })}
@@ -320,7 +320,7 @@ export default function AttendanceSection({ registerToolbar }) {
             />
           </FieldRow>
           <FieldRow label="Allow Self-Regularisation" hint="Employees can raise their own corrections.">
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.regularizationSettings.allowSelf}
                 onChange={(v) => updateRegularization({ allowSelf: v })}
@@ -338,7 +338,7 @@ export default function AttendanceSection({ registerToolbar }) {
             />
           </FieldRow>
           <FieldRow label="Auto-approve if Manager Absent" hint="Auto-approve after the days below if the manager is on leave.">
-            <div className="flex h-10 items-center gap-3">
+            <div className="flex min-h-9 items-center gap-3">
               <Toggle
                 checked={draft.regularizationSettings.autoApproveEnabled}
                 onChange={(v) => updateRegularization({ autoApproveEnabled: v })}
@@ -367,7 +367,7 @@ export default function AttendanceSection({ registerToolbar }) {
             label="Enable Overtime Tracking"
             hint="When on, the Overtime tab appears in the Attendance module for all users with access."
           >
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.overtimeSettings.overtimeEligibility}
                 onChange={(v) => updateOvertime({ overtimeEligibility: v })}
@@ -437,7 +437,7 @@ export default function AttendanceSection({ registerToolbar }) {
             </div>
           </FieldRow>
           <FieldRow label="Require Reason for Overtime" hint="Overtime entries must include a reason.">
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.overtimeSettings.requireReason}
                 onChange={(v) => updateOvertime({ requireReason: v })}
@@ -446,7 +446,7 @@ export default function AttendanceSection({ registerToolbar }) {
           </FieldRow>
       </SectionCard>
 
-      <SectionCard title="Shift Settings" description="Default shift and employee shift visibility">
+      {/* <SectionCard title="Shift Settings" description="Default shift and employee shift visibility">
           <FieldRow label="Default Shift" hint="Applied to new employees by default.">
             <SelectInput
               options={SHIFT_TYPES}
@@ -455,7 +455,7 @@ export default function AttendanceSection({ registerToolbar }) {
             />
           </FieldRow>
           <FieldRow label="Allow Employees to View Their Shift" hint="Show the assigned shift in the employee portal.">
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.shiftSettings.allowEmployeeView}
                 onChange={(v) => updateShift({ allowEmployeeView: v })}
@@ -463,14 +463,14 @@ export default function AttendanceSection({ registerToolbar }) {
             </div>
           </FieldRow>
           <FieldRow label="Shift Change Requests" hint="Let employees request a shift change.">
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.shiftSettings.changeRequestEnabled}
                 onChange={(v) => updateShift({ changeRequestEnabled: v })}
               />
             </div>
           </FieldRow>
-      </SectionCard>
+      </SectionCard> */}
 
       <SectionCard title="General Attendance Settings" description="Work week, grace, and marking rules">
           <FieldRow label="Work Week" hint="Days counted as working days." colSpan>
@@ -525,7 +525,7 @@ export default function AttendanceSection({ registerToolbar }) {
             </div>
           </FieldRow>
           <FieldRow label="Biometric Sync" hint="Sync punches from biometric devices.">
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.generalSettings.biometricSyncEnabled}
                 onChange={(v) => updateGeneral({ biometricSyncEnabled: v })}
@@ -533,7 +533,7 @@ export default function AttendanceSection({ registerToolbar }) {
             </div>
           </FieldRow>
           <FieldRow label="WFH Marking Allowed" hint="Allow employees to mark Work From Home.">
-            <div className="flex h-10 items-center">
+            <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.generalSettings.wfhMarkingAllowed}
                 onChange={(v) => updateGeneral({ wfhMarkingAllowed: v })}
@@ -563,7 +563,7 @@ function HolidaySeedPanel() {
     setSeeding(true)
     setMsg('')
     try {
-      const result = await seedUkHolidays({ year: parseInt(year, 10), regions })
+      const result = await seedHolidays({ year: parseInt(year, 10), regions })
       setMsg(`Seeded ${result.seeded?.length || 0} calendar(s) for ${year}`)
     } catch (err) {
       setMsg(err?.response?.data?.message || err?.message || 'Seed failed')
@@ -572,45 +572,6 @@ function HolidaySeedPanel() {
     }
   }
 
-  return (
-    <SectionCard title="UK public holidays (database seed)">
-      <p className="mb-4 text-sm text-slate-500">
-        Loads public holidays from server configuration into your organization calendar. Add more years in the UK holidays data file on the server, then seed again.
-      </p>
-      <FieldRow label="Year">
-        <TextInput
-          type="number"
-          min={2020}
-          max={2100}
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-          className="max-w-[120px]"
-        />
-      </FieldRow>
-      <FieldRow label="Regions">
-        <div className="flex flex-wrap gap-3">
-          {UK_REGIONS.map((r) => (
-            <label key={r} className="inline-flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={regions.includes(r)}
-                onChange={() => toggleRegion(r)}
-              />
-              {r}
-            </label>
-          ))}
-        </div>
-      </FieldRow>
-      <button
-        type="button"
-        disabled={seeding || !regions.length}
-        onClick={handleSeed}
-        className="mt-4 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
-      >
-        {seeding ? 'Seeding…' : 'Seed UK holidays'}
-      </button>
-      {msg && <p className="mt-3 text-sm text-slate-600">{msg}</p>}
-    </SectionCard>
-  )
+ 
 }
 

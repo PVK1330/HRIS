@@ -16,12 +16,12 @@ import { Input } from '../../../components/ui/Input.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import {
-  getEmployeeStats, getFilterOptions, listEmployees,
+  getEmployeeStats, getFilterOptions, listEmployees, listEmployeesDropdown,
   getEmployee, createEmployee, updateEmployee, deleteEmployee, getNextEmployeeId,
 } from '../../../services/employeeService.js'
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
-import { listDesignations } from '../../../services/designationService.js'
+import { listDesignationsByDepartmentId } from '../../../services/designationService.js'
 import { triggerExport } from '../../../utils/exportHelper.js'
 import { todayIsoDate, formatEmpIdDisplay } from '../../../utils/employeeId.js'
 
@@ -77,6 +77,7 @@ function mapEmployeeList(e) {
     jobTitle: e.job_title,
     department: e.department,
     location: e.work_location || '',
+    departmentHead: e.managerName || 'N/A',
     manager: e.manager_name || e.reporting_manager || 'N/A',
     status: e.employment_status || 'Active',
     joinDate: e.join_date || '',
@@ -276,6 +277,10 @@ export default function EmployeeDirectory() {
   const [departmentsCatalog, setDepartmentsCatalog] = useState([])
   const [designationsCatalog, setDesignationsCatalog] = useState([])
   const [deptsLoading, setDeptsLoading] = useState(false)
+  const [managerOptions, setManagerOptions] = useState([])
+  // Incrementing either tick aborts any in-flight request and starts a fresh one.
+  const [refreshTick, setRefreshTick] = useState(0)
+  const [statsTick, setStatsTick] = useState(0)
 
   const departmentRows = useMemo(() => {
     if (departmentsCatalog.length) return departmentsCatalog
@@ -288,17 +293,17 @@ export default function EmployeeDirectory() {
   const isFirstEmployeeStep = safeFormStepIdx === 0
 
   const designationRowsForDept = useMemo(() => {
-    const dept = String(formData.department || '').trim()
-    if (!dept) return []
+    const deptId = formData.departmentId
+    if (!deptId) return []
     return designationsCatalog.filter((row) => {
-      const rowDept = String(row.department_name ?? row.departmentName ?? '').trim()
-      if (rowDept !== dept) return false
+      const rowDeptId = row.department_id ?? row.departmentId
+      if (rowDeptId != null && String(rowDeptId) !== String(deptId)) return false
       if (row.is_active === false) return false
       const st = String(row.status ?? '').toLowerCase()
       if (st === 'inactive') return false
       return true
     })
-  }, [designationsCatalog, formData.department])
+  }, [designationsCatalog, formData.departmentId])
 
   // Helper functions for dynamic arrays
   const handleFamilyMemberChange = (index, field, value) => {
@@ -358,26 +363,7 @@ export default function EmployeeDirectory() {
     setFormData(prev => ({ ...prev, workExperience: updated }))
   }
 
-  // ── Data fetching ──────────────────────────────────────────────────────────
-
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const data = await listEmployees({
-        page: currentPage, limit: 8, search,
-        department: dept, status, workMode, jobTitle: job, workLocation: loc,
-      })
-      if (data) {
-        const rows = data.employees || data.records || []
-        setEmployeeList(rows.map(mapEmployeeList))
-        setTotalRecords(data.total ?? data.pagination?.total ?? 0)
-      }
-    } catch (err) {
-      console.error(err)
-      toast.error('Could not load employees.')
-    }
-    finally { setLoading(false) }
-  }
+  // ── Data fetching — see useEffects below ──────────────────────────────────
 
   const runEmployeeExport = async (type) => {
     const ext = type === 'pdf' ? 'pdf' : 'xlsx'
@@ -405,14 +391,6 @@ export default function EmployeeDirectory() {
     }
   }
 
-  const fetchStatsAndFilters = async () => {
-    try {
-      const [s, f] = await Promise.all([getEmployeeStats(), getFilterOptions()])
-      if (s) setStats(s)
-      if (f) setFilterOptions(f)
-    } catch (err) { console.error(err) }
-  }
-
   useEffect(() => {
     const onOutside = (e) => {
       if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false)
@@ -421,11 +399,60 @@ export default function EmployeeDirectory() {
     return () => document.removeEventListener('mousedown', onOutside)
   }, [exportOpen])
 
-  useEffect(() => { fetchStatsAndFilters() }, [])
+  // Fetch stats + filter options; re-runs when statsTick increments (post-create/delete).
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+    ;(async () => {
+      try {
+        const [s, f] = await Promise.all([
+          getEmployeeStats({ signal }),
+          getFilterOptions({ signal }),
+        ])
+        if (signal.aborted) return
+        if (s) setStats(s)
+        if (f) setFilterOptions(f)
+      } catch (err) {
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return
+        console.error(err)
+      }
+    })()
+    return () => controller.abort()
+  }, [statsTick])
+
   useEffect(() => {
     setCurrentPage(1)
   }, [search, dept, job, loc, status, workMode])
-  useEffect(() => { fetchData() }, [currentPage, search, dept, job, loc, status, workMode])
+
+  // Fetch paginated employee list; aborts previous request on filter/page change or unmount.
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+    ;(async () => {
+      setLoading(true)
+      try {
+        const data = await listEmployees({
+          signal,
+          page: currentPage, limit: 8, search,
+          department: dept, status, workMode, jobTitle: job, workLocation: loc,
+        })
+        if (signal.aborted) return
+        if (data) {
+          const rows = data.employees || data.records || []
+          setEmployeeList(rows.map(mapEmployeeList))
+          setTotalRecords(data.total ?? data.pagination?.total ?? 0)
+        }
+      } catch (err) {
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return
+        console.error(err)
+        toast.error('Could not load employees.')
+      } finally {
+        if (!signal.aborted) setLoading(false)
+      }
+    })()
+    return () => controller.abort()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, search, dept, job, loc, status, workMode, refreshTick])
 
   useEffect(() => {
     let cancelled = false
@@ -444,18 +471,32 @@ export default function EmployeeDirectory() {
   useEffect(() => {
     if (!modalOpen) return
     let cancelled = false
+    ;(async () => {
+      try {
+        const res = await listEmployeesDropdown()
+        if (cancelled) return
+        const list = res?.records || res?.employees || res || []
+        setManagerOptions(Array.isArray(list) ? list : [])
+      } catch (err) {
+        console.error(err)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [modalOpen])
+
+  useEffect(() => {
+    if (!modalOpen) return
+    let cancelled = false
     setDeptsLoading(true)
       ; (async () => {
         try {
-          const [depts, desigs] = await Promise.all([listDepartments(), listDesignations()])
+          const depts = await listDepartments()
           if (cancelled) return
           setDepartmentsCatalog(depts?.departments ?? depts?.records ?? [])
-          setDesignationsCatalog(desigs?.designations ?? desigs?.records ?? [])
         } catch {
           if (!cancelled) {
             setDepartmentsCatalog([])
-            setDesignationsCatalog([])
-            toast.error('Could not load departments or designations.')
+            toast.error('Could not load departments.')
           }
         } finally {
           if (!cancelled) {
@@ -467,6 +508,27 @@ export default function EmployeeDirectory() {
       cancelled = true
     }
   }, [modalOpen])
+
+  // Load ALL active designations for the selected department by ID (unpaginated,
+  // server-filtered). Avoids the old bug where only the first paginated page
+  // of designations was preloaded and then filtered client-side.
+  useEffect(() => {
+    if (!modalOpen) return
+    const deptId = formData.departmentId
+    if (!deptId) { setDesignationsCatalog([]); return }
+    let cancelled = false
+      ; (async () => {
+        try {
+          const res = await listDesignationsByDepartmentId(deptId)
+          if (cancelled) return
+          const rows = Array.isArray(res) ? res : (res?.designations ?? res?.records ?? [])
+          setDesignationsCatalog(rows)
+        } catch {
+          if (!cancelled) setDesignationsCatalog([])
+        }
+      })()
+    return () => { cancelled = true }
+  }, [modalOpen, formData.departmentId])
 
   // ── Form handlers ──────────────────────────────────────────────────────────
 
@@ -800,8 +862,8 @@ export default function EmployeeDirectory() {
       }
       profileFileRef.current = null
       handleCloseModal()
-      fetchData()
-      fetchStatsAndFilters()
+      setRefreshTick((t) => t + 1)
+      setStatsTick((t) => t + 1)
     } catch (err) {
       console.error(err)
       const apiErrors = err?.response?.data?.errors
@@ -938,8 +1000,8 @@ export default function EmployeeDirectory() {
       try {
         await deleteEmployee(employee.id)
         setViewModalOpen(false)
-        fetchData()
-        fetchStatsAndFilters()
+        setRefreshTick((t) => t + 1)
+        setStatsTick((t) => t + 1)
         toast.success('Employee archived.')
       } catch (err) {
         console.error(err)
@@ -998,6 +1060,29 @@ export default function EmployeeDirectory() {
       render: (_v, row) => (
         <span className="text-sm font-medium text-slate-700 block truncate max-w-[180px]" title={row.jobTitle || ''}>
           {row.jobTitle || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'departmentHead',
+      label: colLabel('Department Head'),
+      render: (v) => (
+        <span className="text-sm text-slate-700">{v || '—'}</span>
+      ),
+    },
+    {
+      key: 'manager',
+      label: colLabel('Reporting Manager'),
+      render: (v) => (
+        <span className="text-sm text-slate-700">{v || '—'}</span>
+      ),
+    },
+    {
+      key: 'rbacRoleName',
+      label: colLabel('Role'),
+      render: (v) => (
+        <span className="text-sm font-medium text-slate-700 capitalize">
+          {v ? v.replace('_', ' ') : '—'}
         </span>
       ),
     },
@@ -1508,6 +1593,27 @@ export default function EmployeeDirectory() {
                     readOnly
                     disabled
                   />
+                </div>
+                <div>
+                  <label htmlFor="emp-reporting-manager" className="mb-1 block text-sm font-medium text-slate-800">
+                    Reporting Manager
+                  </label>
+                  <select
+                    id="emp-reporting-manager"
+                    name="reportingManager"
+                    value={formData.reportingManager || ''}
+                    onChange={handleFormChange}
+                    className={`${basicFieldClass} mt-0`}
+                  >
+                    <option value="">
+                      {managerOptions.length > 0 ? 'Select Manager (Optional)' : 'No employees yet — optional'}
+                    </option>
+                    {managerOptions.map((e) => (
+                      <option key={e.id} value={e.emp_id || e.empId || e.employeeCode}>
+                        {(e.full_name || e.fullName || e.employeeName) ?? 'Employee'} ({e.emp_id || e.empId || e.employeeCode})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="emp-desig" className="mb-1 block text-sm font-medium text-slate-800">

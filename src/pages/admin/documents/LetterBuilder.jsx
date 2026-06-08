@@ -7,6 +7,7 @@ import api from '../../../services/api.js';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { listEmployees } from '../../../services/employeeService.js';
 import toast from 'react-hot-toast';
+import { sanitizeHtml } from '../../../utils/sanitizeHtml.js';
 
 const CATEGORIES = ['Recruitment', 'Compliance', 'Performance', 'Exit', 'HR', 'Finance', 'Leave', 'Disciplinary'];
 const TYPES = ['Letter', 'Form', 'Certificate', 'Report'];
@@ -269,7 +270,7 @@ export default function LetterBuilder() {
                   <div
                     className="text-[13px] text-slate-800 leading-relaxed max-w-none font-sans [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-6 [&_h2]:text-center [&_h2]:text-[#0F766E] [&_p]:mb-4 [&_p]:leading-relaxed [&_strong]:font-bold [&_em]:italic [&_table]:w-full [&_table]:border-collapse [&_table]:my-6 [&_td]:border-b [&_td]:border-slate-200 [&_td]:py-3 [&_td]:px-4"
                     dangerouslySetInnerHTML={{
-                      __html: previewEmpId && selectedEmp ? renderBody(form.body, selectedEmp) : form.body || '<p class="text-slate-300 text-center italic mt-10">Start typing to see preview...</p>'
+                      __html: sanitizeHtml(previewEmpId && selectedEmp ? renderBody(form.body, selectedEmp) : form.body || '<p class="text-slate-300 text-center italic mt-10">Start typing to see preview...</p>')
                     }}
                   />
                 </div>

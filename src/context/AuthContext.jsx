@@ -17,75 +17,6 @@ import {
 
 const STORAGE_KEY = "hris_auth_user";
 
-const accounts = {
-  "hr_admin@hris.com": {
-    password: "hradmin123",
-    user: {
-      name: "Sarah Ahmed",
-      email: "hr_admin@hris.com",
-      role: "hr_admin",
-      panel: "admin",
-    },
-  },
-  "hr_exec@hris.com": {
-    password: "hrexec123",
-    user: {
-      name: "John Jain",
-      email: "hr_exec@hris.com",
-      role: "hr_executive",
-      panel: "admin",
-      department: "HR Operations",
-    },
-  },
-  "manager@hris.com": {
-    password: "manager123",
-    user: {
-      name: "Michael Chen",
-      email: "manager@hris.com",
-      role: "manager",
-      panel: "admin",
-      department: "Engineering",
-    },
-  },
-  "employee@hris.com": {
-    password: "employee123",
-    user: {
-      name: "John Doe",
-      email: "employee@hris.com",
-      role: "employee",
-      panel: "admin",
-      department: "Engineering",
-    },
-  },
-  "superadmin@hris.com": {
-    password: "SuperAdmin123",
-    user: {
-      name: "Root SuperAdmin",
-      email: "superadmin@hris.com",
-      role: "superadmin",
-      panel: "superadmin",
-    },
-  },
-  "support@hris.com": {
-    password: "support123",
-    user: {
-      name: "Support Tech",
-      email: "support@hris.com",
-      role: "support_admin",
-      panel: "superadmin",
-    },
-  },
-  "billing@hris.com": {
-    password: "billing123",
-    user: {
-      name: "Finance Lead",
-      email: "billing@hris.com",
-      role: "billing_admin",
-      panel: "superadmin",
-    },
-  },
-};
-
 function normalizeTenantFeatureCode(code) {
   return String(code || "")
     .toLowerCase()
@@ -186,36 +117,6 @@ function computePlanModuleKeysForTenantUser(userRole, tenantFeatures) {
   return keys;
 }
 
-const DEFAULT_MOCK_ALLOWED_MODULES = [
-  "dashboard",
-  "employee-directory",
-  "employee-profiles",
-  "attendance",
-  "leave-absence",
-  "documents-approval",
-  "visa-nationality",
-  "assets",
-  "performance",
-  "training-development",
-  "policies",
-  "expenses",
-  "billing-invoicing",
-  "onboarding",
-  "exit-management",
-  "letter-templates",
-  "reports-analytics",
-  "announcements",
-  "payroll-management",
-  "time-tracking",
-  "shift-management",
-  "overtime-management",
-  "departments",
-  "designations",
-  "messages",
-  "system-settings",
-  "tasks",
-];
-
 const PERMISSIONS = {
   admin: ["*"],
   hr_admin: ["*"], // ALL permissions
@@ -294,40 +195,6 @@ export function AuthProvider({ children }) {
     userRef.current = user;
   }, [user]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    const userDataStr = params.get("user");
-
-    if (token && userDataStr) {
-      try {
-        const userData = JSON.parse(decodeURIComponent(userDataStr));
-        // Perform login
-        const finalUserData = {
-          ...userData,
-          panel: userData.role === "superadmin" ? "superadmin" : "admin",
-        };
-        setUser(finalUserData);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(finalUserData));
-        localStorage.setItem("hris_token", token);
-
-        const imModules = Array.isArray(userData?.allowedModules)
-          ? userData.allowedModules
-          : ["dashboard"];
-        setAllowedModules(imModules);
-        localStorage.setItem("allowedModules", JSON.stringify(imModules));
-
-        // Clean up URL
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname,
-        );
-      } catch (err) {
-        console.error("Global auto-login failed:", err);
-      }
-    }
-  }, []);
 
   const hasPermission = useCallback(
     (permission) => {
@@ -381,48 +248,29 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(
     (
-      arg1,
-      arg2,
+      userData,
+      token,
       planDetails = [],
       planFeatures = [],
       tenantFeatures = [],
       allowedModulesFromResponse,
     ) => {
-      // Case 1: Real API Auth (user object, token)
-      if (typeof arg1 === "object" && arg2) {
-        const userData = {
-          ...arg1,
-          panel: arg1.role === "superadmin" ? "superadmin" : "admin",
-          plan_details: planDetails,
-          plan_features: planFeatures,
-          tenant_features: tenantFeatures,
-          permissions: arg1.permissions || [],
-        };
-        const nextMods = Array.isArray(allowedModulesFromResponse)
-          ? allowedModulesFromResponse
-          : ["dashboard"];
-        setAllowedModules(nextMods);
-        localStorage.setItem("allowedModules", JSON.stringify(nextMods));
-
-        setUser(userData);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
-        localStorage.setItem("hris_token", arg2);
-        return null;
-      }
-
-      // Case 2: Mock Auth (email, password)
-      if (typeof arg1 !== "string") return "Invalid input type.";
-      const key = arg1.trim().toLowerCase();
-      const account = accounts[key];
-      if (!account || account.password !== arg2) {
-        return "Invalid email or password.";
-      }
-      const mockMods = [...DEFAULT_MOCK_ALLOWED_MODULES];
-      setAllowedModules(mockMods);
-      localStorage.setItem("allowedModules", JSON.stringify(mockMods));
-      setUser(account.user);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(account.user));
-      return null;
+      const finalUser = {
+        ...userData,
+        panel: userData.role === "superadmin" ? "superadmin" : "admin",
+        plan_details: planDetails,
+        plan_features: planFeatures,
+        tenant_features: tenantFeatures,
+        permissions: userData.permissions || [],
+      };
+      const nextMods = Array.isArray(allowedModulesFromResponse)
+        ? allowedModulesFromResponse
+        : ["dashboard"];
+      setAllowedModules(nextMods);
+      localStorage.setItem("allowedModules", JSON.stringify(nextMods));
+      setUser(finalUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(finalUser));
+      localStorage.setItem("hris_token", token);
     },
     [],
   );
@@ -442,6 +290,7 @@ export function AuthProvider({ children }) {
           plan_details: data.plan_details || [],
           tenant_features: data.tenant_features || [],
           permissions: data.permissions || prev.permissions || [],
+          dataScope: data.dataScope ?? prev.dataScope ?? null,
           billing: data.billing ?? prev.billing ?? null,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -463,8 +312,6 @@ export function AuthProvider({ children }) {
       ? `${user.email ?? ""}:${user.id ?? ""}:${user.role}`
       : null;
 
-  const userId = user?.id;
-  const userRole = user?.role;
   useEffect(() => {
     if (!adminSessionKey) return;
     refreshAccessProfile();
@@ -472,28 +319,23 @@ export function AuthProvider({ children }) {
     return () => window.clearInterval(id);
   }, [adminSessionKey, refreshAccessProfile]);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Ignore — cookie is cleared by the server on success; expired sessions
+      // should still complete the local logout regardless.
+    }
     setUser(null);
     setAllowedModules([]);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem("allowedModules");
+    localStorage.removeItem("hris_token");
     const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "") || "";
     const target = `${base}/login`.replace(/\/+/g, "/") || "/login";
     window.location.replace(
       target.startsWith("http") ? target : `${window.location.origin}${target}`,
     );
-  }, []);
-
-  const switchRole = useCallback((newRole) => {
-    const matchingAccount = Object.values(accounts).find(
-      (a) => a.user.role === newRole,
-    );
-    if (matchingAccount) {
-      setUser(matchingAccount.user);
-      const mockMods = [...DEFAULT_MOCK_ALLOWED_MODULES];
-      setAllowedModules(mockMods);
-      localStorage.setItem("allowedModules", JSON.stringify(mockMods));
-    }
   }, []);
 
   const billing = user?.billing ?? null;
@@ -509,7 +351,6 @@ export function AuthProvider({ children }) {
       logout,
       hasPermission,
       hasFeatureAccess,
-      switchRole,
       refreshAccessProfile,
       allowedModules,
       hasModule,
@@ -522,7 +363,6 @@ export function AuthProvider({ children }) {
       logout,
       hasPermission,
       hasFeatureAccess,
-      switchRole,
       refreshAccessProfile,
       allowedModules,
       hasModule,

@@ -85,6 +85,18 @@ export const addOvertime = async (payload) => {
   return data.data.record
 }
 
+// Edit a Pending overtime entry: { overtimeHours?, description? }
+export const updateOvertime = async (id, payload) => {
+  const { data } = await api.patch(`${BASE}/overtime/${id}`, payload)
+  return data.data.record
+}
+
+// Delete a Pending overtime entry
+export const deleteOvertime = async (id) => {
+  const { data } = await api.delete(`${BASE}/overtime/${id}`)
+  return data.data
+}
+
 export const getPayrollSummary = async (params) => {
   const { data } = await api.get(`${BASE}/payroll-summary`, { params })
   return data.data

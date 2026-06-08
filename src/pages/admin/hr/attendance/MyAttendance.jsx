@@ -116,6 +116,7 @@ export default function MyAttendance() {
   const [loadingMonth, setLoadingMonth] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [avatarError, setAvatarError] = useState(false);
 
   // live clock
   useEffect(() => {
@@ -153,6 +154,7 @@ export default function MyAttendance() {
 
   useEffect(() => { refreshToday(); }, [refreshToday]);
   useEffect(() => { refreshMonth(); }, [refreshMonth]);
+  useEffect(() => { setAvatarError(false); }, [today?.profileImageUrl]);
 
   const captureLocation = () => new Promise((resolve) => {
     if (!locationEnabled || !navigator.geolocation) { resolve({}); return; }
@@ -288,20 +290,29 @@ export default function MyAttendance() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-w-0">
         {/* ── Left Column: Hero punch card ── */}
-        <div className="xl:col-span-3">
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm flex flex-col items-center text-center">
+        <div className="lg:col-span-4 xl:col-span-3">
+          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm flex flex-col items-center text-center h-full">
             <p className="text-sm font-semibold text-slate-500">Good {now.getHours() < 12 ? 'Morning' : 'Afternoon'}, {user?.name?.split(' ')[0] || 'there'}</p>
             <p className="mt-1 text-2xl font-black tracking-tight text-slate-900">
               {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}<span className="ml-1 text-base font-bold text-slate-500">, {now.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })}</span>
             </p>
 
-            <div className="mt-6 flex h-32 w-32 items-center justify-center rounded-full bg-[#0F766E]/10 text-5xl font-bold text-[#0F766E] ring-[6px] ring-[#0F766E]/5">
-              {(user?.name || '?').charAt(0).toUpperCase()}
-            </div>
+            {today?.profileImageUrl && !avatarError ? (
+              <img
+                src={today.profileImageUrl}
+                alt={user?.name || 'Profile'}
+                onError={() => setAvatarError(true)}
+                className="mt-6 h-32 w-32 rounded-full object-cover ring-[6px] ring-[#0F766E]/5"
+              />
+            ) : (
+              <div className="mt-6 flex h-32 w-32 items-center justify-center rounded-full bg-[#0F766E]/10 text-5xl font-bold text-[#0F766E] ring-[6px] ring-[#0F766E]/5">
+                {(user?.name || '?').charAt(0).toUpperCase()}
+              </div>
+            )}
 
-            <div className="mt-6 inline-flex items-center gap-1.5 rounded-md bg-[#EA580C] px-3 py-1 text-xs font-semibold text-white tracking-wide">
+            <div className="mt-6 inline-flex items-center gap-1.5 rounded-none bg-[#0F766E] px-3 py-1.5 text-xs font-semibold text-white tracking-wide">
               Production : {hm(todayWorked)}
             </div>
 
@@ -311,7 +322,7 @@ export default function MyAttendance() {
               </p>
             )}
 
-            <div className="mt-6 w-full">
+            <div className="mt-auto w-full pt-6">
               {!canPunch ? (
                 <p className="text-sm text-slate-500">You don't have permission to punch.</p>
               ) : (
@@ -320,7 +331,7 @@ export default function MyAttendance() {
                     type="button"
                     onClick={() => punch(checkOut)}
                     disabled={acting || loadingToday}
-                    className="w-full rounded-md bg-[#1E293B] px-4 py-3 text-sm font-bold tracking-wide text-white transition hover:bg-slate-800 disabled:opacity-50"
+                    className="w-full rounded-none bg-[#1E293B] px-4 py-3 text-sm font-bold tracking-wide text-white transition hover:bg-slate-800 disabled:opacity-50"
                   >
                     {acting ? 'Punching...' : 'Punch Out'}
                   </button>
@@ -329,7 +340,7 @@ export default function MyAttendance() {
                     type="button"
                     onClick={() => punch(checkIn)}
                     disabled={!canCheckIn || acting || loadingToday}
-                    className="w-full rounded-md bg-[#0F766E] px-4 py-3 text-sm font-bold tracking-wide text-white transition hover:bg-[#0E625A] disabled:opacity-50"
+                    className="w-full rounded-none bg-[#0F766E] px-4 py-3 text-sm font-bold tracking-wide text-white transition hover:bg-[#0E625A] disabled:opacity-50"
                   >
                     {acting ? 'Punching...' : 'Punch In'}
                   </button>
@@ -341,9 +352,9 @@ export default function MyAttendance() {
         </div>
 
         {/* ── Right Column: Stats and Breakdown ── */}
-        <div className="xl:col-span-9 space-y-6 min-w-0">
+        <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6 min-w-0 h-full">
           {/* ── Stat tiles ── */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 min-w-0">
             {[
               {
                 label: 'Total Hours Today',
@@ -372,12 +383,12 @@ export default function MyAttendance() {
             ].map((card, idx) => (
               <div
                 key={idx}
-                className="group rounded-none border border-slate-200 bg-white p-5 text-left transition-all hover:bg-slate-50/50 hover:border-slate-300 min-w-0 shadow-sm"
+                className="group rounded-none border border-slate-200 bg-white p-5 text-left transition-all hover:bg-slate-50/50 hover:border-slate-300 min-w-0 shadow-sm flex flex-col h-full"
               >
-                <div className={`inline-flex h-7 w-7 items-center justify-center rounded-md ${card.bgColor} text-white shadow-sm mb-3`}>
+                <div className={`inline-flex h-8 w-8 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm mb-3`}>
                   <card.icon className="h-4 w-4" />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 flex flex-col justify-end">
                   <div className="text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
                   <div className="mt-2 text-sm font-medium tracking-wide text-slate-500">
                     {card.label}
@@ -388,8 +399,8 @@ export default function MyAttendance() {
           </div>
 
           {/* ── Working-hours breakdown ── */}
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid gap-6 sm:grid-cols-4">
+          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm flex-1 flex flex-col justify-center">
+            <div className="grid gap-6 grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="h-2 w-2 rounded-full bg-slate-300" />
@@ -421,10 +432,10 @@ export default function MyAttendance() {
             </div>
 
             {/* segmented bar */}
-            <div className="mt-6 flex h-4 w-full overflow-hidden rounded-md bg-slate-100 gap-1">
-              <div className="bg-[#10B981] rounded-l-md" style={{ width: pct(bProductive) }} title="Productive" />
+            <div className="mt-6 flex h-4 w-full overflow-hidden rounded-none bg-slate-100 gap-1">
+              <div className="bg-[#10B981] rounded-none" style={{ width: pct(bProductive) }} title="Productive" />
               <div className="bg-[#F59E0B]" style={{ width: pct(bBreak) }} title="Break" />
-              <div className="bg-[#3B82F6] rounded-r-md" style={{ width: pct(bOvertime) }} title="Overtime" />
+              <div className="bg-[#3B82F6] rounded-none" style={{ width: pct(bOvertime) }} title="Overtime" />
             </div>
           </div>
         </div>

@@ -1,5 +1,4 @@
 import api from './api.js'
-import { getLeaveTypes } from './adminSettingsService.js'
 
 const BASE = '/leave'
 
@@ -50,5 +49,11 @@ export const getEmployeeLeave = async (employeeId, params = {}) => {
   return data.data  // { requests, balances, year }
 }
 
-// Re-export for convenience — leave types come from settings
-export { getLeaveTypes }
+/**
+ * GET /api/v1/leave/types
+ * Active leave types for dropdowns (unprivileged)
+ */
+export const getLeaveTypes = async () => {
+  const { data } = await api.get(`${BASE}/types`)
+  return data
+}

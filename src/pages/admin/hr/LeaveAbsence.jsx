@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   HiPlus, HiEye, HiCheck, HiXMark,
-  HiMagnifyingGlass, HiUsers, HiClock, HiCheckCircle, HiXCircle,
-  HiInformationCircle, HiArrowsUpDown, HiOutlineHome, HiArrowDownTray
+  HiMagnifyingGlass, HiUsers, HiClock, HiCheckCircle,
+  HiArrowDownTray, HiCalendarDays
 } from 'react-icons/hi2';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { Table } from '../../../components/ui/Table.jsx';
@@ -11,8 +11,10 @@ import {
   listLeave, applyLeave, processLeave, listBalances, getLeaveTypes,
   getEmployeeLeave,
 } from '../../../services/leaveService.js';
+import { getAttendanceDashboard } from '../../../services/attendanceService.js';
 import { listEmployees } from '../../../services/employeeService.js';
 import AddLeaveModal from '../../../components/leave/AddLeaveModal.jsx';
+import HolidayListWidget from '../../../components/attendance/HolidayListWidget.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { canApproveLeave, canApplyLeave } from '../../../utils/rbac.js';
 
@@ -22,12 +24,14 @@ const EMPTY_FORM = {
 };
 
 function statusColor(s) {
-  if (s === 'Approved') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-  if (s === 'Pending HR Approval') return 'bg-blue-50 text-blue-700 border-blue-100';
-  if (s === 'Pending Manager Approval') return 'bg-amber-50 text-amber-700 border-amber-100';
-  if (s === 'Draft') return 'bg-slate-50 text-slate-700 border-slate-200';
-  if (s === 'Rejected by Manager' || s === 'Rejected by HR') return 'bg-red-50 text-red-700 border-red-100';
-  if (s === 'Cancelled') return 'bg-slate-50 text-slate-600 border-slate-100';
+  if (s === 'Approved')                  return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+  if (s === 'Pending HR Approval')       return 'bg-blue-50 text-blue-700 border-blue-100';
+  if (s === 'Pending Dept Approval')     return 'bg-indigo-50 text-indigo-700 border-indigo-100';
+  if (s === 'Pending Manager Approval')  return 'bg-amber-50 text-amber-700 border-amber-100';
+  if (s === 'Draft')                     return 'bg-slate-50 text-slate-700 border-slate-200';
+  if (s === 'Rejected by Manager' || s === 'Rejected by Dept' || s === 'Rejected by HR')
+                                         return 'bg-red-50 text-red-700 border-red-100';
+  if (s === 'Cancelled')                 return 'bg-slate-50 text-slate-600 border-slate-100';
   return 'bg-slate-50 text-slate-600 border-slate-100';
 }
 
@@ -52,10 +56,12 @@ export default function LeaveAbsence() {
   const [search, setSearch] = useState('');
   const [dept, setDept] = useState('');
   const [statusF, setStatusF] = useState('');
+  const [leaveTypeF, setLeaveTypeF] = useState('');
   const [year, setYear] = useState(currentYear);
 
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState(null);
+  const [attendance, setAttendance] = useState(null);
   const [balances, setBalances] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [empList, setEmpList] = useState([]);
@@ -83,13 +89,13 @@ export default function LeaveAbsence() {
   const fetchRequests = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const data = await listLeave({ year, status: statusF, department: dept, search });
+      const data = await listLeave({ year, status: statusF, department: dept, search, leaveType: leaveTypeF });
       setRequests(data.requests || []);
       setStats(data.stats || null);
     } catch (err) {
       setError(err?.message || 'Failed to load leave requests');
     } finally { setLoading(false); }
-  }, [year, statusF, dept, search]);
+  }, [year, statusF, dept, search, leaveTypeF]);
 
   const fetchBalances = useCallback(async () => {
     setLoadingBal(true);
@@ -99,6 +105,13 @@ export default function LeaveAbsence() {
     } catch { /* */ }
     finally { setLoadingBal(false); }
   }, [year, dept, search]);
+
+  const fetchAttendanceSummary = useCallback(async () => {
+    try {
+      const res = await getAttendanceDashboard();
+      setAttendance(res?.widgets || null);
+    } catch { /* attendance snapshot is best-effort */ }
+  }, []);
 
   const fetchLeaveTypes = useCallback(async () => {
     if (leaveTypes.length > 0) return;
@@ -123,8 +136,10 @@ export default function LeaveAbsence() {
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
   useEffect(() => { if (activeTab === 'balances') fetchBalances(); }, [activeTab, fetchBalances]);
+  useEffect(() => { fetchLeaveTypes(); }, [fetchLeaveTypes]);
+  useEffect(() => { fetchAttendanceSummary(); }, [fetchAttendanceSummary]);
 
-  useEffect(() => { setCurrentPage(1); setBalancesPage(1); }, [search, dept, statusF, year]);
+  useEffect(() => { setCurrentPage(1); setBalancesPage(1); }, [search, dept, statusF, year, leaveTypeF]);
 
   useEffect(() => {
     if (!form.fromDate || !form.toDate) return;
@@ -232,6 +247,14 @@ export default function LeaveAbsence() {
     return String(row.employee_id) === selfEmployeeId;
   };
 
+  // A request belongs to the logged-in user — no self-approval/reject, even
+  // for approvers. Guards against the employee seeing approve/reject on their
+  // own leave when the backend grants a self-scoped leave.approve slug.
+  const isOwnRequest = (row) => !!selfEmployeeId && String(row.employee_id) === selfEmployeeId;
+
+  // Only true approvers acting on someone else's request may approve/reject.
+  const canActOnRequest = (row) => canApprove && !isOwnRequest(row);
+
   const requestCols = [
     {
       key: 'employee_name', label: 'EMPLOYEE',
@@ -271,7 +294,7 @@ export default function LeaveAbsence() {
           <button type="button" onClick={() => { setSelected(row); setViewModal(true); }} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700" title="View details">
             <HiEye className="h-4 w-4" />
           </button>
-          {canApprove && (row.status === 'Pending Manager Approval' || row.status === 'Pending HR Approval') && (
+          {canActOnRequest(row) && (row.status === 'Pending Manager Approval' || row.status === 'Pending Dept Approval' || row.status === 'Pending HR Approval') && (
             <>
               <button type="button" title="Approve" onClick={() => openAction(row, 'Approve')} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors">
                 <HiCheck className="h-4 w-4" />
@@ -286,7 +309,7 @@ export default function LeaveAbsence() {
                <HiCheck className="h-4 w-4" />
             </button>
           )}
-          {canApply && canManageRequest(row) && (row.status === 'Pending Manager Approval' || row.status === 'Pending HR Approval' || row.status === 'Draft' || row.status === 'Approved') && (
+          {canApply && canManageRequest(row) && (row.status === 'Pending Manager Approval' || row.status === 'Pending Dept Approval' || row.status === 'Pending HR Approval' || row.status === 'Draft' || row.status === 'Approved') && (
             <button type="button" title="Cancel" onClick={() => openAction(row, 'Cancel')} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700">
                <HiArrowDownTray className="h-4 w-4 rotate-180" />
             </button>
@@ -315,25 +338,75 @@ export default function LeaveAbsence() {
         </div>
       </div>
 
-      {/* KPI Cards styled matching flat design */}
+      {/* KPI Cards — driven by live attendance snapshot + leave stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
-          { label: 'Total Present', count: '180/200', bgClass: 'bg-emerald-50 border-emerald-200 text-emerald-700', icon: HiUsers },
-          { label: 'Planned Leaves', count: '10', bgClass: 'bg-indigo-50 border-indigo-200 text-indigo-700', icon: HiClock },
-          { label: 'Unplanned Leaves', count: '10', bgClass: 'bg-rose-50 border-rose-200 text-rose-700', icon: HiXCircle },
-          { label: 'Pending Requests', count: String(stats?.pending || 15), bgClass: 'bg-sky-50 border-sky-200 text-sky-700', icon: HiInformationCircle }
+          {
+            label: 'Present Today',
+            value: attendance ? `${attendance.present_today ?? 0}/${attendance.total_employees ?? 0}` : '—',
+            sub: attendance?.attendance_rate != null ? `${attendance.attendance_rate}% attendance rate` : 'Live attendance snapshot',
+            accent: 'bg-emerald-50 text-[#0F766E] border-emerald-100',
+            icon: HiUsers,
+          },
+          {
+            label: 'On Leave Today',
+            value: attendance ? String(attendance.on_leave ?? 0) : '—',
+            sub: 'Employees absent on approved leave',
+            accent: 'bg-amber-50 text-amber-600 border-amber-100',
+            icon: HiCalendarDays,
+          },
+          {
+            label: 'Approved Leaves',
+            value: stats ? String(stats.approved ?? 0) : '—',
+            sub: `${year} calendar year`,
+            accent: 'bg-sky-50 text-sky-600 border-sky-100',
+            icon: HiCheckCircle,
+          },
+          {
+            label: 'Pending Requests',
+            value: stats ? String(stats.pending ?? 0) : '—',
+            sub: 'Awaiting manager / HR approval',
+            accent: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+            icon: HiClock,
+          },
         ].map((card, idx) => (
-          <div key={idx} className={`${card.bgClass} flex flex-col justify-between rounded-none border p-4 shadow-sm relative overflow-hidden`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-bold uppercase tracking-widest opacity-80">{card.label}</div>
-              <card.icon className="h-5 w-5 opacity-75" />
+          <div key={idx} className="flex items-center justify-between gap-3 rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{card.label}</div>
+              <div className="mt-1.5 text-2xl font-black text-slate-900">{card.value}</div>
+              <div className="mt-0.5 truncate text-[10px] font-medium text-slate-400">{card.sub}</div>
             </div>
-            <div className="text-2xl font-black">{card.count}</div>
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none border ${card.accent}`}>
+              <card.icon className="h-5 w-5" />
+            </div>
           </div>
         ))}
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-slate-200">
+        {[
+          { key: 'requests', label: 'Leave Requests' },
+          { key: 'holidays', label: 'Holiday Listing' },
+        ].map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setActiveTab(t.key)}
+            className={`relative px-4 py-2.5 text-sm font-semibold transition-colors ${
+              activeTab === t.key ? 'text-[#0F766E]' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            {t.label}
+            {activeTab === t.key && (
+              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-[#0F766E]" />
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Main Panel matching Table layout */}
+      {activeTab === 'requests' && (
       <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
           <h2 className="text-sm font-semibold text-white">Leave Listing</h2>
@@ -366,15 +439,23 @@ export default function LeaveAbsence() {
               className="h-10 min-w-[150px] cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]"
             >
               <option value="">All Statuses</option>
-              {['Draft','Pending Manager Approval','Pending HR Approval','Approved','Rejected by Manager','Rejected by HR','Cancelled'].map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
+              {['Draft','Pending Manager Approval','Pending Dept Approval','Pending HR Approval','Approved','Rejected by Manager','Rejected by Dept','Rejected by HR','Cancelled'].map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
+            </select>
+            <select
+              value={leaveTypeF}
+              onChange={(e) => setLeaveTypeF(e.target.value)}
+              className="h-10 min-w-[150px] cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]"
+            >
+              <option value="">All Leave Types</option>
+              {leaveTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-3">
             <p className="text-xs font-medium text-slate-500">{requests.length} records shown</p>
-            {(search || statusF || year !== currentYear) ? (
+            {(search || statusF || leaveTypeF || year !== currentYear) ? (
               <button
                 type="button"
-                onClick={() => { setSearch(''); setStatusF(''); setYear(currentYear); }}
+                onClick={() => { setSearch(''); setStatusF(''); setLeaveTypeF(''); setYear(currentYear); }}
                 className="inline-flex items-center rounded-none border border-dashed border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50/50"
               >
                 Reset Filters
@@ -393,8 +474,11 @@ export default function LeaveAbsence() {
           onPageChange={(idx) => setCurrentPage(idx + 1)}
         />
       </div>
+      )}
 
-      <AddLeaveModal 
+      {activeTab === 'holidays' && <HolidayListWidget />}
+
+      <AddLeaveModal
         isOpen={applyModal}
         onClose={closeApplyModal}
         leaveTypes={leaveTypes}
@@ -457,7 +541,7 @@ export default function LeaveAbsence() {
               </div>
             )}
             
-            {(selected.status === 'Pending' || selected.status === 'Manager_Approved') && (
+            {canActOnRequest(selected) && (selected.status === 'Pending Manager Approval' || selected.status === 'Pending Dept Approval' || selected.status === 'Pending HR Approval') && (
               <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
                 <button onClick={() => { setViewModal(false); openAction(selected, 'Reject'); }} className="px-5 py-2 rounded-none bg-white border border-red-200 text-sm font-bold uppercase tracking-wider text-red-600 hover:bg-red-50 transition">Reject</button>
                 <button onClick={() => { setViewModal(false); openAction(selected, 'Approve'); }} className="px-5 py-2 rounded-none bg-[#0F766E] text-sm font-bold uppercase tracking-wider text-white hover:bg-[#0c6b64] shadow-sm transition">Approve</button>

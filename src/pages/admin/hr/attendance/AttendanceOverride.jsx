@@ -27,8 +27,9 @@ const inputClass =
 const labelClass = 'text-sm font-medium text-slate-700'
 
 export default function AttendanceOverride() {
-  const { allowedModules } = useAuth()
-  const canManage = canManageAttendanceOverride(allowedModules)
+  const { allowedModules, user } = useAuth()
+  // Org (tenant) admin always has full attendance management rights.
+  const canManage = canManageAttendanceOverride(allowedModules) || user?.role === 'admin'
 
   const [form, setForm] = useState(EMPTY)
   const [empList, setEmpList] = useState([])
@@ -89,7 +90,7 @@ export default function AttendanceOverride() {
   return (
     <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
-        <h2 className="text-sm font-semibold text-white">Attendance Override</h2>
+        <h2 className="text-sm font-semibold text-white">Manual Attendance</h2>
       </div>
       <div className="p-6">
         <p className="mb-6 text-sm text-slate-500">
@@ -164,7 +165,7 @@ export default function AttendanceOverride() {
               type="submit"
               variant="teal"
               size="md"
-              label="Save Override"
+              label="Save Attendance"
               icon={HiCheck}
               loading={submitting}
               disabled={submitting}

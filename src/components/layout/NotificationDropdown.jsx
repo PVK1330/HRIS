@@ -31,6 +31,7 @@ export default function NotificationDropdown() {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
+  const abortRef = useRef(null);
   const { socket, connected } = useSocket();
 
   // Determine if user is superadmin
@@ -87,8 +88,15 @@ export default function NotificationDropdown() {
   }, []);
 
   const fetchNotifications = useCallback(async () => {
+    // Abort any in-flight request from a previous call before starting a new one.
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const { signal } = abortRef.current;
     try {
-      const response = await api.get('/notifications');
+
+      const response = await api.get('/notifications', { signal })
+
+      if (signal.aborted) return;
 
       // Extract notifications from various possible response structures
       const notificationsList = Array.isArray(response.data)
@@ -136,6 +144,7 @@ export default function NotificationDropdown() {
       const unread = mappedNotifications.filter(n => !n.isRead).length;
       setUnreadCount(unread);
     } catch (err) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError') return;
       console.error('[NOTIFICATION DROPDOWN] Error fetching notifications:', err);
       // Keep silent on client feed sync errors
     }
@@ -157,16 +166,12 @@ export default function NotificationDropdown() {
 
     // Initial fetch
     fetchNotifications();
-    fetchUnreadCount();
-    
-    // Periodic refresh
-    const interval = setInterval(() => {
-      fetchNotifications();
-      fetchUnreadCount();
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, [user?.id, fetchNotifications, fetchUnreadCount]);
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => {
+      clearInterval(interval);
+      abortRef.current?.abort();
+    };
+  }, [user?.id, fetchNotifications]);
 
   const allCount = notifications.length;
   const readCount = notifications.filter(n => n.isRead).length;

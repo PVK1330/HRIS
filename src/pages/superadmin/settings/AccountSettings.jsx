@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { Toggle } from '../../../components/ui/Toggle.jsx'
 import settingsService from '../../../services/settingsService.js'
 import { superadminService } from '../../../services/superadminService.js'
+import ChangePasswordCard from '../../admin/settings/ChangePasswordCard.jsx'
 
 const mfaErr = (e, fb) => e?.response?.data?.message || e?.message || fb
 
@@ -342,6 +343,18 @@ export default function AccountSettings() {
             </p>
           </div>
           <MfaSection />
+        </div>
+
+        <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
+          <div className="px-4 sm:px-0">
+            <h2 className="text-base font-semibold leading-7 text-gray-900">My Password</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-600">
+              Change the password for your own platform account.
+            </p>
+          </div>
+          <div className="md:col-span-2">
+            <ChangePasswordCard />
+          </div>
         </div>
 
       </div>

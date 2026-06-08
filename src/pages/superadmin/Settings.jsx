@@ -176,7 +176,7 @@ function LogoPanel() {
       <div className="space-y-3">
         <div>
           <h3 className="text-sm font-bold text-slate-900">Platform Logo</h3>
-          <p className="text-xs text-slate-400 mt-0.5">SVG or PNG — max 2 MB</p>
+          <p className="text-xs text-slate-400 mt-0.5">PNG or JPG — max 2 MB</p>
         </div>
         <div className="relative group rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 flex flex-col items-center justify-center transition-all hover:border-teal-400 hover:bg-white cursor-pointer">
           <img src="/HRIS_Logo.png" alt="Logo" className="h-12 w-auto object-contain mb-4 group-hover:scale-105 transition-transform" />

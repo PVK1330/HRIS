@@ -883,34 +883,55 @@ export default function Onboarding() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-2">
-            <div className="space-y-6">
-              <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
-                <HiClipboardDocumentCheck className="h-5 w-5 text-[#0F766E]" /> HR checklist
-              </h4>
-              <div className="space-y-4">
-                {['Offer letter issued', 'Policy acknowledgement', 'Document verification'].map((task, i) => (
-                  <label key={task} className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E]/30 cursor-pointer transition-all">
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{task}</span>
-                    <input type="checkbox" className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-0 focus:ring-offset-0" defaultChecked={i < 2} />
-                  </label>
-                ))}
+          {(() => {
+            // Real progress derived from the candidate's actual workflow state.
+            const WF_RANK = { draft: 0, offer_sent: 1, rejected: 1, accepted_pending_upload: 2, documents_pending: 3, onboarding_complete: 4 }
+            const rank = WF_RANK[selectedHire?.workflowStatus] ?? 0
+            const rejected = selectedHire?.workflowStatus === 'rejected'
+            const docMeta = onboardingReviewMeta?.progress
+            const hrSteps = [
+              { label: 'Offer letter issued', done: rank >= 1 },
+              { label: 'Offer accepted & signed', done: rank >= 2, note: rejected ? 'Rejected' : null },
+              {
+                label: 'Documents submitted',
+                done: rank >= 3,
+                note: docMeta ? `${docMeta.approvedCount ?? 0}/${docMeta.mandatoryCount ?? 0} approved` : null,
+              },
+              { label: 'Onboarding completed', done: rank >= 4 },
+            ]
+            const itSteps = [
+              { label: 'Work email configured', done: !!selectedHire?.email },
+              { label: 'Account activated', done: rank >= 4 },
+            ]
+            const StatusRow = ({ label, done, note }) => (
+              <div className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50">
+                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{label}</span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${done ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
+                  {done ? 'Done' : note || 'Pending'}
+                </span>
               </div>
-            </div>
-            <div className="space-y-6">
-              <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
-                <HiCpuChip className="h-5 w-5 text-[#0F766E]" /> IT checklist
-              </h4>
-              <div className="space-y-4">
-                {['Work email configured', 'Hardware allocation'].map((task, i) => (
-                  <label key={task} className="flex items-center justify-between p-3 border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#0F766E]/30 cursor-pointer transition-all">
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{task}</span>
-                    <input type="checkbox" className="h-5 w-5 rounded-none border-slate-300 text-[#0F766E] focus:ring-0 focus:ring-offset-0" defaultChecked={Boolean(selectedHire?.email) && i === 0} />
-                  </label>
-                ))}
+            )
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-2">
+                <div className="space-y-6">
+                  <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
+                    <HiClipboardDocumentCheck className="h-5 w-5 text-[#0F766E]" /> HR progress
+                  </h4>
+                  <div className="space-y-4">
+                    {hrSteps.map((s) => <StatusRow key={s.label} {...s} />)}
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <h4 className="flex items-center gap-3 text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3">
+                    <HiCpuChip className="h-5 w-5 text-[#0F766E]" /> IT / Access
+                  </h4>
+                  <div className="space-y-4">
+                    {itSteps.map((s) => <StatusRow key={s.label} {...s} />)}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )
+          })()}
 
           <div className="rounded-none border border-amber-100 bg-amber-50/80 px-4 py-3 text-xs text-amber-900">
             <strong>Complete onboarding</strong> requires offer acceptance, signed offer, and all mandatory documents approved.

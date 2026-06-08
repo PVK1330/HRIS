@@ -34,6 +34,7 @@ import NotificationDropdown from "../components/layout/NotificationDropdown.jsx"
 import { useAuth } from "../context/AuthContext.jsx";
 import useTenantLogo from "../hooks/useTenantLogo.js";
 import { isEmployeeUser } from "../utils/userRoles.js";
+import { SocketProvider } from "../hooks/useSocket.js";
 
 const adminNavGroups = [
   {
@@ -288,13 +289,6 @@ function titleCaseSegment(seg) {
     .join(" ");
 }
 
-const ROLE_DISPLAY = {
-  admin: "HR Admin",
-  hr_admin: "HR Admin",
-  hr_executive: "HR Executive",
-  manager: "Manager",
-  employee: "Employee",
-};
 
 const FEATURE_PATH_MAP = {
   employee_management: ["/admin/employee-directory", "/admin/employee-profile"],
@@ -354,12 +348,11 @@ function normalizeFeatureCode(code) {
 }
 
 export default function AdminLayout() {
-  const { user, logout, hasModule, hasFeatureAccess, switchRole, billing } = useAuth();
+  const { user, logout, hasModule, hasFeatureAccess, billing } = useAuth();
   const showTrialBanner =
     billing?.trial_active && billing?.days_left != null && billing.days_left <= 7;
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
 
   const filteredNavGroups = useMemo(() => {
     const tenantFeatures = user?.tenant_features || [];
@@ -473,6 +466,7 @@ export default function AdminLayout() {
   const { logoUrl, loading: logoLoading } = useTenantLogo();
 
   return (
+    <SocketProvider>
     <div className="flex h-screen min-h-0 w-full overflow-hidden bg-[#F9FAFB]">
       {/* Dev Role Indicator Banner */}
       <div className="fixed top-0 left-0 right-0 z-[100] h-1 bg-[#0E9F6E] shadow-[0_1px_10px_rgba(14,159,110,0.45)]" />
@@ -526,43 +520,7 @@ export default function AdminLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Dev Role Switcher — only for mock roles */}
-            {user?.role !== "admin" && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
-                  className="flex items-center gap-2 rounded-lg bg-[#F9FAFB] px-3 py-1.5 text-[11px] font-bold text-[#0E9F6E] transition-all hover:bg-[#E5E7EB] ring-1 ring-[#E5E7EB]"
-                >
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#0E9F6E] animate-pulse" />
-                  <span>{ROLE_DISPLAY[user?.role]}</span>
-                  <span className="text-[10px] opacity-40">▼</span>
-                </button>
-
-                {showRoleSwitcher && (
-                  <div className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-lg border border-[#E5E7EB] bg-white p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-[#E5E7EB] animate-in fade-in zoom-in-95 duration-200">
-                    <div className="px-3 py-2 text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
-                      Select Access Level
-                    </div>
-                    {Object.entries(ROLE_DISPLAY)
-                      .filter(([k]) => k !== "admin")
-                      .map(([roleKey, label]) => (
-                        <button
-                          key={roleKey}
-                          className={`w-full rounded-lg px-3 py-2.5 text-left text-xs font-semibold transition-all ${user?.role === roleKey ? "bg-[#F9FAFB] text-[#0E9F6E] ring-1 ring-[#E5E7EB]" : "text-[#6B7280] hover:bg-[#F9FAFB]"}`}
-                          onClick={() => {
-                            switchRole(roleKey);
-                            setShowRoleSwitcher(false);
-                          }}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Role badge for real tenant admin */}
+            {/* Role badge */}
             {user?.role === "admin" && (
               <div className="flex items-center gap-2 rounded-lg bg-[#F9FAFB] px-3 py-1.5 text-[11px] font-bold text-[#0E9F6E] ring-1 ring-[#E5E7EB]">
                 <div className="h-1.5 w-1.5 rounded-full bg-[#0E9F6E]" />
@@ -572,8 +530,8 @@ export default function AdminLayout() {
 
             <Link
               to="/admin/security"
-              title="Security & two-factor authentication"
-              aria-label="Security settings"
+              title="My Account — profile, password & two-factor authentication"
+              aria-label="My account"
               className={`rounded-lg p-2 transition-all ${
                 location.pathname === "/admin/security"
                   ? "bg-[#0E9F6E]/10 text-[#0E9F6E]"
@@ -631,5 +589,6 @@ export default function AdminLayout() {
         </main>
       </div>
     </div>
+    </SocketProvider>
   );
 }
