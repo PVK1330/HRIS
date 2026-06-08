@@ -9,7 +9,7 @@ import { Modal } from '../../../components/ui/Modal.jsx';
 import { Table } from '../../../components/ui/Table.jsx';
 import {
   listLeave, applyLeave, processLeave, listBalances, getLeaveTypes,
-  getEmployeeLeave,
+  getEmployeeLeave, exportLeave,
 } from '../../../services/leaveService.js';
 import { getAttendanceDashboard } from '../../../services/attendanceService.js';
 import { listEmployees } from '../../../services/employeeService.js';
@@ -58,6 +58,23 @@ export default function LeaveAbsence() {
   const [statusF, setStatusF] = useState('');
   const [leaveTypeF, setLeaveTypeF] = useState('');
   const [year, setYear] = useState(currentYear);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async (format) => {
+    setExportOpen(false);
+    setExporting(true);
+    try {
+      await exportLeave(format, {
+        year, status: statusF, leaveType: leaveTypeF, department: dept, search,
+      });
+      toast.success(`Leave ${format === 'pdf' ? 'PDF' : 'Excel'} downloaded`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState(null);
@@ -327,9 +344,25 @@ export default function LeaveAbsence() {
           <p className="text-xs font-medium text-slate-500">View and process employee leave requests and absences.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
-            <HiArrowDownTray className="h-4 w-4" /> Export
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              disabled={exporting}
+              onClick={() => setExportOpen((o) => !o)}
+              className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 shadow-sm disabled:opacity-50"
+            >
+              <HiArrowDownTray className="h-4 w-4" /> {exporting ? 'Exporting…' : 'Export'}
+            </button>
+            {exportOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setExportOpen(false)} />
+                <div className="absolute right-0 z-20 mt-1 w-40 rounded-none border border-slate-200 bg-white shadow-lg">
+                  <button type="button" onClick={() => handleExport('excel')} className="block w-full px-4 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50">Excel (.xlsx)</button>
+                  <button type="button" onClick={() => handleExport('pdf')} className="block w-full px-4 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50">PDF (.pdf)</button>
+                </div>
+              </>
+            )}
+          </div>
           {canApply ? (
             <button onClick={openApplyModal} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
               <HiPlus className="h-4 w-4" /> Add Leave

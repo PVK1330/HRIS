@@ -57,3 +57,23 @@ export const getLeaveTypes = async () => {
   const { data } = await api.get(`${BASE}/types`)
   return data
 }
+
+/**
+ * GET /api/v1/leave/export/{excel|pdf}
+ * Branded, role-scoped download. Triggers a browser file download.
+ */
+export const exportLeave = async (format = 'excel', params = {}) => {
+  const path = format === 'pdf' ? `${BASE}/export/pdf` : `${BASE}/export/excel`
+  const res = await api.get(path, { params, responseType: 'blob' })
+  const blob = new Blob([res.data], { type: res.headers['content-type'] })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  const cd = res.headers['content-disposition'] || ''
+  const match = cd.match(/filename="?([^"]+)"?/)
+  a.download = match ? match[1] : `leave-report.${format === 'pdf' ? 'pdf' : 'xlsx'}`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}

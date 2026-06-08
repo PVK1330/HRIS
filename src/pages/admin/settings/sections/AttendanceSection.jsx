@@ -4,7 +4,6 @@ import {
   APPROVERS,
   BREAK_DURATION_OPTIONS,
   EARLY_DEPARTURE_RULES,
-  OVERTIME_APPROVERS,
   WHO_CAN_SUBMIT,
 } from '../attendanceConstants'
 import {
@@ -214,20 +213,29 @@ export default function AttendanceSection({ registerToolbar }) {
               ))}
             </select>
           </FieldRow>
-          <FieldRow label="Mandatory Quota (Hours)" hint="Decimal format (e.g. 8.5)">
+          <FieldRow
+            label="Mandatory Quota (Hours)"
+            hint={draft.workHours.autoCalculateHours
+              ? 'Auto-derived from Operational Start, End & Rest Interval'
+              : 'Decimal format (e.g. 8.5)'}
+          >
             <TextInput
               type="number"
               step="0.25"
               min={1}
               max={24}
               value={draft.workHours.totalRequiredHours}
+              disabled={draft.workHours.autoCalculateHours}
               onChange={(e) =>
                 updateWorkHours({ totalRequiredHours: parseFloat(e.target.value) || 0 })
               }
               className="max-w-[140px]"
             />
           </FieldRow>
-          <FieldRow label="Automated Quota Calculus">
+          <FieldRow
+            label="Automated Quota Calculus"
+            hint="Derive required daily hours from the operational window instead of the manual quota."
+          >
             <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.workHours.autoCalculateHours}
@@ -288,8 +296,8 @@ export default function AttendanceSection({ registerToolbar }) {
           </FieldRow>
       </SectionCard>
 
-      <SectionCard title="Attendance regularization">
-          <FieldRow label="Originating Authority">
+      <SectionCard title="Regularization">
+          <FieldRow label="Who can submit">
             <SelectInput
               options={WHO_CAN_SUBMIT}
               value={draft.regularizationSettings.whoCanSubmitRequest}
@@ -298,14 +306,14 @@ export default function AttendanceSection({ registerToolbar }) {
               }
             />
           </FieldRow>
-          <FieldRow label="Decision Custodian">
+          <FieldRow label="Approver">
             <SelectInput
               options={APPROVERS}
               value={draft.regularizationSettings.approver}
               onChange={(e) => updateRegularization({ approver: e.target.value })}
             />
           </FieldRow>
-          <FieldRow label="System Purge Interval (Days)" hint="Auto-rejection cycle">
+          <FieldRow label="Auto-reject after (days)" hint="Reject if not approved in time.">
             <TextInput
               type="number"
               min={1}
@@ -319,7 +327,7 @@ export default function AttendanceSection({ registerToolbar }) {
               className="max-w-[140px]"
             />
           </FieldRow>
-          <FieldRow label="Allow Self-Regularisation" hint="Employees can raise their own corrections.">
+          <FieldRow label="Allow self-requests" hint="Let employees submit their own corrections.">
             <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.regularizationSettings.allowSelf}
@@ -327,7 +335,7 @@ export default function AttendanceSection({ registerToolbar }) {
               />
             </div>
           </FieldRow>
-          <FieldRow label="Max Regularisations per Month" hint="Cap per employee (0 = unlimited).">
+          <FieldRow label="Max per month" hint="Limit per employee (0 = no limit).">
             <TextInput
               type="number"
               min={0}
@@ -337,7 +345,7 @@ export default function AttendanceSection({ registerToolbar }) {
               className="max-w-[140px]"
             />
           </FieldRow>
-          <FieldRow label="Auto-approve if Manager Absent" hint="Auto-approve after the days below if the manager is on leave.">
+          <FieldRow label="Auto-approve if manager absent" hint="Approve after the days below if the manager hasn't acted.">
             <div className="flex min-h-9 items-center gap-3">
               <Toggle
                 checked={draft.regularizationSettings.autoApproveEnabled}
@@ -392,16 +400,6 @@ export default function AttendanceSection({ registerToolbar }) {
               />
               <span className="text-xs font-semibold text-slate-400">minutes</span>
             </div>
-          </FieldRow>
-          <FieldRow
-            label="Overtime Approver"
-            hint="Default role responsible for approving overtime requests."
-          >
-            <SelectInput
-              options={OVERTIME_APPROVERS}
-              value={draft.overtimeSettings.approver}
-              onChange={(e) => updateOvertime({ approver: e.target.value })}
-            />
           </FieldRow>
           <FieldRow
             label="Max Overtime per Month"
@@ -524,15 +522,7 @@ export default function AttendanceSection({ registerToolbar }) {
               <span className="text-xs font-semibold text-slate-400">hours</span>
             </div>
           </FieldRow>
-          <FieldRow label="Biometric Sync" hint="Sync punches from biometric devices.">
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.generalSettings.biometricSyncEnabled}
-                onChange={(v) => updateGeneral({ biometricSyncEnabled: v })}
-              />
-            </div>
-          </FieldRow>
-          <FieldRow label="WFH Marking Allowed" hint="Allow employees to mark Work From Home.">
+          <FieldRow label="Allow WFH marking" hint="Let employees check in as Work From Home.">
             <div className="flex min-h-9 items-center">
               <Toggle
                 checked={draft.generalSettings.wfhMarkingAllowed}
