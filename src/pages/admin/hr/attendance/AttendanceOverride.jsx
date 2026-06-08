@@ -27,8 +27,9 @@ const inputClass =
 const labelClass = 'text-sm font-medium text-slate-700'
 
 export default function AttendanceOverride() {
-  const { allowedModules } = useAuth()
-  const canManage = canManageAttendanceOverride(allowedModules)
+  const { allowedModules, user } = useAuth()
+  // Org (tenant) admin always has full attendance management rights.
+  const canManage = canManageAttendanceOverride(allowedModules) || user?.role === 'admin'
 
   const [form, setForm] = useState(EMPTY)
   const [empList, setEmpList] = useState([])
