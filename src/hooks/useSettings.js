@@ -7,7 +7,10 @@ import toast from 'react-hot-toast'
  * Pattern: every settings page calls one fetcher to load data, optionally a
  * saver to persist edits, and shows a toast on each outcome.
  *
- * @param {() => Promise<any>} fetchFn  loader called once on mount
+ * fetchFn may optionally accept an AbortSignal as its first argument — when
+ * it does, in-flight requests are cancelled on unmount and on manual refetch.
+ *
+ * @param {(signal?: AbortSignal) => Promise<any>} fetchFn  loader called on mount / refetch
  * @param {(data:any) => Promise<any>} saveFn  saver invoked by `save()`
  * @returns {{ data:any, setData:Function, loading:boolean, error:string|null,
  *             save:Function, saving:boolean, refetch:Function }}
@@ -17,29 +20,33 @@ export default function useSettings(fetchFn, saveFn) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [tick, setTick] = useState(0)
 
-  const refetch = useCallback(async () => {
+  useEffect(() => {
     if (typeof fetchFn !== 'function') {
       setLoading(false)
       return
     }
+    const controller = new AbortController()
     setLoading(true)
     setError(null)
-    try {
-      const res = await fetchFn()
-      setData(res?.data ?? res)
-    } catch (err) {
-      const msg = err?.message || 'Failed to load settings'
-      setError(msg)
-      toast.error(msg)
-    } finally {
-      setLoading(false)
-    }
-  }, [fetchFn])
 
-  useEffect(() => {
-    refetch()
-  }, [refetch])
+    fetchFn(controller.signal)
+      .then((res) => {
+        if (controller.signal.aborted) return
+        setData(res?.data ?? res)
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (controller.signal.aborted || err.name === 'CanceledError' || err.name === 'AbortError') return
+        const msg = err?.message || 'Failed to load settings'
+        setError(msg)
+        toast.error(msg)
+        setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [fetchFn, tick])
 
   const save = useCallback(
     async (overrideData) => {
@@ -64,6 +71,8 @@ export default function useSettings(fetchFn, saveFn) {
     },
     [data, saveFn]
   )
+
+  const refetch = useCallback(() => setTick((t) => t + 1), [])
 
   return { data, setData, loading, error, save, saving, refetch }
 }

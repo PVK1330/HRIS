@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { HiArrowPath } from 'react-icons/hi2'
 
 const variantClasses = {
@@ -22,7 +23,7 @@ function resolveText(label, children) {
   return null
 }
 
-export function Button({
+export const Button = memo(function Button({
   label,
   children,
   onClick,
@@ -59,4 +60,4 @@ export function Button({
       {text != null && text !== '' && <span className="whitespace-nowrap">{text}</span>}
     </button>
   )
-}
+})

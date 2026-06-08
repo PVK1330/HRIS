@@ -4,6 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const api = axios.create({
   baseURL: `${API_URL}/api/v1`,
+  withCredentials: true, // send httpOnly refresh-token cookie on every request
 })
 
 api.interceptors.request.use((config) => {
@@ -13,5 +14,76 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
+
+// Queue of callers waiting for a refresh in progress
+let isRefreshing = false
+const refreshSubscribers = []
+
+function notifySubscribers(newToken) {
+  while (refreshSubscribers.length) {
+    refreshSubscribers.shift()(newToken)
+  }
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config
+
+    const isAuthEndpoint =
+      original?.url?.includes('/auth/refresh') ||
+      original?.url?.includes('/auth/login') ||
+      original?.url?.includes('/superadmin/login') ||
+      original?.url?.includes('/superadmin/verify-2fa') ||
+      original?.url?.includes('/auth/verify-2fa')
+
+    // Only attempt refresh when we have an access token — a 401 with no token
+    // means the caller is unauthenticated, not expired. Trying to refresh in
+    // that case causes an infinite loop (no cookie → refresh 401 → redirect →
+    // page reload → same unauthenticated request → repeat).
+    const hasToken = !!localStorage.getItem('hris_token')
+
+    if (error.response?.status === 401 && !original._retried && !isAuthEndpoint && hasToken) {
+      if (isRefreshing) {
+        // Queue this request to retry once the ongoing refresh completes
+        return new Promise((resolve, reject) => {
+          refreshSubscribers.push((token) => {
+            if (!token) return reject(error)
+            original.headers.Authorization = `Bearer ${token}`
+            resolve(api(original))
+          })
+        })
+      }
+
+      original._retried = true
+      isRefreshing = true
+
+      try {
+        const { data } = await api.post('/auth/refresh')
+        const newToken = data?.data?.token
+        if (!newToken) throw new Error('No token in refresh response')
+
+        localStorage.setItem('hris_token', newToken)
+        api.defaults.headers.common.Authorization = `Bearer ${newToken}`
+        original.headers.Authorization = `Bearer ${newToken}`
+
+        notifySubscribers(newToken)
+        return api(original)
+      } catch {
+        notifySubscribers(null)
+        localStorage.removeItem('hris_token')
+        localStorage.removeItem('hris_auth_user')
+        localStorage.removeItem('allowedModules')
+        const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || ''
+        window.location.replace(`${window.location.origin}${base}/login`)
+        return Promise.reject(error)
+      } finally {
+        isRefreshing = false
+      }
+    }
+
+    return Promise.reject(error)
+  },
+)
 
 export default api

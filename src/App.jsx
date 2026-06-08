@@ -2,15 +2,18 @@ import {Toaster} from "react-hot-toast"
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { CurrencyProvider } from "./context/CurrencyContext.jsx";
 import AppRouter from './routes/AppRouter.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 export default function App() {
   return (
     <>
-      <AuthProvider>
-        <CurrencyProvider>
-          <AppRouter />
-        </CurrencyProvider>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <CurrencyProvider>
+            <AppRouter />
+          </CurrencyProvider>
+        </AuthProvider>
+      </ErrorBoundary>
       <Toaster
         position="top-right"
         toastOptions={{

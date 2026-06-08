@@ -38,9 +38,11 @@ export function CurrencyProvider({ children }) {
     }
   }, [])
 
-  // Reload on mount and whenever the signed-in identity changes (login / logout
-  // / role switch) so money formatting is correct right after login.
+  // Reload whenever the signed-in identity changes so money formatting is
+  // correct right after login. Skip when user is null — the endpoint requires
+  // auth and calling it unauthenticated would trigger an interceptor loop.
   useEffect(() => {
+    if (!user) return
     reload()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.email, user?.role])

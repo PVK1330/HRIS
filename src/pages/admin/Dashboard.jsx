@@ -57,87 +57,6 @@ const EMPTY_STATS = {
   announcements: [],
 }
 
-export default function Dashboard() {
-  const { user, allowedModules } = useAuth()
-  const hasEmployeeProfile = Boolean(user?.employeeId || user?.id)
-  const showPunchCard = hasEmployeeProfile
-  const [isLoading, setIsLoading] = useState(true)
-  const [dateRange, setDateRange] = useState('Last 30 days')
-  const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
-  const [birthdays, setBirthdays] = useState([])
-
-  const isManager = user?.role === 'manager'
-  const isHRAdmin = user?.role === 'admin' || user?.role === 'hr_admin'
-  const isEmployee = user?.role === 'employee'
-  const isHrView = user?.role === 'admin' || user?.role === 'hr_admin' || user?.role === 'hr_executive'
-
-  const todayLabel = useMemo(
-    () =>
-      new Date().toLocaleDateString('en-GB', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }),
-    [],
-  )
-
-  const loadDashboardData = async () => {
-    setIsLoading(true)
-    try {
-      if (isEmployee) {
-        const employeeId = user?.employeeId || user?.id
-        if (employeeId) {
-          const data = await fetchEmployeeDashboard(employeeId)
-          setDashboardData((prev) => ({ ...prev, ...data }))
-        }
-
-      } else {
-        const data = await fetchAdminDashboard()
-        setDashboardData(data)
-      }
-    } catch (err) {
-      console.error('Dashboard load failed:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadDashboardData()
-  }, [user?.id, user?.employeeId, user?.role])
-
-  const announcements = dashboardData.announcements || []
-  const notifications = dashboardData.notifications || []
-  const notificationsUnread = dashboardData.notificationsUnread || 0
-  const unreadMessages = dashboardData.unreadMessages || 0
-  const recentConversations = dashboardData.recentConversations || []
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6 pb-10">
-        <div className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
-        <div className="h-40 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
-        <DashboardStats items={[]} loading />
-      </div>
-    )
-  }
-
-  if (isManager) return <ManagerDashboard />
-  if (isEmployee) {
-    return (
-      <EmployeeDashboard
-        dashboardData={dashboardData}
-        dateRange={dateRange}
-        setDateRange={setDateRange}
-        todayLabel={todayLabel}
-        showPunchCard={showPunchCard}
-        setSelectedAnnouncement={setSelectedAnnouncement}
-      />
-    )
-  }
-
 function EmployeeDashboard({ dashboardData, dateRange, setDateRange, todayLabel, showPunchCard, setSelectedAnnouncement }) {
   const announcements = dashboardData.announcements || []
   const notifications = dashboardData.notifications || []
@@ -236,6 +155,89 @@ function EmployeeDashboard({ dashboardData, dateRange, setDateRange, todayLabel,
     </div>
   )
 }
+
+export default function Dashboard() {
+  const { user, allowedModules } = useAuth()
+  const hasEmployeeProfile = Boolean(user?.employeeId || user?.id)
+  const showPunchCard = hasEmployeeProfile
+  const [isLoading, setIsLoading] = useState(true)
+  const [dateRange, setDateRange] = useState('Last 30 days')
+  const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
+  const [birthdays, setBirthdays] = useState([])
+
+  const isManager = user?.role === 'manager'
+  const isHRAdmin = user?.role === 'admin' || user?.role === 'hr_admin'
+  const isEmployee = user?.role === 'employee'
+  const isHrView = user?.role === 'admin' || user?.role === 'hr_admin' || user?.role === 'hr_executive'
+
+  const todayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    [],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    setIsLoading(true)
+
+    const run = async () => {
+      try {
+        if (user?.role === 'employee') {
+          const employeeId = user?.employeeId || user?.id
+          if (employeeId) {
+            const data = await fetchEmployeeDashboard(employeeId)
+            if (!cancelled) setDashboardData((prev) => ({ ...prev, ...data }))
+          }
+        } else {
+          const data = await fetchAdminDashboard()
+          if (!cancelled) setDashboardData(data)
+        }
+      } catch (err) {
+        if (!cancelled) console.error('Dashboard load failed:', err)
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    run()
+    return () => { cancelled = true }
+  }, [user?.id, user?.employeeId, user?.role])
+
+  const announcements = dashboardData.announcements || []
+  const notifications = dashboardData.notifications || []
+  const notificationsUnread = dashboardData.notificationsUnread || 0
+  const unreadMessages = dashboardData.unreadMessages || 0
+  const recentConversations = dashboardData.recentConversations || []
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pb-10">
+        <div className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
+        <div className="h-40 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
+        <DashboardStats items={[]} loading />
+      </div>
+    )
+  }
+
+  if (isManager) return <ManagerDashboard />
+  if (isEmployee) {
+    return (
+      <EmployeeDashboard
+        dashboardData={dashboardData}
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        todayLabel={todayLabel}
+        showPunchCard={showPunchCard}
+        setSelectedAnnouncement={setSelectedAnnouncement}
+      />
+    )
+  }
 
   const statsItems = [
     {

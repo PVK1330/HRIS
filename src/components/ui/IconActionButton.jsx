@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Tooltip } from './Tooltip.jsx'
 
 const tones = {
@@ -9,7 +10,7 @@ const tones = {
 /**
  * Table / toolbar icon action with visible label and tooltip.
  */
-export function IconActionButton({
+export const IconActionButton = memo(function IconActionButton({
   label,
   icon: Icon,
   onClick,
@@ -32,4 +33,4 @@ export function IconActionButton({
   )
 
   return tooltip ? <Tooltip content={tooltip}>{btn}</Tooltip> : btn
-}
+})

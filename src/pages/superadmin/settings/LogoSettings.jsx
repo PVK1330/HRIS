@@ -133,9 +133,9 @@ export default function LogoSettings() {
         <div>
           <label className="cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
             <span>Change</span>
-            <input type="file" className="sr-only" accept="image/*" onChange={(e) => onFileChange(e.target.files?.[0])} />
+            <input type="file" className="sr-only" accept="image/png,image/jpeg,image/x-icon" onChange={(e) => onFileChange(e.target.files?.[0])} />
           </label>
-          <p className="mt-2 text-xs leading-5 text-gray-500">PNG, JPG, GIF up to 2MB</p>
+          <p className="mt-2 text-xs leading-5 text-gray-500">PNG, JPG, ICO up to 2MB</p>
         </div>
       </div>
     </div>

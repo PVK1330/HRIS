@@ -10,8 +10,8 @@ import { computeNextEmpIdFromRecords, formatEmpId, parseEmpIdSequence } from '..
  * GET /api/v1/employees/stats
  * Returns summary counts: total, active, on leave, etc.
  */
-export const getEmployeeStats = async () => {
-  const { data } = await api.get('/employees/stats')
+export const getEmployeeStats = async ({ signal, ...params } = {}) => {
+  const { data } = await api.get('/employees/stats', { params, signal })
   return data.data
 }
 
@@ -19,8 +19,8 @@ export const getEmployeeStats = async () => {
  * GET /api/v1/employees/filters
  * Returns distinct filter option lists: departments, jobTitles, workLocations, workModes, statuses
  */
-export const getFilterOptions = async () => {
-  const { data } = await api.get('/employees/filters')
+export const getFilterOptions = async ({ signal, ...params } = {}) => {
+  const { data } = await api.get('/employees/filters', { params, signal })
   return data.data
 }
 
@@ -68,8 +68,8 @@ export const listEmployeesDropdown = async (params = {}) => {
  * GET /api/v1/employees (paginated directory listing)
  * @returns {Promise<{ records: Array, employees: Array, pagination: object, filters?: object, total: number, page: number, limit: number, pages: number }>}
  */
-export const listEmployees = async (params = {}) => {
-  const { data } = await api.get('/employees', { params })
+export const listEmployees = async ({ signal, ...params } = {}) => {
+  const { data } = await api.get('/employees', { params, signal })
   const p = data.data
   if (p && Array.isArray(p.records)) {
     const total = p.pagination?.total ?? 0

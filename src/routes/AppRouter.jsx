@@ -8,6 +8,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import PermissionGate from "../components/PermissionGate.jsx";
 import AttendanceModuleGate from "../components/AttendanceModuleGate.jsx";
 import AdminLayout from "../layouts/AdminLayout.jsx";
@@ -98,8 +99,11 @@ const RecaptchaSettings = lazy(() => import("../pages/superadmin/settings/Recapt
 function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (!allowedRoles.includes(user.role))
+  if (!allowedRoles.includes(user.role)) {
+    if (SUPER_ROLES.includes(user.role)) return <Navigate to="/superadmin/dashboard" replace />;
+    if (ADMIN_ROLES.includes(user.role)) return <Navigate to="/admin/dashboard" replace />;
     return <Navigate to="/login" replace />;
+  }
   return children;
 }
 
@@ -129,8 +133,10 @@ function PaymentGate({ children }) {
 
 function RootLayout() {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full"></div></div>}>
-      <Outlet />
+    <Suspense fallback={<div role="status" aria-label="Loading" className="flex h-screen items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" aria-hidden="true"></div></div>}>
+      <ErrorBoundary>
+        <Outlet />
+      </ErrorBoundary>
     </Suspense>
   );
 }

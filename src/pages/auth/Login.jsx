@@ -45,6 +45,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState(null)
   const [mfaToken, setMfaToken] = useState(null)
+  const [impersonationLoading, setImpersonationLoading] = useState(false)
+  const [impersonationError, setImpersonationError] = useState('')
   const tenantSlugFromHost =
     typeof window !== 'undefined' ? parseTenantSlugFromHostname(window.location.hostname) : null
 
@@ -68,8 +70,56 @@ export default function Login() {
     }
   }, [user, navigate])
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('impersonation_code')
+    if (!code) return
+    window.history.replaceState({}, '', window.location.pathname)
+    setImpersonationLoading(true)
+    axios
+      .post(`${API_URL}/api/v1/auth/exchange-impersonation-code`, { code })
+      .then((response) => {
+        const result = response.data
+        if (!result.success) throw new Error(result.message || 'Exchange failed')
+        const d = result.data
+        login(d.user, d.token, d.plan_details || [], d.plan_features || [], d.tenant_features || [], d.allowedModules)
+      })
+      .catch((err) => {
+        setImpersonationError(err.response?.data?.message || err.message || 'Impersonation session failed')
+      })
+      .finally(() => setImpersonationLoading(false))
+  }, [])
+
   // If already logged in, don't show the form to avoid flicker
   if (user) return null
+
+  if (impersonationLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#0F766E] border-t-transparent" />
+          <p className="text-sm font-medium text-gray-600">Establishing session…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (impersonationError) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl text-center">
+          <p className="text-sm font-semibold text-red-600 mb-4">{impersonationError}</p>
+          <button
+            type="button"
+            onClick={() => setImpersonationError('')}
+            className="text-sm font-semibold text-[#0F766E] hover:underline"
+          >
+            Back to login
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const selectTab = (id) => {
     if (id === activeTab) return
@@ -308,13 +358,6 @@ export default function Login() {
                     )
                   })}
                 </div>
-
-                {/*
-                  REMOVED: "Quick Login Roles" + "Demo Credentials" prefill block.
-                  It auto-filled demo accounts (e.g. superadmin@hris.com / SuperAdmin123),
-                  which is not appropriate for production. Account-type switching is now
-                  handled by the clean selector above. Restore from git history if needed.
-                */}
 
                 <form className="space-y-5" onSubmit={handleSignIn} noValidate>
                   <Input

@@ -1,6 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { HiXMark } from 'react-icons/hi2'
+
+// Elements that can receive keyboard focus, used to scope the focus trap.
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 const sizeClasses = {
   sm: 'max-w-sm sm:max-w-md',
@@ -30,11 +34,63 @@ export function Modal({
   showClose = true,
   icon: Icon,
 }) {
+  const dialogRef = useRef(null)
+  const previouslyFocusedRef = useRef(null)
+  const titleId = useId()
+
+  // Keep the latest onClose without re-running the focus effect when its
+  // identity changes (which would otherwise disturb focus mid-open).
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
   useEffect(() => {
     if (!isOpen) return
 
+    // Remember the trigger so focus can be restored to it on close.
+    previouslyFocusedRef.current = document.activeElement
+
+    const getFocusable = () => {
+      const node = dialogRef.current
+      if (!node) return []
+      return Array.from(node.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+        (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement,
+      )
+    }
+
+    // Move focus into the dialog unless an autoFocus child already claimed it.
+    if (!dialogRef.current?.contains(document.activeElement)) {
+      const focusables = getFocusable()
+      ;(focusables[0] || dialogRef.current)?.focus()
+    }
+
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose?.()
+      if (e.key === 'Escape') {
+        onCloseRef.current?.()
+        return
+      }
+      if (e.key !== 'Tab') return
+
+      // Focus trap: keep Tab / Shift+Tab cycling within the dialog.
+      const items = getFocusable()
+      if (items.length === 0) {
+        e.preventDefault()
+        dialogRef.current?.focus()
+        return
+      }
+      const first = items[0]
+      const last = items[items.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey) {
+        if (active === first || !dialogRef.current?.contains(active)) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else if (active === last || !dialogRef.current?.contains(active)) {
+        e.preventDefault()
+        first.focus()
+      }
     }
 
     window.addEventListener('keydown', onKey)
@@ -45,8 +101,14 @@ export function Modal({
     return () => {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = prevOverflow
+
+      // Restore focus to the element that opened the modal.
+      const toRestore = previouslyFocusedRef.current
+      if (toRestore && typeof toRestore.focus === 'function') {
+        toRestore.focus()
+      }
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -61,9 +123,13 @@ export function Modal({
       />
 
       <div
-        className={`relative w-full ${maxW} max-h-[90vh] sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden rounded-lg bg-white shadow-2xl z-[9999]`}
+        ref={dialogRef}
+        tabIndex={-1}
+        className={`relative w-full ${maxW} max-h-[90vh] sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden rounded-lg bg-white shadow-2xl z-[9999] focus:outline-none`}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title || header ? titleId : undefined}
+        aria-label={!title && !header ? 'Dialog' : undefined}
         onClick={(e) => e.stopPropagation()}
       >
         {showClose && (
@@ -81,7 +147,7 @@ export function Modal({
           {/* Header */}
           <div className="px-4 sm:px-5 pt-5 sm:pt-6 pb-2 sm:pb-2">
             {header ? (
-              <div className="pr-8 sm:pr-10">{header}</div>
+              <div id={titleId} className="pr-8 sm:pr-10">{header}</div>
             ) : (
               <div className="flex items-center gap-3 sm:gap-4">
                 {Icon && (
@@ -91,7 +157,7 @@ export function Modal({
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
+                  <h2 id={titleId} className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
                     {title}
                   </h2>
 

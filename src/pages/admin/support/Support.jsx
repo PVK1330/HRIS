@@ -153,7 +153,7 @@ export default function SupportManagement() {
   const fetchTickets = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`${API_URL}/api/admin/support/tickets`, {
+      const response = await axios.get(`${API_URL}/api/v1/admin/support/tickets`, {
         headers: authHeaders(),
       })
       const data = (response.data.data || []).map(normalizeTicket)
@@ -317,7 +317,7 @@ export default function SupportManagement() {
         payload.append('attachment', formData.attachmentFile)
       }
 
-      const response = await axios.post(`${API_URL}/api/admin/support/tickets`, payload, {
+      const response = await axios.post(`${API_URL}/api/v1/admin/support/tickets`, payload, {
         headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' },
       })
 
@@ -339,7 +339,7 @@ export default function SupportManagement() {
 
   const handleViewTicket = async (ticket) => {
     try {
-      const response = await axios.get(`${API_URL}/api/admin/support/tickets/${ticket.id}`, {
+      const response = await axios.get(`${API_URL}/api/v1/admin/support/tickets/${ticket.id}`, {
         headers: authHeaders(),
       })
       if (response?.data?.success) {
@@ -376,7 +376,7 @@ export default function SupportManagement() {
     if (!result.isConfirmed) return
 
     try {
-      await axios.delete(`${API_URL}/api/admin/support/tickets/${ticketId}`, {
+      await axios.delete(`${API_URL}/api/v1/admin/support/tickets/${ticketId}`, {
         headers: authHeaders(),
       })
       setTickets((prev) => prev.filter((t) => t.id !== ticketId))
@@ -405,7 +405,7 @@ export default function SupportManagement() {
       payload.append('message', replyText.trim())
       if (ticketStatus && ticketStatus !== selectedTicket.status) payload.append('status', ticketStatus)
 
-      const response = await axios.put(`${API_URL}/api/admin/support/tickets/${selectedTicket.id}`, payload, {
+      const response = await axios.put(`${API_URL}/api/v1/admin/support/tickets/${selectedTicket.id}`, payload, {
         headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' },
       })
       const updated = response?.data?.data?.ticket || response?.data?.data || response?.data

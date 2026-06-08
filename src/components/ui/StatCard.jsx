@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 const colorMap = {
   blue: { border: 'border-l-4 border-blue-500', value: 'text-blue-600' },
   red: { border: 'border-l-4 border-[#C8102E]', value: 'text-[#C8102E]' },
@@ -9,7 +11,7 @@ const colorMap = {
   slate: { border: 'border-l-4 border-slate-900', value: 'text-slate-900' },
 }
 
-export function StatCard({ title, value, subtitle, color = 'blue', icon: Icon }) {
+export const StatCard = memo(function StatCard({ title, value, subtitle, color = 'blue', icon: Icon }) {
   const cfg = colorMap[color] ?? colorMap.blue
 
   return (
@@ -24,4 +26,4 @@ export function StatCard({ title, value, subtitle, color = 'blue', icon: Icon })
       {subtitle && <div className="mt-0.5 text-[10px] text-gray-400">{subtitle}</div>}
     </div>
   )
-}
+})
