@@ -29,6 +29,7 @@ export default function NotificationDropdown() {
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
   const abortRef = useRef(null);
   const { socket, connected } = useSocket();
@@ -113,14 +114,7 @@ export default function NotificationDropdown() {
           id: n.id ?? n.notificationId ?? n._id ?? null,
           title: n.title ?? n.subject ?? 'Notification',
           message: n.message ?? n.body ?? n.description ?? '',
-          // CRITICAL: Handle both snake_case (backend) and camelCase
-          read: typeof n.read === 'boolean'
-            ? n.read
-            : typeof n.isRead === 'boolean'
-              ? n.isRead
-              : typeof n.is_read === 'boolean'
-                ? n.is_read
-                : false,
+          // CRITICAL: Handle both snake_case (backend) and camelCase - normalize to isRead
           isRead: typeof n.isRead === 'boolean'
             ? n.isRead
             : typeof n.is_read === 'boolean'
@@ -134,7 +128,6 @@ export default function NotificationDropdown() {
           forAdmin: n.forAdmin ?? n.for_admin ?? false,
           // CRITICAL: Handle both snake_case and camelCase for timestamps
           createdAt: n.createdAt ?? n.created_at ?? null,
-          created_at: n.created_at ?? n.createdAt ?? null,
           time:
             n.time ||
             (n.createdAt || n.created_at
@@ -146,6 +139,10 @@ export default function NotificationDropdown() {
       });
 
       setNotifications(mappedNotifications);
+      
+      // Calculate unread count
+      const unread = mappedNotifications.filter(n => !n.isRead).length;
+      setUnreadCount(unread);
     } catch (err) {
       if (err.name === 'CanceledError' || err.name === 'AbortError') return;
       console.error('[NOTIFICATION DROPDOWN] Error fetching notifications:', err);
@@ -153,9 +150,21 @@ export default function NotificationDropdown() {
     }
   }, []);
 
+  // Fetch unread count separately for accuracy
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const response = await api.get('/notifications/unread-count');
+      const count = response.data?.count ?? response.data?.unreadCount ?? 0;
+      setUnreadCount(count);
+    } catch (err) {
+      console.error('[NOTIFICATION DROPDOWN] Error fetching unread count:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user?.id) return;
 
+    // Initial fetch
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => {
@@ -165,26 +174,15 @@ export default function NotificationDropdown() {
   }, [user?.id, fetchNotifications]);
 
   const allCount = notifications.length;
-  const unreadCount = notifications.filter(n => !n.read && !n.isRead).length;
-  const readCount = notifications.filter(n => (n.read || n.isRead)).length;
-
-
+  const readCount = notifications.filter(n => n.isRead).length;
 
   const filteredNotifications = notifications.filter((n) => {
-    const isRead = n.read || n.isRead;
-
-    if (filter === 'unread') return !isRead;
-    if (filter === 'read') return isRead;
-
+    if (filter === 'unread') return !n.isRead;
+    if (filter === 'read') return n.isRead;
     return true;
   });
 
-
-
   // Use the shared authenticated socket from useSocket().
-  // The previous implementation created a SECOND socket here with auth: { token: `Bearer ${token}` }
-  // which the backend correctly rejected (JWT verify fails on "Bearer xxx" prefix) — so the
-  // new_notification listener was always attached to a dead/disconnected socket.
   useEffect(() => {
     if (!socket || !connected) return;
 
@@ -193,57 +191,77 @@ export default function NotificationDropdown() {
         playNotificationSound(notification.priority);
       }
       fetchNotifications();
+      fetchUnreadCount();
     };
 
     socket.on('new_notification', handleNewNotification);
-    socket.on('ticket:created', fetchNotifications);
-    socket.on('ticket:updated', fetchNotifications);
+    socket.on('ticket:created', () => { fetchNotifications(); fetchUnreadCount(); });
+    socket.on('ticket:updated', () => { fetchNotifications(); fetchUnreadCount(); });
 
     return () => {
       socket.off('new_notification', handleNewNotification);
-      socket.off('ticket:created', fetchNotifications);
-      socket.off('ticket:updated', fetchNotifications);
+      socket.off('ticket:created');
+      socket.off('ticket:updated');
     };
-  }, [socket, connected, fetchNotifications, playNotificationSound]);
-
-
+  }, [socket, connected, fetchNotifications, fetchUnreadCount, playNotificationSound]);
 
   const toggleDropdown = () => {
     const nextState = !isOpen;
     setIsOpen(nextState);
 
     if (nextState) {
-
       fetchNotifications();
+      fetchUnreadCount();
     }
   };
 
   const markAsRead = async (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true, read: true } : n));
     try {
-      await api.patch(`/notifications/${id}/read`);
+      // Optimistically update frontend
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Call API to persist
+      await api.patch(`/notifications/${id}/mark-read`);
+      
+      // Refetch to ensure consistency
+      await fetchUnreadCount();
     } catch (err) {
       console.error('[NOTIFICATION DROPDOWN] Failed to mark notification read:', err);
+      // Refetch on error to revert
+      await fetchNotifications();
+      await fetchUnreadCount();
     }
   };
 
   const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true, read: true })));
     try {
+      // Optimistically update frontend
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      
+      // Call API to persist
       await api.patch('/notifications/mark-all-read');
+      
+      // Refetch to ensure consistency
+      await fetchNotifications();
+      await fetchUnreadCount();
     } catch (err) {
       console.error('[NOTIFICATION DROPDOWN] Failed to mark all notifications read:', err);
+      // Refetch on error to revert
+      await fetchNotifications();
+      await fetchUnreadCount();
     }
   };
 
   const deleteNotification = async (id) => {
-
     setNotifications(prev => prev.filter(n => n.id !== id));
     if (selectedNotification?.id === id) {
       setSelectedNotification(null);
     }
     try {
       await api.delete(`/notifications/${id}`);
+      await fetchUnreadCount();
     } catch (err) {
       console.error('[NOTIFICATION DROPDOWN] Failed to delete notification:', err);
     }
@@ -326,7 +344,7 @@ export default function NotificationDropdown() {
               </button>
             </h3>
 
-            {notifications.length > 0 && !showSettings && (
+            {notifications.length > 0 && !showSettings && unreadCount > 0 && (
               <button
                 className="text-xs font-semibold text-slate-600 hover:text-slate-900"
                 onClick={markAllAsRead}
@@ -412,13 +430,13 @@ export default function NotificationDropdown() {
                   {filteredNotifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${isNotificationUnread(n) ? 'bg-primary/5' : 'bg-white'} hover:bg-slate-100`}
+                      className={`p-4 hover:bg-background-tertiary/50 transition-all duration-150 relative group cursor-pointer ${!n.isRead ? 'bg-primary/5' : 'bg-white'} hover:bg-slate-100`}
                       onClick={() => handleNotificationClick(n)}
                     >
                       <div className="flex gap-3">
                         <div className="mt-0.5">{getIcon(n.type)}</div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm truncate ${isNotificationUnread(n) ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
+                          <p className={`text-sm truncate ${!n.isRead ? 'text-text-primary font-bold' : 'text-text-secondary'}`}>
                             {n.title}
                           </p>
                           <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
@@ -435,7 +453,7 @@ export default function NotificationDropdown() {
                           <HiTrash className="h-4 w-4" />
                         </button>
                       </div>
-                      {isNotificationUnread(n) && (
+                      {!n.isRead && (
                         <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary shadow-md" />
                       )}
                     </div>
