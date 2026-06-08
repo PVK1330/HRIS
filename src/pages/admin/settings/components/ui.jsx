@@ -175,14 +175,14 @@ export function Toggle({ checked, defaultChecked = false, onChange, disabled = f
       type="button"
       disabled={disabled}
       onClick={flip}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-none transition-colors focus:outline-none disabled:opacity-50 ${
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/30 disabled:opacity-50 ${
         on ? 'bg-[#0F766E]' : 'bg-gray-200'
       }`}
       aria-pressed={on}
     >
       <span
-        className={`inline-block h-3.5 w-3.5 transform rounded-none bg-white shadow transition-transform ${
-          on ? 'translate-x-5' : 'translate-x-1'
+        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+          on ? 'translate-x-[18px]' : 'translate-x-1'
         }`}
       />
     </button>

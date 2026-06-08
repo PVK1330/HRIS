@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import {
   HiCheck,
   HiPaperAirplane,
@@ -25,14 +25,36 @@ import {
 } from '../../../../services/attendanceService.js'
 
 const EMPTY = { date: '', checkInTime: '', checkOutTime: '', reason: '', workMode: 'In Office' }
+
+/**
+ * Per-stage approval trail for the details modal. Each stage carries its own
+ * status column ('N/A' | 'Pending' | 'Approved' | 'Rejected') plus the approver
+ * name, so the state is read directly — no inference needed.
+ */
+function buildRegTrail(row) {
+  return [
+    { label: 'Reporting Manager',   status: row.manager_approval_status,    name: row.manager_approver_name },
+    { label: 'Department Head', status: row.department_approval_status, name: row.dept_approver_name },
+    { label: 'HR Department',        status: row.hr_approval_status,         name: row.hr_approver_name },
+  ]
+}
+
+function regStatusColor(s) {
+  if (s === 'Approved') return 'emerald'
+  if (s === 'Rejected') return 'red'
+  if (s === 'Pending')  return 'amber'
+  return 'gray'
+}
 const inputClass =
   'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-600 focus:ring-1 focus:ring-teal-600 outline-none'
 const labelClass = 'text-sm font-medium text-slate-700'
 
 export default function AttendanceRegularization() {
-  const { allowedModules } = useAuth()
-  const canSubmit = canRequestRegularization(allowedModules)
-  const canApprove = canApproveRegularization(allowedModules)
+  const { allowedModules, user } = useAuth()
+  // Org (tenant) admin always has full regularization submit/approve rights.
+  const isOrgAdmin = user?.role === 'admin'
+  const canSubmit = canRequestRegularization(allowedModules) || isOrgAdmin
+  const canApprove = canApproveRegularization(allowedModules) || isOrgAdmin
 
   const [history, setHistory] = useState([])
   const [form, setForm] = useState(EMPTY)
@@ -171,7 +193,7 @@ export default function AttendanceRegularization() {
             {
               key: 'regularization_status',
               label: 'Status',
-              render: (_, r) => <Badge>{r.regularization_status}</Badge>,
+              render: (_, r) => <Badge label={r.regularization_status || '—'} color={regStatusColor(r.regularization_status)} />,
             },
             {
               key: 'pending_approver_role',
@@ -182,10 +204,10 @@ export default function AttendanceRegularization() {
               key: 'actions',
               label: 'Actions',
               render: (_, r) => {
-                const isPending = r.regularization_status === 'Pending'
-                // Never allow acting on your own request (no self-approval),
-                // even if you hold approve/reject permission.
-                const isOwn = r.is_self === true
+                // can_act (server-computed) is true ONLY for the responsible
+                // approver of this request's CURRENT stage — so Approve/Reject
+                // shows for the current level only, never previous/future ones,
+                // and never for the requester themselves.
                 return (
                   <div className="flex items-center justify-center gap-2">
                     <button
@@ -196,7 +218,7 @@ export default function AttendanceRegularization() {
                     >
                       <HiEye className="h-4 w-4" />
                     </button>
-                    {isPending && canApprove && !isOwn && (
+                    {r.can_act && (
                       <>
                         <button
                           type="button"
@@ -360,7 +382,7 @@ export default function AttendanceRegularization() {
             </div>
             <div>
               <dt className={labelClass}>Status</dt>
-              <dd className="mt-1"><Badge>{viewRow.regularization_status}</Badge></dd>
+              <dd className="mt-1"><Badge label={viewRow.regularization_status || '—'} color={regStatusColor(viewRow.regularization_status)} /></dd>
             </div>
             <div>
               <dt className={labelClass}>Approver level</dt>
@@ -381,6 +403,31 @@ export default function AttendanceRegularization() {
                 <dd className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{viewRow.regularization_remarks}</dd>
               </div>
             )}
+
+            {/* Approval trail */}
+            <div className="sm:col-span-2 border-t border-slate-100 pt-3">
+              <dt className="text-sm font-semibold text-slate-600">Approval Status</dt>
+              <dl className="mt-2 grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                {buildRegTrail(viewRow).map((s) => {
+                  const status = s.status || 'N/A'
+                  return (
+                    <Fragment key={s.label}>
+                      <dt className="font-medium text-slate-500">{s.label}</dt>
+                      <dd className="col-span-2 text-slate-800">
+                        {status === 'Approved' && (
+                          <span className="font-medium text-emerald-700">✓ Approved{s.name ? ` — ${s.name}` : ''}</span>
+                        )}
+                        {status === 'Rejected' && (
+                          <span className="font-medium text-red-600">✗ Rejected{s.name ? ` — ${s.name}` : ''}</span>
+                        )}
+                        {status === 'Pending' && <span className="text-amber-600">Pending</span>}
+                        {status === 'N/A' && <span className="text-slate-300">Not required</span>}
+                      </dd>
+                    </Fragment>
+                  )
+                })}
+              </dl>
+            </div>
           </dl>
         )}
       </Modal>

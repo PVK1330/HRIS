@@ -18,10 +18,17 @@ const tabs = [
 ]
 
 function tabVisible(tab, mods, overtimeEnabled, user) {
+  // Organisation (tenant) admin sees every attendance tab regardless of the
+  // individual RBAC slugs. Overtime still follows the org-wide feature switch,
+  // since that's a feature toggle (settings) rather than a permission.
+  if (user?.role === 'admin') {
+    return tab.kind === 'overtime' ? overtimeEnabled : true;
+  }
+
   if (user?.dataScope === 'self') {
     if (tab.kind === 'team' || tab.kind === 'manage') return false;
   }
-  
+
   if (tab.kind === 'manage') return canManageAttendanceOverride(mods)
   // Overtime tab shows when overtime is enabled in settings, to any user with attendance
   // access (employees add/track their own; managers/HR also approve/manage).

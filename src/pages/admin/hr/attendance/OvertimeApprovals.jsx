@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { HiCheck, HiXMark, HiClock, HiCheckBadge, HiDocumentText, HiMagnifyingGlass, HiPlus, HiEye, HiPencil, HiTrash } from 'react-icons/hi2'
 import { Badge } from '../../../../components/ui/Badge.jsx'
 import { Button } from '../../../../components/ui/Button.jsx'
@@ -43,10 +43,44 @@ function StatusPill({ status }) {
 
 const ACTIONABLE = new Set(['Pending', 'Manager_Approved', 'Dept_Approved'])
 
+/**
+ * Build the per-stage approval trail for the details modal: who acted at each
+ * stage, with their remark. A reject stamps that stage's *_approved_by column,
+ * so when the record is Rejected the last stamped stage is the one that rejected
+ * (earlier stamped stages were genuine approvals); the reason lives in
+ * overtime_rejection_reason.
+ */
+function buildOvertimeTrail(row) {
+  const stages = [
+    { label: 'Reporting Manager',   by: row.overtime_manager_approved_by, name: row.overtime_manager_approver_name, remark: row.overtime_manager_remarks },
+    { label: 'Department Head', by: row.overtime_dept_approved_by,    name: row.overtime_dept_approver_name,    remark: row.overtime_dept_remarks },
+    { label: 'HR Department',        by: row.overtime_hr_approved_by,      name: row.overtime_hr_approver_name,      remark: row.overtime_hr_remarks },
+  ]
+  const rejected = row.overtime_status === 'Rejected'
+  let rejectIdx = -1
+  if (rejected) {
+    for (let k = stages.length - 1; k >= 0; k -= 1) {
+      if (stages[k].by) { rejectIdx = k; break }
+    }
+  }
+  return stages.map((s, idx) => {
+    const prevDone = idx === 0 || Boolean(stages[idx - 1].by)
+    let state
+    if (rejected && idx === rejectIdx) state = 'rejected'
+    else if (s.by) state = 'approved'
+    else if (rejected) state = 'na'
+    else if (prevDone) state = 'pending'
+    else state = 'na'
+    return { ...s, state }
+  })
+}
+
 export default function OvertimeApprovals() {
   const { user, allowedModules } = useAuth()
-  const canApprove = canApproveRegularization(allowedModules)
-  const canManage = canManageAttendanceOverride(allowedModules)
+  // Org (tenant) admin always has full overtime approve/manage rights.
+  const isOrgAdmin = user?.role === 'admin'
+  const canApprove = canApproveRegularization(allowedModules) || isOrgAdmin
+  const canManage = canManageAttendanceOverride(allowedModules) || isOrgAdmin
   // Employees (attendance.create) may add their OWN overtime; managers may add for their scope.
   const canAdd = canManage || canPunchAttendance(allowedModules, user)
   const myEmployeeId = Number(user?.employeeId ?? user?.id)
@@ -247,10 +281,12 @@ export default function OvertimeApprovals() {
             },
             {
               key: 'approver_name',
-              label: 'Approver',
+              label: 'Pending With / Approver',
               render: (v, r) => (
                 <span className="text-sm text-slate-600">
-                  {r.overtime_status === 'Pending' ? '—' : (v || '—')}
+                  {ACTIONABLE.has(r.overtime_status)
+                    ? (r.pending_stage_label || '—')
+                    : (v || '—')}
                 </span>
               ),
             },
@@ -260,6 +296,9 @@ export default function OvertimeApprovals() {
               render: (_, r) => {
                 const isActionable = ACTIONABLE.has(r.overtime_status)
                 const own = isOwn(r)
+                // can_act (server-computed) is true ONLY for the responsible
+                // approver of the record's CURRENT stage — so Approve/Reject
+                // appears for the current level only, never earlier/later ones.
                 return (
                   <div className="flex items-center justify-center gap-2">
                     <button
@@ -270,7 +309,7 @@ export default function OvertimeApprovals() {
                     >
                       <HiEye className="h-4 w-4" />
                     </button>
-                    {isActionable && canApprove && !own && (
+                    {r.can_act && (
                       <>
                         <button
                           type="button"
@@ -367,7 +406,7 @@ export default function OvertimeApprovals() {
         isOpen={!!viewRow}
         onClose={() => setViewRow(null)}
         title="Overtime details"
-        footer={viewRow && ACTIONABLE.has(viewRow.overtime_status) && canApprove && !isOwn(viewRow) ? (
+        footer={viewRow && viewRow.can_act ? (
           <div className="flex flex-wrap justify-end gap-3">
             <Button variant="danger" size="md" label="Reject" icon={HiXMark} onClick={() => startAction(viewRow, 'reject')} />
             <Button variant="Approve" size="md" label="Approve" icon={HiCheck} onClick={() => startAction(viewRow, 'approve')} />
@@ -390,32 +429,26 @@ export default function OvertimeApprovals() {
             <dd className="col-span-2 text-slate-800 whitespace-pre-wrap">{viewRow.reason || '—'}</dd>
 
             {/* Approval trail */}
-            <dt className="col-span-3 font-semibold text-slate-600 border-t border-slate-100 pt-2 mt-1">Approval Trail</dt>
+            <dt className="col-span-3 font-semibold text-slate-600 border-t border-slate-100 pt-2 mt-1">Approval Status</dt>
 
-            <dt className="font-medium text-slate-500">Manager</dt>
-            <dd className="col-span-2 text-slate-800">
-              {viewRow.overtime_manager_approved_by
-                ? <span className="text-emerald-700 font-medium">✓ Approved</span>
-                : <span className="text-slate-400">Pending</span>}
-            </dd>
-
-            <dt className="font-medium text-slate-500">Dept Head</dt>
-            <dd className="col-span-2 text-slate-800">
-              {viewRow.overtime_dept_approved_by
-                ? <span className="text-emerald-700 font-medium">✓ Approved</span>
-                : viewRow.overtime_manager_approved_by
-                  ? <span className="text-amber-600">Pending</span>
-                  : <span className="text-slate-300">—</span>}
-            </dd>
-
-            <dt className="font-medium text-slate-500">HR</dt>
-            <dd className="col-span-2 text-slate-800">
-              {viewRow.overtime_hr_approved_by
-                ? <span className="text-emerald-700 font-medium">✓ Approved</span>
-                : viewRow.overtime_dept_approved_by
-                  ? <span className="text-amber-600">Pending</span>
-                  : <span className="text-slate-300">—</span>}
-            </dd>
+            {buildOvertimeTrail(viewRow).map((s) => (
+              <Fragment key={s.label}>
+                <dt className="font-medium text-slate-500">{s.label}</dt>
+                <dd className="col-span-2 text-slate-800">
+                  {s.state === 'approved' && (
+                    <span className="font-medium text-emerald-700">✓ Approved{s.name ? ` — ${s.name}` : ''}</span>
+                  )}
+                  {s.state === 'rejected' && (
+                    <span className="font-medium text-red-600">✗ Rejected{s.name ? ` — ${s.name}` : ''}</span>
+                  )}
+                  {s.state === 'pending' && <span className="text-amber-600">Pending</span>}
+                  {s.state === 'na' && <span className="text-slate-300">—</span>}
+                  {s.remark && (
+                    <p className="mt-0.5 text-xs italic text-slate-500 whitespace-pre-wrap">“{s.remark}”</p>
+                  )}
+                </dd>
+              </Fragment>
+            ))}
 
             {viewRow.overtime_rejection_reason && (
               <>

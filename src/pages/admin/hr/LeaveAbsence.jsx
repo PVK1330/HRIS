@@ -247,6 +247,14 @@ export default function LeaveAbsence() {
     return String(row.employee_id) === selfEmployeeId;
   };
 
+  // A request belongs to the logged-in user — no self-approval/reject, even
+  // for approvers. Guards against the employee seeing approve/reject on their
+  // own leave when the backend grants a self-scoped leave.approve slug.
+  const isOwnRequest = (row) => !!selfEmployeeId && String(row.employee_id) === selfEmployeeId;
+
+  // Only true approvers acting on someone else's request may approve/reject.
+  const canActOnRequest = (row) => canApprove && !isOwnRequest(row);
+
   const requestCols = [
     {
       key: 'employee_name', label: 'EMPLOYEE',
@@ -286,7 +294,7 @@ export default function LeaveAbsence() {
           <button type="button" onClick={() => { setSelected(row); setViewModal(true); }} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700" title="View details">
             <HiEye className="h-4 w-4" />
           </button>
-          {canApprove && (row.status === 'Pending Manager Approval' || row.status === 'Pending Dept Approval' || row.status === 'Pending HR Approval') && (
+          {canActOnRequest(row) && (row.status === 'Pending Manager Approval' || row.status === 'Pending Dept Approval' || row.status === 'Pending HR Approval') && (
             <>
               <button type="button" title="Approve" onClick={() => openAction(row, 'Approve')} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors">
                 <HiCheck className="h-4 w-4" />
@@ -533,7 +541,7 @@ export default function LeaveAbsence() {
               </div>
             )}
             
-            {(selected.status === 'Pending' || selected.status === 'Manager_Approved') && (
+            {canActOnRequest(selected) && (selected.status === 'Pending Manager Approval' || selected.status === 'Pending Dept Approval' || selected.status === 'Pending HR Approval') && (
               <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
                 <button onClick={() => { setViewModal(false); openAction(selected, 'Reject'); }} className="px-5 py-2 rounded-none bg-white border border-red-200 text-sm font-bold uppercase tracking-wider text-red-600 hover:bg-red-50 transition">Reject</button>
                 <button onClick={() => { setViewModal(false); openAction(selected, 'Approve'); }} className="px-5 py-2 rounded-none bg-[#0F766E] text-sm font-bold uppercase tracking-wider text-white hover:bg-[#0c6b64] shadow-sm transition">Approve</button>
