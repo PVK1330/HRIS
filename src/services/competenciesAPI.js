@@ -43,8 +43,21 @@ const createCompetency = async (competencyData) => {
 }
 
 /**
+ * Update a competency's name
+ *
+ * @param {number|string} id - Competency ID
+ * @param {Object} competencyData - Competency data
+ * @param {string} competencyData.competencyName - New name of the competency (required)
+ * @returns {Promise<Object>} Response with updated competency data
+ */
+const updateCompetency = async (id, competencyData) => {
+  const response = await api.put(`${BASE_URL}/${id}`, competencyData)
+  return response.data
+}
+
+/**
  * Delete a competency
- * 
+ *
  * @param {number|string} id - Competency ID
  * @returns {Promise<Object>} Response with success message
  */
@@ -66,6 +79,7 @@ const getSummary = async () => {
 export default {
   getAllCompetencies,
   createCompetency,
+  updateCompetency,
   deleteCompetency,
   getSummary,
 }

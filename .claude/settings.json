@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /s /B d:\\\\freelancer\\\\HRIS)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\freelancer\\\\HRIS\\\\src\" -Recurse | Where-Object {$_.PSIsContainer} | Select-Object FullName | Sort-Object FullName)",
+      "Bash(node -c src/constants/permissions.js)",
+      "Bash(node -c src/routes/employeePerformanceRoutes.js)",
+      "Bash(node -c src/routes/managerPerformanceRoutes.js)",
+      "Bash(node -c src/routes/performance.routes.js)",
+      "Bash(node -c src/controllers/employeePerformanceController.js)",
+      "Bash(npx eslint *)"
+    ]
+  }
+}
