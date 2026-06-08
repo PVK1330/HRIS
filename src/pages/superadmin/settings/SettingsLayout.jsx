@@ -6,10 +6,6 @@ const FALLBACK_SECTIONS = [
   { key: 'general', label: 'General', items: [{ label: 'General Settings', to: '/superadmin/settings/general' }] },
 ]
 
-const ACTIVE_CLS = 'bg-slate-900 text-white shadow-lg shadow-slate-200'
-const INACTIVE_CLS = 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-const DISABLED_CLS = 'cursor-not-allowed text-slate-300 opacity-60'
-
 function SectionLabel({ children }) {
   return (
     <div className="px-3.5 pb-1.5 pt-5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -34,7 +30,7 @@ function ChildNavItem({ item }) {
       to={item.to}
       className={`block px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all ${
         isActive
-          ? 'bg-slate-900 text-white shadow-md'
+          ? 'bg-[#0F766E] text-white shadow-md hover:bg-[#115E59]'
           : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
       }`}
     >

@@ -30,34 +30,34 @@ const NAV_GROUPS = [
   {
     label: 'GENERAL',
     items: [
-      { id: 'general',  label: 'General Settings', icon: HiCog6Tooth },
-      { id: 'company',  label: 'Company Details',  icon: HiInformationCircle },
-      { id: 'domain',   label: 'Domain Settings',  icon: HiGlobeAlt },
-      { id: 'logo',     label: 'Logo',             icon: HiPhoto },
+      { id: 'general', label: 'General Settings', icon: HiCog6Tooth },
+      { id: 'company', label: 'Company Details', icon: HiInformationCircle },
+      { id: 'domain', label: 'Domain Settings', icon: HiGlobeAlt },
+      { id: 'logo', label: 'Logo', icon: HiPhoto },
     ],
   },
   {
     label: 'SECURITY',
     items: [
-      { id: 'security',  label: 'Account Settings', icon: HiShieldCheck },
-      { id: 'recaptcha', label: 'reCAPTCHA',        icon: HiExclamationTriangle },
+      { id: 'security', label: 'Account Settings', icon: HiShieldCheck },
+      { id: 'recaptcha', label: 'reCAPTCHA', icon: HiExclamationTriangle },
     ],
   },
   {
     label: 'BILLING',
     items: [
-      { id: 'currency', label: 'Currency',         icon: HiCurrencyDollar },
-      { id: 'trial',    label: 'Free Trial',       icon: HiCheckCircle },
+      { id: 'currency', label: 'Currency', icon: HiCurrencyDollar },
+      { id: 'trial', label: 'Free Trial', icon: HiCheckCircle },
       { id: 'gateways', label: 'Payment Gateways', icon: HiCreditCard },
     ],
   },
   {
     label: 'INTEGRATIONS',
     items: [
-      { id: 'email-templates', label: 'Email Templates',   icon: HiEnvelope },
-      { id: 'email-settings',  label: 'Email Settings',    icon: HiServer },
-      { id: 'whatsapp',        label: 'WhatsApp Settings', icon: HiDevicePhoneMobile },
-      { id: 'google-login',    label: 'Google Login',      icon: HiGlobeAlt },
+      { id: 'email-templates', label: 'Email Templates', icon: HiEnvelope },
+      { id: 'email-settings', label: 'Email Settings', icon: HiServer },
+      { id: 'whatsapp', label: 'WhatsApp Settings', icon: HiDevicePhoneMobile },
+      { id: 'google-login', label: 'Google Login', icon: HiGlobeAlt },
     ],
   },
 ]
@@ -71,7 +71,7 @@ function Sidebar({ activeTab, onSelect }) {
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         {NAV_GROUPS.map((group, gi) => (
           <div key={group.label}>
-            {gi > 0 && <div className="h-px bg-slate-100 mx-4" />}
+            {gi > 0 && <div className="h-px bg-slate-200 mx-4" />}
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 px-4 pt-4 pb-1">
               {group.label}
             </p>
@@ -115,7 +115,7 @@ function GeneralPanel({ platformName, setPlatformName, supportEmail, setSupportE
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <Input label="Platform Display Name" value={platformName} onChange={(e) => setPlatformName(e.target.value)} />
+        <Input label="Platform Display Name" value={platformName} onChange={(e) => setPlatformName(e.target.value)}/>
         <Input label="Core Support Email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} />
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Timezone</label>
@@ -324,10 +324,10 @@ function GatewaysPanel({ stripeEnabled, setStripeEnabled }) {
 
 function EmailTemplatesPanel() {
   const templates = [
-    { title: 'Welcome Email',    desc: 'Sent when a new user is invited.' },
-    { title: 'Password Reset',   desc: 'Triggered on forgot-password requests.' },
-    { title: 'Invoice Receipt',  desc: 'Sent after successful billing.' },
-    { title: 'Security Alert',   desc: 'Sent on suspicious login activity.' },
+    { title: 'Welcome Email', desc: 'Sent when a new user is invited.' },
+    { title: 'Password Reset', desc: 'Triggered on forgot-password requests.' },
+    { title: 'Invoice Receipt', desc: 'Sent after successful billing.' },
+    { title: 'Security Alert', desc: 'Sent on suspicious login activity.' },
   ]
   return (
     <div className="space-y-3">
@@ -506,18 +506,18 @@ function TwoFAModal({ isOpen, onClose }) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('general')
-  const [show2FA, setShow2FA]     = useState(false)
+  const [show2FA, setShow2FA] = useState(false)
 
   // State
-  const [platformName, setPlatformName]     = useState('HRIS Cloud')
-  const [supportEmail, setSupportEmail]     = useState('support@hriscloud.io')
+  const [platformName, setPlatformName] = useState('HRIS Cloud')
+  const [supportEmail, setSupportEmail] = useState('support@hriscloud.io')
   const [maintenanceMode, setMaintenanceMode] = useState(false)
-  const [smtpHost, setSmtpHost]             = useState('smtp.sendgrid.net')
-  const [smtpPort, setSmtpPort]             = useState('587')
-  const [smtpUsername, setSmtpUsername]     = useState('apikey')
-  const [smtpSecure, setSmtpSecure]         = useState(true)
-  const [stripeEnabled, setStripeEnabled]   = useState(true)
-  const [enforceMfa, setEnforceMfa]         = useState(true)
+  const [smtpHost, setSmtpHost] = useState('smtp.sendgrid.net')
+  const [smtpPort, setSmtpPort] = useState('587')
+  const [smtpUsername, setSmtpUsername] = useState('apikey')
+  const [smtpSecure, setSmtpSecure] = useState(true)
+  const [stripeEnabled, setStripeEnabled] = useState(true)
+  const [enforceMfa, setEnforceMfa] = useState(true)
   const [auditRetention, setAuditRetention] = useState('90')
   const [sessionTimeout, setSessionTimeout] = useState('60')
 
@@ -525,20 +525,20 @@ export default function Settings() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'general':        return <GeneralPanel {...{ platformName, setPlatformName, supportEmail, setSupportEmail, maintenanceMode, setMaintenanceMode }} />
-      case 'company':        return <CompanyPanel />
-      case 'domain':         return <DomainPanel />
-      case 'logo':           return <LogoPanel />
-      case 'security':       return <SecurityPanel {...{ enforceMfa, setEnforceMfa, auditRetention, setAuditRetention, sessionTimeout, setSessionTimeout, onOpen2FA: () => setShow2FA(true) }} />
-      case 'recaptcha':      return <RecaptchaPanel />
-      case 'currency':       return <CurrencyPanel />
-      case 'trial':          return <TrialPanel />
-      case 'gateways':       return <GatewaysPanel {...{ stripeEnabled, setStripeEnabled }} />
-      case 'email-templates':return <EmailTemplatesPanel />
+      case 'general': return <GeneralPanel {...{ platformName, setPlatformName, supportEmail, setSupportEmail, maintenanceMode, setMaintenanceMode }} />
+      case 'company': return <CompanyPanel />
+      case 'domain': return <DomainPanel />
+      case 'logo': return <LogoPanel />
+      case 'security': return <SecurityPanel {...{ enforceMfa, setEnforceMfa, auditRetention, setAuditRetention, sessionTimeout, setSessionTimeout, onOpen2FA: () => setShow2FA(true) }} />
+      case 'recaptcha': return <RecaptchaPanel />
+      case 'currency': return <CurrencyPanel />
+      case 'trial': return <TrialPanel />
+      case 'gateways': return <GatewaysPanel {...{ stripeEnabled, setStripeEnabled }} />
+      case 'email-templates': return <EmailTemplatesPanel />
       case 'email-settings': return <EmailSettingsPanel {...{ smtpHost, setSmtpHost, smtpPort, setSmtpPort, smtpUsername, setSmtpUsername, smtpSecure, setSmtpSecure }} />
-      case 'whatsapp':       return <WhatsAppPanel />
-      case 'google-login':   return <GoogleLoginPanel />
-      default:               return <PlaceholderPanel label={currentItem?.label ?? 'Settings'} />
+      case 'whatsapp': return <WhatsAppPanel />
+      case 'google-login': return <GoogleLoginPanel />
+      default: return <PlaceholderPanel label={currentItem?.label ?? 'Settings'} />
     }
   }
 

@@ -20,7 +20,7 @@ export function Toggle({ checked, onChange, label, disabled, id: providedId, nam
           disabled={disabled}
         />
         <span
-          className="absolute inset-0 rounded-full bg-gray-300 transition-colors peer-checked:bg-[#004CA5] peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[#004CA5] peer-focus-visible:ring-offset-2"
+          className="absolute inset-0 rounded-full bg-gray-300 transition-colors peer-checked:bg-[#0F766E] peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[#004CA5] peer-focus-visible:ring-offset-2"
           aria-hidden
         />
         <span

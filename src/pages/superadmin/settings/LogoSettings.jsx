@@ -118,8 +118,8 @@ export default function LogoSettings() {
       {description && <p className="mt-1 text-xs text-gray-500">{description}</p>}
       <div className="mt-4 flex items-center gap-x-5">
         {(previewUrl || currentUrl) ? (
-          <div className={`overflow-hidden rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center p-2 relative ${previewUrl ? 'ring-2 ring-indigo-500' : ''}`} style={{ width: 120, height: 120 }}>
-            {previewUrl && <div className="absolute top-1 right-1 bg-indigo-500 text-white text-[9px] px-1.5 rounded uppercase font-bold tracking-wider">New</div>}
+          <div className={`overflow-hidden rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center p-2 relative ${previewUrl ? 'ring-2 ring-[#0F766E]' : ''}`} style={{ width: 120, height: 120 }}>
+            {previewUrl && <div className="absolute top-1 right-1 bg-[#0F766E] text-white text-[9px] px-1.5 rounded uppercase font-bold tracking-wider">New</div>}
             <img src={previewUrl || currentUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
           </div>
         ) : (
@@ -199,7 +199,7 @@ export default function LogoSettings() {
               <button
                 type="submit"
                 disabled={!isDirty || saving}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
               >
                 {saving ? 'Uploading...' : 'Save Changes'}
               </button>
