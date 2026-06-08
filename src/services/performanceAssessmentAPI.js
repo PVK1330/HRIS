@@ -128,6 +128,12 @@ const getSummary = async () => {
   return response.data
 }
 
+/** Get aggregated analytics for the Performance Reports dashboard */
+const getAnalytics = async () => {
+  const response = await api.get(`${BASE_URL}/analytics`)
+  return response.data
+}
+
 /** Dropdowns */
 const getCyclesDropdown = async () => {
   const response = await api.get('performance-cycles/dropdown')
@@ -198,6 +204,7 @@ export default {
   approveAssessment,
   deleteAssessment,
   getSummary,
+  getAnalytics,
   getManagerAssignedAssessments,
   updateManagerGoalsForAssessment,
   getManagerAssessments,
