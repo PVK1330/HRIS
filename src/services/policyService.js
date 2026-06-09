@@ -30,6 +30,17 @@ export const policyService = {
     return data.data;
   },
 
+  // Archived (soft-deleted) policies — admin read-only history.
+  listArchived: async () => {
+    const { data } = await api.get('/policies/archived');
+    return data.data || [];
+  },
+
+  getArchivedTracking: async (id) => {
+    const { data } = await api.get(`/policies/archived/${id}/tracking`);
+    return data.data;
+  },
+
   listMine: async () => {
     const { data } = await api.get('/policies/me');
     return data.data || [];

@@ -18,6 +18,7 @@ import {
   HiCheckCircle,
   HiXCircle,
   HiTrash,
+  HiArchiveBox,
   HiXMark
 } from 'react-icons/hi2'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -96,7 +97,11 @@ export default function Policies() {
   const [policyModalOpen, setPolicyModalOpen] = useState(false)
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [viewPolicy, setViewPolicy] = useState(null)
+  const [viewTracking, setViewTracking] = useState([])
+  const [viewIsArchived, setViewIsArchived] = useState(false)
   const [viewLoading, setViewLoading] = useState(false)
+  const [archivedPolicies, setArchivedPolicies] = useState([])
+  const [archivedLoading, setArchivedLoading] = useState(false)
   const [savingPolicy, setSavingPolicy] = useState(false)
   const [publishModalOpen, setPublishModalOpen] = useState(false)
   const [publishSettings, setPublishSettings] = useState({ ...DEFAULT_AUDIENCE_CONFIG })
@@ -227,13 +232,47 @@ export default function Policies() {
     setFormData({ ...initialFormData, sections: { ...EMPTY_POLICY_SECTIONS } })
   }
 
+  const loadArchived = async () => {
+    setArchivedLoading(true)
+    try {
+      const data = await policyService.listArchived()
+      setArchivedPolicies(Array.isArray(data) ? data : [])
+    } catch {
+      toast.error('Failed to load archived policies')
+    } finally {
+      setArchivedLoading(false)
+    }
+  }
+
+  // Read-only view of an archived policy + its retained acknowledgement history.
+  const openArchivedView = async (row) => {
+    setViewModalOpen(true)
+    setViewIsArchived(true)
+    setViewPolicy(normalizePolicyForm(row))
+    setViewTracking([])
+    setViewLoading(false)
+    try {
+      const tracking = await policyService.getArchivedTracking(row.id)
+      setViewTracking(Array.isArray(tracking) ? tracking : [])
+    } catch {
+      setViewTracking([])
+    }
+  }
+
   const openPolicyView = async (row) => {
     setViewModalOpen(true)
+    setViewIsArchived(false)
     setViewPolicy(null)
+    setViewTracking([])
     setViewLoading(true)
     try {
       const full = await policyService.getOne(row.id)
       setViewPolicy(normalizePolicyForm(full))
+      // Load who-acknowledged records in parallel (HR/manage only); non-blocking so
+      // the policy content shows immediately and the records fill in when ready.
+      if (isHR) {
+        policyService.getTracking(row.id).then(setViewTracking).catch(() => setViewTracking([]))
+      }
     } catch {
       toast.error('Failed to load policy')
       setViewModalOpen(false)
@@ -245,6 +284,8 @@ export default function Policies() {
   const closePolicyView = () => {
     setViewModalOpen(false)
     setViewPolicy(null)
+    setViewTracking([])
+    setViewIsArchived(false)
   }
 
   const handleEditFromView = () => {
@@ -495,11 +536,12 @@ export default function Policies() {
       <div className="flex items-center border-b border-slate-200 overflow-x-auto no-scrollbar">
         {[
           { id: 'dashboard', label: 'DASHBOARD', icon: HiDocumentText },
-          { id: 'categories', label: 'CATEGORIES', icon: HiFolderPlus }
+          { id: 'categories', label: 'CATEGORIES', icon: HiFolderPlus },
+          { id: 'archived', label: 'ARCHIVED', icon: HiArchiveBox }
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveView(tab.id)}
+            onClick={() => { setActiveView(tab.id); if (tab.id === 'archived') loadArchived() }}
             className={`flex shrink-0 items-center gap-3 px-8 pb-4 text-[11px] font-black uppercase tracking-widest transition-all relative ${
               activeView === tab.id ? 'text-[#0F766E]' : 'text-slate-400 hover:text-slate-600'
             }`}
@@ -593,7 +635,15 @@ export default function Policies() {
                 </div>
               </div>
 
-              
+              {filtered.length > 0 ? (
+                <Table columns={columns} data={filtered} pageSize={10} square />
+              ) : !loading ? (
+                <div className="px-4 py-12 text-center text-sm text-slate-400">
+                  {policies.length === 0
+                    ? 'No policies yet. Click “Add Policy” to create your first one.'
+                    : 'No policies match your filters.'}
+                </div>
+              ) : null}
             </div>
           </div>
         )}
@@ -687,6 +737,73 @@ export default function Policies() {
           </div>
         )}
 
+        {activeView === 'archived' && (
+          <div className="animate-in fade-in duration-500 space-y-6">
+            <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+                <h2 className="text-sm font-semibold text-white">Archived policies</h2>
+                <button
+                  type="button"
+                  onClick={loadArchived}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-white/90 transition hover:text-white"
+                >
+                  <HiArrowPath className="h-4 w-4" /> Refresh
+                </button>
+              </div>
+              {archivedLoading ? (
+                <div className="px-4 py-12 text-center text-sm text-slate-400">Loading archived policies…</div>
+              ) : archivedPolicies.length === 0 ? (
+                <div className="px-4 py-12 text-center text-sm text-slate-400">
+                  No archived policies. Deleted policies are retained here with their acknowledgement history.
+                </div>
+              ) : (
+                <Table
+                  columns={[
+                    {
+                      key: 'name',
+                      label: 'Policy',
+                      render: (_, row) => (
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900">{row.title}</div>
+                          <div className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                            {row.category || 'Uncategorized'}
+                          </div>
+                        </div>
+                      ),
+                    },
+                    { key: 'version', label: 'Version', render: (v) => <span className="text-sm text-slate-600">{v ? `v${v}` : '—'}</span> },
+                    { key: 'ackCount', label: 'Acknowledgements', render: (v) => <span className="text-sm font-bold text-slate-700">{v || 0}</span> },
+                    {
+                      key: 'archivedAt',
+                      label: 'Archived on',
+                      render: (v) => <span className="text-sm text-slate-600">{v ? new Date(v).toLocaleDateString() : '—'}</span>,
+                    },
+                    {
+                      key: 'actions',
+                      label: 'Actions',
+                      render: (_, row) => (
+                        <div className="flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => openArchivedView(row)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56]"
+                            aria-label="View archived policy"
+                          >
+                            <HiEye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ),
+                    },
+                  ]}
+                  data={archivedPolicies}
+                  pageSize={10}
+                  square
+                />
+              )}
+            </div>
+          </div>
+        )}
+
         {activeView === 'tracking' && (
           <div className="animate-in fade-in duration-500 space-y-6">
              <div className="flex items-center justify-between border-b border-slate-200 pb-6">
@@ -758,8 +875,9 @@ export default function Policies() {
         isOpen={viewModalOpen}
         onClose={closePolicyView}
         policy={viewPolicy}
+        tracking={viewTracking}
         loading={viewLoading}
-        onEdit={isHR ? handleEditFromView : undefined}
+        onEdit={isHR && !viewIsArchived ? handleEditFromView : undefined}
       />
 
       <PolicyFormModal

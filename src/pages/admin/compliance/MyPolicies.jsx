@@ -15,7 +15,14 @@ import { Modal } from '../../../components/ui/Modal.jsx';
 import { policyService } from '../../../services/policyService.js';
 import { POLICY_SECTION_FIELDS } from '../../../constants/policySections.js';
 
-function statusBadge(status) {
+function statusBadge(policy) {
+  // Accepts the policy object (preferred) or a bare status string.
+  const status = typeof policy === 'string' ? policy : policy?.ackStatus;
+  // A superseded acknowledgement (policy changed since they acked) is Pending, but
+  // labelled distinctly so the employee knows WHY it reappeared.
+  if (policy && typeof policy === 'object' && policy.needsReacknowledgement) {
+    return <Badge label="Updated — re-acknowledge" color="orange" />;
+  }
   if (status === 'Acknowledged') return <Badge label="Acknowledged" color="green" />;
   if (status === 'Pending') return <Badge label="Pending" color="orange" />;
   return <Badge label="Not Applicable" color="gray" />;
@@ -204,7 +211,7 @@ export default function MyPolicies() {
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-4">
-                {statusBadge(policy.ackStatus)}
+                {statusBadge(policy)}
                 <HiChevronRight className="h-5 w-5 text-slate-300" />
               </div>
             </button>
@@ -224,7 +231,7 @@ export default function MyPolicies() {
         {selected && (
           <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
             <div className="flex flex-wrap items-center gap-3">
-              {statusBadge(selected.ackStatus)}
+              {statusBadge(selected)}
               <span className="text-xs text-slate-500">{selected.category}</span>
               {selected.audience && (
                 <span className="text-xs text-slate-400">· {selected.audience}</span>
@@ -270,6 +277,11 @@ export default function MyPolicies() {
 
             {selected.ackStatus === 'Pending' && selected.ackRequired && (
               <div className="sticky bottom-0 border-t border-slate-100 bg-white pt-4">
+                {selected.needsReacknowledgement && (
+                  <p className="mb-2 rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                    This policy was updated since you last acknowledged it — please review and re-acknowledge.
+                  </p>
+                )}
                 <p className="mb-3 text-xs text-slate-500">
                   By clicking below, you confirm that you have read and understood this policy.
                 </p>
