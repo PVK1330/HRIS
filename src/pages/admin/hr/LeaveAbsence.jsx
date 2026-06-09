@@ -197,10 +197,18 @@ export default function LeaveAbsence() {
     setApplyModal(false); setForm(EMPTY_FORM); setLiveBalance(null);
   };
 
-  const handleApplySubmit = async (e) => {
+  const handleApplySubmit = async (e, isDraft = false) => {
     e.preventDefault();
     const days = parseInt(form.totalDays) || countDays(form.fromDate, form.toDate);
     if (days <= 0) { toast.error('Invalid date range'); return; }
+
+    // Guard required numeric ids: a blank/non-numeric select yields NaN, which
+    // must never be sent to the API. Block submission with a validation error.
+    const employeeIdNum = parseInt(form.employeeId, 10);
+    if (Number.isNaN(employeeIdNum)) { toast.error('Please select an employee'); return; }
+
+    const leaveTypeIdNum = parseInt(form.leaveTypeId, 10);
+    if (Number.isNaN(leaveTypeIdNum)) { toast.error('Please select a leave type'); return; }
 
     const selectedType = leaveTypes.find(t => t.name === form.leaveType);
     if (selectedType && selectedType.paidOrUnpaid !== 'Unpaid' && liveBalance) {
@@ -214,15 +222,15 @@ export default function LeaveAbsence() {
     setSubmitting(true);
     try {
       const result = await applyLeave({
-        employeeId: parseInt(form.employeeId, 10),
-        leaveTypeId: parseInt(form.leaveTypeId, 10),
+        employeeId: employeeIdNum,
+        leaveTypeId: leaveTypeIdNum,
         fromDate: form.fromDate,
         toDate: form.toDate,
-        totalDays: parseInt(form.totalDays, 10),
+        totalDays: days,
         reason: form.reason,
         handoverNote: form.handoverNote,
         supportingDocumentUrl: form.supportingDocumentUrl,
-        isDraft: form.isDraft,
+        isDraft,
       });
       toast.success(result?.autoApproved ? 'Leave auto-approved' : 'Leave request submitted');
       closeApplyModal();
