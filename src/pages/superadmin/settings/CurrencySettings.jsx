@@ -100,7 +100,7 @@ function timeAgo(iso) {
 }
 
 const inputCls =
-  'block w-full rounded-lg border-0 py-2 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-900 transition'
+  'block w-full px-4   rounded-lg border-0 py-2 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-900 transition'
 const fieldLabel = 'block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5'
 
 function SectionCard({ icon, title, description, children }) {

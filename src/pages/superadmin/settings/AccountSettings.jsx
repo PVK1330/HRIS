@@ -112,7 +112,7 @@ function MfaSection() {
               type="button"
               onClick={startSetup}
               disabled={busy}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+              className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] disabled:opacity-50"
             >
               {busy ? 'Please wait…' : 'Set up two-factor authentication'}
             </button>
@@ -139,7 +139,7 @@ function MfaSection() {
                       type="button"
                       onClick={confirmEnable}
                       disabled={busy || code.length < 6}
-                      className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+                      className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] disabled:opacity-50"
                     >
                       Verify &amp; enable
                     </button>
@@ -327,7 +327,7 @@ export default function AccountSettings() {
               <button
                 type="submit"
                 disabled={!isDirty || saving}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
