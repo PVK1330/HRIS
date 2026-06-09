@@ -87,9 +87,20 @@ export default function BillingSettings() {
     }
     setBusy(true);
     try {
-      const { url } = await startCheckout(selectedPlanId, cycle, '/admin/settings?tab=billing');
-      if (url) window.location.href = url;
-      else toast.error('Could not start checkout.');
+      const res = await startCheckout(selectedPlanId, cycle, '/admin/settings?tab=billing');
+      if (res?.url) {
+        window.location.href = res.url;
+        return;
+      }
+      if (res?.free) {
+        // Free plan — activated server-side, no Stripe checkout needed.
+        toast.success('Plan activated! Your subscription is now active.');
+        if (res.billing) setBilling(res.billing);
+        await refreshAccessProfile();
+        await load();
+        return;
+      }
+      toast.error('Could not start checkout.');
     } catch (e) {
       toast.error(errMsg(e, 'Could not start checkout.'));
     } finally {

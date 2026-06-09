@@ -83,12 +83,20 @@ export default function PaymentPage() {
     setBusy(true)
     setMsg(null)
     try {
-      const { url } = await startCheckout(selectedPlanId, cycle, '/admin/payment')
-      if (url) {
-        window.location.href = url
-      } else {
-        setMsg({ type: 'err', text: 'Could not start checkout.' })
+      const res = await startCheckout(selectedPlanId, cycle, '/admin/payment')
+      if (res?.url) {
+        window.location.href = res.url
+        return
       }
+      if (res?.free) {
+        // Free plan — activated server-side, no Stripe checkout needed.
+        setMsg({ type: 'ok', text: 'Plan activated! Your workspace is now active.' })
+        if (res.billing) setBilling(res.billing)
+        await refreshAccessProfile()
+        await load()
+        return
+      }
+      setMsg({ type: 'err', text: 'Could not start checkout.' })
     } catch (e) {
       setMsg({ type: 'err', text: errMsg(e, 'Could not start checkout.') })
     } finally {

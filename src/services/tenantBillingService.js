@@ -14,8 +14,11 @@ export async function getPlans() {
 
 export async function startCheckout(planId, billingCycle = 'monthly', returnPath) {
   // returnPath: the org page to come back to after Stripe (e.g. '/admin/settings?tab=billing').
-  const { data } = await api.post('/tenant-billing/checkout', { planId, billingCycle, returnPath })
-  return data.data // { url, sessionId }
+  // returnOrigin: this tenant's subdomain origin, so Stripe returns us here and not the
+  // platform root (which would drop the session and bounce to the superadmin panel).
+  const returnOrigin = typeof window !== 'undefined' ? window.location.origin : undefined
+  const { data } = await api.post('/tenant-billing/checkout', { planId, billingCycle, returnPath, returnOrigin })
+  return data.data // paid: { url, sessionId } | free: { free: true, billing }
 }
 
 export async function confirmCheckout(sessionId) {

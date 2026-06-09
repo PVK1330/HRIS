@@ -126,7 +126,15 @@ function PaymentGate({ children }) {
   const { paymentRequired } = useAuth();
   const location = useLocation();
   if (paymentRequired && location.pathname !== "/admin/payment") {
-    return <Navigate to="/admin/payment" replace />;
+    // Preserve a returning Stripe session (?stripe=success&session_id=…) so the
+    // payment page can confirm and activate it. Without this, the params are
+    // dropped on redirect and the org is stranded as unpaid after a real payment.
+    const sp = new URLSearchParams(location.search);
+    const keep = new URLSearchParams();
+    if (sp.get("stripe")) keep.set("stripe", sp.get("stripe"));
+    if (sp.get("session_id")) keep.set("session_id", sp.get("session_id"));
+    const qs = keep.toString();
+    return <Navigate to={`/admin/payment${qs ? `?${qs}` : ""}`} replace />;
   }
   return children;
 }
