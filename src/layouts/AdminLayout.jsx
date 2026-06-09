@@ -28,6 +28,7 @@ import {
   HiLifebuoy,
   HiShieldCheck,
 } from "react-icons/hi2";
+import { Settings } from "lucide-react";
 import { Sidebar } from "../components/ui/Sidebar.jsx";
 import { Avatar } from "../components/ui/Avatar.jsx";
 import NotificationDropdown from "../components/layout/NotificationDropdown.jsx";
@@ -483,7 +484,7 @@ export default function AdminLayout() {
         logoFallbackLabel={sidebarBrandLabel}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pl-64">
-        <header className="z-30 flex h-12 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white/80 backdrop-blur-md px-4 sm:px-6">
+        <header className="z-30 flex h-20 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white/80 backdrop-blur-md px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-4">
             <button
               type="button"
@@ -493,7 +494,7 @@ export default function AdminLayout() {
             >
               <HiBars3 className="h-6 w-6" />
             </button>
-            <nav className="hidden min-w-0 max-w-[50vw] truncate text-xs sm:flex sm:items-center sm:gap-2">
+            <nav className="hidden min-w-0 max-w-[50vw] truncate text-sm sm:flex sm:items-center sm:gap-2">
               {breadcrumb.map((c, i) => (
                 <span key={`${c}-${i}`} className="flex items-center gap-2">
                   {i > 0 && <span className="text-[#E5E7EB]">/</span>}
@@ -542,10 +543,27 @@ export default function AdminLayout() {
             </Link>
             <NotificationDropdown />
             <Link
-              to="/admin/employee-profile"
-              className="hidden items-center gap-3 sm:flex group bg-[#F9FAFB] pl-3 pr-1 py-1 rounded-lg border border-[#E5E7EB] hover:bg-white hover:shadow-sm transition-all duration-300"
+              to="/admin/settings"
+              title="Settings"
+              aria-label="Settings"
+              className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-colors duration-200 ${
+                location.pathname.startsWith("/admin/settings")
+                  ? "border-[#0E9F6E]/30 bg-[#0E9F6E]/10 text-[#0E9F6E]"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
             >
-              <div className="min-w-0 text-right">
+              <Settings className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/admin/employee-profile"
+              className="hidden items-center gap-3 sm:flex group rounded-lg border border-[#E5E7EB] px-2.5 py-1 hover:bg-[#F9FAFB] transition-all duration-300"
+            >
+              <Avatar
+                name={user?.name}
+                size="sm"
+                className="ring-2 ring-white shadow-sm group-hover:ring-[#E5E7EB] transition-all"
+              />
+              <div className="min-w-0 text-left">
                 <div className="truncate text-sm font-bold text-[#1C242E] group-hover:text-[#0E9F6E] transition-colors leading-none">
                   {user?.name}
                 </div>
@@ -553,11 +571,6 @@ export default function AdminLayout() {
                   SECURE ACCESS
                 </div>
               </div>
-              <Avatar
-                name={user?.name}
-                size="sm"
-                className="ring-2 ring-white shadow-sm group-hover:ring-[#E5E7EB] transition-all"
-              />
             </Link>
             <button
               onClick={logout}

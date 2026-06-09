@@ -5,7 +5,6 @@ import { useAuth } from '../../context/AuthContext.jsx';
 // Socket is managed by useSocket hook — no direct io() import needed
 import {
   HiBell,
-  HiBellAlert,
   HiCheckCircle,
   HiExclamationCircle,
   HiInformationCircle,
@@ -15,6 +14,7 @@ import {
   HiArrowLeftOnRectangle,
   HiCog6Tooth,
 } from 'react-icons/hi2';
+import { Bell } from 'lucide-react';
 import api from '../../services/api.js';
 import { useSocket } from '../../hooks/useSocket.js';
 
@@ -313,17 +313,13 @@ export default function NotificationDropdown() {
       <button
         type="button"
         onClick={toggleDropdown}
-        className="relative rounded-lg p-2 text-text-secondary hover:bg-background-secondary hover:text-text-primary transition-all duration-200"
+        className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors duration-200 hover:bg-slate-50"
         aria-label="Notifications"
       >
-        {unreadCount > 0 ? (
-          <HiBellAlert className="h-5 w-5 text-primary scale-105 hover:scale-110 transition-all" />
-        ) : (
-          <HiBell className="h-5 w-5 hover:scale-115 transition-all" />
-        )}
+        <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white ring-2 ring-background-primary animate-pulse">
-            {unreadCount}
+          <span className="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white animate-pulse">
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>

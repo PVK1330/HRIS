@@ -23,6 +23,7 @@ import {
   regularize,
   submitRegularization,
 } from '../../../../services/attendanceService.js'
+import AttendanceExportMenu from '../../../../components/attendance/AttendanceExportMenu.jsx'
 
 const EMPTY = { date: '', checkInTime: '', checkOutTime: '', reason: '', workMode: 'In Office' }
 
@@ -180,6 +181,7 @@ export default function AttendanceRegularization() {
           </div>
           <div className="flex items-center gap-3">
             <p className="text-xs font-medium text-slate-500">{filtered.length} record(s)</p>
+            <AttendanceExportMenu reportType="regularization" filenameBase="regularization" />
           </div>
         </div>
 

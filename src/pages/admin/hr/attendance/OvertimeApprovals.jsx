@@ -14,6 +14,7 @@ import {
   deleteOvertime,
 } from '../../../../services/attendanceService.js'
 import AddOvertimeModal from '../../../../components/attendance/AddOvertimeModal.jsx'
+import AttendanceExportMenu from '../../../../components/attendance/AttendanceExportMenu.jsx'
 import { useAttendanceSettings } from '../../../../hooks/useAttendanceSettings.js'
 
 const STATUS_LABELS = {
@@ -256,6 +257,7 @@ export default function OvertimeApprovals() {
               <option value="Rejected">Rejected</option>
             </select>
             <p className="text-xs font-medium text-slate-500">{filtered.length} record(s)</p>
+            <AttendanceExportMenu reportType="overtime" filenameBase="overtime" />
           </div>
         </div>
 

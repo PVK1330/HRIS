@@ -6,10 +6,18 @@ import {
   Settings,
   UserCircle2,
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
-export default function DashboardHeader({ title, subtitle, onDateChange, dateRange = 'Last 30 days' }) {
+export default function DashboardHeader({
+  title,
+  subtitle,
+  onDateChange,
+  dateRange = 'Last 30 days',
+  notificationCount = 0,
+}) {
+  const navigate = useNavigate()
   return (
-    <header className="sticky top-0 z-20 rounded-xl border border-slate-200 bg-white/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header className="sticky top-0 z-20 rounded-xl border border-slate-200 bg-white/95 px-4 py-6 sm:px-6 sm:py-8 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">{title}</h1>
@@ -27,10 +35,25 @@ export default function DashboardHeader({ title, subtitle, onDateChange, dateRan
           </label>
 
           <div className="flex items-center gap-2">
-            <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors duration-200 hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={() => navigate('/admin/notifications')}
+              aria-label="Notifications"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors duration-200 hover:bg-slate-50"
+            >
               <Bell className="h-4 w-4" />
+              {notificationCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white animate-pulse">
+                  {notificationCount > 99 ? '99+' : notificationCount}
+                </span>
+              )}
             </button>
-            <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors duration-200 hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={() => navigate('/admin/settings')}
+              aria-label="Settings"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors duration-200 hover:bg-slate-50"
+            >
               <Settings className="h-4 w-4" />
             </button>
             <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors duration-200 hover:bg-slate-50">
