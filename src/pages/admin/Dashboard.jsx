@@ -23,10 +23,7 @@ import { Modal } from '../../components/ui/Modal.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import ManagerDashboard from '../../components/manager/ManagerDashboard.jsx'
 import { fetchAdminDashboard, fetchEmployeeDashboard } from '../../services/dashboardService.js'
-import DashboardHeader from './dashboard/DashboardHeader.jsx'
 import DashboardStats from './dashboard/DashboardStats.jsx'
-import AttendancePunchCard from '../../components/attendance/AttendancePunchCard.jsx'
-import { canPunchAttendance } from '../../utils/rbac.js'
 
 function MetricCard({ label, value, subtitle, tone = 'slate' }) {
   const toneStyles = {
@@ -57,7 +54,7 @@ const EMPTY_STATS = {
   announcements: [],
 }
 
-function EmployeeDashboard({ dashboardData, dateRange, setDateRange, todayLabel, showPunchCard, setSelectedAnnouncement }) {
+function EmployeeDashboard({ dashboardData, todayLabel, setSelectedAnnouncement }) {
   const announcements = dashboardData.announcements || []
   const notifications = dashboardData.notifications || []
   const notificationsUnread = dashboardData.notificationsUnread || 0
@@ -66,15 +63,6 @@ function EmployeeDashboard({ dashboardData, dateRange, setDateRange, todayLabel,
 
   return (
     <div className="space-y-6 pb-10">
-      <DashboardHeader
-        title="My Dashboard"
-        subtitle={todayLabel}
-        dateRange={dateRange}
-        onDateChange={setDateRange}
-      />
-
-      {showPunchCard ? <AttendancePunchCard /> : null}
-
       <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard
           label="Leave Balance"
@@ -158,10 +146,7 @@ function EmployeeDashboard({ dashboardData, dateRange, setDateRange, todayLabel,
 
 export default function Dashboard() {
   const { user, allowedModules } = useAuth()
-  const hasEmployeeProfile = Boolean(user?.employeeId || user?.id)
-  const showPunchCard = hasEmployeeProfile
   const [isLoading, setIsLoading] = useState(true)
-  const [dateRange, setDateRange] = useState('Last 30 days')
   const [dashboardData, setDashboardData] = useState(EMPTY_STATS)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
   const [birthdays, setBirthdays] = useState([])
@@ -230,10 +215,7 @@ export default function Dashboard() {
     return (
       <EmployeeDashboard
         dashboardData={dashboardData}
-        dateRange={dateRange}
-        setDateRange={setDateRange}
         todayLabel={todayLabel}
-        showPunchCard={showPunchCard}
         setSelectedAnnouncement={setSelectedAnnouncement}
       />
     )
@@ -273,7 +255,6 @@ export default function Dashboard() {
   return (
     <>
     <div className="space-y-6 pb-12 min-w-0">
-
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-[#0F766E] to-[#0f766e]/90 p-6 text-white">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

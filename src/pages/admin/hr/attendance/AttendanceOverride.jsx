@@ -10,6 +10,7 @@ import { useAuth } from '../../../../context/AuthContext.jsx'
 import { canManageAttendanceOverride } from '../../../../utils/rbac.js'
 import { markAttendanceOverride } from '../../../../services/attendanceService.js'
 import { listEmployees } from '../../../../services/employeeService.js'
+import AttendanceExportMenu from '../../../../components/attendance/AttendanceExportMenu.jsx'
 
 const EMPTY = {
   employeeId: '',
@@ -89,8 +90,13 @@ export default function AttendanceOverride() {
 
   return (
     <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+      <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
         <h2 className="text-sm font-semibold text-white">Manual Attendance</h2>
+        <AttendanceExportMenu
+          reportType="employee"
+          filenameBase="attendance"
+          params={form.employeeId ? { employeeId: form.employeeId } : {}}
+        />
       </div>
       <div className="p-6">
         <p className="mb-6 text-sm text-slate-500">

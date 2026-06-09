@@ -64,14 +64,14 @@ export function Sidebar({
         className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col overflow-hidden border-r border-gray-200 bg-white shadow-sm transition-transform duration-300 ease-out md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
       >
-        <div className="flex min-h-[4rem] shrink-0 items-center justify-center px-3 py-[5px] border-b border-slate-50">
+        <div className="flex h-20 shrink-0 items-center justify-center px-3 py-2 border-b border-[#E5E7EB]">
           {logoLoading ? (
-            <div className="h-10 w-32 animate-pulse rounded-md bg-slate-100" aria-hidden />
+            <div className="h-12 w-32 animate-pulse rounded-md bg-slate-100" aria-hidden />
           ) : (trimmedLogo && !imgBroken) ? (
             <img
               src={trimmedLogo}
               alt="Company logo"
-              className="h-16 max-w-full object-contain"
+              className="max-h-14 max-w-full object-contain"
               onError={() => setImgBroken(true)}
             />
           ) : (

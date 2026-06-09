@@ -10,6 +10,7 @@ import { canPunchAttendance } from '../../../../utils/rbac.js';
 import {
   getMyToday, checkIn, checkOut, getEmployeeAttendance,
 } from '../../../../services/attendanceService.js';
+import AttendanceExportMenu from '../../../../components/attendance/AttendanceExportMenu.jsx';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function hm(hours) {
@@ -445,6 +446,11 @@ export default function MyAttendance() {
       <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
           <h2 className="text-sm font-semibold text-white">Employee Attendance</h2>
+          <AttendanceExportMenu
+            reportType="employee"
+            filenameBase="my-attendance"
+            params={{ employeeId, year, month }}
+          />
         </div>
 
         <div className="space-y-3 border-b border-slate-200 bg-white px-4 py-3">

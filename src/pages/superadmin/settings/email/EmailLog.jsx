@@ -33,24 +33,23 @@ export default function EmailLog() {
   }, [])
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="space-y-10 divide-y divide-gray-900/10">
+    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <div className="space-y-4">
         
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Transmission Logs</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Audit trail of automated platform communications.
-            </p>
-            <div className="mt-4 rounded-md bg-blue-50 p-4 border border-blue-200">
-              <p className="text-xs text-blue-700">
-                Logs are automatically purged every 90 days for performance and privacy compliance.
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Transmission Logs</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Audit trail of automated platform communications.
               </p>
             </div>
-          </div>
-
-          <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
             <div className="px-4 py-6 sm:p-8">
+              <div className="mb-6 rounded-md bg-blue-50 p-4 border border-blue-200">
+                <p className="text-xs text-blue-700">
+                  Logs are automatically purged every 90 days for performance and privacy compliance.
+                </p>
+              </div>
               <h3 className="text-sm font-medium leading-6 text-gray-900 mb-4">Transmission History</h3>
               
               <div className="overflow-hidden rounded-md border border-gray-200">
