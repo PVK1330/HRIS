@@ -37,6 +37,7 @@ import {
 } from '../../../services/employeeService.js'
 import { useCurrency } from '../../../context/CurrencyContext.jsx'
 import * as onboardingApi from '../../../services/onboardingApi.js'
+import { resolveFileUrl } from '../../../utils/fileUrl.js'
 import { useAsyncAction } from '../../../hooks/useAsyncAction.js'
 import {
   ONBOARDING_TOTAL_STEPS,
@@ -1497,7 +1498,7 @@ export default function Onboarding() {
                               {item.upload_status === 'Uploaded' && (item.file_url || item.fileUrl) ? (
                                 <button
                                   type="button"
-                                  onClick={() => window.open(item.file_url || item.fileUrl, '_blank')}
+                                  onClick={() => window.open(resolveFileUrl(item.file_url || item.fileUrl), '_blank')}
                                   className="h-8 px-3 text-[10px] font-bold uppercase bg-blue-50 text-blue-700 hover:bg-blue-100 rounded shadow-sm transition-colors border border-blue-200 flex items-center gap-1.5"
                                 >
                                   <HiDocument className="w-3.5 h-3.5" />

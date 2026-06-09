@@ -10,8 +10,7 @@ import {
   listConversations, openConversation,
   getMessages, sendMessageRest, listMessageContacts, sendMessageAttachment,
 } from '../../../services/messagesService.js'
-
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { resolveFileUrl } from '../../../utils/fileUrl.js'
 
 function resolveSelfEmployeeId(user) {
   const id = user?.employeeId ?? user?.id
@@ -25,8 +24,7 @@ function isNumericConvId(id) {
 
 function attachmentUrl(path) {
   if (!path) return null
-  if (path.startsWith('http')) return path
-  return `${SOCKET_URL}${path.startsWith('/') ? path : `/${path}`}`
+  return resolveFileUrl(path)
 }
 
 function apiErrorMessage(err, fallback) {
@@ -46,10 +44,16 @@ function formatTime(ts) {
 }
 
 // Merge a real (server) message into the list: drop the matching optimistic
-// placeholder (matched by body — its sender_id differs for admins) and add the
-// real message only if it is not already present (de-dupe by id).
+// placeholder and add the real message only if it is not already present
+// (de-dupe by id). Reconciliation prefers the round-tripped client_msg_id so
+// identical quick messages can't drop the wrong placeholder; it falls back to
+// body match only when the server echoes no client id (e.g. REST send).
 function mergeIncomingMessage(prev, msg) {
-  const withoutOptimistic = prev.filter(m => !(m.optimistic && m.body === msg.body))
+  const withoutOptimistic = prev.filter(m => {
+    if (!m.optimistic) return true
+    if (msg.client_msg_id) return m.client_msg_id !== msg.client_msg_id
+    return m.body !== msg.body
+  })
   if (withoutOptimistic.some(m => String(m.id) === String(msg.id))) return withoutOptimistic
   return [...withoutOptimistic, msg]
 }
@@ -221,11 +225,23 @@ export default function Messages() {
       setConversations(prev => {
         const exists = prev.some(c => String(c.id) === String(cid))
         if (!exists) { loadConversationsRef.current?.(); return prev }
-        return prev.map(c =>
-          String(c.id) === String(cid)
-            ? { ...c, last_message: lastMessage, last_message_at: lastMessageAt, unread_count: same ? 0 : (c.unread_count || 0) + 1 }
-            : c
-        )
+        return prev.map(c => {
+          if (String(c.id) !== String(cid)) return c
+          // Don't bump unread for OUR OWN message echoed back to this user's
+          // other tabs/devices. A message is "mine" when its sender is not the
+          // other participant (works for admins, whose sender_id != user.id).
+          const otherId = Number(c.other_id)
+          const fromOther = Number.isInteger(otherId) && otherId > 0
+            ? Number(message?.sender_id) === otherId
+            : Number(message?.sender_id) !== resolveSelfEmployeeId(user)
+          const bumpUnread = fromOther && !same
+          return {
+            ...c,
+            last_message: lastMessage,
+            last_message_at: lastMessageAt,
+            unread_count: same ? 0 : (c.unread_count || 0) + (bumpUnread ? 1 : 0),
+          }
+        })
       })
     }
 
@@ -359,8 +375,9 @@ export default function Messages() {
     setNewMessage(''); setSending(true)
 
     const selfId = resolveSelfEmployeeId(user)
+    const clientMsgId = `cmid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const optimistic = {
-      id: `opt-${Date.now()}`, sender_id: selfId,
+      id: `opt-${Date.now()}`, sender_id: selfId, client_msg_id: clientMsgId,
       body, created_at: new Date().toISOString(), is_read: false, optimistic: true,
     }
     setMessages(prev => [...prev, optimistic])
@@ -369,7 +386,7 @@ export default function Messages() {
     try {
       if (socketRef.current?.connected) {
         await new Promise((resolve, reject) => {
-          socketRef.current.emit('send_message', { conversationId: convId, body }, (ack) => {
+          socketRef.current.emit('send_message', { conversationId: convId, body, clientMsgId }, (ack) => {
             if (ack?.ok && ack.message) {
               setMessages(prev => replaceOptimisticMessage(prev, optimistic.id, ack.message))
               setConversations(prev => prev.map(c =>

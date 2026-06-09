@@ -43,6 +43,8 @@ export default function DesignationsManagement() {
   const [departmentOptions, setDepartmentOptions] = useState([])
   const [desPage, setDesPage] = useState(1)
   const [desTotal, setDesTotal] = useState(0)
+  // KPI totals across the whole dataset (not just the current page).
+  const [kpiTotals, setKpiTotals] = useState({ total: 0, active: 0, inactive: 0 })
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [departmentFilterId, setDepartmentFilterId] = useState('')
   const [loading, setLoading] = useState(true)
@@ -95,6 +97,32 @@ export default function DesignationsManagement() {
   React.useEffect(() => {
     fetchDesignations()
   }, [debouncedSearch, statusFilter, departmentFilterId, desPage])
+
+  // KPI cards must reflect dataset-wide totals, not the current 10-row page.
+  // The list endpoint returns pagination.total per status filter; query
+  // active/inactive counts cheaply (limit:1), respecting search + dept filter.
+  const fetchKpiTotals = async () => {
+    try {
+      const base = { page: 1, limit: 1, search: debouncedSearch }
+      if (departmentFilterId) base.departmentId = Number(departmentFilterId)
+      const [all, active, inactive] = await Promise.all([
+        listDesignations({ ...base, status: 'all' }),
+        listDesignations({ ...base, status: 'active' }),
+        listDesignations({ ...base, status: 'inactive' }),
+      ])
+      setKpiTotals({
+        total: all?.total ?? all?.pagination?.total ?? 0,
+        active: active?.total ?? active?.pagination?.total ?? 0,
+        inactive: inactive?.total ?? inactive?.pagination?.total ?? 0,
+      })
+    } catch (err) {
+      console.error('Failed to fetch designation KPI totals:', err)
+    }
+  }
+
+  React.useEffect(() => {
+    fetchKpiTotals()
+  }, [debouncedSearch, departmentFilterId])
 
   React.useEffect(() => {
     fetchDepartments()
@@ -364,7 +392,7 @@ export default function DesignationsManagement() {
         {[
           {
             label: 'TOTAL DESIGNATIONS',
-            count: desTotal || designationList.length || 0,
+            count: kpiTotals.total || 0,
             bgColor: 'bg-[#0F172A]',
             icon: HiBriefcase,
             onClickFilter: () => setStatusFilter('all'),
@@ -372,7 +400,7 @@ export default function DesignationsManagement() {
           },
           {
             label: 'ACTIVE',
-            count: designationList.filter(d => d.status === 'Active' || d.is_active).length || 0,
+            count: kpiTotals.active || 0,
             bgColor: 'bg-[#10B981]',
             icon: HiCheckBadge,
             onClickFilter: () => setStatusFilter('active'),
@@ -380,13 +408,16 @@ export default function DesignationsManagement() {
           },
           {
             label: 'INACTIVE',
-            count: designationList.filter(d => d.status === 'Inactive' || d.status === 'Archived' || (!d.is_active && d.status !== 'Active')).length || 0,
+            count: kpiTotals.inactive || 0,
             bgColor: 'bg-[#EF4444]',
             icon: HiUserCircle,
             onClickFilter: () => setStatusFilter('inactive'),
             filterId: 'inactive'
           },
           {
+            // NOTE: page-scoped — the list endpoint exposes no dataset-wide "distinct
+            // departments mapped" count, so this reflects the current page until a
+            // backend aggregate is added.
             label: 'DEPARTMENTS MAPPED',
             count: new Set(designationList.map(d => d.department_name).filter(Boolean)).size || 0,
             bgColor: 'bg-[#3B82F6]',

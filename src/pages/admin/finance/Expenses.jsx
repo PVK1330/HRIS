@@ -26,8 +26,7 @@ import { useCurrency } from '../../../context/CurrencyContext.jsx';
 import * as expenseService from '../../../services/expenseService.js';
 import * as expenseCategoryService from '../../../services/expenseCategoryService.js';
 import { listEmployees } from '../../../services/employeeService.js';
-
-const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { resolveFileUrl } from '../../../utils/fileUrl.js';
 
 const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Company Card', 'Bank Transfer', 'Other'];
 
@@ -35,8 +34,7 @@ const CURRENCIES = ['INR', 'AED', 'USD', 'EUR', 'GBP'];
 
 function receiptHref(path) {
   if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `${API_ORIGIN}${path}`;
+  return resolveFileUrl(path);
 }
 
 function mapRow(row) {

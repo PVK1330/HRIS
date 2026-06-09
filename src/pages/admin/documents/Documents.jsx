@@ -11,6 +11,7 @@ import { Button } from '../../../components/ui/Button.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { Table } from '../../../components/ui/Table.jsx';
 import api from '../../../services/api.js';
+import { resolveFileUrl } from '../../../utils/fileUrl.js';
 
 const basicFieldClass = 'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/25';
 
@@ -30,13 +31,9 @@ function statusColor(status) {
   return 'bg-slate-100 text-slate-700 ring-slate-600/20';
 }
 
-const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
 const resolveDocFileUrl = (url) => {
   if (!url) return null;
-  if (/^https?:\/\//i.test(url)) return url;
-  const path = url.startsWith('/') ? url : `/${url}`;
-  return `${API_ORIGIN}${path}`;
+  return resolveFileUrl(url);
 };
 
 export default function Documents() {

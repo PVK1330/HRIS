@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button.jsx'
 import { HiArrowLeft, HiPaperClip, HiChatBubbleLeftEllipsis } from 'react-icons/hi2'
 import * as tasksService from '../../../services/tasksService'
 import toast from 'react-hot-toast'
+import { resolveFileUrl } from '../../../utils/fileUrl.js'
 
 function normalizeTask(task = {}) {
   return {
@@ -171,7 +172,7 @@ export default function TaskDetails() {
             <div className="space-y-2">
               {attachments.map(a => (
                 <div key={a.id} className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
-                  <a href={a.file_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline truncate w-4/5">
+                  <a href={resolveFileUrl(a.file_url)} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline truncate w-4/5">
                     {a.file_name}
                   </a>
                   <span className="text-gray-400 text-xs">{Math.round(a.file_size / 1024)} KB</span>

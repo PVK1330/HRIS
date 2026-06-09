@@ -14,6 +14,7 @@ import { EmptyState } from '../../../components/ui/EmptyState.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { policyService } from '../../../services/policyService.js';
 import { POLICY_SECTION_FIELDS } from '../../../constants/policySections.js';
+import { resolveFileUrl } from '../../../utils/fileUrl.js';
 
 function statusBadge(policy) {
   // Accepts the policy object (preferred) or a bare status string.
@@ -262,7 +263,7 @@ export default function MyPolicies() {
                   {selected.attachments.map((a, i) => (
                     <a
                       key={i}
-                      href={a.url}
+                      href={resolveFileUrl(a.url)}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-[#0F766E] hover:bg-slate-50"

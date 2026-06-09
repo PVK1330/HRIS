@@ -119,6 +119,10 @@ function SubmitModal({ open, onClose, onDone }) {
         exit_type: form.exit_type,
         exit_reason: form.exit_reason || undefined,
         notice_date: form.notice_date || undefined,
+        // For a resignation the notice date IS the date of resignation. Send it as
+        // resignation_date so the backend stores it and {{resignation_date}} renders
+        // in generated letters (previously never captured -> blank in documents).
+        resignation_date: !isTermination ? (form.notice_date || undefined) : undefined,
         last_working_day: form.last_working_day || undefined,
         notice_period_days: isTermination ? 0 : (parseInt(form.notice_period_days, 10) || 0),
         termination_type_id: isTermination && form.termination_type_id ? Number(form.termination_type_id) : undefined,

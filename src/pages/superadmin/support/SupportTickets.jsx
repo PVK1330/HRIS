@@ -6,6 +6,7 @@ import { StatCard } from '../../../components/ui/StatCard.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { superadminService } from '../../../services/superadminService.js'
+import { resolveFileUrl } from '../../../utils/fileUrl.js'
 import {
   HiPaperClip,
   HiCheckCircle,
@@ -775,7 +776,7 @@ export default function SupportTickets() {
                       <div className="pt-4 border-t border-slate-100">
                         <p className="text-xs font-semibold text-slate-500 mb-2">Attachment</p>
                         <a
-                          href={selectedTicket.attachmentUrl || selectedTicket.attachment_url}
+                          href={resolveFileUrl(selectedTicket.attachmentUrl || selectedTicket.attachment_url)}
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-[#0F766E] hover:bg-slate-100 transition-colors"

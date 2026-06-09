@@ -22,8 +22,7 @@ import {
   HiBolt, HiPrinter, HiPencilSquare, HiArrowPath,
   HiStar, HiEye, HiUserGroup, HiPhone, HiAcademicCap,
 } from 'react-icons/hi2'
-
-const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { resolveFileUrl } from '../../../utils/fileUrl.js'
 
 /** Same order/labels as EmployeeDirectory create & view tabs (experience only under job) */
 const DIRECTORY_PROFILE_TABS = [
@@ -126,9 +125,7 @@ export default function EmployeeProfile() {
 
   const resolveDocFileUrl = (url) => {
     if (!url) return null
-    if (/^https?:\/\//i.test(url)) return url
-    const path = url.startsWith('/') ? url : `/${url}`
-    return `${API_ORIGIN}${path}`
+    return resolveFileUrl(url)
   }
 
   const closeDocUpload = () => {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Modal } from '../ui/Modal.jsx'
 import { getAttendanceDetail } from '../../services/attendanceService.js'
+import { resolveFileUrl } from '../../utils/fileUrl.js'
 
 function displayValue(value) {
   if (value === null || value === undefined) return 'N/A'
@@ -43,7 +44,7 @@ export default function AttendanceDetailModal({ recordId, open, onClose }) {
         <div className="space-y-6">
           <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
             {photo ? (
-              <img src={photo} alt="" className="h-16 w-16 rounded-full object-cover border border-slate-200" />
+              <img src={resolveFileUrl(photo)} alt="" className="h-16 w-16 rounded-full object-cover border border-slate-200" />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-700 text-xl font-semibold text-white">
                 {name.charAt(0)}

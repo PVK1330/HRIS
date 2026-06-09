@@ -48,6 +48,8 @@ export default function DepartmentManagement() {
   const [departmentList, setDepartmentList] = useState([])
   const [deptPage, setDeptPage] = useState(1)
   const [deptTotal, setDeptTotal] = useState(0)
+  // KPI totals across the whole dataset (not just the current page).
+  const [kpiTotals, setKpiTotals] = useState({ total: 0, active: 0, inactive: 0 })
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [managerOptions, setManagerOptions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -87,6 +89,31 @@ export default function DepartmentManagement() {
   useEffect(() => {
     fetchDepartments()
   }, [debouncedSearch, statusFilter, deptPage])
+
+  // KPI cards must reflect dataset-wide totals, not the current 10-row page.
+  // The list endpoint returns pagination.total per status filter, so we query
+  // active/inactive counts cheaply (limit:1) and respect the active search.
+  const fetchKpiTotals = async () => {
+    try {
+      const base = { page: 1, limit: 1, search: debouncedSearch }
+      const [all, active, inactive] = await Promise.all([
+        listDepartments({ ...base, status: 'all' }),
+        listDepartments({ ...base, status: 'active' }),
+        listDepartments({ ...base, status: 'inactive' }),
+      ])
+      setKpiTotals({
+        total: all?.total ?? all?.pagination?.total ?? 0,
+        active: active?.total ?? active?.pagination?.total ?? 0,
+        inactive: inactive?.total ?? inactive?.pagination?.total ?? 0,
+      })
+    } catch (err) {
+      console.error('Failed to fetch department KPI totals:', err)
+    }
+  }
+
+  useEffect(() => {
+    fetchKpiTotals()
+  }, [debouncedSearch])
 
   const fetchManagers = async () => {
     try {
@@ -379,7 +406,7 @@ export default function DepartmentManagement() {
         {[
           {
             label: 'TOTAL DEPARTMENTS',
-            count: deptTotal || departmentList.length || 0,
+            count: kpiTotals.total || 0,
             bgColor: 'bg-[#0F172A]',
             icon: HiBuildingOffice,
             onClickFilter: () => setStatusFilter('all'),
@@ -387,7 +414,7 @@ export default function DepartmentManagement() {
           },
           {
             label: 'ACTIVE',
-            count: departmentList.filter(d => d.status === 'Active' || d.isActive).length || 0,
+            count: kpiTotals.active || 0,
             bgColor: 'bg-[#10B981]',
             icon: HiCheckBadge,
             onClickFilter: () => setStatusFilter('active'),
@@ -395,13 +422,15 @@ export default function DepartmentManagement() {
           },
           {
             label: 'INACTIVE',
-            count: departmentList.filter(d => d.status === 'Inactive' || d.status === 'Archived' || (!d.isActive && d.status !== 'Active')).length || 0,
+            count: kpiTotals.inactive || 0,
             bgColor: 'bg-[#EF4444]',
             icon: HiUserCircle,
             onClickFilter: () => setStatusFilter('inactive'),
             filterId: 'inactive'
           },
           {
+            // NOTE: page-scoped — the list endpoint exposes no dataset-wide "assigned heads"
+            // count, so this reflects the current page until a backend aggregate is added.
             label: 'ASSIGNED HEADS',
             count: departmentList.filter(d => d.head || d.manager_id).length || 0,
             bgColor: 'bg-[#3B82F6]',
