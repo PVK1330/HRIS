@@ -236,7 +236,7 @@ export default function Payroll() {
             <>
                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
                   {[
-                     { label: 'TOTAL SALARY PAID', count: fmt(salaries.reduce((acc, s) => acc + Number(s.net_salary), 0)), bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
+                     { label: 'TOTAL SALARY PAID', count: fmt(salaries.reduce((acc, s) => acc + (Number(s.net_salary) || 0), 0)), bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
                      { label: 'ACTIVE PAYROLL', count: salaries.length, bgColor: 'bg-[#10B981]', icon: HiCheckBadge },
                      { label: 'TOTAL EMPLOYEES', count: employees.length, bgColor: 'bg-[#3B82F6]', icon: HiUserGroup },
                      { label: 'PENDING RECORDS', count: employees.length - salaries.length, bgColor: 'bg-[#EF4444]', icon: HiClock }

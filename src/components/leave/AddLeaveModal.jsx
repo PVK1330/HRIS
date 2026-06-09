@@ -158,10 +158,7 @@ export default function AddLeaveModal({ isOpen, onClose, leaveTypes, empList, li
             </button>
             <button
               type="button"
-              onClick={(e) => {
-                 setForm({ ...form, isDraft: true });
-                 setTimeout(() => onSubmit(e), 0);
-              }}
+              onClick={(e) => onSubmit(e, true)}
               disabled={submitting}
               className="rounded border border-[#0F766E] bg-white px-5 py-2 text-sm font-bold text-[#0F766E] transition hover:bg-[#0F766E]/5"
             >
@@ -169,10 +166,7 @@ export default function AddLeaveModal({ isOpen, onClose, leaveTypes, empList, li
             </button>
             <button
               type="button"
-              onClick={(e) => {
-                 setForm({ ...form, isDraft: false });
-                 setTimeout(() => onSubmit(e), 0);
-              }}
+              onClick={(e) => onSubmit(e, false)}
               disabled={submitting}
               className="rounded bg-[#0F766E] px-5 py-2 text-sm font-bold text-white transition hover:bg-[#0c6b64] disabled:opacity-50"
             >

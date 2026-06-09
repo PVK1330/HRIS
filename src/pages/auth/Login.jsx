@@ -43,7 +43,6 @@ export default function Login() {
   const [stage, setStage] = useState('login') // 'login' | 'twoFactor'
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
-  const [userId, setUserId] = useState(null)
   const [mfaToken, setMfaToken] = useState(null)
   const [impersonationLoading, setImpersonationLoading] = useState(false)
   const [impersonationError, setImpersonationError] = useState('')
@@ -193,8 +192,8 @@ export default function Login() {
       }
 
       if (result.data.mfaRequired) {
-        // Superadmin returns a userId; org login returns a short-lived mfaToken.
-        setUserId(result.data.userId ?? null)
+        // Both superadmin and org login now return a short-lived signed mfaToken
+        // that must be presented to verify-2fa (no bare user id is trusted).
         setMfaToken(result.data.mfaToken ?? null)
         setOtp(['', '', '', '', '', ''])
         setStage('twoFactor')
@@ -222,9 +221,7 @@ export default function Login() {
       }
       const isSuperAdmin = activeTab === 'superadmin'
       const endpoint = isSuperAdmin ? '/superadmin/verify-2fa' : '/auth/verify-2fa'
-      const payload = isSuperAdmin
-        ? { userId, code: fullOtp }
-        : { mfaToken, code: fullOtp }
+      const payload = { mfaToken, code: fullOtp }
 
       const response = await axios.post(`${API_URL}/api/v1${endpoint}`, payload)
       const result = response.data
