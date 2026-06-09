@@ -91,11 +91,11 @@ export default function EmailSettings() {
     }
   }
 
-  const baseInput = "block w-full px-4 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+  const baseInput = "block w-full px-4 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#0F766E] sm:text-sm sm:leading-6"
 
   if (data === null) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
         <div className="animate-pulse space-y-8">
           <div className="h-64 rounded-xl bg-gray-100"></div>
           <div className="h-48 rounded-xl bg-gray-100"></div>
@@ -105,22 +105,21 @@ export default function EmailSettings() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="space-y-10 divide-y divide-gray-900/10">
+    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <div className="space-y-4">
         
         {/* SMTP Configuration */}
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">SMTP Server</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Configure connection details for your outbound mail server.
-            </p>
-          </div>
-
-          <form 
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <form
             onSubmit={handleSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           >
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">SMTP Server</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Configure connection details for your outbound mail server.
+              </p>
+            </div>
             <div className="px-4 py-6 sm:p-8 space-y-6">
               
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -200,7 +199,7 @@ export default function EmailSettings() {
                   type="button"
                   onClick={handleTest}
                   disabled={testing}
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500 disabled:opacity-50"
+                  className="text-sm font-medium text-[#0F766E] hover:text-[#115E59] disabled:opacity-50"
                 >
                   {testing ? 'Testing connection...' : 'Test Connection'}
                 </button>
@@ -220,7 +219,7 @@ export default function EmailSettings() {
               <button
                 type="submit"
                 disabled={!isDirty || saving}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
@@ -229,18 +228,17 @@ export default function EmailSettings() {
         </div>
 
         {/* System Sender */}
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">System Sender</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              The 'From' identity used for automated platform emails.
-            </p>
-          </div>
-
-          <form 
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <form
             onSubmit={handleSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           >
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">System Sender</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                The 'From' identity used for automated platform emails.
+              </p>
+            </div>
             <div className="px-4 py-6 sm:p-8 space-y-6">
               
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -285,7 +283,7 @@ export default function EmailSettings() {
               <button
                 type="submit"
                 disabled={!isDirty || saving}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>

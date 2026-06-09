@@ -20,7 +20,7 @@ export default function SystemInfo() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
         <div className="animate-pulse space-y-8">
           <div className="h-64 rounded-xl bg-gray-100"></div>
           <div className="h-64 rounded-xl bg-gray-100"></div>
@@ -45,18 +45,17 @@ export default function SystemInfo() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="space-y-10 divide-y divide-gray-900/10">
+    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <div className="space-y-4">
         
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Application Telemetry</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Core process information and runtime environment details.
-            </p>
-          </div>
-
-          <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Application Telemetry</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Core process information and runtime environment details.
+              </p>
+            </div>
             <div className="px-4 py-6 sm:p-8">
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-8">
                 <div className="sm:col-span-1">
@@ -84,15 +83,14 @@ export default function SystemInfo() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Resource Utilization</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Memory consumption and connection pool metrics.
-            </p>
-          </div>
-
-          <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Resource Utilization</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Memory consumption and connection pool metrics.
+              </p>
+            </div>
             <div className="px-4 py-6 sm:p-8">
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-8">
                 <div className="sm:col-span-1">

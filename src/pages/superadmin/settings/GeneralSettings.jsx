@@ -61,11 +61,11 @@ export default function GeneralSettings() {
 
   const set = (patch) => setData((prev) => ({ ...(prev || DEFAULT_STATE), ...patch }))
 
-  const baseInput = "block w-full px-2 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+  const baseInput = "block w-full px-2 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#0F766E] sm:text-sm sm:leading-6"
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
         <div className="animate-pulse space-y-8">
           <div className="h-32 rounded-xl bg-gray-100"></div>
           <div className="h-64 rounded-xl bg-gray-100"></div>
@@ -75,21 +75,20 @@ export default function GeneralSettings() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="space-y-10 divide-y divide-gray-900/10">
+    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <div className="space-y-4">
         
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Platform Identity</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Configure global platform behavior and billing grace periods.
-            </p>
-          </div>
-
-          <form 
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <form
             onSubmit={(e) => { e.preventDefault(); save(); }}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           >
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Platform Identity</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Configure global platform behavior and billing grace periods.
+              </p>
+            </div>
             <div className="px-4 py-6 sm:p-8">
               <label className="block text-sm font-medium leading-6 text-gray-900">Renewal Grace Period (Days)</label>
               <div className="mt-2">
@@ -124,18 +123,17 @@ export default function GeneralSettings() {
           </form>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Regional & Localization</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Global format standards and timezones.
-            </p>
-          </div>
-
-          <form 
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <form
             onSubmit={(e) => { e.preventDefault(); save(); }}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           >
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Regional & Localization</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Global format standards and timezones.
+              </p>
+            </div>
             <div className="px-4 py-6 sm:p-8 space-y-6">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
@@ -213,18 +211,17 @@ export default function GeneralSettings() {
           </form>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Governance Controls</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Compliance checks during organization onboarding.
-            </p>
-          </div>
-
-          <form 
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <form
             onSubmit={(e) => { e.preventDefault(); save(); }}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           >
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Governance Controls</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Compliance checks during organization onboarding.
+              </p>
+            </div>
             <div className="px-4 py-6 sm:p-8">
               <div className="flex items-center justify-between">
                 <div>

@@ -100,22 +100,22 @@ function timeAgo(iso) {
 }
 
 const inputCls =
-  'block w-full px-4   rounded-lg border-0 py-2 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-900 transition'
-const fieldLabel = 'block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5'
+  'block w-full px-4   rounded-lg border-0 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#0F766E] transition'
+const fieldLabel = 'block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5'
 
 function SectionCard({ icon, title, description, children }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50/60 px-6 py-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
+    <section className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div className="flex items-start gap-3 border-b border-gray-900/10 px-4 py-5 sm:px-8">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0F766E]/10 text-[#0F766E]">
           {icon}
         </div>
         <div>
-          <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-          <p className="mt-0.5 text-xs leading-5 text-slate-500">{description}</p>
+          <h2 className="text-base font-semibold leading-7 text-gray-900">{title}</h2>
+          <p className="mt-1 text-sm leading-6 text-gray-600">{description}</p>
         </div>
       </div>
-      <div className="px-6 py-6">{children}</div>
+      <div className="px-4 py-6 sm:p-8">{children}</div>
     </section>
   )
 }
@@ -202,9 +202,9 @@ export default function CurrencySettings() {
   if (data === null) {
     return (
       <div className="space-y-6">
-        <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
-        <div className="h-64 animate-pulse rounded-2xl bg-slate-100" />
-        <div className="h-48 animate-pulse rounded-2xl bg-slate-100" />
+        <div className="h-20 animate-pulse rounded-2xl bg-gray-100" />
+        <div className="h-64 animate-pulse rounded-2xl bg-gray-100" />
+        <div className="h-48 animate-pulse rounded-2xl bg-gray-100" />
       </div>
     )
   }
@@ -213,20 +213,20 @@ export default function CurrencySettings() {
   const taxRateNum = Number(data.taxRate) || 0
 
   return (
-    <form onSubmit={handleSave} className="space-y-6 pb-24">
+    <form onSubmit={handleSave} className="mx-auto max-w-7xl space-y-4 px-4 pb-24 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">Currency &amp; Tax</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-xl font-bold tracking-tight text-gray-900">Currency &amp; Tax</h1>
+          <p className="mt-1 text-sm text-gray-500">
             One global currency for the entire platform. Amounts are auto-converted and billing tax is applied on top.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 self-start rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Base</span>
-          <span className="font-bold text-slate-900">{data.defaultCurrency}</span>
-          <span className="text-slate-300">·</span>
-          <span className="font-semibold text-slate-600">{formatMoney(1234.5, {}, data)}</span>
+        <div className="inline-flex items-center gap-2 self-start rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm shadow-sm">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Base</span>
+          <span className="font-bold text-gray-900">{data.defaultCurrency}</span>
+          <span className="text-gray-300">·</span>
+          <span className="font-semibold text-gray-600">{formatMoney(1234.5, {}, data)}</span>
         </div>
       </div>
 
@@ -286,9 +286,9 @@ export default function CurrencySettings() {
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Live preview</span>
-          <span className="text-lg font-bold text-slate-900">{formatMoney(1234567.5, {}, data)}</span>
+        <div className="mt-5 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Live preview</span>
+          <span className="text-lg font-bold text-gray-900">{formatMoney(1234567.5, {}, data)}</span>
         </div>
       </SectionCard>
 
@@ -299,7 +299,7 @@ export default function CurrencySettings() {
         description="When enabled, this tax is added on top of the subtotal on every invoice and checkout."
       >
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-900">Charge tax on billing</span>
+          <span className="text-sm font-medium text-gray-900">Charge tax on billing</span>
           <Toggle checked={data.taxEnabled} onChange={(v) => set({ taxEnabled: v })} />
         </div>
 
@@ -313,10 +313,10 @@ export default function CurrencySettings() {
               <label className={fieldLabel}>Tax rate (%)</label>
               <input type="number" min="0" max="100" step="0.001" value={data.taxRate} onChange={(e) => set({ taxRate: e.target.value })} className={inputCls} />
             </div>
-            <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-              <div className="flex justify-between text-slate-600"><span>Subtotal</span><span>{formatMoney(100, {}, data)}</span></div>
-              <div className="flex justify-between text-slate-600"><span>{data.taxLabel || 'Tax'} ({taxRateNum}%)</span><span>{formatMoney(100 * taxRateNum / 100, {}, data)}</span></div>
-              <div className="mt-1.5 flex justify-between border-t border-slate-200 pt-1.5 font-bold text-slate-900"><span>Total</span><span>{formatMoney(100 * (1 + taxRateNum / 100), {}, data)}</span></div>
+            <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+              <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>{formatMoney(100, {}, data)}</span></div>
+              <div className="flex justify-between text-gray-600"><span>{data.taxLabel || 'Tax'} ({taxRateNum}%)</span><span>{formatMoney(100 * taxRateNum / 100, {}, data)}</span></div>
+              <div className="mt-1.5 flex justify-between border-t border-gray-200 pt-1.5 font-bold text-gray-900"><span>Total</span><span>{formatMoney(100 * (1 + taxRateNum / 100), {}, data)}</span></div>
             </div>
           </div>
         )}
@@ -329,54 +329,54 @@ export default function CurrencySettings() {
         description={`Live market rates, fetched automatically and used to convert other currencies into ${data.defaultCurrency}.`}
       >
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-gray-500">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Updated <span className="font-semibold text-slate-700">{timeAgo(data.ratesUpdatedAt)}</span>
+              Updated <span className="font-semibold text-gray-700">{timeAgo(data.ratesUpdatedAt)}</span>
             </span>
-            {data.ratesSource && <span className="ml-2 text-slate-400">· source {data.ratesSource}</span>}
+            {data.ratesSource && <span className="ml-2 text-gray-400">· source {data.ratesSource}</span>}
           </div>
           <button
             type="button"
             onClick={handleRefreshRates}
             disabled={refreshing}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
           >
             <HiOutlineArrowPath className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Refreshing…' : 'Refresh rates'}
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-slate-200">
+        <div className="overflow-hidden rounded-xl border border-gray-200">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <tr className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <th className="px-4 py-2.5">Currency</th>
                 <th className="px-4 py-2.5 text-right">Rate — units per 1 {data.defaultCurrency}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              <tr className="bg-slate-50/40">
+            <tbody className="divide-y divide-gray-100">
+              <tr className="bg-gray-50/40">
                 <td className="px-4 py-2.5">
-                  <span className="font-semibold text-slate-900">{data.defaultCurrency}</span>
-                  <span className="ml-2 text-xs text-slate-400">{labelFor(data.defaultCurrency)} · base</span>
+                  <span className="font-semibold text-gray-900">{data.defaultCurrency}</span>
+                  <span className="ml-2 text-xs text-gray-400">{labelFor(data.defaultCurrency)} · base</span>
                 </td>
-                <td className="px-4 py-2.5 text-right font-semibold text-slate-500">1.0000</td>
+                <td className="px-4 py-2.5 text-right font-semibold text-gray-500">1.0000</td>
               </tr>
 
               {ratesList.map(([code, value]) => (
                 <tr key={code}>
                   <td className="px-4 py-2.5">
-                    <span className="font-semibold text-slate-900">{code}</span>
-                    <span className="ml-2 text-xs text-slate-400">{labelFor(code)}</span>
+                    <span className="font-semibold text-gray-900">{code}</span>
+                    <span className="ml-2 text-xs text-gray-400">{labelFor(code)}</span>
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono text-slate-700">{Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
+                  <td className="px-4 py-2.5 text-right font-mono text-gray-700">{Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
                 </tr>
               ))}
 
               {ratesList.length === 0 && (
                 <tr>
-                  <td colSpan={2} className="px-4 py-6 text-center text-sm text-slate-400">
+                  <td colSpan={2} className="px-4 py-6 text-center text-sm text-gray-400">
                     No rates cached yet — click “Refresh rates”. Until then, other currencies display unconverted (1:1).
                   </td>
                 </tr>
@@ -384,35 +384,35 @@ export default function CurrencySettings() {
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-xs text-slate-400">
+        <p className="mt-3 text-xs text-gray-400">
           Rates refresh automatically every day and whenever you change the base currency.
         </p>
       </SectionCard>
 
       {/* Sticky action bar */}
-      <div className="sticky bottom-0 z-10 -mx-1 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 px-5 py-3 shadow-lg backdrop-blur">
-        <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">
+      <div className="sticky bottom-0 z-10 -mx-1 flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/90 px-5 py-3 shadow-lg backdrop-blur">
+        <span className="inline-flex items-center gap-2 text-xs font-medium text-gray-500">
           {isDirty ? (
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-400" /> Unsaved changes</span>
           ) : (
             <span className="inline-flex items-center gap-1.5"><HiCheckCircle className="h-4 w-4 text-emerald-500" /> All changes saved</span>
           )}
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-x-6">
           <button
             type="button"
             onClick={() => setData(deepClone(original.current))}
             disabled={!isDirty || saving}
-            className="text-sm font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-40"
+            className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
           >
             Discard
           </button>
           <button
             type="submit"
             disabled={!isDirty || saving || separatorsClash}
-            className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-40"
+            className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>

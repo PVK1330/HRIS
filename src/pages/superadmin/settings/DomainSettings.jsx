@@ -64,11 +64,11 @@ export default function DomainSettings() {
     }
   }
 
-  const baseInput = "block w-full px-4 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+  const baseInput = "block w-full px-4 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#0F766E] sm:text-sm sm:leading-6"
 
   if (data === null) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
         <div className="animate-pulse space-y-4">
           <div className="h-4 w-1/4 rounded bg-gray-200"></div>
           <div className="h-48 rounded-xl bg-gray-100"></div>
@@ -78,21 +78,20 @@ export default function DomainSettings() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="space-y-10 divide-y divide-gray-900/10">
+    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <div className="space-y-4">
         
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Domain Routing</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Configure canonical URLs and secure layer protocols.
-            </p>
-          </div>
-
-          <form 
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <form
             onSubmit={handleSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           >
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Domain Routing</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Configure canonical URLs and secure layer protocols.
+              </p>
+            </div>
             <div className="px-4 py-6 sm:p-8 space-y-6">
               <div>
                 <label className="block text-sm font-medium leading-6 text-gray-900">Canonical Domain</label>

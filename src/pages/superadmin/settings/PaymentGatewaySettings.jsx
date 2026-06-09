@@ -1,10 +1,69 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+import { HiOutlineCog6Tooth, HiCheck } from 'react-icons/hi2'
 import { Toggle } from '../../../components/ui/Toggle.jsx'
 import settingsService from '../../../services/settingsService.js'
+import paypalLogo from '../../../assets/payment-gateway-01.svg'
+import stripeLogo from '../../../assets/payment-gateway-02.svg'
 
 const DEFAULT_STRIPE = { enabled: false, publicKey: '', secretKey: '', webhookSecret: '' }
 const DEFAULT_PAYPAL = { enabled: false, clientId: '', clientSecret: '', mode: 'sandbox' }
+
+const baseInput = "block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#0F766E] sm:text-sm sm:leading-6"
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium leading-6 text-gray-900">{label}</label>
+      <div className="mt-1.5">{children}</div>
+    </div>
+  )
+}
+
+/** A single payment provider card: logo, enable toggle, description, status and a
+ *  gear that reveals the credential fields inline. */
+function GatewayCard({ logo, name, description, enabled, onToggle, connected, expanded, onToggleExpand, children }) {
+  return (
+    <div className="flex flex-col rounded-xl border border-gray-200 bg-white p-5">
+      <div className="flex items-center justify-between gap-3">
+        <img src={logo} alt={`${name} logo`} className="h-5 w-auto object-contain" />
+        <Toggle checked={enabled} onChange={onToggle} />
+      </div>
+
+      <p className="mt-4 text-sm leading-6 text-gray-500">{description}</p>
+
+      <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
+        {connected ? (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700">
+            <HiCheck className="h-3.5 w-3.5 text-[#0F766E]" />
+            Connected
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500">
+            Not connected
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          aria-label={`Configure ${name}`}
+          aria-expanded={expanded}
+          className={`rounded-md p-1.5 transition ${
+            expanded ? 'bg-[#0F766E]/10 text-[#0F766E]' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+          }`}
+        >
+          <HiOutlineCog6Tooth className="h-5 w-5" />
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="mt-4 space-y-4 border-t border-gray-100 pt-4">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function PaymentGatewaySettings() {
   const [stripe, setStripe] = useState({ ...DEFAULT_STRIPE })
@@ -12,6 +71,7 @@ export default function PaymentGatewaySettings() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(null)
+  const [expanded, setExpanded] = useState(null) // 'stripe' | 'paypal' | null
 
   const originalStripe = useRef(null)
   const originalPaypal = useRef(null)
@@ -20,7 +80,7 @@ export default function PaymentGatewaySettings() {
     try {
       const res = await settingsService.getPaymentGateways()
       const data = res?.data || {}
-      
+
       const st = data.stripe ? {
         enabled: !!data.stripe.enabled,
         publicKey: data.stripe.publicKey || '',
@@ -73,6 +133,11 @@ export default function PaymentGatewaySettings() {
     }
   }
 
+  const handleDiscard = () => {
+    setStripe(JSON.parse(JSON.stringify(originalStripe.current)))
+    setPaypal(JSON.parse(JSON.stringify(originalPaypal.current)))
+  }
+
   const handleTestConnection = async (slug, label) => {
     setTesting(label)
     try {
@@ -90,222 +155,150 @@ export default function PaymentGatewaySettings() {
     }
   }
 
-  const baseInput = "block w-full px-4 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+  const toggleExpand = (key) => setExpanded((cur) => (cur === key ? null : key))
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="animate-pulse space-y-8">
-          <div className="h-64 rounded-xl bg-gray-100"></div>
-          <div className="h-64 rounded-xl bg-gray-100"></div>
+      <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+        <div className="animate-pulse rounded-xl bg-white p-8 shadow-sm ring-1 ring-gray-900/5">
+          <div className="h-5 w-48 rounded bg-gray-200" />
+          <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <div className="h-56 rounded-xl bg-gray-100" />
+            <div className="h-56 rounded-xl bg-gray-100" />
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="space-y-10 divide-y divide-gray-900/10">
-        
-        {/* Stripe Settings */}
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Stripe Integration</h2>
+    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        <form onSubmit={handleSave} className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+          <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+            <h2 className="text-base font-semibold leading-7 text-gray-900">Payment Gateways</h2>
             <p className="mt-1 text-sm leading-6 text-gray-600">
-              Process credit cards and manage subscriptions via Stripe.
+              Enable and configure the payment providers available at checkout.
             </p>
           </div>
 
-          <form 
-            onSubmit={handleSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
-          >
-            <div className="px-4 py-6 sm:p-8 space-y-6">
-              <div className="flex items-center justify-between pb-6 border-b border-gray-900/5">
-                <div>
-                  <h3 className="text-sm font-medium leading-6 text-gray-900">Enable Stripe</h3>
-                  <p className="mt-1 text-sm text-gray-500">Allow payments via Stripe at checkout.</p>
-                </div>
-                <Toggle checked={stripe.enabled} onChange={(v) => setStripe({ ...stripe, enabled: v })} />
-              </div>
-
-              {stripe.enabled && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium leading-6 text-gray-900">Publishable Key</label>
-                    <div className="mt-2">
-                      <input
-                        type="text"
-                        value={stripe.publicKey}
-                        onChange={(e) => setStripe({ ...stripe, publicKey: e.target.value })}
-                        placeholder="pk_test_..."
-                        className={baseInput}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium leading-6 text-gray-900">Secret Key</label>
-                    <div className="mt-2">
-                      <input
-                        type="password"
-                        value={stripe.secretKey}
-                        onChange={(e) => setStripe({ ...stripe, secretKey: e.target.value })}
-                        placeholder="sk_test_..."
-                        className={baseInput}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium leading-6 text-gray-900">Webhook Secret</label>
-                    <div className="mt-2">
-                      <input
-                        type="password"
-                        value={stripe.webhookSecret}
-                        onChange={(e) => setStripe({ ...stripe, webhookSecret: e.target.value })}
-                        placeholder="whsec_..."
-                        className={baseInput}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => handleTestConnection('stripe', 'Stripe')}
-                      disabled={testing === 'Stripe'}
-                      className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                    >
-                      {testing === 'Stripe' ? 'Testing connection...' : 'Test Connection'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
-              <button
-                type="button"
-                onClick={() => {
-                  setStripe(JSON.parse(JSON.stringify(originalStripe.current)))
-                  setPaypal(JSON.parse(JSON.stringify(originalPaypal.current)))
-                }}
-                disabled={!isDirty || saving}
-                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
+          <div className="px-4 py-6 sm:p-8">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+              {/* PayPal */}
+              <GatewayCard
+                logo={paypalLogo}
+                name="PayPal"
+                description="PayPal is the faster, safer way to send, receive money and online payment."
+                enabled={paypal.enabled}
+                onToggle={(v) => setPaypal({ ...paypal, enabled: v })}
+                connected={!!paypal.clientSecret}
+                expanded={expanded === 'paypal'}
+                onToggleExpand={() => toggleExpand('paypal')}
               >
-                Discard
-              </button>
-              <button
-                type="submit"
-                disabled={!isDirty || saving}
-                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </div>
+                <Field label="Client ID">
+                  <input
+                    type="text"
+                    value={paypal.clientId}
+                    onChange={(e) => setPaypal({ ...paypal, clientId: e.target.value })}
+                    className={baseInput}
+                  />
+                </Field>
+                <Field label="Client Secret">
+                  <input
+                    type="password"
+                    value={paypal.clientSecret}
+                    onChange={(e) => setPaypal({ ...paypal, clientSecret: e.target.value })}
+                    className={baseInput}
+                  />
+                </Field>
+                <Field label="Environment">
+                  <select
+                    value={paypal.mode}
+                    onChange={(e) => setPaypal({ ...paypal, mode: e.target.value })}
+                    className={baseInput}
+                  >
+                    <option value="sandbox">Sandbox (Testing)</option>
+                    <option value="live">Production (Live)</option>
+                  </select>
+                </Field>
+                <button
+                  type="button"
+                  onClick={() => handleTestConnection('paypal', 'PayPal')}
+                  disabled={testing === 'PayPal'}
+                  className="text-sm font-medium text-[#0F766E] hover:text-[#115E59] disabled:opacity-50"
+                >
+                  {testing === 'PayPal' ? 'Testing connection...' : 'Test Connection'}
+                </button>
+              </GatewayCard>
 
-        {/* PayPal Settings */}
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">PayPal Integration</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Accept standard PayPal checkout flows.
-            </p>
+              {/* Stripe */}
+              <GatewayCard
+                logo={stripeLogo}
+                name="Stripe"
+                description="APIs to accept credit cards, manage subscriptions, send money."
+                enabled={stripe.enabled}
+                onToggle={(v) => setStripe({ ...stripe, enabled: v })}
+                connected={!!stripe.secretKey}
+                expanded={expanded === 'stripe'}
+                onToggleExpand={() => toggleExpand('stripe')}
+              >
+                <Field label="Publishable Key">
+                  <input
+                    type="text"
+                    value={stripe.publicKey}
+                    onChange={(e) => setStripe({ ...stripe, publicKey: e.target.value })}
+                    placeholder="pk_test_..."
+                    className={baseInput}
+                  />
+                </Field>
+                <Field label="Secret Key">
+                  <input
+                    type="password"
+                    value={stripe.secretKey}
+                    onChange={(e) => setStripe({ ...stripe, secretKey: e.target.value })}
+                    placeholder="sk_test_..."
+                    className={baseInput}
+                  />
+                </Field>
+                <Field label="Webhook Secret">
+                  <input
+                    type="password"
+                    value={stripe.webhookSecret}
+                    onChange={(e) => setStripe({ ...stripe, webhookSecret: e.target.value })}
+                    placeholder="whsec_..."
+                    className={baseInput}
+                  />
+                </Field>
+                <button
+                  type="button"
+                  onClick={() => handleTestConnection('stripe', 'Stripe')}
+                  disabled={testing === 'Stripe'}
+                  className="text-sm font-medium text-[#0F766E] hover:text-[#115E59] disabled:opacity-50"
+                >
+                  {testing === 'Stripe' ? 'Testing connection...' : 'Test Connection'}
+                </button>
+              </GatewayCard>
+            </div>
           </div>
 
-          <form 
-            onSubmit={handleSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
-          >
-            <div className="px-4 py-6 sm:p-8 space-y-6">
-              <div className="flex items-center justify-between pb-6 border-b border-gray-900/5">
-                <div>
-                  <h3 className="text-sm font-medium leading-6 text-gray-900">Enable PayPal</h3>
-                  <p className="mt-1 text-sm text-gray-500">Allow payments via PayPal.</p>
-                </div>
-                <Toggle checked={paypal.enabled} onChange={(v) => setPaypal({ ...paypal, enabled: v })} />
-              </div>
-
-              {paypal.enabled && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium leading-6 text-gray-900">Client ID</label>
-                    <div className="mt-2">
-                      <input
-                        type="text"
-                        value={paypal.clientId}
-                        onChange={(e) => setPaypal({ ...paypal, clientId: e.target.value })}
-                        className={baseInput}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium leading-6 text-gray-900">Client Secret</label>
-                    <div className="mt-2">
-                      <input
-                        type="password"
-                        value={paypal.clientSecret}
-                        onChange={(e) => setPaypal({ ...paypal, clientSecret: e.target.value })}
-                        className={baseInput}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium leading-6 text-gray-900">Environment</label>
-                    <div className="mt-2">
-                      <select
-                        value={paypal.mode}
-                        onChange={(e) => setPaypal({ ...paypal, mode: e.target.value })}
-                        className={baseInput}
-                      >
-                        <option value="sandbox">Sandbox (Testing)</option>
-                        <option value="live">Production (Live)</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => handleTestConnection('paypal', 'PayPal')}
-                      disabled={testing === 'PayPal'}
-                      className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                    >
-                      {testing === 'PayPal' ? 'Testing connection...' : 'Test Connection'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
-              <button
-                type="button"
-                onClick={() => {
-                  setStripe(JSON.parse(JSON.stringify(originalStripe.current)))
-                  setPaypal(JSON.parse(JSON.stringify(originalPaypal.current)))
-                }}
-                disabled={!isDirty || saving}
-                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
-              >
-                Discard
-              </button>
-              <button
-                type="submit"
-                disabled={!isDirty || saving}
-                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </div>
-
+          <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
+            <button
+              type="button"
+              onClick={handleDiscard}
+              disabled={!isDirty || saving}
+              className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
+            >
+              Discard
+            </button>
+            <button
+              type="submit"
+              disabled={!isDirty || saving}
+              className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

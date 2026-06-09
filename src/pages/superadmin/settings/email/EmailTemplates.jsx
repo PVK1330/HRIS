@@ -131,63 +131,66 @@ export default function EmailTemplates() {
     }
   }
 
-  const baseInput = "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+  const baseInput = "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#0F766E] sm:text-sm sm:leading-6"
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="space-y-10 divide-y divide-gray-900/10">
+    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <div className="space-y-4">
         
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Email Templates</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Customize dynamic system email messages and styling.
-            </p>
-            
-            <div className="mt-6">
-              <label className="block text-sm font-medium leading-6 text-gray-900 mb-2">Select Template</label>
-              <select
-                value={selectedSlug}
-                onChange={(e) => setSelectedSlug(e.target.value)}
-                disabled={listLoading}
-                className={baseInput}
-              >
-                <option value="">{listLoading ? 'Loading...' : 'Choose a template...'}</option>
-                {templates.map((t) => (
-                  <option key={t.slug} value={t.slug}>{t.name}</option>
-                ))}
-              </select>
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Email Templates</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Customize dynamic system email messages and styling.
+              </p>
             </div>
-            
-            {template && (
-              <div className="mt-8 border-t border-gray-900/10 pt-6">
-                <h3 className="text-sm font-medium leading-6 text-gray-900">Variables for {template.name}</h3>
-                <p className="text-xs text-gray-500 mb-4">Click a variable to insert it at the cursor position.</p>
-                {Array.isArray(template.variables) && template.variables.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {template.variables.map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => insertVariable(v)}
-                        className="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                      >
-                        <span className="text-gray-400 mr-1">{"{{"}</span>
-                        {v}
-                        <span className="text-gray-400 ml-1">{"}}"}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400 italic">No variables available</p>
-                )}
+            <div className="px-4 py-6 sm:p-8">
+              <div>
+                <label className="block text-sm font-medium leading-6 text-gray-900 mb-2">Select Template</label>
+                <select
+                  value={selectedSlug}
+                  onChange={(e) => setSelectedSlug(e.target.value)}
+                  disabled={listLoading}
+                  className={baseInput}
+                >
+                  <option value="">{listLoading ? 'Loading...' : 'Choose a template...'}</option>
+                  {templates.map((t) => (
+                    <option key={t.slug} value={t.slug}>{t.name}</option>
+                  ))}
+                </select>
               </div>
-            )}
+
+              {template && (
+                <div className="mt-8 border-t border-gray-900/10 pt-6">
+                  <h3 className="text-sm font-medium leading-6 text-gray-900">Variables for {template.name}</h3>
+                  <p className="text-xs text-gray-500 mb-4">Click a variable to insert it at the cursor position.</p>
+                  {Array.isArray(template.variables) && template.variables.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {template.variables.map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => insertVariable(v)}
+                          className="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                        >
+                          <span className="text-gray-400 mr-1">{"{{"}</span>
+                          {v}
+                          <span className="text-gray-400 ml-1">{"}}"}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">No variables available</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          <form 
+          <form
             onSubmit={onSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           >
             <div className="px-4 py-6 sm:p-8 space-y-6">
               {!selectedSlug ? (
@@ -224,7 +227,7 @@ export default function EmailTemplates() {
 
                   <div>
                     <label className="block text-sm font-medium leading-6 text-gray-900">Message Body (HTML)</label>
-                    <div className="mt-2 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600">
+                    <div className="mt-2 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#0F766E]">
                       <div className="bg-gray-50 px-3 py-2 border-b border-gray-300 rounded-t-md">
                         <span className="text-xs font-medium text-gray-500">HTML Source</span>
                       </div>
@@ -253,7 +256,7 @@ export default function EmailTemplates() {
               <button
                 type="submit"
                 disabled={!selectedSlug || saving}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Template'}
               </button>

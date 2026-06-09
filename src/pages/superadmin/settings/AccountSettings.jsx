@@ -85,12 +85,12 @@ function MfaSection() {
       disabled={busy}
       onChange={(e) => onCode(e.target.value)}
       placeholder="123456"
-      className="w-36 rounded-md border border-gray-300 px-3 py-2 text-center text-lg font-bold tracking-[0.3em] focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+      className="w-36 rounded-md border border-gray-300 px-3 py-2 text-center text-lg font-bold tracking-[0.3em] focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20"
     />
   )
 
   return (
-    <div className="bg-white p-4 py-6 shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl sm:p-8 md:col-span-2">
+    <div className="bg-white p-4 py-6 shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl sm:p-8">
       <div className="mb-4 flex items-center gap-3">
         <h3 className="text-sm font-medium leading-6 text-gray-900">Your authenticator app (2FA)</h3>
         {enabled ? (
@@ -264,7 +264,7 @@ export default function AccountSettings() {
 
   if (settings === null) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
         <div className="animate-pulse space-y-4">
           <div className="h-4 w-1/4 rounded bg-gray-200"></div>
           <div className="h-32 rounded-xl bg-gray-100"></div>
@@ -274,21 +274,20 @@ export default function AccountSettings() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="space-y-10 divide-y divide-gray-900/10">
+    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <div className="space-y-4">
         
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">Account Policies</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Configure security and user onboarding access across the platform.
-            </p>
-          </div>
-
-          <form 
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
+          <form
             onSubmit={handleSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2"
+            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           >
+            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Account Policies</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Configure security and user onboarding access across the platform.
+              </p>
+            </div>
             <div className="px-4 py-6 sm:p-8 space-y-8">
               <div className="flex items-center justify-between">
                 <div>
@@ -335,7 +334,7 @@ export default function AccountSettings() {
           </form>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
           <div className="px-4 sm:px-0">
             <h2 className="text-base font-semibold leading-7 text-gray-900">My Security</h2>
             <p className="mt-1 text-sm leading-6 text-gray-600">
@@ -345,14 +344,14 @@ export default function AccountSettings() {
           <MfaSection />
         </div>
 
-        <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
           <div className="px-4 sm:px-0">
             <h2 className="text-base font-semibold leading-7 text-gray-900">My Password</h2>
             <p className="mt-1 text-sm leading-6 text-gray-600">
               Change the password for your own platform account.
             </p>
           </div>
-          <div className="md:col-span-2">
+          <div className="">
             <ChangePasswordCard />
           </div>
         </div>
