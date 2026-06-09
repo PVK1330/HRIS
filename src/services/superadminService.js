@@ -4,7 +4,7 @@ import axios from 'axios'
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const supportApi = axios.create({
-  baseURL: `${API_URL}/api/superadmin/support`,
+  baseURL: `${API_URL}/api/v1/superadmin/support`,
 })
 
 supportApi.interceptors.request.use((config) => {
