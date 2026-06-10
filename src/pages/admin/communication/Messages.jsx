@@ -45,11 +45,31 @@ function formatTime(ts) {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
+// A stable, unique client temp id for an optimistic message. Used as both the
+// placeholder's local id and the `clientId` sent to the server (echoed back as
+// `client_id`). crypto.randomUUID avoids the Date.now() collision that two sends
+// in the same millisecond would otherwise produce.
+let __tempSeq = 0
+function makeTempId() {
+  __tempSeq += 1
+  const rand = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  return `opt-${rand}-${__tempSeq}`
+}
+
 // Merge a real (server) message into the list: drop the matching optimistic
-// placeholder (matched by body — its sender_id differs for admins) and add the
-// real message only if it is not already present (de-dupe by id).
+// placeholder and add the real message only if not already present (de-dupe by id).
+// Match the placeholder by its STABLE client id (echoed back by the server as
+// `client_id`), never by body text — two identical quick messages share a body, so
+// body-matching would drop the wrong placeholder.
 function mergeIncomingMessage(prev, msg) {
-  const withoutOptimistic = prev.filter(m => !(m.optimistic && m.body === msg.body))
+  const withoutOptimistic = prev.filter(m => {
+    if (!m.optimistic) return true
+    // Only remove the optimistic whose client id this server message echoes.
+    if (msg.client_id && m.clientId) return m.clientId !== msg.client_id
+    return true // no id to match on → leave it; the ack path reconciles it by id
+  })
   if (withoutOptimistic.some(m => String(m.id) === String(msg.id))) return withoutOptimistic
   return [...withoutOptimistic, msg]
 }
@@ -189,11 +209,17 @@ export default function Messages() {
       setConversations(prev => {
         const exists = prev.some(c => String(c.id) === String(cid))
         if (!exists) { loadConversationsRef.current?.(); return prev }
-        return prev.map(c =>
-          String(c.id) === String(cid)
-            ? { ...c, last_message: msg.body, last_message_at: msg.created_at, unread_count: same ? 0 : (c.unread_count || 0) + 1 }
-            : c
-        )
+        return prev.map(c => {
+          if (String(c.id) !== String(cid)) return c
+          // Same guard as conversation:updated — never bump unread for our own message.
+          const authoredBySelf = Number(msg.sender_id) !== Number(c.other_id)
+          return {
+            ...c,
+            last_message: msg.body,
+            last_message_at: msg.created_at,
+            unread_count: same ? 0 : (c.unread_count || 0) + (authoredBySelf ? 0 : 1),
+          }
+        })
       })
     }
     function handleOnlineList({ onlineIds }) { setOnlineUserIds(new Set(onlineIds)) }
@@ -221,11 +247,21 @@ export default function Messages() {
       setConversations(prev => {
         const exists = prev.some(c => String(c.id) === String(cid))
         if (!exists) { loadConversationsRef.current?.(); return prev }
-        return prev.map(c =>
-          String(c.id) === String(cid)
-            ? { ...c, last_message: lastMessage, last_message_at: lastMessageAt, unread_count: same ? 0 : (c.unread_count || 0) + 1 }
-            : c
-        )
+        return prev.map(c => {
+          if (String(c.id) !== String(cid)) return c
+          // Don't bump unread for the viewer's OWN message echoed to their other
+          // tabs/devices (conversation:updated goes to all of the sender's tabs).
+          // "Mine" = the author is not the other participant — robust for admins
+          // too, whose messaging id isn't exposed as user.id. Mirrors the
+          // render-time isMine check.
+          const authoredBySelf = message != null && Number(message.sender_id) !== Number(c.other_id)
+          return {
+            ...c,
+            last_message: lastMessage,
+            last_message_at: lastMessageAt,
+            unread_count: same ? 0 : (c.unread_count || 0) + (authoredBySelf ? 0 : 1),
+          }
+        })
       })
     }
 
@@ -359,8 +395,9 @@ export default function Messages() {
     setNewMessage(''); setSending(true)
 
     const selfId = resolveSelfEmployeeId(user)
+    const tempId = makeTempId()
     const optimistic = {
-      id: `opt-${Date.now()}`, sender_id: selfId,
+      id: tempId, clientId: tempId, sender_id: selfId,
       body, created_at: new Date().toISOString(), is_read: false, optimistic: true,
     }
     setMessages(prev => [...prev, optimistic])
@@ -369,7 +406,7 @@ export default function Messages() {
     try {
       if (socketRef.current?.connected) {
         await new Promise((resolve, reject) => {
-          socketRef.current.emit('send_message', { conversationId: convId, body }, (ack) => {
+          socketRef.current.emit('send_message', { conversationId: convId, body, clientId: tempId }, (ack) => {
             if (ack?.ok && ack.message) {
               setMessages(prev => replaceOptimisticMessage(prev, optimistic.id, ack.message))
               setConversations(prev => prev.map(c =>
@@ -384,7 +421,7 @@ export default function Messages() {
           })
         })
       } else {
-        const msg = await sendMessageRest(convId, body)
+        const msg = await sendMessageRest(convId, body, tempId)
         setMessages(prev => replaceOptimisticMessage(prev, optimistic.id, msg))
         setConversations(prev => prev.map(c =>
           String(c.id) === String(convId)

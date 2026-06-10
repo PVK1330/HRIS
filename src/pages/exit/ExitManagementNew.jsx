@@ -37,6 +37,7 @@ const EMPTY_FORM = {
   exit_type: 'resignation',
   termination_type_id: '',
   exit_reason: '',
+  resignation_date: '',
   notice_date: '',
   last_working_day: '',
   notice_period_days: 30, // Default initially, but editable
@@ -118,6 +119,7 @@ function SubmitModal({ open, onClose, onDone }) {
       const payload = {
         exit_type: form.exit_type,
         exit_reason: form.exit_reason || undefined,
+        resignation_date: form.resignation_date || undefined,
         notice_date: form.notice_date || undefined,
         last_working_day: form.last_working_day || undefined,
         notice_period_days: isTermination ? 0 : (parseInt(form.notice_period_days, 10) || 0),
@@ -186,6 +188,11 @@ function SubmitModal({ open, onClose, onDone }) {
 
             {form.exit_type === 'resignation' && (
             <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Resignation Date</label>
+                <input type="date" value={form.resignation_date} onChange={(e) => setForm({ ...form, resignation_date: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+              </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600">Notice Date</label>
                 <input type="date" value={form.notice_date} onChange={(e) => setForm({ ...form, notice_date: e.target.value })}

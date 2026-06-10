@@ -43,6 +43,7 @@ export default function DesignationsManagement() {
   const [departmentOptions, setDepartmentOptions] = useState([])
   const [desPage, setDesPage] = useState(1)
   const [desTotal, setDesTotal] = useState(0)
+  const [desStats, setDesStats] = useState(null)
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [departmentFilterId, setDepartmentFilterId] = useState('')
   const [loading, setLoading] = useState(true)
@@ -74,6 +75,7 @@ export default function DesignationsManagement() {
       const data = await listDesignations(params)
       setDesignationList(data?.designations ?? data?.records ?? [])
       setDesTotal(data?.total ?? data?.pagination?.total ?? 0)
+      setDesStats(data?.stats ?? null)
     } catch (err) {
       console.error('Failed to fetch designations:', err)
       toast.error('Failed to load designations.')
@@ -363,8 +365,9 @@ export default function DesignationsManagement() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
           {
+            // Backend totals (whole filtered set), not the current 10-row page.
             label: 'TOTAL DESIGNATIONS',
-            count: desTotal || designationList.length || 0,
+            count: desStats?.total ?? desTotal ?? 0,
             bgColor: 'bg-[#0F172A]',
             icon: HiBriefcase,
             onClickFilter: () => setStatusFilter('all'),
@@ -372,7 +375,7 @@ export default function DesignationsManagement() {
           },
           {
             label: 'ACTIVE',
-            count: designationList.filter(d => d.status === 'Active' || d.is_active).length || 0,
+            count: desStats?.active ?? 0,
             bgColor: 'bg-[#10B981]',
             icon: HiCheckBadge,
             onClickFilter: () => setStatusFilter('active'),
@@ -380,7 +383,7 @@ export default function DesignationsManagement() {
           },
           {
             label: 'INACTIVE',
-            count: designationList.filter(d => d.status === 'Inactive' || d.status === 'Archived' || (!d.is_active && d.status !== 'Active')).length || 0,
+            count: desStats?.inactive ?? 0,
             bgColor: 'bg-[#EF4444]',
             icon: HiUserCircle,
             onClickFilter: () => setStatusFilter('inactive'),
@@ -388,7 +391,7 @@ export default function DesignationsManagement() {
           },
           {
             label: 'DEPARTMENTS MAPPED',
-            count: new Set(designationList.map(d => d.department_name).filter(Boolean)).size || 0,
+            count: desStats?.departmentsMapped ?? 0,
             bgColor: 'bg-[#3B82F6]',
             icon: HiTag,
             onClickFilter: () => setStatusFilter('all'),

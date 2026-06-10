@@ -48,8 +48,11 @@ export default function DepartmentManagement() {
   const [departmentList, setDepartmentList] = useState([])
   const [deptPage, setDeptPage] = useState(1)
   const [deptTotal, setDeptTotal] = useState(0)
+  const [deptStats, setDeptStats] = useState(null)
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [managerOptions, setManagerOptions] = useState([])
+  const [managerSearch, setManagerSearch] = useState('')
+  const [debouncedManagerSearch, setDebouncedManagerSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
@@ -76,6 +79,7 @@ export default function DepartmentManagement() {
       })
       setDepartmentList(data?.departments ?? data?.records ?? [])
       setDeptTotal(data?.total ?? data?.pagination?.total ?? 0)
+      setDeptStats(data?.stats ?? null)
     } catch (err) {
       console.error('Failed to fetch departments:', err)
       toast.error('Failed to load departments.')
@@ -88,19 +92,27 @@ export default function DepartmentManagement() {
     fetchDepartments()
   }, [debouncedSearch, statusFilter, deptPage])
 
-  const fetchManagers = async () => {
+  const fetchManagers = async (searchTerm = '') => {
     try {
-      const data = await listDepartmentManagers()
-      setManagerOptions(Array.isArray(data) ? data : [])
+      const { records } = await listDepartmentManagers({ search: searchTerm, limit: 50 })
+      setManagerOptions(Array.isArray(records) ? records : [])
     } catch (err) {
       console.error('Failed to fetch department managers:', err)
       setManagerOptions([])
     }
   }
 
+  // Debounce the Head-of-Department search so any employee is reachable via the
+  // server (the old picker returned a flat 500 with no search — anyone past that
+  // was unselectable). Refetch the page whenever the debounced term changes.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedManagerSearch(managerSearch.trim()), 300)
+    return () => clearTimeout(t)
+  }, [managerSearch])
+
   React.useEffect(() => {
-    fetchManagers()
-  }, [])
+    fetchManagers(debouncedManagerSearch)
+  }, [debouncedManagerSearch])
 
   React.useEffect(() => {
     if (!modalOpen) return undefined
@@ -139,6 +151,7 @@ export default function DepartmentManagement() {
     setFormData(initialFormData)
     setEditMode(false)
     setEditingId(null)
+    setManagerSearch('')
   }
 
   const handleSubmit = async (e) => {
@@ -180,16 +193,39 @@ export default function DepartmentManagement() {
       cancelButtonColor: '#d33',
       confirmButtonText: 'Yes, delete it!'
     })
+    if (!result.isConfirmed) return
 
-    if (result.isConfirmed) {
-      try {
-        await deleteDepartment(id)
-        toast.success('Department archived.')
-        fetchDepartments()
-      } catch (err) {
-        console.error(err)
-        toast.error('Could not archive department.')
+    try {
+      await deleteDepartment(id)
+      toast.success('Department archived.')
+      fetchDepartments()
+    } catch (err) {
+      // 409 = employees still assigned. Surface the count and let the admin
+      // explicitly confirm archiving anyway (force).
+      if (err?.response?.status === 409) {
+        const msg = err?.response?.data?.message || 'Employees are still assigned to this department.'
+        const confirm = await Swal.fire({
+          title: 'Employees still assigned',
+          text: `${msg} Archive it anyway?`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#0F766E',
+          confirmButtonText: 'Archive anyway',
+        })
+        if (!confirm.isConfirmed) return
+        try {
+          await deleteDepartment(id, { force: true })
+          toast.success('Department archived.')
+          fetchDepartments()
+        } catch (e2) {
+          console.error(e2)
+          toast.error('Could not archive department.')
+        }
+        return
       }
+      console.error(err)
+      toast.error('Could not archive department.')
     }
   }
 
@@ -200,6 +236,15 @@ export default function DepartmentManagement() {
       managerId: dept.manager_id ? String(dept.manager_id) : '',
       status: dept.status ?? (dept.isActive ? 'Active' : 'Inactive'),
     })
+    // The assigned head may not be on the current (searched/paginated) managers
+    // page — make sure it's selectable so the picker shows the right name.
+    if (dept.manager_id && dept.head) {
+      setManagerOptions((prev) =>
+        prev.some((m) => String(m.id) === String(dept.manager_id))
+          ? prev
+          : [{ id: dept.manager_id, name: dept.head }, ...prev],
+      )
+    }
     setEditMode(true)
     setEditingId(dept.id)
     setModalOpen(true)
@@ -378,8 +423,9 @@ export default function DepartmentManagement() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
         {[
           {
+            // Backend totals (whole filtered set), not the current 10-row page.
             label: 'TOTAL DEPARTMENTS',
-            count: deptTotal || departmentList.length || 0,
+            count: deptStats?.total ?? deptTotal ?? 0,
             bgColor: 'bg-[#0F172A]',
             icon: HiBuildingOffice,
             onClickFilter: () => setStatusFilter('all'),
@@ -387,7 +433,7 @@ export default function DepartmentManagement() {
           },
           {
             label: 'ACTIVE',
-            count: departmentList.filter(d => d.status === 'Active' || d.isActive).length || 0,
+            count: deptStats?.active ?? 0,
             bgColor: 'bg-[#10B981]',
             icon: HiCheckBadge,
             onClickFilter: () => setStatusFilter('active'),
@@ -395,7 +441,7 @@ export default function DepartmentManagement() {
           },
           {
             label: 'INACTIVE',
-            count: departmentList.filter(d => d.status === 'Inactive' || d.status === 'Archived' || (!d.isActive && d.status !== 'Active')).length || 0,
+            count: deptStats?.inactive ?? 0,
             bgColor: 'bg-[#EF4444]',
             icon: HiUserCircle,
             onClickFilter: () => setStatusFilter('inactive'),
@@ -403,7 +449,7 @@ export default function DepartmentManagement() {
           },
           {
             label: 'ASSIGNED HEADS',
-            count: departmentList.filter(d => d.head || d.manager_id).length || 0,
+            count: deptStats?.assignedHeads ?? 0,
             bgColor: 'bg-[#3B82F6]',
             icon: HiUser,
             onClickFilter: () => setStatusFilter('all'),
@@ -519,20 +565,28 @@ export default function DepartmentManagement() {
               labelClassName="mb-1 block text-sm font-medium text-slate-800"
             />
 
-            <Input
-              label="Head of Department"
-              name="managerId"
-              type="select"
-              value={formData.managerId}
-              onChange={handleFormChange}
-              placeholder="Select employee"
-              options={managerOptions.map((m) => ({
-                label: m.name,
-                value: String(m.id),
-              }))}
-              inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
-              labelClassName="mb-1 block text-sm font-medium text-slate-800"
-            />
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-800">Head of Department</label>
+              <input
+                type="text"
+                value={managerSearch}
+                onChange={(e) => setManagerSearch(e.target.value)}
+                placeholder="Search employees by name, code or email…"
+                className="mb-2 h-9 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20"
+              />
+              <Input
+                name="managerId"
+                type="select"
+                value={formData.managerId}
+                onChange={handleFormChange}
+                placeholder="Select employee"
+                options={managerOptions.map((m) => ({
+                  label: m.emp_id ? `${m.name} (${m.emp_id})` : m.name,
+                  value: String(m.id),
+                }))}
+                inputClassName="h-10 rounded-lg border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]/20"
+              />
+            </div>
 
             <Input
               label="Status"
