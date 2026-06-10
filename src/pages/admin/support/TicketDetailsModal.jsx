@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { HiCalendarDays, HiUser, HiBuildingOffice, HiPaperClip, HiTicket, HiShieldExclamation, HiLifebuoy, HiTag, HiFolderOpen, HiUserCircle } from 'react-icons/hi2'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Badge } from '../../../components/ui/Badge.jsx'
+import { resolveFileUrl } from '../../../utils/fileUrl.js'
 
 // Status badge color mapping
 const getStatusColor = (status) => {
@@ -241,7 +242,7 @@ export function TicketDetailsModal({ isOpen, onClose, ticket, onReply }) {
                     <div className="pt-3 sm:pt-4 border-t border-slate-100">
                       <p className="text-[10px] sm:text-xs font-semibold text-slate-500 mb-2">Attachment</p>
                       <a
-                        href={ticket.attachmentUrl || ticket.attachment_url}
+                        href={resolveFileUrl(ticket.attachmentUrl || ticket.attachment_url)}
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center gap-2 p-2 sm:p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-[#0F766E] hover:bg-slate-100 transition-colors"

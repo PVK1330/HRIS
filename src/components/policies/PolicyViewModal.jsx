@@ -8,6 +8,7 @@ import {
 } from 'react-icons/hi2';
 import { Modal } from '../ui/Modal.jsx';
 import { POLICY_SECTION_FIELDS } from '../../constants/policySections.js';
+import { resolveFileUrl } from '../../utils/fileUrl.js';
 
 /**
  * Read-only textarea that auto-grows to fit its content, so it never shows its
@@ -213,7 +214,7 @@ export default function PolicyViewModal({ isOpen, onClose, policy, tracking = []
                   {policy.attachments.map((a, i) => (
                     <li key={i}>
                       <a
-                        href={a.url}
+                        href={resolveFileUrl(a.url)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-2 text-sm font-semibold text-[#0F766E] hover:underline"

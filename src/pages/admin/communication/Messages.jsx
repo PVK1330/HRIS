@@ -10,8 +10,7 @@ import {
   listConversations, openConversation,
   getMessages, sendMessageRest, listMessageContacts, sendMessageAttachment,
 } from '../../../services/messagesService.js'
-
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { resolveFileUrl } from '../../../utils/fileUrl.js'
 
 function resolveSelfEmployeeId(user) {
   const id = user?.employeeId ?? user?.id
@@ -25,8 +24,9 @@ function isNumericConvId(id) {
 
 function attachmentUrl(path) {
   if (!path) return null
-  if (path.startsWith('http')) return path
-  return `${SOCKET_URL}${path.startsWith('/') ? path : `/${path}`}`
+  // Private /uploads/* attachments are auth-gated; resolveFileUrl appends the
+  // ?token= so browser-initiated <img>/<a> GETs don't 401.
+  return resolveFileUrl(path)
 }
 
 function apiErrorMessage(err, fallback) {
