@@ -836,7 +836,7 @@ export default function SupportManagement() {
         onClose={handleCloseViewModal}
         size="custom"
         showClose={true}
-        bodyClassName="p-0 bg-slate-50 overflow-hidden"
+        bodyClassName="p-0 bg-slate-50 overflow-y-auto"
         header={
           <div className="flex flex-col gap-2">
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Ticket Details</h2>
@@ -848,7 +848,7 @@ export default function SupportManagement() {
       >
         {selectedTicket && (
           <div className="flex flex-col min-h-0 w-full max-w-[1200px] mx-auto">
-            <div className="p-6 overflow-y-auto">
+            <div className="p-6">
               {/* Information Card Section */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow mb-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
