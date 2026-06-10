@@ -50,9 +50,18 @@ export const listDepartments = async (params = {}) => {
   }
 }
 
-export const listDepartmentManagers = async () => {
-  const { data } = await api.get('/departments/managers')
-  return data.data
+/**
+ * Head-of-Department picker. Supports server-side search/pagination + optional
+ * role filter so any employee is reachable. Returns { records, pagination }.
+ * Falls back gracefully if the API still returns a bare array.
+ * @returns {Promise<{ records: Array, pagination: object|null }>}
+ */
+export const listDepartmentManagers = async (params = {}) => {
+  const { data } = await api.get('/departments/managers', { params })
+  const p = data.data
+  if (p && Array.isArray(p.records)) return { records: p.records, pagination: p.pagination ?? null }
+  if (Array.isArray(p)) return { records: p, pagination: null }
+  return { records: [], pagination: null }
 }
 
 export const getDepartment = async (id) => {
@@ -70,7 +79,9 @@ export const updateDepartment = async (id, deptData) => {
   return data.data
 }
 
-export const deleteDepartment = async (id) => {
-  const { data } = await api.delete(`/departments/${id}`)
+export const deleteDepartment = async (id, { force = false } = {}) => {
+  const { data } = await api.delete(`/departments/${id}`, {
+    params: force ? { force: 'true' } : {},
+  })
   return data.data
 }

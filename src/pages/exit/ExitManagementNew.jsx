@@ -38,6 +38,7 @@ const EMPTY_FORM = {
   exit_type: 'resignation',
   termination_type_id: '',
   exit_reason: '',
+  resignation_date: '',
   notice_date: '',
   last_working_day: '',
   notice_period_days: 30, // Default initially, but editable
@@ -119,6 +120,7 @@ function SubmitModal({ open, onClose, onDone }) {
       const payload = {
         exit_type: form.exit_type,
         exit_reason: form.exit_reason || undefined,
+        resignation_date: form.resignation_date || undefined,
         notice_date: form.notice_date || undefined,
         last_working_day: form.last_working_day || undefined,
         notice_period_days: isTermination ? 0 : (parseInt(form.notice_period_days, 10) || 0),
