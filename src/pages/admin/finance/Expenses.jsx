@@ -113,6 +113,8 @@ export default function Expenses() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState(null);
+  const [claimApprovals, setClaimApprovals] = useState([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [categoryFormData, setCategoryFormData] = useState(initialCategoryFormData);
   const [editingId, setEditingId] = useState(null);
@@ -124,6 +126,10 @@ export default function Expenses() {
     approved: 0,
     declined: 0,
     paid: 0,
+    totalAmount: 0,
+    pendingAmount: 0,
+    approvedAmount: 0,
+    paidAmount: 0,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -162,6 +168,10 @@ export default function Expenses() {
         approved: s.approved ?? s.approvedClaims ?? 0,
         declined: s.declined ?? s.rejectedClaims ?? 0,
         paid: s.paid ?? 0,
+        totalAmount: s.totalAmount ?? 0,
+        pendingAmount: s.pendingAmount ?? 0,
+        approvedAmount: s.approvedAmount ?? 0,
+        paidAmount: s.paidAmount ?? 0,
       });
     } catch {
       /* non-fatal */
@@ -401,12 +411,44 @@ export default function Expenses() {
     }
   };
 
+  // Open the review modal and load full detail (incl. the approval timeline).
+  const openReview = async (row) => {
+    setSelectedClaim(row);
+    setClaimApprovals([]);
+    setReviewModalOpen(true);
+    setLoadingDetail(true);
+    try {
+      const detail = await expenseService.getExpense(row.id);
+      setClaimApprovals(Array.isArray(detail?.approvals) ? detail.approvals : []);
+    } catch {
+      setClaimApprovals([]);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  // Re-fetch detail after an action so the timeline + status update in place.
+  const refreshReview = async (id) => {
+    try {
+      const detail = await expenseService.getExpense(id);
+      setClaimApprovals(Array.isArray(detail?.approvals) ? detail.approvals : []);
+      setSelectedClaim((prev) =>
+        prev && prev.id === id
+          ? { ...prev, status: detail.status, rejection_reason: detail.rejection_reason ?? prev.rejection_reason }
+          : prev,
+      );
+    } catch {
+      /* non-fatal */
+    }
+  };
+
   const handleApprove = async () => {
     if (!selectedClaim?.id) return;
     try {
-      await expenseService.updateExpenseStatus(selectedClaim.id, { status: 'Approved' });
-      toast.success('Claim approved.');
-      setReviewModalOpen(false);
+      const res = await expenseService.updateExpenseStatus(selectedClaim.id, { status: 'Approved' });
+      // Multi-level: the claim stays Pending until the final level signs off.
+      toast.success(res?.status === 'Pending' ? 'Level approved — awaiting next approver.' : 'Claim approved.');
+      await refreshReview(selectedClaim.id);
       await loadClaims();
       await loadStats();
     } catch (err) {
@@ -423,7 +465,7 @@ export default function Expenses() {
         rejectionReason: reason || undefined,
       });
       toast.success('Claim rejected.');
-      setReviewModalOpen(false);
+      await refreshReview(selectedClaim.id);
       await loadClaims();
       await loadStats();
     } catch (err) {
@@ -436,7 +478,7 @@ export default function Expenses() {
     try {
       await expenseService.updateExpenseStatus(selectedClaim.id, { status: 'Paid' });
       toast.success('Marked as paid.');
-      setReviewModalOpen(false);
+      await refreshReview(selectedClaim.id);
       await loadClaims();
       await loadStats();
     } catch (err) {
@@ -448,7 +490,7 @@ export default function Expenses() {
     {
       key: 'name',
       label: 'Category Name',
-      render: (v, row) => (
+      render: (v) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-emerald-50 text-[#0F766E] shadow-sm">
             <HiTag className="h-5 w-5" />
@@ -579,10 +621,7 @@ export default function Expenses() {
         <div className="flex items-center justify-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              setSelectedClaim(row);
-              setReviewModalOpen(true);
-            }}
+            onClick={() => openReview(row)}
             className="inline-flex h-8 w-8 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-50"
             aria-label="View"
           >
@@ -605,12 +644,12 @@ export default function Expenses() {
   ];
 
   const statCards = [
-    { label: 'TOTAL', count: stats.total, icon: HiReceiptPercent, bgColor: 'bg-[#0F172A]', key: 'All' },
+    { label: 'TOTAL', count: stats.total, amount: stats.totalAmount, icon: HiReceiptPercent, bgColor: 'bg-[#0F172A]', key: 'All' },
     { label: 'DRAFTS', count: stats.drafts, icon: HiInboxStack, bgColor: 'bg-slate-600', key: 'Draft' },
-    { label: 'PENDING', count: stats.pending, icon: HiClock, bgColor: 'bg-[#F59E0B]', key: 'Pending' },
-    { label: 'APPROVED', count: stats.approved, icon: HiCheckBadge, bgColor: 'bg-[#10B981]', key: 'Approved' },
+    { label: 'PENDING', count: stats.pending, amount: stats.pendingAmount, icon: HiClock, bgColor: 'bg-[#F59E0B]', key: 'Pending' },
+    { label: 'APPROVED', count: stats.approved, amount: stats.approvedAmount, icon: HiCheckBadge, bgColor: 'bg-[#10B981]', key: 'Approved' },
     { label: 'REJECTED', count: stats.declined, icon: HiXCircle, bgColor: 'bg-[#EF4444]', key: 'Rejected' },
-    { label: 'PAID', count: stats.paid, icon: HiBanknotes, bgColor: 'bg-[#059669]', key: 'Paid' },
+    { label: 'PAID', count: stats.paid, amount: stats.paidAmount, icon: HiBanknotes, bgColor: 'bg-[#059669]', key: 'Paid' },
   ];
 
   return (
@@ -713,6 +752,11 @@ export default function Expenses() {
                     <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">
                       {card.count}
                     </div>
+                    {card.amount != null && (
+                      <div className="mt-1 text-[11px] font-bold text-slate-400 truncate leading-none">
+                        {fmt(card.amount)}
+                      </div>
+                    )}
                   </div>
                 </button>
               );
@@ -968,6 +1012,44 @@ export default function Expenses() {
               {selectedClaim.rejection_reason && (
                 <div className="rounded-none border border-red-200 bg-red-50 p-3 text-sm text-red-800">
                   <strong>Rejection reason:</strong> {selectedClaim.rejection_reason}
+                </div>
+              )}
+              {(loadingDetail || claimApprovals.length > 0) && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Approval progress</p>
+                  {loadingDetail ? (
+                    <p className="mt-2 text-sm text-slate-400">Loading…</p>
+                  ) : (
+                    <ol className="mt-2 space-y-2">
+                      {claimApprovals.map((a) => (
+                        <li
+                          key={a.id}
+                          className="flex items-center gap-3 rounded-none border border-slate-200 bg-slate-50 p-3"
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">
+                            {a.level}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-900">
+                              {a.level_name || `Level ${a.level}`}
+                            </p>
+                            {a.approver_name && (
+                              <p className="text-[11px] text-slate-500">
+                                by {a.approver_name}
+                                {a.actioned_at
+                                  ? ` · ${new Date(a.actioned_at).toLocaleDateString()}`
+                                  : ''}
+                              </p>
+                            )}
+                            {a.comments && (
+                              <p className="mt-1 text-[11px] italic text-slate-600">“{a.comments}”</p>
+                            )}
+                          </div>
+                          <Badge label={a.status} color={statusBadgeColor(a.status)} />
+                        </li>
+                      ))}
+                    </ol>
+                  )}
                 </div>
               )}
               {canApprove && selectedClaim.status === 'Pending' && (
