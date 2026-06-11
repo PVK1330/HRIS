@@ -319,6 +319,18 @@ export function AuthProvider({ children }) {
     return () => window.clearInterval(id);
   }, [adminSessionKey, refreshAccessProfile]);
 
+  // Merge a partial patch into the current user and persist it. Used by
+  // self-service profile editing so the sidebar/header reflect changes live.
+  const updateUser = useCallback((patch) => {
+    if (!patch) return;
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await api.post("/auth/logout");
@@ -349,6 +361,7 @@ export function AuthProvider({ children }) {
       user,
       login,
       logout,
+      updateUser,
       hasPermission,
       hasFeatureAccess,
       refreshAccessProfile,
@@ -361,6 +374,7 @@ export function AuthProvider({ children }) {
       user,
       login,
       logout,
+      updateUser,
       hasPermission,
       hasFeatureAccess,
       refreshAccessProfile,

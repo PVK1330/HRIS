@@ -841,7 +841,7 @@ export default function SupportManagement() {
         onClose={handleCloseViewModal}
         size="xl"
         showClose={true}
-        bodyClassName="p-0 bg-slate-50 overflow-hidden"
+        bodyClassName="p-0 bg-slate-50 overflow-y-auto"
         header={
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#0F766E] text-white shadow-sm">

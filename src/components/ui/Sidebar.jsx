@@ -190,7 +190,7 @@ export function Sidebar({
           <div className="flex items-center gap-3 rounded-lg bg-gray-100 px-3 py-3">
             <Avatar name={user?.name ?? 'User'} size="md" bgColor={avatarPalette} />
             <Link
-              to={role === 'superadmin' || role === 'superadmin' ? '/superadmin/profile' : '/admin/employee-profile'}
+              to={role === 'superadmin' ? '/superadmin/profile' : '/admin/account'}
               className="min-w-0 flex-1 hover:opacity-80 transition-opacity"
             >
               <div className="truncate text-sm font-bold text-[#0F766E]">{user?.name ?? 'User'}</div>
