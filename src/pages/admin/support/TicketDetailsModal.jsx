@@ -78,7 +78,7 @@ export function TicketDetailsModal({ isOpen, onClose, ticket, onReply }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
                 {/* Ticket ID */}
                 <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5"><HiTicket className="w-4 h-4" /> Ticket ID</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5"><HiTicket className="w-4 h-4" /> Ticket ID </p>
                   <p className="text-sm font-bold text-slate-900">{ticket.id || ticket.ticketId}</p>
                 </div>
                 {/* Priority */}

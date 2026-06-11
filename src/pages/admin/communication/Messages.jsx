@@ -24,9 +24,8 @@ function isNumericConvId(id) {
 
 function attachmentUrl(path) {
   if (!path) return null
-  // Private /uploads/* attachments are auth-gated; resolveFileUrl appends the
-  // ?token= so browser-initiated <img>/<a> GETs don't 401.
-  return resolveFileUrl(path)
+  if (path.startsWith('http')) return path
+  return `${SOCKET_URL}${path.startsWith('/') ? path : `/${path}`}`
 }
 
 function apiErrorMessage(err, fallback) {

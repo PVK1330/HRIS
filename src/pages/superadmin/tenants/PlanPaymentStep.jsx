@@ -55,7 +55,7 @@ export default function PlanPaymentStep({
           onClick={() => onBillingCycleChange('monthly')}
           className={`rounded-md px-4 py-2 text-xs font-bold transition-all ${
             billingCycle === 'monthly'
-              ? 'bg-white text-indigo-600 shadow-sm'
+              ? 'bg-white text-[#0F766E] shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
           }`}
         >
@@ -66,7 +66,7 @@ export default function PlanPaymentStep({
           onClick={() => onBillingCycleChange('annual')}
           className={`rounded-md px-4 py-2 text-xs font-bold transition-all ${
             billingCycle === 'annual'
-              ? 'bg-white text-indigo-600 shadow-sm'
+              ? 'bg-white text-[#0F766E] shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
           }`}
         >
@@ -87,7 +87,7 @@ export default function PlanPaymentStep({
               onClick={() => onSelectPlan(String(plan.id))}
               className={`relative flex flex-col rounded-xl border-2 p-4 text-left transition-all ${
                 selected
-                  ? 'border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-500/20'
+                  ? 'border-[#0F766E] bg-teal-50/40 ring-2 ring-[#0F766E]/20'
                   : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
               }`}
             >
@@ -98,12 +98,12 @@ export default function PlanPaymentStep({
                 </span>
               )}
               {selected && (
-                <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white">
+                <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#0F766E] text-white">
                   <HiCheck className="h-3.5 w-3.5" />
                 </span>
               )}
               <p className="pr-6 text-sm font-bold text-slate-900">{plan.plan_name}</p>
-              <p className="mt-1 text-lg font-black text-indigo-600">
+              <p className="mt-1 text-lg font-black text-[#0F766E]">
                 {fmt(price)}
                 <span className="text-xs font-semibold text-slate-400">
                   /{billingCycle === 'annual' ? 'yr' : 'mo'}
@@ -124,7 +124,7 @@ export default function PlanPaymentStep({
                   ))
                 )}
                 {features.length > 6 && (
-                  <li className="text-[10px] font-semibold text-indigo-500">
+                  <li className="text-[10px] font-semibold text-[#0F766E]">
                     +{features.length - 6} more modules
                   </li>
                 )}
@@ -175,13 +175,13 @@ export default function PlanPaymentStep({
                 onClick={() => onPaymentGatewayChange(gw.slug, gw)}
                 className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${
                   active
-                    ? 'border-indigo-500 bg-indigo-50/50'
+                    ? 'border-[#0F766E] bg-teal-50/50'
                     : 'border-slate-200 bg-white hover:border-slate-300'
                 }`}
               >
                 <div
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                    active ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
+                    active ? 'bg-teal-100 text-[#0F766E]' : 'bg-slate-100 text-slate-500'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -192,7 +192,7 @@ export default function PlanPaymentStep({
                     {gw.testMode ? 'Test mode' : 'Live'} · {gw.slug}
                   </p>
                 </div>
-                {active && <HiCheck className="h-5 w-5 shrink-0 text-indigo-600" />}
+                {active && <HiCheck className="h-5 w-5 shrink-0 text-[#0F766E]" />}
               </button>
             )
           })}
@@ -201,14 +201,14 @@ export default function PlanPaymentStep({
             onClick={() => onPaymentGatewayChange('manual')}
             className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${
               paymentGateway === 'manual'
-                ? 'border-indigo-500 bg-indigo-50/50'
+                ? 'border-[#0F766E] bg-teal-50/50'
                 : 'border-slate-200 bg-white hover:border-slate-300'
             }`}
           >
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
                 paymentGateway === 'manual'
-                  ? 'bg-indigo-100 text-indigo-600'
+                  ? 'bg-teal-100 text-[#0F766E]'
                   : 'bg-slate-100 text-slate-500'
               }`}
             >
@@ -221,7 +221,7 @@ export default function PlanPaymentStep({
               </p>
             </div>
             {paymentGateway === 'manual' && (
-              <HiCheck className="h-5 w-5 shrink-0 text-indigo-600" />
+              <HiCheck className="h-5 w-5 shrink-0 text-[#0F766E]" />
             )}
           </button>
         </div>
@@ -233,7 +233,7 @@ export default function PlanPaymentStep({
           <select
             value={paymentCollection}
             onChange={(e) => onPaymentCollectionChange(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-[#0F766E]"
           >
             <option value="trial">Start trial — invoice pending (recommended)</option>
             <option value="pending">Record pending payment (awaiting collection)</option>
@@ -278,7 +278,7 @@ export default function PlanPaymentStep({
             )
           })()}
           {paymentGateway === 'stripe' && (
-            <p className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/80 px-3 py-2 text-xs text-indigo-800">
+            <p className="mt-3 rounded-lg border border-teal-100 bg-teal-50/80 px-3 py-2 text-xs text-teal-800">
               {stripeCheckoutLoading
                 ? 'Creating organization and opening Stripe Checkout in a new tab…'
                 : 'Use “Create & pay with Stripe” to provision the organization and open checkout in a new tab (uses your platform currency and timezone from General / Currency settings).'}
@@ -301,7 +301,7 @@ export default function PlanPaymentStep({
               value={paymentReference}
               onChange={(e) => onPaymentReferenceChange(e.target.value)}
               placeholder="Transaction ID, cheque no., bank ref…"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-indigo-500"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[#0F766E]"
             />
           </div>
         )}

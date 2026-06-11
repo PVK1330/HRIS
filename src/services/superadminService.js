@@ -128,8 +128,12 @@ export const superadminService = {
   getSupportTickets() {
     return supportApi.get(SUPERADMIN_ENDPOINTS.SUPPORT_TICKETS)
   },
-  getSupportTicketById(id) {
-    return supportApi.get(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_BY_ID(id))
+  getSupportTicketById(id, tenantDb) {
+    // tenantDb scopes the lookup to the owning tenant — per-tenant serial ids
+    // collide across tenants, so without it the API could read the wrong tenant.
+    return supportApi.get(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_BY_ID(id), {
+      params: tenantDb ? { tenantDb } : undefined,
+    })
   },
   updateSupportTicket(id, payload) {
     const body = {}
@@ -145,10 +149,21 @@ export const superadminService = {
     if (payload.assignedTo != null) {
       body.assignedTo = payload.assignedTo
     }
+    if (payload.tenantDb != null) {
+      body.tenantDb = payload.tenantDb
+    }
     return supportApi.patch(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_UPDATE(id), body)
   },
-  deleteSupportTicket(id) {
-    return supportApi.delete(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_UPDATE(id))
+  deleteSupportTicket(id, tenantDb) {
+    return supportApi.delete(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_UPDATE(id), {
+      params: tenantDb ? { tenantDb } : undefined,
+    })
+  },
+  // Status-only update — does NOT require a reply message (separate from the chat).
+  updateSupportTicketStatus(id, status, tenantDb) {
+    const body = { status }
+    if (tenantDb != null) body.tenantDb = tenantDb
+    return supportApi.put(SUPERADMIN_ENDPOINTS.SUPPORT_TICKET_STATUS(id), body)
   },
   addSupportTicketMessage(id, payload) {
     const body = {

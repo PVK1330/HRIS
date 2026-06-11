@@ -30,7 +30,9 @@ import {
   HiGlobeAlt,
   HiInformationCircle,
   HiSquares2X2,
-  HiMagnifyingGlass
+  HiMagnifyingGlass,
+  HiEye,
+  HiEyeSlash
 } from 'react-icons/hi2'
 
 const slugify = (text) => text.toString().toLowerCase().trim()
@@ -124,6 +126,7 @@ export default function TenantManagement() {
       paymentCollection: 'trial',
       paymentReference: '',
     })
+    setShowNewPassword(false)
     setAddOrgTab('details')
   }
 
@@ -175,6 +178,7 @@ export default function TenantManagement() {
 
   // Modal States
   const [showNewModal, setShowNewModal] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
@@ -776,7 +780,7 @@ export default function TenantManagement() {
               type="button"
               onClick={() => setAddOrgTab('details')}
               className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${addOrgTab === 'details'
-                ? 'border-indigo-600 text-indigo-600'
+                ? 'border-[#0F766E] text-[#0F766E]'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
             >
@@ -786,7 +790,7 @@ export default function TenantManagement() {
               type="button"
               onClick={() => setAddOrgTab('subscription')}
               className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${addOrgTab === 'subscription'
-                ? 'border-indigo-600 text-indigo-600'
+                ? 'border-[#0F766E] text-[#0F766E]'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
             >
@@ -796,10 +800,28 @@ export default function TenantManagement() {
 
           {addOrgTab === 'details' ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <Input label="Organization Name *" placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
-              <Input label="Root Admin Name *" placeholder="e.g. John Doe" value={newForm.adminName} onChange={(e) => setNewForm({ ...newForm, adminName: e.target.value })} />
-              <Input label="Root Admin Email *" type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
-              <Input label="Root Admin Password *" type="password" placeholder="••••••••" value={newForm.adminPassword} onChange={(e) => setNewForm({ ...newForm, adminPassword: e.target.value })} />
+              <Input label="Organization Name" required placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
+              <Input label="Root Admin Name" required placeholder="e.g. John Doe" value={newForm.adminName} onChange={(e) => setNewForm({ ...newForm, adminName: e.target.value })} />
+              <Input label="Root Admin Email" required type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
+              <Input
+                label="Root Admin Password"
+                required
+                type={showNewPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={newForm.adminPassword}
+                onChange={(e) => setNewForm({ ...newForm, adminPassword: e.target.value })}
+                suffix={
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowNewPassword((s) => !s)}
+                    className="text-slate-400 transition-colors hover:text-[#0F766E]"
+                    aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showNewPassword ? <HiEyeSlash className="h-5 w-5" /> : <HiEye className="h-5 w-5" />}
+                  </button>
+                }
+              />
             </div>
           ) : (
             <PlanPaymentStep
@@ -825,7 +847,7 @@ export default function TenantManagement() {
             {addOrgTab === 'subscription' ? (
               <button type="button" onClick={() => setAddOrgTab('details')} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Back</button>
             ) : (
-              <button type="button" onClick={() => setAddOrgTab('subscription')} className="rounded-none bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition-colors">Next: Plan & payment</button>
+              <button type="button" onClick={() => setAddOrgTab('subscription')} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors">Next: Plan & payment</button>
             )}
             {addOrgTab === 'subscription' && (
               <button type="button" onClick={handleCreateOrganization} disabled={isLoading || stripeCheckoutLoading} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors disabled:opacity-50">
