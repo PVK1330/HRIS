@@ -44,3 +44,14 @@ export async function updateExpenseStatus(id, body) {
 export async function deleteExpense(id) {
   await api.delete(`/expenses/${id}`);
 }
+
+// Approval level config (EXP-02)
+export async function getApprovalLevels() {
+  const { data } = await api.get('/expenses/approval-levels');
+  return Array.isArray(data.data) ? data.data : [];
+}
+
+export async function setApprovalLevels(levels) {
+  const { data } = await api.put('/expenses/approval-levels', levels);
+  return Array.isArray(data.data) ? data.data : [];
+}

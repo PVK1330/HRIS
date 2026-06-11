@@ -16,6 +16,7 @@ import {
   HiInboxStack,
   HiTableCells,
   HiTag,
+  HiAdjustmentsHorizontal,
 } from 'react-icons/hi2';
 import { toast } from 'react-hot-toast';
 import { Badge } from '../../../components/ui/Badge.jsx';
@@ -103,7 +104,7 @@ function mapCategoryRow(row) {
 export default function Expenses() {
   const { user } = useAuth();
   const { format: fmt } = useCurrency();
-  const [viewMode, setViewMode] = useState('claims'); // 'claims' or 'categories'
+  const [viewMode, setViewMode] = useState('claims'); // 'claims' | 'categories' | 'config'
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [categorySearch, setCategorySearch] = useState('');
@@ -136,6 +137,8 @@ export default function Expenses() {
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const [expenseCategories, setExpenseCategories] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [approvalLevels, setApprovalLevels] = useState([]);
+  const [approvalLevelsSaving, setApprovalLevelsSaving] = useState(false);
 
   const filteredCategories = expenseCategories.filter(
     (cat) =>
@@ -185,12 +188,10 @@ export default function Expenses() {
       const params = { limit: 100, page: 1 };
       if (debouncedQ) params.search = debouncedQ;
       if (activeStatus !== 'All') params.expenseType = activeStatus;
+      // categoryFilter holds a category ID — sent to server (EXP-29)
+      if (categoryFilter) params.expenseCategoryId = categoryFilter;
       const { rows } = await expenseService.listExpenses(params);
-      let list = rows.map(mapRow);
-      if (categoryFilter) {
-        list = list.filter((r) => r.category === categoryFilter);
-      }
-      setClaims(list);
+      setClaims(rows.map(mapRow));
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || 'Failed to load expenses');
@@ -230,6 +231,27 @@ export default function Expenses() {
   useEffect(() => {
     loadCategories();
   }, [loadCategories]);
+
+  const loadApprovalLevels = useCallback(async () => {
+    if (viewMode !== 'config') return;
+    try {
+      const levels = await expenseService.getApprovalLevels();
+      setApprovalLevels(
+        levels.map((l) => ({
+          level_no: l.level_no,
+          name: l.name,
+          min_amount: parseFloat(l.min_amount) || 0,
+          is_active: l.is_active !== false,
+        })),
+      );
+    } catch {
+      setApprovalLevels([]);
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    loadApprovalLevels();
+  }, [loadApprovalLevels]);
 
   useEffect(() => {
     if (!canApprove || isEmployee) return;
@@ -486,6 +508,53 @@ export default function Expenses() {
     }
   };
 
+  // Approval level config handlers (EXP-02 UI)
+  const updateApprovalLevel = (idx, field, value) => {
+    setApprovalLevels((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: value };
+      return next;
+    });
+  };
+
+  const addApprovalLevel = () => {
+    const maxLevel = approvalLevels.reduce((m, l) => Math.max(m, l.level_no || 0), 0);
+    setApprovalLevels((prev) => [
+      ...prev,
+      { level_no: maxLevel + 1, name: '', min_amount: 0, is_active: true },
+    ]);
+  };
+
+  const removeApprovalLevel = (idx) => {
+    setApprovalLevels((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveApprovalLevels = async () => {
+    const payload = approvalLevels.map((l) => ({
+      levelNo: l.level_no,
+      name: l.name,
+      minAmount: l.min_amount,
+      isActive: l.is_active,
+    }));
+    setApprovalLevelsSaving(true);
+    try {
+      const saved = await expenseService.setApprovalLevels(payload);
+      setApprovalLevels(
+        saved.map((l) => ({
+          level_no: l.level_no,
+          name: l.name,
+          min_amount: parseFloat(l.min_amount) || 0,
+          is_active: l.is_active !== false,
+        })),
+      );
+      toast.success('Approval levels saved.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save approval levels');
+    } finally {
+      setApprovalLevelsSaving(false);
+    }
+  };
+
   const categoryColumns = [
     {
       key: 'name',
@@ -698,6 +767,20 @@ export default function Expenses() {
                 Categories
               </button>
             )}
+            {canConfigure && (
+              <button
+                type="button"
+                onClick={() => setViewMode('config')}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors ${
+                  viewMode === 'config'
+                    ? 'bg-[#0F766E] text-white'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <HiAdjustmentsHorizontal className="h-4 w-4" />
+                Approval
+              </button>
+            )}
           </div>
 
 
@@ -790,7 +873,7 @@ export default function Expenses() {
                   >
                     <option value="">All Categories</option>
                     {expenseCategories.map((c) => (
-                      <option key={c.id ?? c.name} value={c.name}>
+                      <option key={c.id ?? c.name} value={String(c.id ?? '')}>
                         {c.name}
                       </option>
                     ))}
@@ -870,6 +953,114 @@ export default function Expenses() {
           </div>
 
           <Table columns={categoryColumns} data={filteredCategories} pageSize={10} loading={categoryLoading} square />
+        </div>
+      )}
+
+      {/* Approval Levels Config (EXP-02 UI) */}
+      {viewMode === 'config' && canConfigure && (
+        <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+            <h2 className="text-sm font-semibold text-white">Approval Level Configuration</h2>
+            <HiAdjustmentsHorizontal className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
+          </div>
+          <div className="p-5">
+            <p className="mb-5 text-xs text-slate-500">
+              Configure multi-level approval routing. Levels are applied in order — a claim must clear every applicable level before it is marked Approved. Leave the table empty to fall back to single-step approval.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="py-2 pr-4 text-left">Level #</th>
+                    <th className="py-2 pr-4 text-left">Name</th>
+                    <th className="py-2 pr-4 text-left">Min Amount (0 = all)</th>
+                    <th className="py-2 pr-4 text-center">Active</th>
+                    <th className="py-2 text-center">Remove</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {approvalLevels.map((lvl, idx) => (
+                    <tr key={idx} className="border-b border-slate-100">
+                      <td className="py-2 pr-4">
+                        <input
+                          type="number"
+                          min="1"
+                          value={lvl.level_no}
+                          onChange={(e) =>
+                            updateApprovalLevel(idx, 'level_no', parseInt(e.target.value, 10) || 1)
+                          }
+                          className="h-9 w-16 rounded-none border border-slate-200 px-2 text-sm focus:border-[#0F766E] focus:outline-none"
+                        />
+                      </td>
+                      <td className="py-2 pr-4">
+                        <input
+                          type="text"
+                          value={lvl.name}
+                          onChange={(e) => updateApprovalLevel(idx, 'name', e.target.value)}
+                          placeholder="e.g. Manager Review"
+                          className="h-9 w-full min-w-[160px] rounded-none border border-slate-200 px-2 text-sm focus:border-[#0F766E] focus:outline-none"
+                        />
+                      </td>
+                      <td className="py-2 pr-4">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={lvl.min_amount}
+                          onChange={(e) =>
+                            updateApprovalLevel(idx, 'min_amount', parseFloat(e.target.value) || 0)
+                          }
+                          className="h-9 w-32 rounded-none border border-slate-200 px-2 text-sm focus:border-[#0F766E] focus:outline-none"
+                        />
+                      </td>
+                      <td className="py-2 pr-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={lvl.is_active !== false}
+                          onChange={(e) => updateApprovalLevel(idx, 'is_active', e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 accent-[#0F766E]"
+                        />
+                      </td>
+                      <td className="py-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => removeApprovalLevel(idx)}
+                          className="inline-flex h-7 w-7 items-center justify-center text-red-400 transition-colors hover:text-red-600"
+                          aria-label="Remove level"
+                        >
+                          <HiTrash className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {approvalLevels.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-sm text-slate-400">
+                        No levels configured — claims use single-step approval.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={addApprovalLevel}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0F766E] hover:underline"
+              >
+                <HiPlus className="h-4 w-4" /> Add level
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveApprovalLevels}
+                disabled={approvalLevelsSaving}
+                className="h-10 rounded-none bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50"
+              >
+                {approvalLevelsSaving ? 'Saving…' : 'Save configuration'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
