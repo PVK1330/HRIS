@@ -67,6 +67,20 @@ export const superadminService = {
     return data.data
   },
 
+  // Self-service profile for the logged-in superadmin / sub-admin
+  async getProfile() {
+    const { data } = await api.get('/superadmin/profile')
+    return data.data?.profile ?? null
+  },
+  async updateProfile(payload) {
+    const { data } = await api.put('/superadmin/profile', payload)
+    return data.data?.profile ?? null
+  },
+  async changePassword({ currentPassword, newPassword }) {
+    const { data } = await api.post('/auth/change-password', { currentPassword, newPassword })
+    return data.data ?? null
+  },
+
   // Admin Users
   getAdminUsers() {
     return api.get(SUPERADMIN_ENDPOINTS.ADMIN_USERS)

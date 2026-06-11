@@ -57,6 +57,7 @@ const NotificationCenter = lazy(() => import("../pages/admin/communication/Notif
 const AssetManagement = lazy(() => import("../pages/admin/assets/AssetManagement.jsx"));
 const Reports = lazy(() => import("../pages/admin/reports/Reports.jsx"));
 const AnnouncementsPage = lazy(() => import("../pages/admin/Announcements.jsx"));
+const MyAccount = lazy(() => import("../pages/admin/MyAccount.jsx"));
 const Payroll = lazy(() => import("../pages/admin/finance/Payroll.jsx"));
 const SupportManagement = lazy(() => import("../pages/admin/support/Support.jsx"));
 
@@ -191,6 +192,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: "dashboard", element: <AdminDashboard /> },
+          { path: "account", element: <MyAccount /> },
           {
             path: "employee-directory",
             element: (
