@@ -338,7 +338,7 @@ export default function SupportTickets() {
             },
             {
               key: 'org',
-              label: 'Organization',
+              label: 'Organisation',
               render: (_, ticket) => (
                 <div className="flex items-center gap-2">
                   <HiBuildingOffice className="h-4 w-4 text-slate-400" />

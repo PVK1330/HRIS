@@ -34,7 +34,7 @@ function MetricCard({ label, value, subtitle, tone = 'slate' }) {
   }
 
   return (
-    <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-6 shadow-sm">
       <p className="text-sm font-semibold text-slate-500">{label}</p>
       <p className={`mt-3 text-3xl font-bold ${toneStyles[tone] || toneStyles.slate}`}>{value ?? 0}</p>
       <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
@@ -84,7 +84,7 @@ function EmployeeDashboard({ dashboardData, todayLabel, setSelectedAnnouncement 
         />
       </div>
 
-      <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-900">My Announcements</h3>
           <HiMegaphone className="h-4 w-4 text-[#0F766E]" />
@@ -96,7 +96,7 @@ function EmployeeDashboard({ dashboardData, todayLabel, setSelectedAnnouncement 
                 key={ann.id}
                 type="button"
                 onClick={() => setSelectedAnnouncement(ann)}
-                className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3 text-left hover:bg-white"
               >
                 <p className="text-xs font-semibold text-slate-900">{ann.title}</p>
                 <p className="mt-1 line-clamp-1 text-xs text-slate-500">{ann.content}</p>
@@ -109,14 +109,14 @@ function EmployeeDashboard({ dashboardData, todayLabel, setSelectedAnnouncement 
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-6 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-900">My Notifications</h3>
             <Badge label={notificationsUnread} color={notificationsUnread > 0 ? 'amber' : 'blue'} />
           </div>
           <div className="space-y-2">
             {notifications.slice(0, 4).map((n) => (
-              <div key={n.id || n.notificationId} className="rounded-none border border-slate-200 bg-slate-50/60 p-3">
+              <div key={n.id || n.notificationId} className="rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3">
                 <p className="text-xs font-semibold text-slate-900">{n.title || 'Notification'}</p>
                 <p className="mt-1 line-clamp-1 text-xs text-slate-500">{n.message || n.body || '—'}</p>
               </div>
@@ -124,14 +124,14 @@ function EmployeeDashboard({ dashboardData, todayLabel, setSelectedAnnouncement 
             {!notifications.length ? <p className="text-sm text-slate-500">No notifications.</p> : null}
           </div>
         </div>
-        <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-6 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-900">My Messages</h3>
             <Badge label={unreadMessages} color={unreadMessages > 0 ? 'emerald' : 'blue'} />
           </div>
           <div className="space-y-2">
             {recentConversations.slice(0, 4).map((c) => (
-              <div key={c.id || c.conversationId} className="rounded-none border border-slate-200 bg-slate-50/60 p-3">
+              <div key={c.id || c.conversationId} className="rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3">
                 <p className="text-xs font-semibold text-slate-900">{c.other?.full_name || c.otherName || 'Conversation'}</p>
                 <p className="mt-1 line-clamp-1 text-xs text-slate-500">{c.last_message?.body || c.lastMessage || 'No recent message'}</p>
               </div>
@@ -271,25 +271,25 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-6 shadow-sm">
             <h3 className="mb-4 text-sm font-semibold text-slate-900">Pending Approvals</h3>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Link to="/admin/leave" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
+              <Link to="/admin/leave" className="rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-4 hover:bg-white">
                 <p className="text-xs font-semibold text-slate-500">Leave Requests</p>
                 <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.leaves}</p>
               </Link>
-              <Link to="/admin/expenses" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
+              <Link to="/admin/expenses" className="rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-4 hover:bg-white">
                 <p className="text-xs font-semibold text-slate-500">Expense Claims</p>
                 <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.expenses}</p>
               </Link>
-              <Link to="/admin/documents" className="rounded-none border border-slate-200 bg-slate-50/60 p-4 hover:bg-white">
+              <Link to="/admin/documents" className="rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-4 hover:bg-white">
                 <p className="text-xs font-semibold text-slate-500">Document Audits</p>
                 <p className="mt-2 text-xl font-bold text-slate-900">{dashboardData.pending.documents}</p>
               </Link>
             </div>
           </div>
 
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900">Announcements</h3>
               <HiMegaphone className="h-4 w-4 text-[#0F766E]" />
@@ -300,7 +300,7 @@ export default function Dashboard() {
                   key={ann.id}
                   type="button"
                   onClick={() => setSelectedAnnouncement(ann)}
-                  className="w-full rounded-none border border-slate-200 bg-slate-50/60 p-3 text-left hover:bg-white"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3 text-left hover:bg-white"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-slate-900">{ann.title}</p>
@@ -313,7 +313,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="rounded-none border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-8 shadow-sm">
             <div className="mb-6 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-slate-900">Workforce Evolution</h3>
               <HiArrowTrendingUp className="h-5 w-5 text-[#0F766E]" />
@@ -324,7 +324,7 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
                   <YAxis axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ border: '1px solid #f1f5f9', borderRadius: '0px' }} />
+                  <Tooltip contentStyle={{ border: '1px solid #f1f5f9', borderRadius: '12px' }} />
                   <Area type="monotone" dataKey="headcount" stroke="#0F766E" strokeWidth={2} fill="#0F766E" fillOpacity={0.08} />
                 </AreaChart>
               </ResponsiveContainer>
@@ -333,7 +333,7 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-6 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
               <HiBellAlert className="h-4 w-4 text-amber-500" />
@@ -341,7 +341,7 @@ export default function Dashboard() {
             <div className="mb-2 text-xs font-semibold text-slate-600">Unread: {notificationsUnread}</div>
             <div className="space-y-2">
               {notifications.slice(0, 4).map((n) => (
-                <div key={n.id || n.notificationId} className="rounded-none border border-slate-200 bg-slate-50/60 p-3">
+                <div key={n.id || n.notificationId} className="rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3">
                   <p className="text-xs font-semibold text-slate-900">{n.title || 'Notification'}</p>
                   <p className="mt-1 line-clamp-1 text-xs text-slate-500">{n.message || n.body || '—'}</p>
                 </div>
@@ -350,7 +350,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-6 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900">Messages</h3>
               <HiChatBubbleLeftRight className="h-4 w-4 text-blue-500" />
@@ -361,7 +361,7 @@ export default function Dashboard() {
                 <Link
                   key={c.id || c.conversationId}
                   to="/admin/messages"
-                  className="block rounded-none border border-slate-200 bg-slate-50/60 p-3 hover:bg-white"
+                  className="block rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3 hover:bg-white"
                 >
                   <p className="text-xs font-semibold text-slate-900">{c.other?.full_name || c.otherName || 'Conversation'}</p>
                   <p className="mt-1 line-clamp-1 text-xs text-slate-500">{c.last_message?.body || c.lastMessage || 'No recent message'}</p>
@@ -371,7 +371,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white transition-all duration-200 hover:shadow-md p-6 shadow-sm">
             <h3 className="mb-4 text-sm font-semibold text-slate-900">Quick Links</h3>
             <div className="space-y-2">
               {[
@@ -383,7 +383,7 @@ export default function Dashboard() {
                 { label: 'Support', icon: HiQuestionMarkCircle, path: '/admin/support' },
                 ...(isHRAdmin ? [{ label: 'Settings', icon: HiCog6Tooth, path: '/admin/settings' }] : []),
               ].map((item) => (
-                <Link key={item.label} to={item.path} className="flex items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 hover:bg-white">
+                <Link key={item.label} to={item.path} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3 text-sm text-slate-700 hover:bg-white">
                   <item.icon className="h-4 w-4" />
                   {item.label}
                 </Link>
@@ -406,7 +406,7 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => setSelectedAnnouncement(null)}
-                className="h-9 rounded-none bg-[#0F766E] px-4 text-sm font-semibold text-white hover:bg-[#0c6b64]"
+                className="h-9 rounded-lg bg-[#0F766E] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64]"
               >
                 Close
               </button>

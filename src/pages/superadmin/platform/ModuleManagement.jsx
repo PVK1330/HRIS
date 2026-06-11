@@ -149,7 +149,7 @@ export default function ModuleManagement() {
 
       Swal.fire({
         icon: 'success',
-        title: 'Organization Override',
+        title: 'Organisation Override',
         text: `Feature ${next ? 'enabled' : 'disabled'} for selected organization.`,
         timer: 1200,
         showConfirmButton: false,
@@ -244,7 +244,7 @@ export default function ModuleManagement() {
           </div>
         </div>
 
-        {/* Organization Specific Overrides */}
+        {/* Organisation Specific Overrides */}
         <div className="rounded-[2.5rem] border border-slate-100 bg-white p-10 shadow-[0_20px_50px_rgba(0,0,0,0.03)]">
           <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-4">
@@ -252,7 +252,7 @@ export default function ModuleManagement() {
                   <HiBuildingOffice2 className="h-7 w-7" />
                </div>
                <div>
-                  <h2 className="text-lg font-black text-slate-900 tracking-tight">Organization Features</h2>
+                  <h2 className="text-lg font-black text-slate-900 tracking-tight">Organisation Features</h2>
                   <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Instance-specific overrides</p>
                </div>
             </div>
@@ -266,7 +266,7 @@ export default function ModuleManagement() {
           </div>
 
           <div className="mb-10 space-y-3">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Select Target Organization</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Select Target Organisation</label>
             <div className="relative">
               <select 
                 value={selectedTenantId}

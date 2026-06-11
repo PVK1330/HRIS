@@ -56,7 +56,7 @@ From `src/scripts/seedDemoCorpRoles.js` — a concrete picture of who can do wha
 | **Finance Head** | ALL | — | view only |
 | **IT Head** | ALL | — | — |
 
-(Organization Admin = ALL scope + every permission.)
+(Organisation Admin = ALL scope + every permission.)
 
 ---
 

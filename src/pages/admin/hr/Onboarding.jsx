@@ -1100,7 +1100,7 @@ export default function Onboarding() {
 
               {/* SECTION 2 ” Job Setup, System Role & Offer Details */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                <SectionHeader icon={HiBriefcase} title="Job & Organizational Setup" subtitle="Designation, department, role assignment, and offer details" />
+                <SectionHeader icon={HiBriefcase} title="Job & Organisational Setup" subtitle="Designation, department, role assignment, and offer details" />
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>

@@ -578,7 +578,7 @@ export default function EmployeeProfile() {
     </div>
   )
 
-  /** Job & Organization tab: prior work experience only (current role is on Basic Information) */
+  /** Job & Organisation tab: prior work experience only (current role is on Basic Information) */
   const renderJob = () => (
     <div className="animate-in fade-in duration-300">
       <h3 className="mb-4 text-xs font-black uppercase tracking-wider text-[#0F766E]">Experience</h3>

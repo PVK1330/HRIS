@@ -75,10 +75,13 @@ export default function Documents() {
         acc[doc.employee_id].docs.push(doc);
         return acc;
       }, {});
-      setEmployees(Object.values(grouped));
+      const groupedList = Object.values(grouped);
+      setEmployees(groupedList);
+      return groupedList;
     } catch (err) {
       toast.error('Failed to load documents');
       console.error(err);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -132,19 +135,21 @@ export default function Documents() {
       toast.success(`Document ${actionType === 'Approve' ? 'approved' : 'rejected'} successfully.`);
       setActionModalOpen(false);
       setSelectedDoc(null);
-      // Reload documents
-      await loadDocuments();
-      // If employee modal is open, we need to update its contents implicitly via loadDocuments, 
-      // but selectedEmployee won't auto-update since it's a static copy. We can just refresh it:
-      setEmployeeModalOpen(false); // Quick way is to close or update the selectedEmployee
-      setTimeout(() => {
-        // Find updated employee and reopen
-        const updatedEmp = employees.find(e => e.employee_id === selectedEmployee?.employee_id);
+
+      // Refresh from the server and update the open employee modal with the FRESH
+      // data returned by loadDocuments — reading the `employees` state here would be
+      // the stale pre-update closure, which left the modal showing the old status
+      // until a full page refresh.
+      const refreshed = await loadDocuments();
+      if (selectedEmployee) {
+        const updatedEmp = refreshed.find(e => e.employee_id === selectedEmployee.employee_id);
         if (updatedEmp) {
           setSelectedEmployee(updatedEmp);
-          setEmployeeModalOpen(true);
+        } else {
+          setEmployeeModalOpen(false);
+          setSelectedEmployee(null);
         }
-      }, 100);
+      }
     } catch (error) {
       toast.error('Failed to update document status.');
       console.error(error);

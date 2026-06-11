@@ -336,7 +336,7 @@ export default function Billing() {
         <div className="flex flex-col sm:flex-row gap-3 border-b border-slate-200 bg-white px-4 py-3">
           <div className="relative min-w-[250px] flex-1 max-w-md">
             <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by ID or Organization..." className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium" />
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by ID or Organisation..." className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium" />
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <select 
@@ -369,7 +369,7 @@ export default function Billing() {
             onPageChange={(page) => setCurrentPage(page + 1)}
             columns={[
               { key: 'invoice', label: 'Reference' },
-              { key: 'tenant', label: 'Organization' },
+              { key: 'tenant', label: 'Organisation' },
               { key: 'plan', label: 'Plan' },
               { key: 'amount', label: 'Amount' },
               { key: 'dates', label: 'Billing Period' },

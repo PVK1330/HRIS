@@ -166,7 +166,7 @@ export default function GeneralSection({ registerToolbar }) {
       )}
 
       <SectionCard title="Company profile">
-        <FieldRow label="Organization Name">
+        <FieldRow label="Organisation Name">
           <TextInput
             value={draft.companyName}
             onChange={(e) => setDraft((p) => ({ ...p, companyName: e.target.value }))}

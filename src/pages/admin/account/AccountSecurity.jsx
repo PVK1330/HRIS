@@ -21,7 +21,7 @@ export default function AccountSecurity() {
     { icon: HiOutlineUserCircle, label: 'Name', value: user?.name || user?.fullName || '—' },
     { icon: HiOutlineEnvelope, label: 'Email', value: user?.email || '—' },
     { icon: HiOutlineBriefcase, label: 'Role', value: prettyRole(user?.role) },
-    { icon: HiOutlineIdentification, label: 'Organization', value: user?.tenantName || user?.department || '—' },
+    { icon: HiOutlineIdentification, label: 'Organisation', value: user?.tenantName || user?.department || '—' },
   ]
 
   return (

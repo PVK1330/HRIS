@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
-import { HiArrowRightOnRectangle, HiQuestionMarkCircle } from 'react-icons/hi2'
+import { HiArrowRightOnRectangle, HiQuestionMarkCircle, HiUserCircle } from 'react-icons/hi2'
 import { Avatar } from './Avatar.jsx'
-import { Button } from './Button.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { useNavigate } from 'react-router-dom'
 
 
 
@@ -44,11 +42,34 @@ export function Sidebar({
 
   const [imgBroken, setImgBroken] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState({})
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const profileRef = useRef(null)
 
   const toggleMenu = (key) => {
     setExpandedMenus(prev => ({ ...prev, [key]: !prev[key] }))
   }
-  const navigate = useNavigate()
+
+  // Where "My Profile" points, per role.
+  const profilePath = role === 'superadmin' ? '/superadmin/profile' : '/admin/account'
+
+  // Close the profile menu on outside click or Escape.
+  useEffect(() => {
+    if (!profileMenuOpen) return undefined
+    const onPointerDown = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileMenuOpen(false)
+      }
+    }
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setProfileMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [profileMenuOpen])
 
   return (
     <>
@@ -186,40 +207,69 @@ export function Sidebar({
           })}
         </nav>
 
-        <div className="shrink-0 space-y-3 border-t border-gray-100 bg-white px-4 py-4">
-          <div className="flex items-center gap-3 rounded-lg bg-gray-100 px-3 py-3">
-            <Avatar name={user?.name ?? 'User'} size="md" bgColor={avatarPalette} />
-            <Link
-              to={role === 'superadmin' ? '/superadmin/profile' : '/admin/account'}
-              className="min-w-0 flex-1 hover:opacity-80 transition-opacity"
-            >
-              <div className="truncate text-sm font-bold text-[#0F766E]">{user?.name ?? 'User'}</div>
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                {roleSubtitle(role)}
+        <div className="shrink-0 border-t border-gray-100 bg-white px-4 py-4">
+          <div ref={profileRef} className="relative">
+            {/* Dropdown — opens above the profile row since it sits at the bottom. */}
+            {profileMenuOpen && (
+              <div
+                role="menu"
+                className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+              >
+                <Link
+                  to={profilePath}
+                  role="menuitem"
+                  onClick={() => {
+                    setProfileMenuOpen(false)
+                    onMobileClose?.()
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#0F766E]"
+                >
+                  <HiUserCircle className="h-5 w-5 shrink-0 text-slate-400" />
+                  My Profile
+                </Link>
+                {onLogout && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setProfileMenuOpen(false)
+                      onLogout()
+                    }}
+                    className="flex w-full items-center gap-2.5 border-t border-gray-100 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#991B1B]"
+                  >
+                    <HiArrowRightOnRectangle className="h-5 w-5 shrink-0 text-slate-400" />
+                    Log out
+                  </button>
+                )}
               </div>
-            </Link>
-            {onLogout && (
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={HiArrowRightOnRectangle}
-                ariaLabel="Log out"
-                onClick={onLogout}
-                className="shrink-0 p-2 text-gray-500 hover:bg-white hover:text-[#991B1B]"
-              />
             )}
-          </div>
 
-
-          {onLogout && (
+            {/* Profile trigger */}
             <button
               type="button"
-              onClick={onLogout}
-              className="w-full rounded-lg py-2 text-center text-xs font-semibold text-gray-500 transition-colors hover:bg-gray-50 hover:text-[#0F766E] md:hidden"
+              onClick={() => setProfileMenuOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={profileMenuOpen}
+              className="flex w-full items-center gap-3 rounded-lg bg-gray-100 px-3 py-3 text-left transition-colors hover:bg-gray-200/70"
             >
-              Log out
+              <Avatar name={user?.name ?? 'User'} size="md" bgColor={avatarPalette} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold text-[#0F766E]">{user?.name ?? 'User'}</span>
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  {roleSubtitle(role)}
+                </span>
+              </span>
+              <svg
+                className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${profileMenuOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
             </button>
-          )}
+          </div>
         </div>
       </aside>
     </>

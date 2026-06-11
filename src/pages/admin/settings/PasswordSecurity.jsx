@@ -83,7 +83,7 @@ export default function PasswordSecurity({ registerToolbar }) {
         </FieldRow>
         <FieldRow
           label="Recommend two-factor authentication"
-          hint="Organization-wide policy to encourage 2FA. Each user enrolls their own authenticator below."
+          hint="Organisation-wide policy to encourage 2FA. Each user enrolls their own authenticator below."
         >
           <Toggle
             checked={settings.passwordPolicy.twoFactorAuth}

@@ -896,7 +896,7 @@ export const permissionMatrix = [
     section: 'Administration',
     rows: [
       { id: 'adm.users', label: 'Manage admin users' },
-      { id: 'adm.settings', label: 'Organization settings' },
+      { id: 'adm.settings', label: 'Organisation settings' },
     ],
   },
 ]

@@ -53,7 +53,7 @@ export default function TenantManagement() {
   const [statusFilter, setStatusFilter] = useState('all')
 
   // Data State
-  const [organizations, setOrganizations] = useState([])
+  const [organizations, setOrganisations] = useState([])
   const [plans, setPlans] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
@@ -167,7 +167,7 @@ export default function TenantManagement() {
           billingCycle: 'Monthly'
         }
       })
-      setOrganizations(transformed)
+      setOrganisations(transformed)
       setTotalCount(total)
     } catch (error) {
       console.error('Failed to fetch tenants:', error)
@@ -210,7 +210,7 @@ export default function TenantManagement() {
     paymentReference: '',
   })
 
-  const filteredOrganizations = organizations; // Now filtered on the server
+  const filteredOrganisations = organizations; // Now filtered on the server
 
   const handleExport = () => {
     const headers = ['ID', 'Name', 'Domain', 'Admin Email', 'Plan', 'Status', 'Onboarded']
@@ -238,7 +238,7 @@ export default function TenantManagement() {
     Swal.fire({
       icon: 'success',
       title: 'Export Successful',
-      text: 'Organization data has been downloaded as CSV.',
+      text: 'Organisation data has been downloaded as CSV.',
       timer: 2000,
       showConfirmButton: false,
     })
@@ -337,7 +337,7 @@ export default function TenantManagement() {
       Swal.fire({
         icon: 'warning',
         title: 'Required fields',
-        text: 'Organization name and admin email are required.',
+        text: 'Organisation name and admin email are required.',
         confirmButtonColor: '#4f46e5',
       })
       return
@@ -365,7 +365,7 @@ export default function TenantManagement() {
       Swal.fire({
         icon: 'warning',
         title: 'Incomplete Form',
-        text: 'Please fill all required fields on the Organization tab.',
+        text: 'Please fill all required fields on the Organisation tab.',
         confirmButtonColor: '#4f46e5',
       })
       setAddOrgTab('details')
@@ -445,7 +445,7 @@ export default function TenantManagement() {
     return true
   }
 
-  const provisionOrganization = async ({ openStripe = false, checkoutTab = null } = {}) => {
+  const provisionOrganisation = async ({ openStripe = false, checkoutTab = null } = {}) => {
     if (!validateNewOrgForm()) {
       checkoutTab?.close?.()
       return null
@@ -472,7 +472,7 @@ export default function TenantManagement() {
       if (openStripe && newForm.paymentGateway === 'stripe') {
         Swal.fire({
           icon: 'success',
-          title: 'Organization created',
+          title: 'Organisation created',
           text: 'Complete payment in the Stripe tab. The organization is provisioned.',
           timer: 2800,
           showConfirmButton: false,
@@ -480,7 +480,7 @@ export default function TenantManagement() {
       } else {
         Swal.fire({
           icon: 'success',
-          title: 'Organization created',
+          title: 'Organisation created',
           text: 'Tenant provisioned with subscription and payment record.',
           timer: 2200,
           showConfirmButton: false,
@@ -507,11 +507,11 @@ export default function TenantManagement() {
     setNewForm((prev) => ({ ...prev, paymentGateway: slug }))
   }
 
-  const handleCreateOrganization = async () => {
+  const handleCreateOrganisation = async () => {
     // Superadmin provisions the org as a free trial and never collects payment here.
     // The org admin pays later from Settings → Billing (or superadmin can use
     // "Mark as Paid" to activate an org offline).
-    await provisionOrganization({ openStripe: false })
+    await provisionOrganisation({ openStripe: false })
   }
 
   // Manual "mark as paid": superadmin activates an org on a chosen plan without
@@ -655,7 +655,7 @@ export default function TenantManagement() {
             <HiArrowDownTray className="h-4 w-4" /> Export CSV
           </button>
           <button type="button" onClick={openNewOrgModal} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
-            <HiPlus className="h-4 w-4" /> Add Organization
+            <HiPlus className="h-4 w-4" /> Add Organisation
           </button>
         </div>
       </div>
@@ -689,7 +689,7 @@ export default function TenantManagement() {
       {/* Main Table Registry Area */}
       <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
-          <h2 className="text-sm font-semibold text-white">Organization Listing</h2>
+          <h2 className="text-sm font-semibold text-white">Organisation Listing</h2>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
@@ -722,14 +722,14 @@ export default function TenantManagement() {
           currentPage={currentPage}
           onPageChange={setCurrentPage}
           columns={[
-            { key: 'org', label: 'Organization' },
+            { key: 'org', label: 'Organisation' },
             { key: 'plan', label: 'Tier', className: 'hidden md:table-cell' },
             // { key: 'users', label: 'Nodes', className: 'hidden lg:table-cell' },
             { key: 'status', label: 'Status', className: 'hidden sm:table-cell' },
             { key: 'created', label: 'Onboarded', className: 'hidden xl:table-cell' },
             { key: 'actions', label: 'Actions' },
           ]}
-          data={filteredOrganizations.map((org) => ({
+          data={filteredOrganisations.map((org) => ({
             org: (
               <div className="flex items-center gap-4 py-2">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-${org.color}-50 text-[11px] font-black text-${org.color}-600 border border-${org.color}-100 shadow-sm`}>
@@ -762,14 +762,14 @@ export default function TenantManagement() {
         />
       </div>
 
-      {/* New Organization Modal */}
+      {/* New Organisation Modal */}
       <Modal
         isOpen={showNewModal}
         onClose={() => { setShowNewModal(false); resetNewOrgForm() }}
         header={
           <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-bold text-slate-900">Add Organization</h2>
-            <p className="text-sm text-slate-500">Organization details, subscription plan, and payment collection.</p>
+            <h2 className="text-lg font-bold text-slate-900">Add Organisation</h2>
+            <p className="text-sm text-slate-500">Organisation details, subscription plan, and payment collection.</p>
           </div>
         }
         size="xl"
@@ -784,7 +784,7 @@ export default function TenantManagement() {
                 : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
             >
-              Organization
+              Organisation
             </button>
             <button
               type="button"
@@ -800,7 +800,7 @@ export default function TenantManagement() {
 
           {addOrgTab === 'details' ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <Input label="Organization Name" required placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
+              <Input label="Organisation Name" required placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
               <Input label="Root Admin Name" required placeholder="e.g. John Doe" value={newForm.adminName} onChange={(e) => setNewForm({ ...newForm, adminName: e.target.value })} />
               <Input label="Root Admin Email" required type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
               <Input
@@ -850,7 +850,7 @@ export default function TenantManagement() {
               <button type="button" onClick={() => setAddOrgTab('subscription')} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors">Next: Plan & payment</button>
             )}
             {addOrgTab === 'subscription' && (
-              <button type="button" onClick={handleCreateOrganization} disabled={isLoading || stripeCheckoutLoading} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors disabled:opacity-50">
+              <button type="button" onClick={handleCreateOrganisation} disabled={isLoading || stripeCheckoutLoading} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors disabled:opacity-50">
                 {isLoading || stripeCheckoutLoading ? 'Creating…' : 'Create organization (trial)'}
               </button>
             )}
@@ -865,7 +865,7 @@ export default function TenantManagement() {
         header={
           <div className="flex flex-col gap-1">
             <h2 className="text-lg font-bold text-slate-900">{selectedOrg?.name}</h2>
-            <p className="text-sm text-slate-500">Organization ID: {selectedOrg?.id} · Domain: {selectedOrg?.domain}</p>
+            <p className="text-sm text-slate-500">Organisation ID: {selectedOrg?.id} · Domain: {selectedOrg?.domain}</p>
           </div>
         }
         size="lg"
@@ -982,13 +982,13 @@ export default function TenantManagement() {
         onClose={() => setShowEditModal(false)}
         header={
           <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-bold text-slate-900">Edit Organization</h2>
+            <h2 className="text-lg font-bold text-slate-900">Edit Organisation</h2>
             <p className="text-sm text-slate-500">Update organization details and resource limits.</p>
           </div>
         }
       >
         <div className="space-y-6">
-          <Input label="Organization Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+          <Input label="Organisation Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
           <Input label="Root Admin Email" value={editForm.adminEmail} onChange={(e) => setEditForm({ ...editForm, adminEmail: e.target.value })} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="min-w-0">

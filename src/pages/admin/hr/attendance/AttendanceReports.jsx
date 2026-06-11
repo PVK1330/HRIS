@@ -21,7 +21,7 @@ import { canViewTeamAttendance, canViewAllAttendance } from '../../../../utils/r
 const REPORT_TYPES = [
   { id: 'employee', label: 'Employee Attendance' },
   { id: 'department', label: 'Department' },
-  { id: 'organization', label: 'Organization' },
+  { id: 'organization', label: 'Organisation' },
   { id: 'summary', label: 'Summary' },
   { id: 'overtime', label: 'Overtime' },
   { id: 'late', label: 'Late Arrival' },

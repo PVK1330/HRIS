@@ -9,7 +9,7 @@ function roleScope(role) {
 }
 
 function isOrgAdminRole(role) {
-  return Boolean(role?.is_system && String(role?.name || '').trim() === 'Organization Admin')
+  return Boolean(role?.is_system && String(role?.name || '').trim() === 'Organisation Admin')
 }
 
 export default function useRbac() {
@@ -325,7 +325,7 @@ export function groupPermissions(permissions) {
     'Visa',
     'Performance',
     'Payroll',
-    'Organization',
+    'Organisation',
     'Communication',
     'Other',
   ]
@@ -345,7 +345,7 @@ export function groupPermissions(permissions) {
       k.includes('designation') ||
       k === 'policies'
     ) {
-      return 'Organization'
+      return 'Organisation'
     }
     if (k.includes('message') || k.includes('announcement')) return 'Communication'
     if (k.includes('.')) return k.split('.')[0].charAt(0).toUpperCase() + k.split('.')[0].slice(1)

@@ -288,7 +288,7 @@ function TrialPanel() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Input label="Trial Duration (Days)" type="number" defaultValue="14" />
-        <Input label="Max Trial Organizations" type="number" defaultValue="500" />
+        <Input label="Max Trial Organisations" type="number" defaultValue="500" />
       </div>
       <div className="flex items-center justify-between p-5 rounded-xl border border-slate-100 bg-white shadow-sm">
         <div>
