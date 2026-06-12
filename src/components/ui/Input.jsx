@@ -22,7 +22,12 @@ export function Input({
   const errorBorder = 'border-red-400 focus:border-red-400 focus:ring-red-200'
   const borderClass = error ? errorBorder : normalBorder
 
-  const id = name ?? `field-${label?.replace(/\s+/g, '-').toLowerCase() ?? 'input'}`
+  const id =
+    name ??
+    `field-${typeof label === 'string'
+      ? label.replace(/\s+/g, '-').toLowerCase()
+      : 'input'
+    }`
 
   const isSelect = type === 'select' && Array.isArray(options)
 

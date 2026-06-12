@@ -776,7 +776,7 @@ export default function TenantManagement() {
               type="button"
               onClick={() => setAddOrgTab('details')}
               className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${addOrgTab === 'details'
-                ? 'border-indigo-600 text-indigo-600'
+                ? 'border-[#0f766e] text-[#0f766e]'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
             >
@@ -786,7 +786,7 @@ export default function TenantManagement() {
               type="button"
               onClick={() => setAddOrgTab('subscription')}
               className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${addOrgTab === 'subscription'
-                ? 'border-indigo-600 text-indigo-600'
+                ? 'border-[#0f766e] text-[#0f766e]'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
             >
@@ -796,10 +796,59 @@ export default function TenantManagement() {
 
           {addOrgTab === 'details' ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <Input label="Organization Name *" placeholder="e.g. HRIS Global" value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} />
-              <Input label="Root Admin Name *" placeholder="e.g. John Doe" value={newForm.adminName} onChange={(e) => setNewForm({ ...newForm, adminName: e.target.value })} />
-              <Input label="Root Admin Email *" type="email" placeholder="admin@org.com" value={newForm.adminEmail} onChange={(e) => setNewForm({ ...newForm, adminEmail: e.target.value })} />
-              <Input label="Root Admin Password *" type="password" placeholder="••••••••" value={newForm.adminPassword} onChange={(e) => setNewForm({ ...newForm, adminPassword: e.target.value })} />
+              <Input
+                label={
+                  <>
+                    Organization Name <span className="text-red-500">*</span>
+                  </>
+                }
+                placeholder="e.g. HRIS Global"
+                value={newForm.name}
+                onChange={(e) =>
+                  setNewForm({ ...newForm, name: e.target.value })
+                }
+              />
+
+              <Input
+                label={
+                  <>
+                    Root Admin Name <span className="text-red-500">*</span>
+                  </>
+                }
+                placeholder="e.g. John Doe"
+                value={newForm.adminName}
+                onChange={(e) =>
+                  setNewForm({ ...newForm, adminName: e.target.value })
+                }
+              />
+
+              <Input
+                label={
+                  <>
+                    Root Admin Email <span className="text-red-500">*</span>
+                  </>
+                }
+                type="email"
+                placeholder="admin@org.com"
+                value={newForm.adminEmail}
+                onChange={(e) =>
+                  setNewForm({ ...newForm, adminEmail: e.target.value })
+                }
+              />
+
+              <Input
+                label={
+                  <>
+                    Root Admin Password <span className="text-red-500">*</span>
+                  </>
+                }
+                type="password"
+                placeholder="••••••••"
+                value={newForm.adminPassword}
+                onChange={(e) =>
+                  setNewForm({ ...newForm, adminPassword: e.target.value })
+                }
+              />
             </div>
           ) : (
             <PlanPaymentStep
@@ -825,7 +874,7 @@ export default function TenantManagement() {
             {addOrgTab === 'subscription' ? (
               <button type="button" onClick={() => setAddOrgTab('details')} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Back</button>
             ) : (
-              <button type="button" onClick={() => setAddOrgTab('subscription')} className="rounded-none bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition-colors">Next: Plan & payment</button>
+              <button type="button" onClick={() => setAddOrgTab('subscription')} className="rounded-none bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors">Next: Plan & payment</button>
             )}
             {addOrgTab === 'subscription' && (
               <button type="button" onClick={handleCreateOrganization} disabled={isLoading || stripeCheckoutLoading} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors disabled:opacity-50">

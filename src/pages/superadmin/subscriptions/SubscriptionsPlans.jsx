@@ -454,14 +454,14 @@ export default function SubscriptionsPlans() {
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Input
-              label="Plan Name *"
+              label="Plan Name"
               placeholder="e.g., Professional"
               value={newPlan.plan_name}
               onChange={(e) => setNewPlan({ ...newPlan, plan_name: e.target.value })}
               required
             />
             <Input
-              label="Plan Code *"
+              label="Plan Code"
               placeholder="e.g., professional"
               value={newPlan.plan_code}
               onChange={(e) => setNewPlan({ ...newPlan, plan_code: e.target.value.toLowerCase().replace(/\s/g, '_') })}
