@@ -98,7 +98,7 @@ export default function AbsenceManagement() {
     setLeaveModalOpen(true);
   };
 
-  const handleApplyLeave = async (e) => {
+  const handleApplyLeave = async (e, isDraft = false) => {
     e.preventDefault();
     setSubmitting(true);
     try {
@@ -111,7 +111,9 @@ export default function AbsenceManagement() {
         totalDays: days,
         reason: leaveForm.reason,
         supportingDocumentUrl: leaveForm.supportingDocumentUrl,
-        isDraft: leaveForm.isDraft,
+        // Honor the button the user clicked ("Save as Draft" passes isDraft=true);
+        // the form's static leaveForm.isDraft was always false.
+        isDraft,
       });
       toast.success('Leave applied successfully');
       setLeaveModalOpen(false);

@@ -194,12 +194,17 @@ export default function NotificationDropdown() {
       fetchUnreadCount();
     };
 
+    // Re-sync when this user marks notifications read elsewhere (another tab/device).
+    const handleReadState = () => { fetchNotifications(); fetchUnreadCount(); };
+
     socket.on('new_notification', handleNewNotification);
+    socket.on('notification_read', handleReadState);
     socket.on('ticket:created', () => { fetchNotifications(); fetchUnreadCount(); });
     socket.on('ticket:updated', () => { fetchNotifications(); fetchUnreadCount(); });
 
     return () => {
       socket.off('new_notification', handleNewNotification);
+      socket.off('notification_read', handleReadState);
       socket.off('ticket:created');
       socket.off('ticket:updated');
     };

@@ -108,9 +108,10 @@ const getManagerReviewDetails = async (id) => {
   return response.data
 }
 
-/** Update manager goals for an assessment (LEGACY - use new endpoint instead) */
+/** Update manager goals for an assessment (LEGACY alias — delegates to the real
+ *  PATCH endpoint; the old PUT path had no backend route and always 404'd). */
 const updateManagerGoals = async (id, managerGoals) => {
-  const response = await api.put(`${BASE_URL}/manager/assessments/${id}/goals`, { managerGoals })
+  const response = await api.patch(`${BASE_URL}/${id}/manager-goals`, managerGoals)
   return response.data
 }
 
