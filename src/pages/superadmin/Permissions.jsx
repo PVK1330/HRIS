@@ -222,7 +222,7 @@ export default function Permissions() {
 
   const permissionLabels = {
     dashboard: { label: 'Dashboard', icon: HiSquares2X2 },
-    organizations: { label: 'Organizations', icon: HiGlobeAlt },
+    organizations: { label: 'Organisations', icon: HiGlobeAlt },
     subscription_plans: { label: 'Subscription Plans', icon: HiCreditCard },
     subscription_features: { label: 'Subscription Features', icon: HiDocumentText },
     billing: { label: 'Billing', icon: HiCreditCard },

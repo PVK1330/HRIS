@@ -23,7 +23,7 @@ import {
 import { Input } from '../../../components/ui/Input.jsx'
 import { superadminService } from '../../../services/superadminService'
 
-const AUDIENCE_OPTIONS = ['All Organizations', 'Trial Only', 'Enterprise Only']
+const AUDIENCE_OPTIONS = ['All Organisations', 'Trial Only', 'Enterprise Only']
 const TYPE_OPTIONS = ['Info', 'Warning', 'Critical']
 const PRIORITY_OPTIONS = ['Normal', 'High', 'Immediate']
 
@@ -38,7 +38,7 @@ export default function Announcements() {
   const [newAnnouncement, setNewAnnouncement] = useState({ 
     title: '', 
     message: '', 
-    audience: 'All Organizations', 
+    audience: 'All Organisations', 
     type: 'Info', 
     priority: 'Normal',
     scheduledAt: '', 
@@ -56,7 +56,7 @@ export default function Announcements() {
   const [editForm, setEditForm] = useState({
     title: '',
     message: '',
-    audience: 'All Organizations',
+    audience: 'All Organisations',
     type: 'Info',
     priority: 'Normal',
     scheduledAt: '',
@@ -75,7 +75,7 @@ export default function Announcements() {
       id: row.id,
       title: row.title || '',
       message: row.message || '',
-      audience: row.audience || 'All Organizations',
+      audience: row.audience || 'All Organisations',
       type: row.type || 'Info',
       priority: row.priority || 'Normal',
       status: row.status || (scheduledAt ? 'Scheduled' : 'Sent'),
@@ -163,7 +163,7 @@ export default function Announcements() {
       setNewAnnouncement({ 
         title: '', 
         message: '', 
-        audience: 'All Organizations', 
+        audience: 'All Organisations', 
         type: 'Info', 
         priority: 'Normal',
         scheduledAt: '', 

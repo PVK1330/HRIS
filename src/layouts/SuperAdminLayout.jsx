@@ -35,7 +35,7 @@ const superNavGroups = [
         roles: ['superadmin', 'support_admin', 'billing_admin'],
       },
       {
-        label: 'Organizations',
+        label: 'Organisations',
         icon: HiDocumentText,
         path: '/superadmin/tenants',
         roles: ['superadmin', 'support_admin', 'billing_admin'],

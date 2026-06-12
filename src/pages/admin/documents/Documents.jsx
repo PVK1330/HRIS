@@ -11,6 +11,7 @@ import { Button } from '../../../components/ui/Button.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { Table } from '../../../components/ui/Table.jsx';
 import api from '../../../services/api.js';
+import { resolveFileUrl } from '../../../utils/fileUrl.js';
 
 const basicFieldClass = 'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/25';
 
@@ -30,13 +31,9 @@ function statusColor(status) {
   return 'bg-slate-100 text-slate-700 ring-slate-600/20';
 }
 
-const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
 const resolveDocFileUrl = (url) => {
   if (!url) return null;
-  if (/^https?:\/\//i.test(url)) return url;
-  const path = url.startsWith('/') ? url : `/${url}`;
-  return `${API_ORIGIN}${path}`;
+  return resolveFileUrl(url);
 };
 
 export default function Documents() {
@@ -78,10 +75,13 @@ export default function Documents() {
         acc[doc.employee_id].docs.push(doc);
         return acc;
       }, {});
-      setEmployees(Object.values(grouped));
+      const groupedList = Object.values(grouped);
+      setEmployees(groupedList);
+      return groupedList;
     } catch (err) {
       toast.error('Failed to load documents');
       console.error(err);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -135,19 +135,21 @@ export default function Documents() {
       toast.success(`Document ${actionType === 'Approve' ? 'approved' : 'rejected'} successfully.`);
       setActionModalOpen(false);
       setSelectedDoc(null);
-      // Reload documents
-      await loadDocuments();
-      // If employee modal is open, we need to update its contents implicitly via loadDocuments, 
-      // but selectedEmployee won't auto-update since it's a static copy. We can just refresh it:
-      setEmployeeModalOpen(false); // Quick way is to close or update the selectedEmployee
-      setTimeout(() => {
-        // Find updated employee and reopen
-        const updatedEmp = employees.find(e => e.employee_id === selectedEmployee?.employee_id);
+
+      // Refresh from the server and update the open employee modal with the FRESH
+      // data returned by loadDocuments — reading the `employees` state here would be
+      // the stale pre-update closure, which left the modal showing the old status
+      // until a full page refresh.
+      const refreshed = await loadDocuments();
+      if (selectedEmployee) {
+        const updatedEmp = refreshed.find(e => e.employee_id === selectedEmployee.employee_id);
         if (updatedEmp) {
           setSelectedEmployee(updatedEmp);
-          setEmployeeModalOpen(true);
+        } else {
+          setEmployeeModalOpen(false);
+          setSelectedEmployee(null);
         }
-      }, 100);
+      }
     } catch (error) {
       toast.error('Failed to update document status.');
       console.error(error);

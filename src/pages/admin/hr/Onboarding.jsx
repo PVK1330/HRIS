@@ -37,6 +37,7 @@ import {
 } from '../../../services/employeeService.js'
 import { useCurrency } from '../../../context/CurrencyContext.jsx'
 import * as onboardingApi from '../../../services/onboardingApi.js'
+import { resolveFileUrl } from '../../../utils/fileUrl.js'
 import { useAsyncAction } from '../../../hooks/useAsyncAction.js'
 import {
   ONBOARDING_TOTAL_STEPS,
@@ -1099,7 +1100,7 @@ export default function Onboarding() {
 
               {/* SECTION 2 ” Job Setup, System Role & Offer Details */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                <SectionHeader icon={HiBriefcase} title="Job & Organizational Setup" subtitle="Designation, department, role assignment, and offer details" />
+                <SectionHeader icon={HiBriefcase} title="Job & Organisational Setup" subtitle="Designation, department, role assignment, and offer details" />
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
@@ -1497,7 +1498,7 @@ export default function Onboarding() {
                               {item.upload_status === 'Uploaded' && (item.file_url || item.fileUrl) ? (
                                 <button
                                   type="button"
-                                  onClick={() => window.open(item.file_url || item.fileUrl, '_blank')}
+                                  onClick={() => window.open(resolveFileUrl(item.file_url || item.fileUrl), '_blank')}
                                   className="h-8 px-3 text-[10px] font-bold uppercase bg-blue-50 text-blue-700 hover:bg-blue-100 rounded shadow-sm transition-colors border border-blue-200 flex items-center gap-1.5"
                                 >
                                   <HiDocument className="w-3.5 h-3.5" />

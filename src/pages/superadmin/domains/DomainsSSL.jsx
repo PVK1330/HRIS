@@ -100,7 +100,7 @@ export default function DomainsSSL() {
       <div className="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Domains & SSL</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage OrganizationURLs, custom branding, and security certificates.</p>
+          <p className="mt-1 text-sm text-gray-500">Manage OrganisationURLs, custom branding, and security certificates.</p>
         </div>
         <Button label="Add Domain" variant="primary" icon={HiPlus} onClick={() => setShowAddDomainModal(true)} />
       </div>
@@ -112,7 +112,7 @@ export default function DomainsSSL() {
           <div>
             <h3 className="text-sm font-bold text-blue-900">Why Domain Management?</h3>
             <p className="mt-1 text-sm text-blue-700 leading-relaxed">
-              In our Multi-OrganizationHRMS, domain management ensures that each company has its own secure workspace.
+              In our Multi-OrganisationHRMS, domain management ensures that each company has its own secure workspace.
               <strong> Subdomains</strong> provide instant isolation, while <strong>Custom Domains</strong> allow enterprise clients to use their own brand.
               <strong> SSL Certificates</strong> are mandatory to keep sensitive HR and Payroll data encrypted and safe.
             </p>
@@ -311,7 +311,7 @@ export default function DomainsSSL() {
         title="Register New Domain"
       >
         <div className="space-y-4">
-          <Input label="Organization/ Company" type="select" options={subdomains.map(s => ({ value: s.tenant, label: s.Organization }))} />
+          <Input label="Organisation/ Company" type="select" options={subdomains.map(s => ({ value: s.tenant, label: s.Organisation }))} />
           <Input label="Custom Domain Name" placeholder="hr.mycompany.com" />
           <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h4 className="text-xs font-bold text-gray-700 uppercase mb-2">DNS Verification</h4>

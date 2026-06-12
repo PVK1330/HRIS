@@ -23,8 +23,8 @@ export const getMessages = async (conversationId, params = {}) => {
   return Array.isArray(msgs) ? msgs : []
 }
 
-export const sendMessageRest = async (conversationId, body) => {
-  const { data } = await api.post(`${BASE}/conversations/${conversationId}/messages`, { body })
+export const sendMessageRest = async (conversationId, body, clientId) => {
+  const { data } = await api.post(`${BASE}/conversations/${conversationId}/messages`, { body, clientId })
   return data.data.message
 }
 

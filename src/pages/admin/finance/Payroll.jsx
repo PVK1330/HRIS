@@ -239,7 +239,7 @@ export default function Payroll() {
                      { label: 'TOTAL SALARY PAID', count: fmt(salaries.reduce((acc, s) => acc + (Number(s.net_salary) || 0), 0)), bgColor: 'bg-[#0F172A]', icon: HiCurrencyDollar },
                      { label: 'ACTIVE PAYROLL', count: salaries.length, bgColor: 'bg-[#10B981]', icon: HiCheckBadge },
                      { label: 'TOTAL EMPLOYEES', count: employees.length, bgColor: 'bg-[#3B82F6]', icon: HiUserGroup },
-                     { label: 'PENDING RECORDS', count: employees.length - salaries.length, bgColor: 'bg-[#EF4444]', icon: HiClock }
+                     { label: 'PENDING RECORDS', count: Math.max(0, employees.length - salaries.length), bgColor: 'bg-[#EF4444]', icon: HiClock }
                   ].map((card, idx) => (
                      <div key={idx} className="group flex items-center gap-3.5 rounded-none border border-slate-200 bg-white p-4 text-left min-w-0 shadow-sm">
                         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}>

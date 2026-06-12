@@ -142,7 +142,7 @@ export default function AuditLogs() {
             >
               <option value="all">Any Category</option>
               <option value="Login">Authentication</option>
-              <option value="Organization">Infrastructure</option>
+              <option value="Organisation">Infrastructure</option>
               <option value="Domain">DNS/Network</option>
               <option value="Billing">Financial</option>
             </select>
@@ -181,7 +181,7 @@ export default function AuditLogs() {
                 <span className="text-sm font-black text-slate-900 tracking-tight">{log.admin}</span>
               </div>
             ),
-            action: <Badge label={log.action} color={log.action.includes('Organization') ? 'blue' : log.action.includes('Domain') ? 'indigo' : 'gray'} variant="glass" />,
+            action: <Badge label={log.action} color={log.action.includes('Organisation') ? 'blue' : log.action.includes('Domain') ? 'indigo' : 'gray'} variant="glass" />,
             target: (
               <div className="flex items-center gap-2">
                 <HiGlobeAlt className="h-3.5 w-3.5 text-slate-300" />

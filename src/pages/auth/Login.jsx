@@ -15,7 +15,7 @@ const LAST_TENANT_ID_KEY = 'hris_last_tenant_id'
 // (`/auth/login` for an organization, `/superadmin/login` for the platform).
 // NOTE: demo credentials / quick-login prefill have been removed for production.
 const ACCOUNT_TABS = [
-  { id: 'admin', label: 'Organization', icon: HiBuildingOffice2 },
+  { id: 'admin', label: 'Organisation', icon: HiBuildingOffice2 },
   { id: 'superadmin', label: 'Super Admin', icon: HiLockClosed },
 ]
 
@@ -49,7 +49,7 @@ export default function Login() {
   const tenantSlugFromHost =
     typeof window !== 'undefined' ? parseTenantSlugFromHostname(window.location.hostname) : null
 
-  const [organizationId, setOrganizationId] = useState(() => {
+  const [organizationId, setOrganisationId] = useState(() => {
     if (tenantSlugFromHost) return ''
     try {
       return typeof window !== 'undefined' ? (window.localStorage.getItem(LAST_TENANT_ID_KEY) || '') : ''
@@ -406,14 +406,14 @@ export default function Login() {
 
                   {activeTab === 'admin' && !tenantSlugFromHost ? (
                     <Input
-                      label="Organization ID"
+                      label="Organisation ID"
                       labelClassName={labelUpper}
                       name="organizationId"
                       type="text"
                       placeholder="e.g. 4"
                       helpText="Required on localhost when not using your company subdomain (e.g. your-org.localhost:5173). Org admins can also sign in on the main URL with their organization email only."
                       value={organizationId}
-                      onChange={(e) => setOrganizationId(e.target.value)}
+                      onChange={(e) => setOrganisationId(e.target.value)}
                     />
                   ) : null}
                   {activeTab === 'admin' && tenantSlugFromHost ? (

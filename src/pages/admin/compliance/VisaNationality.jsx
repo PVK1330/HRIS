@@ -38,8 +38,7 @@ import {
 } from '../../../services/visaRecordService.js'
 import { createVisaType, deleteVisaType, listVisaTypes, updateVisaType } from '../../../services/visaTypeService.js'
 import { triggerExport } from '../../../utils/exportHelper.js'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { resolveFileUrl } from '../../../utils/fileUrl.js'
 
 const initialForm = {
   employee_id: '',
@@ -60,8 +59,7 @@ const initialForm = {
 
 function fileUrl(path) {
   if (!path) return ''
-  if (String(path).startsWith('http')) return path
-  return `${API_URL}${path}`
+  return resolveFileUrl(path)
 }
 
 function formatDateDMY(d) {

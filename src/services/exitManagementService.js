@@ -10,7 +10,7 @@ function getStoredUser() {
   }
 }
 
-function getOrganizationId() {
+function getOrganisationId() {
   const user = getStoredUser()
   return String(user?.tenant_id || user?.tenantId || user?.organizationId || user?.email || 'default-org')
 }
@@ -93,7 +93,7 @@ async function withFallback(apiCall, fallbackCall) {
 
 function getScope() {
   const store = readStore()
-  const orgId = getOrganizationId()
+  const orgId = getOrganisationId()
   const scope = createScopeIfMissing(store, orgId)
   return { store, scope, orgId }
 }

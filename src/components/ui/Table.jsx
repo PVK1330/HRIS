@@ -19,6 +19,9 @@ export function Table({
   theme = 'gray',
   /** Optional Tailwind classes per data row (server-side pagination). */
   rowClassName,
+  /** Optional unique key per row — use when `row.id` isn't unique across the
+   *  dataset (e.g. cross-tenant lists where per-tenant serial ids collide). */
+  rowKey,
 }) {
   const [internalPage, setInternalPage] = useState(0)
 
@@ -96,7 +99,7 @@ export function Table({
             ) : (
               slice.map((row, ri) => (
                 <tr
-                  key={row.id ?? ri}
+                  key={rowKey ? rowKey(row, ri) : (row.id ?? ri)}
                   onClick={() => onRowClick?.(row)}
                   className={`${onRowClick ? (theme === 'teal' ? 'cursor-pointer hover:bg-teal-50/50' : 'cursor-pointer hover:bg-gray-50') : ''} ${rowClassName ? rowClassName(row) : ''}`.trim()}
                 >

@@ -7,6 +7,11 @@ const iconByKey = {
   revenue: Wallet,
 }
 
+// One responsive grid shared by the skeleton and the live cards so they never
+// drift: 1 column on phones, 2 on small tablets, 3 once there's room. The cards
+// stretch to fill each row instead of leaving an empty 4th slot.
+const STATS_GRID = 'grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+
 function CardSkeleton() {
   return <div className="h-36 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
 }
@@ -29,8 +34,8 @@ function MiniBars({ points = [] }) {
 export default function DashboardStats({ items, loading }) {
   if (loading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
+      <div className={STATS_GRID}>
+        {Array.from({ length: 3 }).map((_, index) => (
           <CardSkeleton key={index} />
         ))}
       </div>
@@ -38,7 +43,7 @@ export default function DashboardStats({ items, loading }) {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className={STATS_GRID}>
       {items.map((item) => {
         const Icon = iconByKey[item.key] || Building2
         const isPositive = item.change >= 0
