@@ -1,9 +1,5 @@
 import api from './api.js';
 
-/**
- * Tenant expense claims — /api/v1/expenses
- * Employees are scoped to their own claims by the API when role is employee.
- */
 export async function listExpenses(params = {}) {
   const { data } = await api.get('/expenses', { params });
   return {
@@ -25,7 +21,6 @@ export async function getExpense(id) {
   return data.data;
 }
 
-/** multipart/form-data */
 export async function createExpense(formData) {
   const { data } = await api.post('/expenses', formData);
   return data.data;
@@ -54,4 +49,24 @@ export async function getApprovalLevels() {
 export async function setApprovalLevels(levels) {
   const { data } = await api.put('/expenses/approval-levels', levels);
   return Array.isArray(data.data) ? data.data : [];
+}
+
+// Excel export (EXP-10) — opens download in new tab
+export function exportExpenses(params = {}) {
+  const base = api.defaults.baseURL || '';
+  const qs = new URLSearchParams(params).toString();
+  window.open(`${base}/expenses/export${qs ? `?${qs}` : ''}`, '_blank');
+}
+
+// Excel bulk import (EXP-30)
+export async function importExpenses(formData) {
+  const { data } = await api.post('/expenses/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.data;
+}
+
+export function downloadImportTemplate() {
+  const base = api.defaults.baseURL || '';
+  window.open(`${base}/expenses/import/template`, '_blank');
 }
