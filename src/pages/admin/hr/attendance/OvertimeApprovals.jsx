@@ -90,6 +90,8 @@ export default function OvertimeApprovals() {
   const isOwn = (row) => Number(row?.employee_id) === myEmployeeId
 
   const [records, setRecords] = useState([])
+  // KPI counts from the unfiltered full-dataset fetch (not the searched/filtered table slice)
+  const [kpiCounts, setKpiCounts] = useState({ pending: 0, approvedHours: 0, rejected: 0 })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -105,6 +107,23 @@ export default function OvertimeApprovals() {
   const [statusFilter, setStatusFilter] = useState('')
   const { settings } = useAttendanceSettings()
 
+  // Fetch unfiltered records at the maximum allowed limit to compute KPI cards.
+  // This is intentionally separate from the table fetch so search/status filters
+  // on the table do not skew the summary counts.
+  const loadKpis = useCallback(async () => {
+    try {
+      const p = await getOvertimeRecords({ limit: 200 })
+      const all = Array.isArray(p) ? p : (p.records || [])
+      const pending = all.filter((r) => ACTIONABLE.has(r.overtime_status)).length
+      const approved = all.filter((r) => r.overtime_status === 'Approved')
+      const approvedHours = Math.round(approved.reduce((a, r) => a + Number(r.overtime_hours || 0), 0) * 100) / 100
+      const rejected = all.filter((r) => r.overtime_status === 'Rejected').length
+      setKpiCounts({ pending, approvedHours, rejected })
+    } catch {
+      // Non-fatal — KPI cards will retain previous values
+    }
+  }, [])
+
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
@@ -118,7 +137,7 @@ export default function OvertimeApprovals() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(); loadKpis() }, [load, loadKpis])
 
   const handleAction = async () => {
     if (!actionRow) return
@@ -126,7 +145,7 @@ export default function OvertimeApprovals() {
     try {
       await processOvertime(actionRow.id, { action: actionType, reason })
       setActionRow(null)
-      await load()
+      await Promise.all([load(), loadKpis()])
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Action failed')
     } finally {
@@ -140,7 +159,7 @@ export default function OvertimeApprovals() {
     try {
       await deleteOvertime(deleteRow.id)
       setDeleteRow(null)
-      await load()
+      await Promise.all([load(), loadKpis()])
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Delete failed')
     } finally {
@@ -156,12 +175,11 @@ export default function OvertimeApprovals() {
     setReason('')
   }
 
-  const metrics = useMemo(() => {
-    const pending  = records.filter((r) => ACTIONABLE.has(r.overtime_status))
-    const approved = records.filter((r) => r.overtime_status === 'Approved')
-    const approvedHours = approved.reduce((a, r) => a + Number(r.overtime_hours || 0), 0)
-    return { pending: pending.length, approvedHours: Math.round(approvedHours * 100) / 100 }
-  }, [records])
+  // KPI metrics are derived from the unfiltered kpiCounts (not from the displayed records slice).
+  const metrics = useMemo(() => ({
+    pending: kpiCounts.pending,
+    approvedHours: kpiCounts.approvedHours,
+  }), [kpiCounts])
 
   const filtered = useMemo(() => {
     let r = records
@@ -191,7 +209,7 @@ export default function OvertimeApprovals() {
           { label: 'APPROVED HOURS', count: metrics.approvedHours, bgColor: 'bg-[#3B82F6]', icon: HiDocumentText },
           {
             label: 'REJECTED',
-            count: records.filter(x => x.overtime_status === 'Rejected').length || 0,
+            count: kpiCounts.rejected,
             bgColor: 'bg-[#EF4444]',
             icon: HiXMark,
             onClickFilter: () => setStatusFilter('Rejected'),

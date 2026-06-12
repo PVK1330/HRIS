@@ -91,6 +91,8 @@ export default function LogoSettings() {
         toast.success(`Successfully uploaded ${successCount} asset(s)`)
         handleDiscard() // clear previews and pending files
         await load() // refresh current images
+        // Notify the sidebar to refresh its cached logo without a full page reload.
+        window.dispatchEvent(new Event('platform-logo-updated'))
       }
     } catch (err) {
       toast.error('An error occurred during upload')

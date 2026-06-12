@@ -25,3 +25,19 @@ export async function confirmCheckout(sessionId) {
   const { data } = await api.post('/tenant-billing/confirm', { sessionId })
   return data.data // { paid, billing }
 }
+
+export async function getEnabledGateways() {
+  const { data } = await api.get('/tenant-billing/gateways')
+  return data.data // [{ slug, name, testMode }]
+}
+
+export async function startPaypalCheckout(planId, billingCycle = 'monthly', returnPath) {
+  const returnOrigin = typeof window !== 'undefined' ? window.location.origin : undefined
+  const { data } = await api.post('/tenant-billing/paypal/checkout', { planId, billingCycle, returnPath, returnOrigin })
+  return data.data // { orderId, url } | { free: true, billing }
+}
+
+export async function confirmPaypalCheckout(orderId) {
+  const { data } = await api.post('/tenant-billing/paypal/confirm', { orderId })
+  return data.data // { paid, billing }
+}

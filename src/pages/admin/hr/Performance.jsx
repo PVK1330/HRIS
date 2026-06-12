@@ -293,8 +293,8 @@ export default function Performance() {
   const [assessments, setAssessments] = useState([])
   const [assessmentsSummary, setAssessmentsSummary] = useState({
     totalAssessments: 0,
-    pendingReviews: 0,
-    completedReviews: 0
+    pendingReview: 0,
+    completed: 0
   })
   const [assessmentsLoading, setAssessmentsLoading] = useState(false)
   const [editingAssessmentId, setEditingAssessmentId] = useState(null)

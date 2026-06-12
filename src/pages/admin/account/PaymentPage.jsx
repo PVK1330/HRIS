@@ -3,7 +3,15 @@ import { useSearchParams } from 'react-router-dom'
 import { HiLockClosed, HiArrowRightOnRectangle, HiCheckCircle, HiExclamationTriangle, HiStar, HiArrowRight } from 'react-icons/hi2'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import { useCurrency } from '../../../context/CurrencyContext.jsx'
-import { getBillingStatus, getPlans, startCheckout, confirmCheckout } from '../../../services/tenantBillingService'
+import {
+  getBillingStatus,
+  getPlans,
+  getEnabledGateways,
+  startCheckout,
+  confirmCheckout,
+  startPaypalCheckout,
+  confirmPaypalCheckout,
+} from '../../../services/tenantBillingService'
 
 const errMsg = (e, fb) => e?.response?.data?.message || e?.message || fb
 
@@ -13,6 +21,7 @@ export default function PaymentPage() {
   const [params, setParams] = useSearchParams()
   const [billing, setBilling] = useState(user?.billing ?? null)
   const [plans, setPlans] = useState([])
+  const [enabledGateways, setEnabledGateways] = useState([])
   const [selectedPlanId, setSelectedPlanId] = useState(null)
   const [cycle, setCycle] = useState('monthly')
   const [loading, setLoading] = useState(true)
@@ -21,10 +30,14 @@ export default function PaymentPage() {
 
   const load = async () => {
     try {
-      const [b, p] = await Promise.all([getBillingStatus(), getPlans().catch(() => [])])
+      const [b, p, gw] = await Promise.all([
+        getBillingStatus(),
+        getPlans().catch(() => []),
+        getEnabledGateways().catch(() => []),
+      ])
       setBilling(b)
       setPlans(p)
-      // Preselect the org's current plan, else the popular/first one.
+      setEnabledGateways(Array.isArray(gw) ? gw : [])
       const current = p.find((x) => String(x.id) === String(b?.plan_id))
       const popular = p.find((x) => x.is_popular)
       setSelectedPlanId(String((current || popular || p[0])?.id ?? ''))
@@ -37,7 +50,10 @@ export default function PaymentPage() {
 
   useEffect(() => {
     const stripe = params.get('stripe')
+    const paypal = params.get('paypal')
     const sessionId = params.get('session_id')
+    const token = params.get('token') // PayPal order ID
+
     if (stripe === 'success' && sessionId) {
       setLoading(true)
       confirmCheckout(sessionId)
@@ -59,10 +75,39 @@ export default function PaymentPage() {
         })
       return
     }
+
     if (stripe === 'cancelled') {
       setMsg({ type: 'err', text: 'Payment was cancelled.' })
       setParams({}, { replace: true })
     }
+
+    if (paypal === 'success' && token) {
+      setLoading(true)
+      confirmPaypalCheckout(token)
+        .then(async (res) => {
+          if (res.paid) {
+            setMsg({ type: 'ok', text: 'PayPal payment successful! Your subscription is now active.' })
+            await refreshAccessProfile()
+            if (res.billing) setBilling(res.billing)
+            await load()
+          } else {
+            setMsg({ type: 'err', text: 'PayPal payment was not completed. Please try again.' })
+            await load()
+          }
+        })
+        .catch((e) => setMsg({ type: 'err', text: errMsg(e, 'Could not confirm PayPal payment.') }))
+        .finally(() => {
+          setLoading(false)
+          setParams({}, { replace: true })
+        })
+      return
+    }
+
+    if (paypal === 'cancelled') {
+      setMsg({ type: 'err', text: 'PayPal payment was cancelled.' })
+      setParams({}, { replace: true })
+    }
+
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -79,7 +124,10 @@ export default function PaymentPage() {
       : selectedPlan.monthly_price
     : 0
 
-  // Subscription status pill shown on the summary card.
+  const hasStripe = enabledGateways.some((g) => g.slug === 'stripe')
+  const hasPaypal = enabledGateways.some((g) => g.slug === 'paypal')
+  const hasAnyOnlineGateway = hasStripe || hasPaypal
+
   const statusMeta = billing?.payment_required
     ? { label: isTrial ? 'Trial ended' : 'Payment required', cls: 'border-red-200 bg-red-50 text-red-700' }
     : isTrial
@@ -89,16 +137,7 @@ export default function PaymentPage() {
         }
       : { label: 'Active', cls: 'border-emerald-200 bg-emerald-50 text-emerald-700' }
 
-  // The pay/upgrade button adapts to the org's situation and the selected plan.
-  const ctaLabel = busy
-    ? 'Redirecting…'
-    : billing?.payment_required
-      ? 'Pay now'
-      : isTrial
-        ? (isCurrentPlan ? 'Upgrade to paid plan' : 'Choose this plan')
-        : (isCurrentPlan ? 'Renew plan' : 'Switch to this plan')
-
-  const pay = async () => {
+  const payWithStripe = async () => {
     if (!selectedPlanId) {
       setMsg({ type: 'err', text: 'Please select a plan first.' })
       return
@@ -112,7 +151,6 @@ export default function PaymentPage() {
         return
       }
       if (res?.free) {
-        // Free plan — activated server-side, no Stripe checkout needed.
         setMsg({ type: 'ok', text: 'Plan activated! Your subscription is now active.' })
         if (res.billing) setBilling(res.billing)
         await refreshAccessProfile()
@@ -122,6 +160,34 @@ export default function PaymentPage() {
       setMsg({ type: 'err', text: 'Could not start checkout.' })
     } catch (e) {
       setMsg({ type: 'err', text: errMsg(e, 'Could not start checkout.') })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const payWithPaypal = async () => {
+    if (!selectedPlanId) {
+      setMsg({ type: 'err', text: 'Please select a plan first.' })
+      return
+    }
+    setBusy(true)
+    setMsg(null)
+    try {
+      const res = await startPaypalCheckout(selectedPlanId, cycle, '/admin/payment')
+      if (res?.free) {
+        setMsg({ type: 'ok', text: 'Plan activated! Your subscription is now active.' })
+        if (res.billing) setBilling(res.billing)
+        await refreshAccessProfile()
+        await load()
+        return
+      }
+      if (res?.url) {
+        window.location.href = res.url
+        return
+      }
+      setMsg({ type: 'err', text: 'Could not start PayPal checkout.' })
+    } catch (e) {
+      setMsg({ type: 'err', text: errMsg(e, 'Could not start PayPal checkout.') })
     } finally {
       setBusy(false)
     }
@@ -222,7 +288,6 @@ export default function PaymentPage() {
                 {hasAccess && !isTrial ? 'Renew or change your plan' : 'Choose your plan'}
               </h2>
 
-              {/* Billing cycle toggle */}
               {plans.length > 0 && (
                 <div className="inline-flex rounded-lg bg-gray-100 p-1 text-sm">
                   <button
@@ -325,14 +390,35 @@ export default function PaymentPage() {
                     'Select a plan to continue'
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={pay}
-                  disabled={busy || !selectedPlan}
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-[#0F766E] px-6 py-3 text-base font-bold text-white shadow-lg shadow-teal-700/20 hover:bg-[#0D5F57] disabled:opacity-50 sm:w-auto"
-                >
-                  {ctaLabel}
-                </button>
+
+                {/* Payment buttons — shown based on enabled gateways */}
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  {hasStripe && (
+                    <button
+                      type="button"
+                      onClick={payWithStripe}
+                      disabled={busy || !selectedPlan}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#0F766E] px-6 py-3 text-base font-bold text-white shadow-lg shadow-teal-700/20 hover:bg-[#0D5F57] disabled:opacity-50"
+                    >
+                      {busy ? 'Redirecting…' : 'Pay with Stripe'}
+                    </button>
+                  )}
+                  {hasPaypal && (
+                    <button
+                      type="button"
+                      onClick={payWithPaypal}
+                      disabled={busy || !selectedPlan}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#003087] px-6 py-3 text-base font-bold text-white shadow-lg shadow-blue-900/20 hover:bg-[#001f5b] disabled:opacity-50"
+                    >
+                      {busy ? 'Redirecting…' : 'Pay with PayPal'}
+                    </button>
+                  )}
+                  {!hasAnyOnlineGateway && (
+                    <span className="text-sm text-gray-400">
+                      Contact your platform admin to enable a payment gateway.
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </>

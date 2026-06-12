@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Swal from 'sweetalert2'
 import api from '../../../services/api'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -9,7 +9,7 @@ import { Modal } from '../../../components/ui/Modal.jsx'
 import { Toggle } from '../../../components/ui/Toggle.jsx'
 import PlanPaymentStep from './PlanPaymentStep.jsx'
 import settingsService from '../../../services/settingsService.js'
-import { createStripeCheckoutSession } from '../../../services/billingService.js'
+import { createStripeCheckoutSession, createPaypalCheckoutSession, confirmPaypalCheckoutSession } from '../../../services/billingService.js'
 import {
   HiCheck,
   HiClock,
@@ -24,6 +24,7 @@ import {
   HiArrowTopRightOnSquare,
   HiCalendarDays,
   HiCreditCard,
+  HiBuildingLibrary,
   HiUsers,
   HiShieldCheck,
   HiQuestionMarkCircle,
@@ -60,10 +61,61 @@ export default function TenantManagement() {
   const [currentPage, setCurrentPage] = useState(0) // 0-indexed for UI, 1-indexed for API
   const pageSize = 5
 
+  const paypalReturnHandled = useRef(false)
+
   useEffect(() => {
     fetchTenants(currentPage)
     fetchPlans()
   }, [currentPage, searchQuery, planFilter, statusFilter])
+
+  // Handle PayPal return after superadmin-initiated checkout completes.
+  useEffect(() => {
+    if (paypalReturnHandled.current) return
+    const sp = new URLSearchParams(window.location.search)
+    const paypal = sp.get('paypal')
+    const token = sp.get('token')
+    if (paypal === 'success' && token) {
+      paypalReturnHandled.current = true
+      window.history.replaceState({}, '', window.location.pathname)
+      confirmPaypalCheckoutSession(token)
+        .then((result) => {
+          if (result?.paid) {
+            Swal.fire({
+              icon: 'success',
+              title: 'PayPal payment confirmed',
+              text: 'The organisation subscription has been activated.',
+              confirmButtonColor: '#0F766E',
+            })
+            fetchTenants(0)
+          } else {
+            Swal.fire({
+              icon: 'warning',
+              title: 'PayPal not completed',
+              text: 'The PayPal order was not captured. Check the payment status manually.',
+              confirmButtonColor: '#4f46e5',
+            })
+          }
+        })
+        .catch((e) => {
+          Swal.fire({
+            icon: 'error',
+            title: 'PayPal confirmation failed',
+            text: e?.response?.data?.message || e?.message || 'Could not confirm PayPal payment.',
+            confirmButtonColor: '#ef4444',
+          })
+        })
+    } else if (paypal === 'cancelled') {
+      paypalReturnHandled.current = true
+      window.history.replaceState({}, '', window.location.pathname)
+      Swal.fire({
+        icon: 'info',
+        title: 'PayPal payment cancelled',
+        text: 'The organisation was provisioned but the PayPal payment was not completed. You can use "Mark as Paid" later.',
+        confirmButtonColor: '#4f46e5',
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const fetchPlans = async () => {
     try {
@@ -84,12 +136,6 @@ export default function TenantManagement() {
       const res = await settingsService.getEnabledPaymentGateways()
       const list = Array.isArray(res?.data) ? res.data : []
       setPaymentGateways(list)
-      if (list.length > 0) {
-        setNewForm((prev) => ({
-          ...prev,
-          paymentGateway: prev.paymentGateway === 'manual' ? list[0].slug : prev.paymentGateway,
-        }))
-      }
     } catch (error) {
       console.error('Failed to fetch payment gateways:', error)
       setPaymentGateways([])
@@ -111,6 +157,15 @@ export default function TenantManagement() {
     setShowNewModal(true)
     fetchEnabledGateways()
     fetchPlatformBillingContext()
+    settingsService.getFreeTrial()
+      .then((res) => {
+        const d = res?.data
+        setTrialSettings({
+          trialEnabled: !!d?.trialEnabled,
+          trialDays: Number(d?.trialDays) || 0,
+        })
+      })
+      .catch(() => {})
   }
 
   const resetNewOrgForm = () => {
@@ -122,9 +177,7 @@ export default function TenantManagement() {
       adminPassword: '',
       plan: defaultPlan,
       billingCycle: 'monthly',
-      paymentGateway: paymentGateways[0]?.slug || 'manual',
       paymentCollection: 'trial',
-      paymentReference: '',
     })
     setShowNewPassword(false)
     setAddOrgTab('details')
@@ -197,7 +250,12 @@ export default function TenantManagement() {
   const [addOrgTab, setAddOrgTab] = useState('details')
   const [paymentGateways, setPaymentGateways] = useState([])
   const [platformCurrency, setPlatformCurrency] = useState('AED')
-  const [stripeCheckoutLoading, setStripeCheckoutLoading] = useState(false)
+  const [trialSettings, setTrialSettings] = useState({ trialEnabled: false, trialDays: 0 })
+  const [showGatewayModal, setShowGatewayModal] = useState(false)
+  const [provisionedTenant, setProvisionedTenant] = useState(null)
+  const [modalGateway, setModalGateway] = useState('')
+  const [modalReference, setModalReference] = useState('')
+  const [modalGatewayLoading, setModalGatewayLoading] = useState(false)
   const [newForm, setNewForm] = useState({
     name: '',
     adminName: '',
@@ -205,9 +263,7 @@ export default function TenantManagement() {
     adminPassword: '',
     plan: '',
     billingCycle: 'monthly',
-    paymentGateway: 'manual',
     paymentCollection: 'trial',
-    paymentReference: '',
   })
 
   const filteredOrganisations = organizations; // Now filtered on the server
@@ -384,134 +440,153 @@ export default function TenantManagement() {
     return true
   }
 
-  const buildCreateOrgPayload = () => ({
+  const buildCreateOrgPayload = (gateway = null, reference = null) => ({
     name: newForm.name,
     adminEmail: newForm.adminEmail,
     adminName: newForm.adminName,
     adminPassword: newForm.adminPassword,
     plan_id: String(newForm.plan),
     billing_cycle: newForm.billingCycle,
-    payment_gateway: newForm.paymentGateway,
     payment_collection: newForm.paymentCollection,
-    payment_reference: newForm.paymentReference || undefined,
+    ...(gateway ? { payment_gateway: gateway } : {}),
+    ...(reference ? { payment_reference: reference } : {}),
   })
 
-  const openStripeCheckoutUrl = async (tenant, checkoutTab) => {
-    const plan = plans.find((p) => String(p.id) === String(newForm.plan))
-    const amount =
-      newForm.billingCycle === 'annual'
-        ? Number(plan?.annual_price)
-        : Number(plan?.monthly_price)
-    if (!Number.isFinite(amount) || amount <= 0) {
-      checkoutTab?.close?.()
-      Swal.fire({
-        icon: 'info',
-        title: 'No payment required',
-        text: 'This plan has no charge — Stripe Checkout is not needed.',
-        confirmButtonColor: '#4f46e5',
-      })
-      return false
-    }
-
-    const session = await createStripeCheckoutSession({
-      tenantId: tenant.id,
-      paymentId: tenant.paymentId,
-      planId: tenant.planId || Number(newForm.plan),
-      billingCycle: newForm.billingCycle,
-      customerEmail: newForm.adminEmail,
-    })
-
-    if (!session?.url) {
-      checkoutTab?.close?.()
-      throw new Error('Stripe did not return a checkout URL')
-    }
-
-    if (checkoutTab && !checkoutTab.closed) {
-      checkoutTab.location.href = session.url
-      checkoutTab.focus()
-    } else {
-      const tab = window.open(session.url, '_blank', 'noopener,noreferrer')
-      if (!tab) {
-        Swal.fire({
-          icon: 'info',
-          title: 'Open Stripe Checkout',
-          html: `<a href="${session.url}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-bold underline">Click here to pay in Stripe</a>`,
-          confirmButtonColor: '#4f46e5',
-        })
-      } else {
-        tab.focus()
-      }
-    }
-    return true
-  }
-
-  const provisionOrganisation = async ({ openStripe = false, checkoutTab = null } = {}) => {
-    if (!validateNewOrgForm()) {
-      checkoutTab?.close?.()
-      return null
-    }
+  const provisionOrganisation = async ({ gateway = null, reference = null } = {}) => {
+    if (!validateNewOrgForm()) return null
 
     try {
-      if (openStripe) setStripeCheckoutLoading(true)
-      else setIsLoading(true)
-
-      const res = await api.post('/tenants/create', buildCreateOrgPayload())
+      setIsLoading(true)
+      const res = await api.post('/tenants/create', buildCreateOrgPayload(gateway, reference))
       const tenant = res.data?.data?.tenant
       if (!tenant?.id) throw new Error('Tenant was created but the response was invalid')
-
-      if (openStripe && newForm.paymentGateway === 'stripe') {
-        await openStripeCheckoutUrl(tenant, checkoutTab)
-      } else {
-        checkoutTab?.close?.()
-      }
-
-      setShowNewModal(false)
-      resetNewOrgForm()
-      fetchTenants()
-
-      if (openStripe && newForm.paymentGateway === 'stripe') {
-        Swal.fire({
-          icon: 'success',
-          title: 'Organisation created',
-          text: 'Complete payment in the Stripe tab. The organization is provisioned.',
-          timer: 2800,
-          showConfirmButton: false,
-        })
-      } else {
-        Swal.fire({
-          icon: 'success',
-          title: 'Organisation created',
-          text: 'Tenant provisioned with subscription and payment record.',
-          timer: 2200,
-          showConfirmButton: false,
-        })
-      }
-
       return tenant
     } catch (error) {
-      checkoutTab?.close?.()
       Swal.fire({
         icon: 'error',
-        title: openStripe ? 'Stripe checkout failed' : 'Provisioning Failed',
+        title: 'Provisioning Failed',
         text: error.response?.data?.message || error.message || 'Failed to create organization',
         confirmButtonColor: '#ef4444',
       })
       return null
     } finally {
       setIsLoading(false)
-      setStripeCheckoutLoading(false)
     }
   }
 
-  const handlePaymentGatewayChange = (slug) => {
-    setNewForm((prev) => ({ ...prev, paymentGateway: slug }))
+  const handleCreateOrganisation = async () => {
+    const tenant = await provisionOrganisation()
+    if (!tenant) return
+
+    if (newForm.paymentCollection !== 'trial') {
+      // Non-trial: show gateway selection modal so superadmin can choose how to collect payment
+      setProvisionedTenant({ ...tenant, planId: Number(newForm.plan), billingCycle: newForm.billingCycle })
+      setModalGateway(paymentGateways[0]?.slug || 'manual')
+      setModalReference('')
+      setShowNewModal(false)
+      resetNewOrgForm()
+      fetchTenants()
+      setShowGatewayModal(true)
+    } else {
+      setShowNewModal(false)
+      resetNewOrgForm()
+      fetchTenants()
+      Swal.fire({
+        icon: 'success',
+        title: 'Organisation created',
+        text: 'Tenant provisioned on trial. The admin can upgrade from their billing settings.',
+        timer: 2500,
+        showConfirmButton: false,
+      })
+    }
   }
 
-  const handleCreateOrganisation = async () => {
-    // Superadmin provisions the org as a free trial and never collects payment here.
-    // The org admin pays later from Settings → Billing (or superadmin can use
-    // "Mark as Paid" to activate an org offline).
-    await provisionOrganisation({ openStripe: false })
+  const handleGatewayPayment = async () => {
+    if (!provisionedTenant) return
+    try {
+      setModalGatewayLoading(true)
+      const plan = plans.find((p) => String(p.id) === String(provisionedTenant.plan_id || provisionedTenant.planId))
+      const billingCycle = provisionedTenant.billingCycle || 'monthly'
+
+      if (modalGateway === 'stripe') {
+        const amount = billingCycle === 'annual'
+          ? Number(plan?.annual_price)
+          : Number(plan?.monthly_price)
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+          Swal.fire({ icon: 'info', title: 'No payment required', text: 'This plan has no charge.', confirmButtonColor: '#4f46e5' })
+          setShowGatewayModal(false)
+          return
+        }
+
+        const session = await createStripeCheckoutSession({
+          tenantId: provisionedTenant.id,
+          paymentId: provisionedTenant.paymentId,
+          planId: provisionedTenant.planId || Number(provisionedTenant.plan_id),
+          billingCycle,
+          customerEmail: provisionedTenant.adminEmail || provisionedTenant.admin_email,
+        })
+
+        if (session?.url) {
+          const tab = window.open(session.url, '_blank', 'noopener,noreferrer')
+          if (!tab) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Open Stripe Checkout',
+              html: `<a href="${session.url}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-bold underline">Click here to complete Stripe payment</a>`,
+              confirmButtonColor: '#4f46e5',
+            })
+          } else {
+            tab.focus()
+          }
+          setShowGatewayModal(false)
+        }
+
+      } else if (modalGateway === 'paypal') {
+        const session = await createPaypalCheckoutSession({
+          tenantId: provisionedTenant.id,
+          paymentId: provisionedTenant.paymentId || null,
+          planId: provisionedTenant.planId || Number(provisionedTenant.plan_id),
+          billingCycle,
+        })
+
+        setShowGatewayModal(false)
+
+        if (session?.url) {
+          const tab = window.open(session.url, '_blank', 'noopener,noreferrer')
+          if (!tab) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Open PayPal Checkout',
+              html: `<a href="${session.url}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-bold underline">Click here to complete PayPal payment</a>`,
+              confirmButtonColor: '#4f46e5',
+            })
+          } else {
+            tab.focus()
+            Swal.fire({ icon: 'success', title: 'PayPal checkout opened', text: 'Complete payment in the PayPal tab. Return here after approval.', timer: 3000, showConfirmButton: false })
+          }
+        }
+
+      } else {
+        // Manual / offline — activate immediately with reference
+        await api.post(`/tenant-billing/${provisionedTenant.id}/activate`, {
+          planId: provisionedTenant.planId || provisionedTenant.plan_id,
+          reference: modalReference || undefined,
+        })
+        setShowGatewayModal(false)
+        Swal.fire({ icon: 'success', title: 'Payment recorded', text: 'Organisation activated with manual payment record.', timer: 2500, showConfirmButton: false })
+        fetchTenants()
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Payment failed',
+        text: error.response?.data?.message || error.message || 'Could not initiate payment',
+        confirmButtonColor: '#ef4444',
+      })
+    } finally {
+      setModalGatewayLoading(false)
+    }
   }
 
   // Manual "mark as paid": superadmin activates an org on a chosen plan without
@@ -830,19 +905,13 @@ export default function TenantManagement() {
               onSelectPlan={(id) => setNewForm((prev) => ({ ...prev, plan: id }))}
               billingCycle={newForm.billingCycle}
               onBillingCycleChange={(v) => setNewForm((prev) => ({ ...prev, billingCycle: v }))}
-              paymentGateways={paymentGateways}
-              paymentGateway={newForm.paymentGateway}
-              onPaymentGatewayChange={handlePaymentGatewayChange}
-              stripeCheckoutLoading={stripeCheckoutLoading}
-              currencyCode={platformCurrency}
               paymentCollection={newForm.paymentCollection}
               onPaymentCollectionChange={(v) => setNewForm((prev) => ({ ...prev, paymentCollection: v }))}
-              paymentReference={newForm.paymentReference}
-              onPaymentReferenceChange={(v) => setNewForm((prev) => ({ ...prev, paymentReference: v }))}
+              trialSettings={trialSettings}
             />
           )}
 
-          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
+          <div className="mt-8 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-6">
             <button type="button" onClick={() => { setShowNewModal(false); resetNewOrgForm() }} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
             {addOrgTab === 'subscription' ? (
               <button type="button" onClick={() => setAddOrgTab('details')} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Back</button>
@@ -850,8 +919,13 @@ export default function TenantManagement() {
               <button type="button" onClick={() => setAddOrgTab('subscription')} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors">Next: Plan & payment</button>
             )}
             {addOrgTab === 'subscription' && (
-              <button type="button" onClick={handleCreateOrganisation} disabled={isLoading || stripeCheckoutLoading} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors disabled:opacity-50">
-                {isLoading || stripeCheckoutLoading ? 'Creating…' : 'Create organization (trial)'}
+              <button
+                type="button"
+                onClick={handleCreateOrganisation}
+                disabled={isLoading || !newForm.plan}
+                className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors disabled:opacity-50"
+              >
+                {isLoading ? 'Creating…' : 'Create Organisation'}
               </button>
             )}
           </div>
@@ -1061,6 +1135,135 @@ export default function TenantManagement() {
               loading={isLoading}
               disabled={!resetForm.password || resetForm.password !== resetForm.confirmPassword || isLoading}
             />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Payment Gateway Modal */}
+      <Modal
+        isOpen={showGatewayModal}
+        onClose={() => setShowGatewayModal(false)}
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold text-slate-900">Complete Payment</h2>
+            <p className="text-sm text-slate-500">
+              Select how to collect the subscription fee for <strong>{provisionedTenant?.name}</strong>.
+            </p>
+          </div>
+        }
+        size="md"
+      >
+        <div className="space-y-5">
+          {/* Plan + amount summary */}
+          {(() => {
+            const plan = plans.find((p) => String(p.id) === String(provisionedTenant?.planId))
+            const billingCycle = provisionedTenant?.billingCycle || 'monthly'
+            const price = billingCycle === 'annual' ? plan?.annual_price : plan?.monthly_price
+            if (!plan || !price) return null
+            return (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{plan.plan_name} · {billingCycle}</p>
+                  <p className="mt-0.5 text-lg font-black text-slate-900">{price}</p>
+                </div>
+                <HiCreditCard className="h-8 w-8 text-slate-300" />
+              </div>
+            )
+          })()}
+
+          {/* Gateway cards */}
+          <div>
+            <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Payment Gateway
+            </label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {paymentGateways.map((gw) => {
+                const active = modalGateway === gw.slug
+                return (
+                  <button
+                    key={gw.slug}
+                    type="button"
+                    onClick={() => setModalGateway(gw.slug)}
+                    className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${
+                      active ? 'border-[#0F766E] bg-teal-50/50' : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-teal-100 text-[#0F766E]' : 'bg-slate-100 text-slate-500'}`}>
+                      <HiCreditCard className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-slate-900">{gw.name}</p>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                        {gw.testMode ? 'Test mode' : 'Live'} · {gw.slug}
+                      </p>
+                    </div>
+                    {active && <HiCheck className="h-5 w-5 shrink-0 text-[#0F766E]" />}
+                  </button>
+                )
+              })}
+              <button
+                type="button"
+                onClick={() => setModalGateway('manual')}
+                className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${
+                  modalGateway === 'manual' ? 'border-[#0F766E] bg-teal-50/50' : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${modalGateway === 'manual' ? 'bg-teal-100 text-[#0F766E]' : 'bg-slate-100 text-slate-500'}`}>
+                  <HiBuildingLibrary className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">Manual / Offline</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Bank transfer, cheque, cash</p>
+                </div>
+                {modalGateway === 'manual' && <HiCheck className="h-5 w-5 shrink-0 text-[#0F766E]" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Reference input for manual */}
+          {modalGateway === 'manual' && (
+            <div>
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Payment Reference (optional)
+              </label>
+              <input
+                type="text"
+                value={modalReference}
+                onChange={(e) => setModalReference(e.target.value)}
+                placeholder="Transaction ID, cheque no., bank ref…"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[#0F766E]"
+              />
+            </div>
+          )}
+
+          {/* Stripe hint */}
+          {modalGateway === 'stripe' && (
+            <p className="rounded-lg border border-teal-100 bg-teal-50/80 px-3 py-2 text-xs text-teal-800">
+              Clicking "Proceed" will open Stripe Checkout in a new tab for the organisation admin to complete payment.
+            </p>
+          )}
+          {modalGateway === 'paypal' && (
+            <p className="rounded-lg border border-blue-100 bg-blue-50/80 px-3 py-2 text-xs text-blue-800">
+              Clicking "Proceed" will open PayPal in a new tab. Return here after approval to confirm.
+            </p>
+          )}
+
+          <div className="flex gap-3 border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              onClick={() => setShowGatewayModal(false)}
+              className="flex-1 rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Skip (collect later)
+            </button>
+            <button
+              type="button"
+              onClick={handleGatewayPayment}
+              disabled={modalGatewayLoading}
+              className="flex-1 rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] disabled:opacity-50 transition-colors"
+            >
+              {modalGatewayLoading ? 'Processing…' : 'Proceed'}
+            </button>
           </div>
         </div>
       </Modal>

@@ -983,9 +983,53 @@ export default function Onboarding() {
         }
         size="lg"
         showClose
+        stickyFooter={
+          onboardingMode === 'create' ? (
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setModalOpen(false); setOnboardingMode('create'); setWizardForm(INITIAL_FORM) }}
+                className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="onboarding-create-form"
+                disabled={initLoading}
+                className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors disabled:cursor-not-allowed disabled:opacity-60 flex items-center gap-2"
+              >
+                {initLoading ? (
+                  <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving</>
+                ) : 'Submit & send offer'}
+              </button>
+            </div>
+          ) : onboardingMode === 'documents' && selectedEmployeeIdForDocs && checklistItems.length > 0 ? (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className="text-xs text-slate-500">Approve all mandatory documents, then activate the employee.</p>
+              <button
+                type="button"
+                disabled={activating}
+                onClick={async () => {
+                  await execComplete(async () => {
+                    const res = await onboardingApi.completeOnboarding(Number(selectedEmployeeIdForDocs));
+                    toast.success(res.message || 'Onboarding complete')
+                    setModalOpen(false)
+                    await loadOnboarding()
+                  });
+                }}
+                className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors shrink-0 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {activating ? (
+                  <><svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Completing…</>
+                ) : 'Complete onboarding'}
+              </button>
+            </div>
+          ) : null
+        }
       >
         {/* Mode switcher tabs */}
-        <div className="sticky top-0 z-10 shrink-0 flex border-b border-slate-200 bg-white -mx-6 px-6 mb-6">
+        <div className="sticky top-0 z-10 shrink-0 flex border-b border-slate-200 bg-white -mx-4 sm:-mx-5 px-4 sm:px-5 mb-6">
           {[
             { key: 'create', label: 'Step 1 — Offer' },
             { key: 'status', label: 'Step 2 — Signed offer' },
@@ -1007,7 +1051,7 @@ export default function Onboarding() {
 
         {/* â”€â”€ TAB 1: ONBOARDING (CREATE NEW HIRE) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {onboardingMode === 'create' ? (
-          <form className="p-2" onSubmit={handleCreateAndStartOnboarding}>
+          <form id="onboarding-create-form" className="p-2" onSubmit={handleCreateAndStartOnboarding}>
             <div className="space-y-6 pb-2">
               {/* SECTION 1 ” Candidate Personal Details */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
@@ -1301,14 +1345,6 @@ export default function Onboarding() {
               </div>
 
             </div>
-            <div className="sticky bottom-0 z-10 bg-white flex items-center justify-end gap-3 pt-4 pb-4 mt-6 border-t border-slate-100">
-              <button type="button" onClick={() => { setModalOpen(false); setOnboardingMode('create'); setWizardForm(INITIAL_FORM) }} className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                Cancel
-              </button>
-              <button type="submit" disabled={initLoading} className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors disabled:cursor-not-allowed disabled:opacity-60 flex items-center gap-2">
-                {initLoading ? (<><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving</>) : 'Submit & send offer'}
-              </button>
-            </div>
           </form>
         ) : onboardingMode === 'status' ? (
           /* TAB 2: ONBOARDING STATUS */
@@ -1356,7 +1392,7 @@ export default function Onboarding() {
                       <div className="mt-3">
                         <button
                           type="button"
-                          onClick={() => window.open(onboardingReviewMeta.signedOfferFileUrl, '_blank')}
+                          onClick={() => window.open(resolveFileUrl(onboardingReviewMeta.signedOfferFileUrl), '_blank')}
                           className="h-9 px-4 text-[10px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 transition-colors text-white rounded-lg shadow-sm"
                         >
                           View Signed Offer
@@ -1451,7 +1487,7 @@ export default function Onboarding() {
                             <p className="text-xs mb-2 text-amber-900 font-medium">Reference Document:</p>
                             <button
                               type="button"
-                              onClick={() => window.open(onboardingReviewMeta.signedOfferFileUrl, '_blank')}
+                              onClick={() => window.open(resolveFileUrl(onboardingReviewMeta.signedOfferFileUrl), '_blank')}
                               className="h-8 px-4 text-[10px] font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-700 transition-colors text-white rounded shadow-sm flex items-center gap-2"
                             >
                               <HiDocumentText className="w-3.5 h-3.5" />
@@ -1552,33 +1588,6 @@ export default function Onboarding() {
               </>
             )}
 
-            {selectedEmployeeIdForDocs && checklistItems.length > 0 && (
-              <div className="sticky bottom-0 z-10 mt-4 border-t border-slate-200 bg-white pt-4 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p className="text-xs text-slate-500">
-                  Approve all mandatory documents, then activate the employee.
-                </p>
-                <button
-                  type="button"
-                  disabled={activating}
-                  onClick={async () => {
-                    await execComplete(async () => {
-                      const res = await onboardingApi.completeOnboarding(Number(selectedEmployeeIdForDocs));
-                      toast.success(res.message || 'Onboarding complete')
-                      setModalOpen(false)
-                      await loadOnboarding()
-                    });
-                  }}
-                  className="h-10 rounded-md bg-[#0F766E] px-6 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors shrink-0 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {activating ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                      Completing…
-                    </>
-                  ) : 'Complete onboarding'}
-                </button>
-              </div>
-            )}
           </div>
         )
         }

@@ -54,7 +54,6 @@ export default function SubscriptionsPlans() {
     plan_description: '',
     monthly_price: 0,
     annual_price: 0,
-    trial_days: 0,
     support_level: '',
     isActive: true
   }
@@ -146,7 +145,6 @@ export default function SubscriptionsPlans() {
         plan_description: planData.plan_description || '',
         monthly_price: Number(planData.monthly_price || 0),
         annual_price: Number(planData.annual_price || 0),
-        trial_days: Number(planData.trial_days || 0),
         support_level: planData.support_level || '',
         isActive: Boolean(planData.is_active)
       })
@@ -215,14 +213,13 @@ export default function SubscriptionsPlans() {
 
   // Export functionality
   const handleExport = () => {
-    const headers = ['ID', 'Name', 'Code', 'Monthly Price', 'Annual Price', 'Trial Days', 'Support Level', 'Status']
+    const headers = ['ID', 'Name', 'Code', 'Monthly Price', 'Annual Price', 'Support Level', 'Status']
     const csvData = plans.map(p => [
       p.id,
       p.plan_name,
       p.plan_code,
       p.monthly_price,
       p.annual_price,
-      p.trial_days,
       p.support_level || 'Standard',
       p.is_active ? 'Active' : 'Inactive'
     ])
@@ -500,12 +497,6 @@ export default function SubscriptionsPlans() {
               </p>
             </div>
             <Input
-              label="Trial Days (0 for no trial)"
-              type="number"
-              value={newPlan.trial_days}
-              onChange={(e) => setNewPlan({ ...newPlan, trial_days: parseInt(e.target.value) || 0 })}
-            />
-            <Input
               label="Support Level"
               placeholder="e.g., Standard, Priority, 24/7"
               value={newPlan.support_level}
@@ -615,12 +606,6 @@ export default function SubscriptionsPlans() {
                 Recommended: {formatPrice(Math.round(editForm.monthly_price * 10.8 * 100) / 100)} (10% discount)
               </p>
             </div>
-            <Input
-              label="Trial Days"
-              type="number"
-              value={editForm.trial_days}
-              onChange={(e) => setEditForm({ ...editForm, trial_days: parseInt(e.target.value) || 0 })}
-            />
             <Input
               label="Support Level"
               value={editForm.support_level}

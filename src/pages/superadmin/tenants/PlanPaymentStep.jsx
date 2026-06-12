@@ -1,18 +1,5 @@
-import {
-  HiCheck,
-  HiCreditCard,
-  HiBuildingLibrary,
-  HiSparkles,
-} from 'react-icons/hi2'
+import { HiCheck, HiSparkles } from 'react-icons/hi2'
 import { useCurrency } from '../../../context/CurrencyContext.jsx'
-
-const GATEWAY_ICONS = {
-  stripe: HiCreditCard,
-  paypal: HiCreditCard,
-  razorpay: HiCreditCard,
-  offline: HiBuildingLibrary,
-  manual: HiBuildingLibrary,
-}
 
 export default function PlanPaymentStep({
   plans = [],
@@ -20,14 +7,9 @@ export default function PlanPaymentStep({
   onSelectPlan,
   billingCycle,
   onBillingCycleChange,
-  paymentGateways = [],
-  paymentGateway,
-  onPaymentGatewayChange,
   paymentCollection,
   onPaymentCollectionChange,
-  paymentReference,
-  onPaymentReferenceChange,
-  stripeCheckoutLoading = false,
+  trialSettings = { trialEnabled: false, trialDays: 0 },
 }) {
   const { format: fmt, breakdown } = useCurrency()
 
@@ -37,8 +19,6 @@ export default function PlanPaymentStep({
     billingCycle === 'annual'
       ? selectedPlan?.annual_price
       : selectedPlan?.monthly_price
-
-  const isOnlineGateway = ['stripe', 'paypal', 'razorpay'].includes(paymentGateway)
 
   return (
     <div className="space-y-6">
@@ -129,9 +109,9 @@ export default function PlanPaymentStep({
                   </li>
                 )}
               </ul>
-              {plan.trial_days > 0 && (
+              {trialSettings.trialEnabled && trialSettings.trialDays > 0 && (
                 <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-emerald-600">
-                  {plan.trial_days}-day trial included
+                  {trialSettings.trialDays}-day trial included
                 </p>
               )}
             </button>
@@ -159,151 +139,60 @@ export default function PlanPaymentStep({
       )}
 
       <div className="border-t border-slate-100 pt-6">
-        <h3 className="text-sm font-bold text-slate-900">Payment gateway</h3>
-        <p className="mt-1 text-xs text-slate-500">
-          Select how subscription fees will be collected from this organization.
-        </p>
+        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          Collection at onboarding
+        </label>
+        <select
+          value={paymentCollection}
+          onChange={(e) => onPaymentCollectionChange(e.target.value)}
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-[#0F766E]"
+        >
+          <option value="trial">Start trial — invoice pending (recommended)</option>
+          <option value="pending">Record pending payment (awaiting collection)</option>
+          <option value="completed">Mark as paid now (select gateway next)</option>
+        </select>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {paymentGateways.map((gw) => {
-            const Icon = GATEWAY_ICONS[gw.slug] || HiCreditCard
-            const active = paymentGateway === gw.slug
-            return (
-              <button
-                key={gw.slug}
-                type="button"
-                onClick={() => onPaymentGatewayChange(gw.slug, gw)}
-                className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${
-                  active
-                    ? 'border-[#0F766E] bg-teal-50/50'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
-              >
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                    active ? 'bg-teal-100 text-[#0F766E]' : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-slate-900">{gw.name}</p>
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    {gw.testMode ? 'Test mode' : 'Live'} · {gw.slug}
+        {selectedPlan && Number(displayPrice) > 0 && (() => {
+          const bill = breakdown(displayPrice)
+          const showTax = bill.taxEnabled && bill.taxRate > 0
+          return (
+            <div className="mt-2 text-xs text-slate-500">
+              {showTax ? (
+                <div className="space-y-0.5">
+                  <p className="flex items-center justify-between">
+                    <span>Subtotal</span>
+                    <span className="text-slate-700">{fmt(bill.subtotal)}</span>
+                  </p>
+                  <p className="flex items-center justify-between">
+                    <span>{bill.taxLabel} ({bill.taxRate}%)</span>
+                    <span className="text-slate-700">{fmt(bill.tax)}</span>
+                  </p>
+                  <p className="flex items-center justify-between">
+                    <span>
+                      Amount due
+                      {paymentCollection === 'trial' && trialSettings.trialEnabled && trialSettings.trialDays > 0
+                        ? ` after ${trialSettings.trialDays}-day trial`
+                        : ''}
+                    </span>
+                    <strong className="text-slate-800">{fmt(bill.total)}</strong>
                   </p>
                 </div>
-                {active && <HiCheck className="h-5 w-5 shrink-0 text-[#0F766E]" />}
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            onClick={() => onPaymentGatewayChange('manual')}
-            className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${
-              paymentGateway === 'manual'
-                ? 'border-[#0F766E] bg-teal-50/50'
-                : 'border-slate-200 bg-white hover:border-slate-300'
-            }`}
-          >
-            <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                paymentGateway === 'manual'
-                  ? 'bg-teal-100 text-[#0F766E]'
-                  : 'bg-slate-100 text-slate-500'
-              }`}
-            >
-              <HiBuildingLibrary className="h-5 w-5" />
+              ) : (
+                <p>
+                  Amount due: <strong className="text-slate-800">{fmt(displayPrice)}</strong>
+                  {paymentCollection === 'trial' && trialSettings.trialEnabled && trialSettings.trialDays > 0
+                    ? ` after ${trialSettings.trialDays}-day trial`
+                    : ''}
+                </p>
+              )}
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-slate-900">Manual</p>
-              <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                Record in billing later
-              </p>
-            </div>
-            {paymentGateway === 'manual' && (
-              <HiCheck className="h-5 w-5 shrink-0 text-[#0F766E]" />
-            )}
-          </button>
-        </div>
+          )
+        })()}
 
-        <div className="mt-4">
-          <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Collection at onboarding
-          </label>
-          <select
-            value={paymentCollection}
-            onChange={(e) => onPaymentCollectionChange(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-[#0F766E]"
-          >
-            <option value="trial">Start trial — invoice pending (recommended)</option>
-            <option value="pending">Record pending payment (awaiting collection)</option>
-            <option value="completed">Mark as paid now (manual / offline receipt)</option>
-          </select>
-          {selectedPlan && Number(displayPrice) > 0 && (() => {
-            const bill = breakdown(displayPrice)
-            const showTax = bill.taxEnabled && bill.taxRate > 0
-            return (
-              <div className="mt-2 text-xs text-slate-500">
-                {showTax ? (
-                  <div className="space-y-0.5">
-                    <p className="flex items-center justify-between">
-                      <span>Subtotal</span>
-                      <span className="text-slate-700">{fmt(bill.subtotal)}</span>
-                    </p>
-                    <p className="flex items-center justify-between">
-                      <span>
-                        {bill.taxLabel} ({bill.taxRate}%)
-                      </span>
-                      <span className="text-slate-700">{fmt(bill.tax)}</span>
-                    </p>
-                    <p className="flex items-center justify-between">
-                      <span>
-                        Amount due
-                        {paymentCollection === 'trial' && selectedPlan.trial_days > 0
-                          ? ` after ${selectedPlan.trial_days}-day trial`
-                          : ''}
-                      </span>
-                      <strong className="text-slate-800">{fmt(bill.total)}</strong>
-                    </p>
-                  </div>
-                ) : (
-                  <p>
-                    Amount due: <strong className="text-slate-800">{fmt(displayPrice)}</strong>
-                    {paymentCollection === 'trial' && selectedPlan.trial_days > 0
-                      ? ` after ${selectedPlan.trial_days}-day trial`
-                      : ''}
-                  </p>
-                )}
-              </div>
-            )
-          })()}
-          {paymentGateway === 'stripe' && (
-            <p className="mt-3 rounded-lg border border-teal-100 bg-teal-50/80 px-3 py-2 text-xs text-teal-800">
-              {stripeCheckoutLoading
-                ? 'Creating organization and opening Stripe Checkout in a new tab…'
-                : 'Use “Create & pay with Stripe” to provision the organization and open checkout in a new tab (uses your platform currency and timezone from General / Currency settings).'}
-            </p>
-          )}
-          {isOnlineGateway && paymentGateway !== 'stripe' && paymentCollection === 'completed' && (
-            <p className="mt-2 text-xs text-amber-700">
-              Online checkout for this gateway is not wired yet — use Stripe or record payment manually.
-            </p>
-          )}
-        </div>
-
-        {(paymentCollection === 'completed' || paymentGateway === 'offline') && (
-          <div className="mt-4">
-            <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Payment reference (optional)
-            </label>
-            <input
-              type="text"
-              value={paymentReference}
-              onChange={(e) => onPaymentReferenceChange(e.target.value)}
-              placeholder="Transaction ID, cheque no., bank ref…"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[#0F766E]"
-            />
-          </div>
+        {paymentCollection === 'completed' && (
+          <p className="mt-3 rounded-lg border border-amber-100 bg-amber-50/80 px-3 py-2 text-xs text-amber-800">
+            After creating the organisation you will be prompted to select a payment gateway to record the payment.
+          </p>
         )}
       </div>
     </div>
