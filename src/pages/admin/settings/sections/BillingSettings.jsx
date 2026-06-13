@@ -3,7 +3,15 @@ import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../../context/AuthContext.jsx';
 import { useCurrency } from '../../../../context/CurrencyContext.jsx';
-import { getBillingStatus, getPlans, startCheckout, confirmCheckout } from '../../../../services/tenantBillingService';
+import {
+  getBillingStatus,
+  getPlans,
+  getEnabledGateways,
+  startCheckout,
+  confirmCheckout,
+  startPaypalCheckout,
+  confirmPaypalCheckout,
+} from '../../../../services/tenantBillingService';
 
 const errMsg = (e, fb) => e?.response?.data?.message || e?.message || fb;
 
@@ -21,6 +29,7 @@ export default function BillingSettings() {
   const [params, setParams] = useSearchParams();
   const [billing, setBilling] = useState(null);
   const [plans, setPlans] = useState([]);
+  const [enabledGateways, setEnabledGateways] = useState([]);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [cycle, setCycle] = useState('monthly');
   const [loading, setLoading] = useState(true);
@@ -28,9 +37,14 @@ export default function BillingSettings() {
 
   const load = async () => {
     try {
-      const [b, p] = await Promise.all([getBillingStatus(), getPlans().catch(() => [])]);
+      const [b, p, gw] = await Promise.all([
+        getBillingStatus(),
+        getPlans().catch(() => []),
+        getEnabledGateways().catch(() => []),
+      ]);
       setBilling(b);
       setPlans(p);
+      setEnabledGateways(Array.isArray(gw) ? gw : []);
       const current = p.find((x) => String(x.id) === String(b?.plan_id));
       setSelectedPlanId(String((current || p.find((x) => x.is_popular) || p[0])?.id ?? ''));
     } catch (e) {
@@ -41,9 +55,11 @@ export default function BillingSettings() {
   };
 
   useEffect(() => {
-    // Returning from Stripe Checkout on this same tab — confirm and flip to paid.
     const stripe = params.get('stripe');
+    const paypal = params.get('paypal');
     const sessionId = params.get('session_id');
+    const token = params.get('token'); // PayPal order ID
+
     if (stripe === 'success' && sessionId) {
       setLoading(true);
       confirmCheckout(sessionId)
@@ -61,15 +77,43 @@ export default function BillingSettings() {
         .catch((e) => toast.error(errMsg(e, 'Could not confirm payment.')))
         .finally(() => {
           setLoading(false);
-          // Strip stripe params, keep the billing tab selected.
           setParams({ tab: 'billing' }, { replace: true });
         });
       return;
     }
+
     if (stripe === 'cancelled') {
       toast.error('Payment was cancelled.');
       setParams({ tab: 'billing' }, { replace: true });
     }
+
+    if (paypal === 'success' && token) {
+      setLoading(true);
+      confirmPaypalCheckout(token)
+        .then(async (res) => {
+          if (res.paid) {
+            toast.success('PayPal payment successful! Your subscription is now active.');
+            await refreshAccessProfile();
+            if (res.billing) setBilling(res.billing);
+            await load();
+          } else {
+            toast.error('PayPal payment was not completed. Please try again.');
+            await load();
+          }
+        })
+        .catch((e) => toast.error(errMsg(e, 'Could not confirm PayPal payment.')))
+        .finally(() => {
+          setLoading(false);
+          setParams({ tab: 'billing' }, { replace: true });
+        });
+      return;
+    }
+
+    if (paypal === 'cancelled') {
+      toast.error('PayPal payment was cancelled.');
+      setParams({ tab: 'billing' }, { replace: true });
+    }
+
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -80,20 +124,17 @@ export default function BillingSettings() {
   const selectedPlan = plans.find((p) => String(p.id) === String(selectedPlanId));
   const selectedPrice = selectedPlan ? (cycle === 'annual' ? selectedPlan.annual_price : selectedPlan.monthly_price) : 0;
 
-  const pay = async () => {
-    if (!selectedPlanId) {
-      toast.error('Please select a plan first.');
-      return;
-    }
+  const hasStripe = enabledGateways.some((g) => g.slug === 'stripe');
+  const hasPaypal = enabledGateways.some((g) => g.slug === 'paypal');
+  const hasAnyGateway = hasStripe || hasPaypal;
+
+  const payWithStripe = async () => {
+    if (!selectedPlanId) { toast.error('Please select a plan first.'); return; }
     setBusy(true);
     try {
       const res = await startCheckout(selectedPlanId, cycle, '/admin/settings?tab=billing');
-      if (res?.url) {
-        window.location.href = res.url;
-        return;
-      }
+      if (res?.url) { window.location.href = res.url; return; }
       if (res?.free) {
-        // Free plan — activated server-side, no Stripe checkout needed.
         toast.success('Plan activated! Your subscription is now active.');
         if (res.billing) setBilling(res.billing);
         await refreshAccessProfile();
@@ -103,6 +144,27 @@ export default function BillingSettings() {
       toast.error('Could not start checkout.');
     } catch (e) {
       toast.error(errMsg(e, 'Could not start checkout.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const payWithPaypal = async () => {
+    if (!selectedPlanId) { toast.error('Please select a plan first.'); return; }
+    setBusy(true);
+    try {
+      const res = await startPaypalCheckout(selectedPlanId, cycle, '/admin/settings?tab=billing');
+      if (res?.free) {
+        toast.success('Plan activated! Your subscription is now active.');
+        if (res.billing) setBilling(res.billing);
+        await refreshAccessProfile();
+        await load();
+        return;
+      }
+      if (res?.url) { window.location.href = res.url; return; }
+      toast.error('Could not start PayPal checkout.');
+    } catch (e) {
+      toast.error(errMsg(e, 'Could not start PayPal checkout.'));
     } finally {
       setBusy(false);
     }
@@ -216,45 +278,65 @@ export default function BillingSettings() {
           </div>
         )}
 
-        {isAdmin ? (
-          plans.length > 0 && (
-            <div className="mt-5 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row">
-              <div className="text-sm text-slate-600">
-                {selectedPlan ? (
-                  (() => {
-                    const bd = breakdown(selectedPrice);
-                    return (
-                      <div className="space-y-1">
-                        <div>
-                          {selectedPlan.plan_name} —{' '}
-                          <span className="font-bold text-teal-700">
-                            {fmt(selectedPrice)} / {cycle === 'annual' ? 'year' : 'month'}
-                          </span>
-                        </div>
-                        {bd.taxEnabled && bd.taxRate > 0 && (
-                          <div className="text-xs text-slate-500">
-                            Subtotal {fmt(bd.subtotal)} + {bd.taxLabel} ({bd.taxRate}%) {fmt(bd.tax)} ={' '}
-                            <span className="font-semibold text-slate-700">{fmt(bd.total)}</span>
-                          </div>
-                        )}
+        {isAdmin && plans.length > 0 && (
+          <div className="mt-5 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row">
+            <div className="text-sm text-slate-600">
+              {selectedPlan ? (
+                (() => {
+                  const bd = breakdown(selectedPrice);
+                  return (
+                    <div className="space-y-1">
+                      <div>
+                        {selectedPlan.plan_name} —{' '}
+                        <span className="font-bold text-teal-700">
+                          {fmt(selectedPrice)} / {cycle === 'annual' ? 'year' : 'month'}
+                        </span>
                       </div>
-                    );
-                  })()
-                ) : (
-                  'Select a plan'
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={pay}
-                disabled={busy || !selectedPlan}
-                className="rounded-lg bg-teal-700 px-6 py-2.5 font-semibold text-white transition-colors hover:bg-teal-800 disabled:opacity-50"
-              >
-                {busy ? 'Redirecting…' : isPaid ? 'Switch plan & pay' : 'Pay now'}
-              </button>
+                      {bd.taxEnabled && bd.taxRate > 0 && (
+                        <div className="text-xs text-slate-500">
+                          Subtotal {fmt(bd.subtotal)} + {bd.taxLabel} ({bd.taxRate}%) {fmt(bd.tax)} ={' '}
+                          <span className="font-semibold text-slate-700">{fmt(bd.total)}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
+              ) : (
+                'Select a plan'
+              )}
             </div>
-          )
-        ) : (
+
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {hasStripe && (
+                <button
+                  type="button"
+                  onClick={payWithStripe}
+                  disabled={busy || !selectedPlan}
+                  className="rounded-lg bg-teal-700 px-6 py-2.5 font-semibold text-white transition-colors hover:bg-teal-800 disabled:opacity-50"
+                >
+                  {busy ? 'Redirecting…' : isPaid ? 'Switch plan & pay' : 'Pay with Stripe'}
+                </button>
+              )}
+              {hasPaypal && (
+                <button
+                  type="button"
+                  onClick={payWithPaypal}
+                  disabled={busy || !selectedPlan}
+                  className="rounded-lg bg-[#003087] px-6 py-2.5 font-semibold text-white transition-colors hover:bg-[#001f5b] disabled:opacity-50"
+                >
+                  {busy ? 'Redirecting…' : 'Pay with PayPal'}
+                </button>
+              )}
+              {!hasAnyGateway && (
+                <span className="text-sm text-slate-400">
+                  Contact your platform admin to enable a payment gateway.
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!isAdmin && (
           <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
             Only your organization admin can make payments.
           </p>
