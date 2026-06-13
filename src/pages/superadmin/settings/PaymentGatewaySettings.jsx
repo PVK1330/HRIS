@@ -7,7 +7,36 @@ import paypalLogo from '../../../assets/payment-gateway-01.svg'
 import stripeLogo from '../../../assets/payment-gateway-02.svg'
 
 const DEFAULT_STRIPE = { enabled: false, publicKey: '', secretKey: '', webhookSecret: '' }
-const DEFAULT_PAYPAL = { enabled: false, clientId: '', clientSecret: '', mode: 'sandbox' }
+const DEFAULT_PAYPAL = { enabled: false, clientId: '', clientSecret: '', mode: 'sandbox', paypalCurrency: 'USD' }
+
+// All currencies supported by PayPal Orders v2
+// Source: https://developer.paypal.com/reference/currency-codes/
+const PAYPAL_CURRENCIES = [
+  { value: 'USD', label: 'USD – US Dollar' },
+  { value: 'EUR', label: 'EUR – Euro' },
+  { value: 'GBP', label: 'GBP – British Pound' },
+  { value: 'AUD', label: 'AUD – Australian Dollar' },
+  { value: 'BRL', label: 'BRL – Brazilian Real' },
+  { value: 'CAD', label: 'CAD – Canadian Dollar' },
+  { value: 'CNY', label: 'CNY – Chinese Yuan' },
+  { value: 'CZK', label: 'CZK – Czech Koruna' },
+  { value: 'DKK', label: 'DKK – Danish Krone' },
+  { value: 'HKD', label: 'HKD – Hong Kong Dollar' },
+  { value: 'HUF', label: 'HUF – Hungarian Forint' },
+  { value: 'ILS', label: 'ILS – Israeli New Shekel' },
+  { value: 'JPY', label: 'JPY – Japanese Yen' },
+  { value: 'MYR', label: 'MYR – Malaysian Ringgit' },
+  { value: 'MXN', label: 'MXN – Mexican Peso' },
+  { value: 'TWD', label: 'TWD – Taiwan New Dollar' },
+  { value: 'NZD', label: 'NZD – New Zealand Dollar' },
+  { value: 'NOK', label: 'NOK – Norwegian Krone' },
+  { value: 'PHP', label: 'PHP – Philippine Peso' },
+  { value: 'PLN', label: 'PLN – Polish Zloty' },
+  { value: 'SGD', label: 'SGD – Singapore Dollar' },
+  { value: 'SEK', label: 'SEK – Swedish Krona' },
+  { value: 'CHF', label: 'CHF – Swiss Franc' },
+  { value: 'THB', label: 'THB – Thai Baht' },
+]
 
 const baseInput = "block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#0F766E] sm:text-sm sm:leading-6"
 
@@ -93,6 +122,7 @@ export default function PaymentGatewaySettings() {
         clientId: data.paypal.clientId || '',
         clientSecret: data.paypal.clientSecret || '',
         mode: data.paypal.mode || 'sandbox',
+        paypalCurrency: data.paypal.paypalCurrency || 'USD',
       } : { ...DEFAULT_PAYPAL }
 
       setStripe(st)
@@ -220,6 +250,20 @@ export default function PaymentGatewaySettings() {
                     <option value="sandbox">Sandbox (Testing)</option>
                     <option value="live">Production (Live)</option>
                   </select>
+                </Field>
+                <Field label="Checkout Currency">
+                  <select
+                    value={paypal.paypalCurrency || 'USD'}
+                    onChange={(e) => setPaypal({ ...paypal, paypalCurrency: e.target.value })}
+                    className={baseInput}
+                  >
+                    {PAYPAL_CURRENCIES.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Currency used for PayPal payments. PayPal does not support AED or INR — choose USD or another supported currency.
+                  </p>
                 </Field>
                 <button
                   type="button"

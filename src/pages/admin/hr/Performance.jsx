@@ -336,10 +336,10 @@ export default function Performance() {
     }
   }, [q, isHR])
 
-  // Fetch performance cycles when export modal opens
+  // Clear export cycles when modal closes
   useEffect(() => {
-    if (exportModalOpen && exportCycles.length === 0) {
-      fetchPerformanceCycles()
+    if (!exportModalOpen) {
+      setExportCycles([])
     }
   }, [exportModalOpen])
 
@@ -433,17 +433,22 @@ export default function Performance() {
   }
 
   /**
-   * Fetch performance cycles for export modal
+   * Fetch performance cycles that a specific employee has assessments in
    */
-  const fetchPerformanceCycles = async () => {
+  const fetchEmployeePerformanceCycles = async (employeeId) => {
+    if (!employeeId) {
+      setExportCycles([])
+      return
+    }
     try {
       setExportCyclesLoading(true)
-      const response = await performanceAssessmentAPI.getPerformanceCycles()
+      const response = await performanceAssessmentAPI.getEmployeePerformanceCycles(employeeId)
       if (response.success && response.data) {
         setExportCycles(response.data)
       }
     } catch (error) {
-      console.error('Error fetching performance cycles:', error)
+      console.error('Error fetching employee performance cycles:', error)
+      setExportCycles([])
     } finally {
       setExportCyclesLoading(false)
     }
@@ -940,11 +945,12 @@ export default function Performance() {
       )
 
       // Handle file download
+      const extMap = { excel: 'xlsx', pdf: 'pdf', csv: 'csv' }
+      const ext = extMap[exportFilters.exportType] || exportFilters.exportType
       const url = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement('a')
       link.href = url
-      const filename = `employee-performance-report.${exportFilters.exportType}`
-      link.setAttribute('download', filename)
+      link.setAttribute('download', `employee-performance-report.${ext}`)
       document.body.appendChild(link)
       link.click()
       link.parentNode.removeChild(link)
@@ -961,7 +967,8 @@ export default function Performance() {
       })
     } catch (error) {
       console.error('Error exporting data:', error)
-      alert(error.response?.data?.message || 'Error exporting data.')
+      const msg = error.response?.data?.message || error.message || 'Export failed. Please try again.'
+      alert(msg)
     } finally {
       setExportLoading(false)
     }
@@ -2548,8 +2555,12 @@ export default function Performance() {
                 setExportFilters(prev => ({
                   ...prev,
                   employeeId: empId,
-                  departmentId: emp ? (emp.department_id || emp.departmentId || '') : ''
+                  departmentId: emp ? (emp.department_id || emp.departmentId || '') : '',
+                  cycleId: '',
+                  startDate: '',
+                  endDate: ''
                 }));
+                fetchEmployeePerformanceCycles(empId);
               }}
               className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20"
             >
@@ -2571,12 +2582,16 @@ export default function Performance() {
                 startDate: '',
                 endDate: ''
               }))}
-              disabled={exportFilters.startDate !== '' || exportFilters.endDate !== ''}
-              className={`h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 ${(exportFilters.startDate !== '' || exportFilters.endDate !== '') ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
+              disabled={!exportFilters.employeeId || exportFilters.startDate !== '' || exportFilters.endDate !== ''}
+              className={`h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 ${(!exportFilters.employeeId || exportFilters.startDate !== '' || exportFilters.endDate !== '') ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
             >
               <option value="">-- Select Cycle --</option>
               {exportCyclesLoading ? (
                 <option disabled>Loading cycles...</option>
+              ) : !exportFilters.employeeId ? (
+                <option disabled>Select an employee first</option>
+              ) : exportCycles.length === 0 ? (
+                <option disabled>No assessments found for this employee</option>
               ) : (
                 exportCycles.map(cycle => (
                   <option key={cycle.id} value={cycle.id}>{cycle.cycleName}</option>
@@ -2597,8 +2612,8 @@ export default function Performance() {
                   startDate: e.target.value,
                   cycleId: ''
                 }))}
-                disabled={exportFilters.cycleId !== ''}
-                className={`h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 ${exportFilters.cycleId !== '' ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
+                disabled={!exportFilters.employeeId || exportFilters.cycleId !== ''}
+                className={`h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 ${(!exportFilters.employeeId || exportFilters.cycleId !== '') ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
               />
             </div>
             <div>
@@ -2611,8 +2626,8 @@ export default function Performance() {
                   endDate: e.target.value,
                   cycleId: ''
                 }))}
-                disabled={exportFilters.cycleId !== ''}
-                className={`h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 ${exportFilters.cycleId !== '' ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
+                disabled={!exportFilters.employeeId || exportFilters.cycleId !== ''}
+                className={`h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20 ${(!exportFilters.employeeId || exportFilters.cycleId !== '') ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
               />
             </div>
           </div>
@@ -2626,6 +2641,7 @@ export default function Performance() {
               className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]/20"
             >
               <option value="pdf">PDF</option>
+              <option value="excel">Excel (.xlsx)</option>
               <option value="csv">CSV</option>
             </select>
           </div>
