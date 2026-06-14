@@ -6,6 +6,7 @@ import {
 } from 'react-icons/hi2'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { useAuth } from '../../../context/AuthContext.jsx'
+import { useTimezone } from '../../../context/TimezoneContext.jsx'
 import {
   listConversations, openConversation,
   getMessages, sendMessageRest, listMessageContacts, sendMessageAttachment,
@@ -35,13 +36,17 @@ function apiErrorMessage(err, fallback) {
   return msg || fallback
 }
 
-function formatTime(ts) {
-  if (!ts) return ''
-  const d = new Date(ts)
-  const now = new Date()
-  const isToday = d.toDateString() === now.toDateString()
-  if (isToday) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+function makeFormatTime(fmtTime, iana) {
+  return function formatTime(ts) {
+    if (!ts) return ''
+    const d = ts instanceof Date ? ts : new Date(ts)
+    if (isNaN(d.getTime())) return ''
+    const tz = iana || 'UTC'
+    const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' })
+    const isToday = dayFmt.format(d) === dayFmt.format(new Date())
+    if (isToday) return fmtTime(d)
+    return new Intl.DateTimeFormat('en-GB', { timeZone: tz, day: '2-digit', month: 'short' }).format(d)
+  }
 }
 
 // A stable, unique client temp id for an optimistic message. Used as both the
@@ -83,6 +88,8 @@ function replaceOptimisticMessage(prev, optimisticId, msg) {
 
 export default function Messages() {
   const { user } = useAuth()
+  const { formatTime: fmtTime, iana } = useTimezone()
+  const formatTime = useMemo(() => makeFormatTime(fmtTime, iana), [fmtTime, iana])
   const { socket, connected } = useSocket()
   const socketRef = useRef(null)
   socketRef.current = socket

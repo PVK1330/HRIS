@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTimezone } from '../../../../context/TimezoneContext.jsx'
 import { useTenantAdminSettings } from '../../../../hooks/useTenantAdminSettings'
 import { getTenantLogoAbsoluteUrl } from '../../../../services/tenantAdminSettingsService'
 import {
@@ -45,6 +46,7 @@ function buildDraftFromSettings(s) {
 }
 
 export default function GeneralSection({ registerToolbar }) {
+  const { reload: reloadTimezone } = useTimezone()
   const { settings, loading, saving, uploadingLogo, error, save, uploadLogo } =
     useTenantAdminSettings()
   const [draft, setDraft] = useState(null)
@@ -101,6 +103,7 @@ export default function GeneralSection({ registerToolbar }) {
         setBaseline(JSON.stringify(d))
       }
       setBanner({ type: 'ok', text: 'Settings saved successfully.' })
+      reloadTimezone()
     } catch {
       /* surfaced via hook error */
     }
@@ -270,30 +273,6 @@ export default function GeneralSection({ registerToolbar }) {
         </FieldRow>
       </SectionCard>
 
-      <SectionCard title="Employee Defaults">
-        <FieldRow label="Default Probation Period">
-          <SelectInput
-            options={PROBATION_OPTIONS}
-            value={draft.defaultProbationPeriod}
-            onChange={(e) => setDraft((p) => ({ ...p, defaultProbationPeriod: e.target.value }))}
-          />
-        </FieldRow>
-        <FieldRow label="Default Notice Period">
-          <SelectInput
-            options={NOTICE_OPTIONS}
-            value={draft.defaultNoticePeriod}
-            onChange={(e) => setDraft((p) => ({ ...p, defaultNoticePeriod: e.target.value }))}
-          />
-        </FieldRow>
-        <FieldRow label="Auto-assign Policies">
-          <div className="flex h-10 items-center">
-            <Toggle
-              checked={draft.autoAssignPolicies}
-              onChange={(v) => setDraft((p) => ({ ...p, autoAssignPolicies: v }))}
-            />
-          </div>
-        </FieldRow>
-      </SectionCard>
     </SettingsSection>
   )
 }

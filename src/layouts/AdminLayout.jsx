@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { useTimezone } from "../context/TimezoneContext.jsx";
 import {
   HiArrowRightOnRectangle,
   HiBars3,
@@ -350,6 +351,7 @@ function normalizeFeatureCode(code) {
 
 export default function AdminLayout() {
   const { user, logout, hasModule, hasFeatureAccess, billing } = useAuth();
+  const { orgTimezone } = useTimezone();
   const showTrialBanner =
     billing?.trial_active && billing?.days_left != null && billing.days_left <= 7;
   const location = useLocation();
@@ -521,6 +523,12 @@ export default function AdminLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            {orgTimezone && orgTimezone !== 'UTC' && (
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                <HiClock className="h-3.5 w-3.5 shrink-0" />
+                {orgTimezone.split(' - ')[1] || orgTimezone}
+              </span>
+            )}
             <NotificationDropdown />
             <Link
               to="/admin/settings"
