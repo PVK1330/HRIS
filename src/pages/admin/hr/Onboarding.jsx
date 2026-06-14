@@ -983,6 +983,27 @@ export default function Onboarding() {
         }
         size="lg"
         showClose
+        subHeader={
+          <div className="flex border-b border-slate-200 px-4 sm:px-5">
+            {[
+              { key: 'create', label: 'Step 1 — Offer' },
+              { key: 'status', label: 'Step 2 — Signed offer' },
+              { key: 'documents', label: 'Step 3 — Documents' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setOnboardingMode(key)}
+                className={`flex-1 pt-2 pb-3 text-sm font-semibold text-center border-b-2 transition-all ${onboardingMode === key
+                  ? 'border-[#0F766E] text-[#0F766E]'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        }
         stickyFooter={
           onboardingMode === 'create' ? (
             <div className="flex items-center justify-end gap-3">
@@ -1028,27 +1049,6 @@ export default function Onboarding() {
           ) : null
         }
       >
-        {/* Mode switcher tabs */}
-        <div className="sticky top-0 z-10 shrink-0 flex border-b border-slate-200 bg-white -mx-4 sm:-mx-5 px-4 sm:px-5 mb-6">
-          {[
-            { key: 'create', label: 'Step 1 — Offer' },
-            { key: 'status', label: 'Step 2 — Signed offer' },
-            { key: 'documents', label: 'Step 3 — Documents' },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setOnboardingMode(key)}
-              className={`flex-1 pb-3 text-sm font-semibold text-center border-b-2 transition-all ${onboardingMode === key
-                ? 'border-[#0F766E] text-[#0F766E]'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
         {/* â”€â”€ TAB 1: ONBOARDING (CREATE NEW HIRE) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {onboardingMode === 'create' ? (
           <form id="onboarding-create-form" className="p-2" onSubmit={handleCreateAndStartOnboarding}>

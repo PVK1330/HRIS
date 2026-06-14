@@ -27,6 +27,7 @@ export function Modal({
   title,
   description,
   header,
+  subHeader,
   children,
   footer,
   stickyFooter,
@@ -171,6 +172,10 @@ export function Modal({
               </div>
             )}
           </div>
+
+          {subHeader && (
+            <div className="shrink-0">{subHeader}</div>
+          )}
 
           <div className={`flex-1 px-4 sm:px-5 py-2 sm:py-1 custom-scrollbar ${bodyClassName.includes('overflow-') ? bodyClassName : 'overflow-y-auto ' + bodyClassName}`}>
             <div className="pb-6 sm:pb-8">{children}</div>

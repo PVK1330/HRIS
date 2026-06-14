@@ -193,7 +193,7 @@ export default function SuperAdminLayout() {
           <div className="flex items-center gap-2 sm:gap-3">
             <NotificationDropdown />
             <Link to="/superadmin/profile" className="hidden items-center gap-2 sm:flex group">
-              <Avatar name={user?.name} size="sm" className="group-hover:ring-2 group-hover:ring-indigo-600 transition-all" />
+              <Avatar name={user?.name} src={user?.profile_image_url} size="sm" className="group-hover:ring-2 group-hover:ring-indigo-600 transition-all" />
               <div className="min-w-0 text-right">
                 <div className="truncate text-sm font-semibold text-text-primary group-hover:text-indigo-600 transition-colors">{user?.name}</div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-primary opacity-60">

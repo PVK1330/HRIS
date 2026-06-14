@@ -270,32 +270,6 @@ export default function GeneralSection({ registerToolbar }) {
         </FieldRow>
       </SectionCard>
 
-      <SectionCard title="Calendar & Holidays">
-        <FieldRow label="Default Work Calendar">
-          <SelectInput
-            options={WORK_CALENDAR_OPTIONS}
-            value={draft.defaultWorkCalendar}
-            onChange={(e) => setDraft((p) => ({ ...p, defaultWorkCalendar: e.target.value }))}
-          />
-        </FieldRow>
-        <FieldRow label="Regional Holidays">
-          <div className="flex h-10 items-center">
-            <Toggle
-              checked={draft.regionalHolidaysEnabled}
-              onChange={(v) => setDraft((p) => ({ ...p, regionalHolidaysEnabled: v }))}
-            />
-          </div>
-        </FieldRow>
-        <FieldRow label="Multiple Calendars">
-          <div className="flex h-10 items-center">
-            <Toggle
-              checked={draft.multipleCalendarsEnabled}
-              onChange={(v) => setDraft((p) => ({ ...p, multipleCalendarsEnabled: v }))}
-            />
-          </div>
-        </FieldRow>
-      </SectionCard>
-
       <SectionCard title="Employee Defaults">
         <FieldRow label="Default Probation Period">
           <SelectInput

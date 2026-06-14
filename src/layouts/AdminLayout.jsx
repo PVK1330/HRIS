@@ -521,26 +521,6 @@ export default function AdminLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Role badge */}
-            {user?.role === "admin" && (
-              <div className="flex items-center gap-2 rounded-lg bg-[#F9FAFB] px-3 py-1.5 text-[11px] font-bold text-[#0E9F6E] ring-1 ring-[#E5E7EB]">
-                <div className="h-1.5 w-1.5 rounded-full bg-[#0E9F6E]" />
-                <span>HR Admin</span>
-              </div>
-            )}
-
-            <Link
-              to="/admin/security"
-              title="My Account — profile, password & two-factor authentication"
-              aria-label="My account"
-              className={`rounded-lg p-2 transition-all ${
-                location.pathname === "/admin/security"
-                  ? "bg-[#0E9F6E]/10 text-[#0E9F6E]"
-                  : "text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#0E9F6E]"
-              }`}
-            >
-              <HiShieldCheck className="h-5 w-5" />
-            </Link>
             <NotificationDropdown />
             <Link
               to="/admin/settings"
@@ -555,11 +535,12 @@ export default function AdminLayout() {
               <Settings className="h-4 w-4" />
             </Link>
             <Link
-              to="/admin/employee-profile"
+              to="/admin/account"
               className="hidden items-center gap-3 sm:flex group rounded-lg border border-[#E5E7EB] px-2.5 py-1 hover:bg-[#F9FAFB] transition-all duration-300"
             >
               <Avatar
                 name={user?.name}
+                src={user?.profile_image_url}
                 size="sm"
                 className="ring-2 ring-white shadow-sm group-hover:ring-[#E5E7EB] transition-all"
               />
@@ -567,8 +548,8 @@ export default function AdminLayout() {
                 <div className="truncate text-sm font-bold text-[#1C242E] group-hover:text-[#0E9F6E] transition-colors leading-none">
                   {user?.name}
                 </div>
-                <div className="text-[9px] font-black uppercase tracking-[0.1em] text-[#6B7280] mt-1">
-                  SECURE ACCESS
+                <div className="text-[9px] font-black uppercase tracking-[0.1em] text-[#0E9F6E] mt-1">
+                  {String(user?.role || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'User'}
                 </div>
               </div>
             </Link>

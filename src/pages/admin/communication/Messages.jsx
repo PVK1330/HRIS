@@ -132,6 +132,7 @@ export default function Messages() {
           isPlaceholder: false,
           job_title: emp.job_title || existingConv.job_title || existingConv.other_role,
           other_name: emp.full_name || existingConv.other_name,
+          other_profile_image_url: emp.profile_image_url || existingConv.other_profile_image_url || null,
           department: emp.department || existingConv.department,
           online: isOnline,
         })
@@ -142,6 +143,7 @@ export default function Messages() {
           isPlaceholder: true,
           other_id: emp.id,
           other_name: emp.full_name,
+          other_profile_image_url: emp.profile_image_url || null,
           job_title: emp.job_title,
           department: emp.department,
           last_message: 'No messages yet — Click to start chatting',
@@ -543,7 +545,7 @@ export default function Messages() {
             <button key={conv.id} onClick={() => conv.isPlaceholder ? handleStartChat(conv) : setActiveConvId(conv.id)}
               className={`group flex w-full items-center gap-3 rounded-xl p-3 transition-all ${activeConvId === conv.id ? 'bg-white shadow-md ring-1 ring-slate-200/50' : 'hover:bg-white/60'}`}>
               <div className="relative shrink-0">
-                <Avatar name={conv.other_name} size="md" />
+                <Avatar name={conv.other_name} src={conv.other_profile_image_url} size="md" />
                 {conv.online && (
                   <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
                 )}
@@ -583,7 +585,7 @@ export default function Messages() {
             <header className="flex h-16 items-center justify-between border-b border-slate-100 px-6 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <Avatar name={activeConv.other_name} size="sm" />
+                  <Avatar name={activeConv.other_name} src={activeConv.other_profile_image_url} size="sm" />
                   {activeConv.online && (
                     <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
                   )}
