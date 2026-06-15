@@ -191,6 +191,21 @@ export const superadminService = {
   getAuditLogs() {
     return api.get(SUPERADMIN_ENDPOINTS.AUDIT_LOGS)
   },
+  exportAuditLogs(format = 'excel') {
+    return api.get('/superadmin/audit-logs/export', { params: { format }, responseType: 'blob' })
+  },
+  exportAdminUsers(format = 'excel') {
+    return api.get('/superadmin/admin-users/export', { params: { format }, responseType: 'blob' })
+  },
+  exportAnnouncements(format = 'excel') {
+    return api.get('/superadmin/announcements/export', { params: { format }, responseType: 'blob' })
+  },
+  exportSupportTickets(format = 'excel') {
+    return api.get('/superadmin/support-tickets/export', { params: { format }, responseType: 'blob' })
+  },
+  exportTenants(format = 'excel', filters = {}) {
+    return api.get('/tenants/export', { params: { format, ...filters }, responseType: 'blob' })
+  },
 
   // Features
   getFeatures(params) {
@@ -253,5 +268,8 @@ export const superadminService = {
   },
   updatePaymentStatus(id, status) {
     return api.patch(SUPERADMIN_ENDPOINTS.PAYMENT_STATUS(id), { status })
-  }
+  },
+  exportPayments(format = 'excel', filters = {}) {
+    return api.get('/superadmin/payments/export', { params: { format, ...filters }, responseType: 'blob' })
+  },
 }

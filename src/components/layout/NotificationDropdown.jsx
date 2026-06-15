@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useTimezone } from '../../context/TimezoneContext.jsx';
 // Socket is managed by useSocket hook — no direct io() import needed
 import {
   HiBell,
@@ -25,6 +26,7 @@ function isNotificationUnread(n) {
 export default function NotificationDropdown() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatDateTime } = useTimezone();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
@@ -131,7 +133,7 @@ export default function NotificationDropdown() {
           time:
             n.time ||
             (n.createdAt || n.created_at
-              ? `${new Date(n.createdAt ?? n.created_at).toLocaleDateString()} ${new Date(n.createdAt ?? n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              ? formatDateTime(n.createdAt ?? n.created_at)
               : ''),
         };
 

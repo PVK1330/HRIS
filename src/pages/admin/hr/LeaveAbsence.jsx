@@ -102,17 +102,19 @@ export default function LeaveAbsence() {
   const [currentPage, setCurrentPage] = useState(1);
   const [balancesPage, setBalancesPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [totalRequests, setTotalRequests] = useState(0);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const data = await listLeave({ year, status: statusF, department: dept, search, leaveType: leaveTypeF });
+      const data = await listLeave({ year, status: statusF, department: dept, search, leaveType: leaveTypeF, page: currentPage, limit: pageSize });
       setRequests(data.requests || []);
+      setTotalRequests(data.total ?? 0);
       setStats(data.stats || null);
     } catch (err) {
       setError(err?.message || 'Failed to load leave requests');
     } finally { setLoading(false); }
-  }, [year, statusF, dept, search, leaveTypeF]);
+  }, [year, statusF, dept, search, leaveTypeF, currentPage, pageSize]);
 
   const fetchBalances = useCallback(async () => {
     setLoadingBal(true);
@@ -505,12 +507,13 @@ export default function LeaveAbsence() {
           </div>
         </div>
 
-        <Table 
-          columns={requestCols} 
-          data={requests} 
-          pageSize={pageSize} 
+        <Table
+          columns={requestCols}
+          data={requests}
+          pageSize={pageSize}
           loading={loading}
           square
+          totalCount={totalRequests}
           currentPage={currentPage - 1}
           onPageChange={(idx) => setCurrentPage(idx + 1)}
         />

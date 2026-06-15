@@ -276,7 +276,8 @@ export default function AccountSettings() {
   return (
     <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
       <div className="space-y-4">
-        
+
+        {/* Account Policies section hidden
         <div className="grid grid-cols-1 gap-x-8 gap-y-4">
           <form
             onSubmit={handleSave}
@@ -333,6 +334,7 @@ export default function AccountSettings() {
             </div>
           </form>
         </div>
+        */}
 
         <div className="grid grid-cols-1 gap-x-8 gap-y-4">
           <div className="px-4 sm:px-0">

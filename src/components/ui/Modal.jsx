@@ -27,8 +27,10 @@ export function Modal({
   title,
   description,
   header,
+  subHeader,
   children,
   footer,
+  stickyFooter,
   size = 'md',
   bodyClassName = '',
   showClose = true,
@@ -171,9 +173,18 @@ export function Modal({
             )}
           </div>
 
+          {subHeader && (
+            <div className="shrink-0">{subHeader}</div>
+          )}
+
           <div className={`flex-1 px-4 sm:px-5 py-2 sm:py-1 custom-scrollbar ${bodyClassName.includes('overflow-') ? bodyClassName : 'overflow-y-auto ' + bodyClassName}`}>
             <div className="pb-6 sm:pb-8">{children}</div>
           </div>
+          {stickyFooter && (
+            <div className="shrink-0 border-t border-slate-200 bg-white px-4 sm:px-5 py-3 sm:py-4">
+              {stickyFooter}
+            </div>
+          )}
           {footer && (
             <div className="rounded-b-lg border-t border-slate-200 bg-slate-50 px-3 sm:px-4 py-2 sm:py-3 sm:flex sm:flex-row-reverse sm:px-6">
               {footer}

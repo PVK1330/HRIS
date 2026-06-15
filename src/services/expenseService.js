@@ -51,11 +51,21 @@ export async function setApprovalLevels(levels) {
   return Array.isArray(data.data) ? data.data : [];
 }
 
-// Excel export (EXP-10) — opens download in new tab
-export function exportExpenses(params = {}) {
-  const base = api.defaults.baseURL || '';
-  const qs = new URLSearchParams(params).toString();
-  window.open(`${base}/expenses/export${qs ? `?${qs}` : ''}`, '_blank');
+function triggerBlobDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// Excel export (EXP-10)
+export async function exportExpenses(params = {}) {
+  const res = await api.get('/expenses/export', { params, responseType: 'blob' });
+  triggerBlobDownload(res.data, 'expenses_export.xlsx');
 }
 
 // Excel bulk import (EXP-30)
@@ -66,7 +76,7 @@ export async function importExpenses(formData) {
   return data.data;
 }
 
-export function downloadImportTemplate() {
-  const base = api.defaults.baseURL || '';
-  window.open(`${base}/expenses/import/template`, '_blank');
+export async function downloadImportTemplate() {
+  const res = await api.get('/expenses/import/template', { responseType: 'blob' });
+  triggerBlobDownload(res.data, 'expense_import_template.xlsx');
 }

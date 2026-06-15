@@ -293,7 +293,7 @@ export default function EmployeeProfile() {
             }
             break
           case 'assets':
-            if (!assets) setAssets(await getAssets(selectedId))
+            setAssets(await getAssets(selectedId))
             break
           case 'visa': {
             if (!visaRecords) {

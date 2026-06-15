@@ -22,6 +22,7 @@ import {
 } from 'react-icons/hi2'
 import { Input } from '../../../components/ui/Input.jsx'
 import { superadminService } from '../../../services/superadminService'
+import { ExportDropdown } from '../../../components/ui/ExportDropdown.jsx'
 
 const AUDIENCE_OPTIONS = ['All Organisations', 'Trial Only', 'Enterprise Only']
 const TYPE_OPTIONS = ['Info', 'Warning', 'Critical']
@@ -279,6 +280,12 @@ export default function Announcements() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <ExportDropdown
+            onExcel={() => superadminService.exportAnnouncements('excel')}
+            onPDF={() => superadminService.exportAnnouncements('pdf')}
+            excelFilename="announcements.xlsx"
+            pdfFilename="announcements.pdf"
+          />
           <button type="button" onClick={() => setShowCreateModal(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
             <HiSparkles className="h-4 w-4" /> Add Announcement
           </button>

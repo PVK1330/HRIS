@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTimezone } from '../../../../context/TimezoneContext.jsx'
 import { useTenantAdminSettings } from '../../../../hooks/useTenantAdminSettings'
 import { getTenantLogoAbsoluteUrl } from '../../../../services/tenantAdminSettingsService'
 import {
@@ -45,6 +46,7 @@ function buildDraftFromSettings(s) {
 }
 
 export default function GeneralSection({ registerToolbar }) {
+  const { reload: reloadTimezone } = useTimezone()
   const { settings, loading, saving, uploadingLogo, error, save, uploadLogo } =
     useTenantAdminSettings()
   const [draft, setDraft] = useState(null)
@@ -100,7 +102,8 @@ export default function GeneralSection({ registerToolbar }) {
         setDraft(d)
         setBaseline(JSON.stringify(d))
       }
-      setBanner({ type: 'ok', text: 'Administrative parameters synchronized.' })
+      setBanner({ type: 'ok', text: 'Settings saved successfully.' })
+      reloadTimezone()
     } catch {
       /* surfaced via hook error */
     }
@@ -143,7 +146,7 @@ export default function GeneralSection({ registerToolbar }) {
           return next
         })
       }
-      setBanner({ type: 'ok', text: 'Asset manifest updated: Brand identity synchronized.' })
+      setBanner({ type: 'ok', text: 'Company logo updated successfully.' })
     } catch {
       /* hook sets error */
     }
@@ -165,27 +168,26 @@ export default function GeneralSection({ registerToolbar }) {
         </SettingsBanner>
       )}
 
-      <SectionCard title="Company profile">
-        <FieldRow label="Organisation Name">
+      <SectionCard title="Company Profile">
+        <FieldRow label="Company Name">
           <TextInput
+            placeholder="Enter company name"
             value={draft.companyName}
             onChange={(e) => setDraft((p) => ({ ...p, companyName: e.target.value }))}
-            className="font-medium"
           />
         </FieldRow>
-        <FieldRow label="Identity Asset (Logo)" hint="PNG, JPG • Max 2MB" align="left">
+
+        <FieldRow label="Company Logo" hint="PNG, JPG · Max 2 MB">
           <div className="flex flex-wrap items-center gap-3">
             {draft.logoUrl ? (
-              <div className="group relative">
-                <img
-                  src={getTenantLogoAbsoluteUrl(draft.logoUrl)}
-                  alt="Company logo"
-                  className="h-12 w-32 border border-slate-200 bg-slate-50 object-contain p-1"
-                />
-              </div>
+              <img
+                src={getTenantLogoAbsoluteUrl(draft.logoUrl)}
+                alt="Company logo"
+                className="h-12 w-32 border border-slate-200 bg-slate-50 object-contain p-1"
+              />
             ) : (
               <div className="flex h-12 w-32 items-center justify-center border-2 border-dashed border-slate-100 bg-slate-50/50 text-xs text-slate-400">
-                No Asset
+                No Logo
               </div>
             )}
             <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={onLogoPick} />
@@ -195,51 +197,54 @@ export default function GeneralSection({ registerToolbar }) {
               onClick={() => fileRef.current?.click()}
               className="h-8 rounded-none border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
             >
-              {uploadingLogo ? 'Syncing...' : 'Update Asset'}
+              {uploadingLogo ? 'Uploading...' : 'Change Logo'}
             </button>
           </div>
         </FieldRow>
-        <FieldRow label="Registered Domicile(s)">
+
+        <FieldRow label="Company Address">
           <TextInput
             type="textarea"
             rows={3}
-            placeholder="Primary HQ Address"
+            placeholder="e.g. 123 Main Street, Floor 5, Dubai"
             value={draft.address}
             onChange={(e) => setDraft((p) => ({ ...p, address: e.target.value }))}
-            className="font-medium"
           />
         </FieldRow>
-        <FieldRow label="Communications Hub">
+
+        <FieldRow label="Phone / Contact">
           <TextInput
-            placeholder="+971 …"
+            placeholder="e.g. +971 4 123 4567"
             value={draft.contactDetails}
             onChange={(e) => setDraft((p) => ({ ...p, contactDetails: e.target.value }))}
-            className="font-mono"
           />
         </FieldRow>
-        <FieldRow label="Jurisdiction">
+
+        <FieldRow label="Country">
           <TextInput
-            placeholder="Country"
+            placeholder="e.g. United Arab Emirates"
             value={draft.country}
             onChange={(e) => setDraft((p) => ({ ...p, country: e.target.value }))}
-            className="font-medium"
           />
         </FieldRow>
-        <FieldRow label="Temporal Reference (Timezone)">
+
+        <FieldRow label="Timezone">
           <SelectInput
             options={TIMEZONE_OPTIONS}
             value={draft.timezone}
             onChange={(e) => setDraft((p) => ({ ...p, timezone: e.target.value }))}
           />
         </FieldRow>
-        <FieldRow label="Fiscal Cycle Inception">
+
+        <FieldRow label="Financial Year Start">
           <SelectInput
             options={FINANCIAL_YEAR_OPTIONS}
             value={draft.financialYearStart}
             onChange={(e) => setDraft((p) => ({ ...p, financialYearStart: e.target.value }))}
           />
         </FieldRow>
-        <FieldRow label="Operational Week (Working Days)">
+
+        <FieldRow label="Working Days">
           <div className="flex flex-wrap justify-end gap-1.5">
             {WORKING_DAY_SLOTS.map((slot, i) => (
               <button
@@ -247,77 +252,27 @@ export default function GeneralSection({ registerToolbar }) {
                 type="button"
                 title={slot.title}
                 onClick={() => toggleWorkingDay(i)}
-                className={`flex h-8 w-8 items-center justify-center rounded-none text-xs font-semibold transition-all border ${draft.workingSelection[i]
+                className={`flex h-8 w-8 items-center justify-center rounded-none text-xs font-semibold transition-all border ${
+                  draft.workingSelection[i]
                     ? 'border-[#0F766E] bg-[#0F766E] text-white shadow-sm'
                     : 'border-slate-100 bg-slate-50 text-slate-400'
-                  }`}
+                }`}
               >
                 {slot.label}
               </button>
             ))}
           </div>
         </FieldRow>
-        <FieldRow label="Distributed Nodes" hint="Comma-separated operational sites">
+
+        <FieldRow label="Office Locations" hint="Comma-separated, e.g. Dubai, London, New York">
           <TextInput
             placeholder="e.g. Dubai, Abu Dhabi, London"
             value={draft.locations}
             onChange={(e) => setDraft((p) => ({ ...p, locations: e.target.value }))}
-            className="font-medium"
           />
         </FieldRow>
       </SectionCard>
 
-      <SectionCard title="Calendar & holidays">
-        <FieldRow label="Baseline Productivity Calendar">
-          <SelectInput
-            options={WORK_CALENDAR_OPTIONS}
-            value={draft.defaultWorkCalendar}
-            onChange={(e) => setDraft((p) => ({ ...p, defaultWorkCalendar: e.target.value }))}
-          />
-        </FieldRow>
-        <FieldRow label="Localized Observances (Regional Holidays)">
-          <div className="flex h-10 items-center">
-            <Toggle
-              checked={draft.regionalHolidaysEnabled}
-              onChange={(v) => setDraft((p) => ({ ...p, regionalHolidaysEnabled: v }))}
-            />
-          </div>
-        </FieldRow>
-        <FieldRow label="Multi-Branch Calendar Architecture">
-          <div className="flex h-10 items-center">
-            <Toggle
-              checked={draft.multipleCalendarsEnabled}
-              onChange={(v) => setDraft((p) => ({ ...p, multipleCalendarsEnabled: v }))}
-            />
-          </div>
-        </FieldRow>
-      </SectionCard>
-
-      <SectionCard title="Talent lifecycle defaults">
-        <FieldRow label="Standard Probation Period">
-          <SelectInput
-            options={PROBATION_OPTIONS}
-            value={draft.defaultProbationPeriod}
-            onChange={(e) => setDraft((p) => ({ ...p, defaultProbationPeriod: e.target.value }))}
-          />
-        </FieldRow>
-        <FieldRow label="Standard Separation Notice">
-          <SelectInput
-            options={NOTICE_OPTIONS}
-            value={draft.defaultNoticePeriod}
-            onChange={(e) => setDraft((p) => ({ ...p, defaultNoticePeriod: e.target.value }))}
-          />
-        </FieldRow>
-        <FieldRow label="Automated Policy Onboarding">
-          <div className="flex h-10 items-center">
-            <Toggle
-              checked={draft.autoAssignPolicies}
-              onChange={(v) => setDraft((p) => ({ ...p, autoAssignPolicies: v }))}
-            />
-          </div>
-        </FieldRow>
-      </SectionCard>
     </SettingsSection>
   )
 }
-

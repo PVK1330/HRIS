@@ -92,15 +92,14 @@ function EmployeeDashboard({ dashboardData, todayLabel, setSelectedAnnouncement 
         <div className="space-y-3">
           {announcements.length > 0 ? (
             announcements.map((ann) => (
-              <button
+              <Link
                 key={ann.id}
-                type="button"
-                onClick={() => setSelectedAnnouncement(ann)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3 text-left hover:bg-white"
+                to="/admin/announcements"
+                className="block w-full rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3 text-left hover:bg-white"
               >
                 <p className="text-xs font-semibold text-slate-900">{ann.title}</p>
                 <p className="mt-1 line-clamp-1 text-xs text-slate-500">{ann.content}</p>
-              </button>
+              </Link>
             ))
           ) : (
             <p className="text-sm text-slate-500">No announcements yet.</p>
@@ -296,18 +295,17 @@ export default function Dashboard() {
             </div>
             <div className="space-y-3">
               {announcements.slice(0, 5).map((ann) => (
-                <button
+                <Link
                   key={ann.id}
-                  type="button"
-                  onClick={() => setSelectedAnnouncement(ann)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3 text-left hover:bg-white"
+                  to="/admin/announcements"
+                  className="block w-full rounded-lg border border-slate-200 bg-slate-50/60 transition-all duration-200 p-3 text-left hover:bg-white"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-slate-900">{ann.title}</p>
                     <Badge label={ann.priority || 'Standard'} color={ann.priority === 'High' ? 'red' : 'blue'} />
                   </div>
                   <p className="mt-1 line-clamp-1 text-xs text-slate-500">{ann.content}</p>
-                </button>
+                </Link>
               ))}
               {!announcements.length ? <p className="text-sm text-slate-500">No announcements available.</p> : null}
             </div>

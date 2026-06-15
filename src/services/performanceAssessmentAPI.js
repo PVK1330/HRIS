@@ -185,15 +185,36 @@ const getPerformanceCycles = async () => {
   return response.data
 }
 
+/** Get performance cycles that a specific employee has assessments in */
+const getEmployeePerformanceCycles = async (employeeId) => {
+  const response = await api.get(`/performance/employee-cycles?employeeId=${employeeId}`)
+  return response.data
+}
+
 /** Export performance data */
 const exportPerformanceData = async (filters, exportType) => {
-  const response = await api.post('/performance/export', {
-    ...filters,
-    exportType
-  }, {
-    responseType: 'blob'
-  })
-  return response
+  try {
+    const response = await api.post('/performance/export', {
+      ...filters,
+      exportType
+    }, {
+      responseType: 'blob'
+    })
+    return response
+  } catch (error) {
+    // Axios returns the error body as a Blob when responseType is 'blob'.
+    // Parse it back to JSON so callers can read error.message normally.
+    if (error.response?.data instanceof Blob) {
+      const text = await error.response.data.text()
+      try {
+        const json = JSON.parse(text)
+        error.response.data = json
+      } catch {
+        error.response.data = { message: text || 'Export failed.' }
+      }
+    }
+    throw error
+  }
 }
 
 export default {
@@ -220,6 +241,7 @@ export default {
   getManagerReviews,
   updateEmployeeProgress,
   getPerformanceCycles,
+  getEmployeePerformanceCycles,
   exportPerformanceData
 }
 

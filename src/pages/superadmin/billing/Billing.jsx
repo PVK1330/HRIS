@@ -7,6 +7,7 @@ import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Input } from '../../../components/ui/Input.jsx'
 import { superadminService } from '../../../services/superadminService.js'
+import { ExportDropdown } from '../../../components/ui/ExportDropdown.jsx'
 import { useCurrency } from '../../../context/CurrencyContext.jsx'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
@@ -295,9 +296,12 @@ export default function Billing() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button type="button" onClick={handleExport} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
-            <HiCloudArrowDown className="h-4 w-4" /> Export History
-          </button>
+          <ExportDropdown
+            onExcel={() => superadminService.exportPayments('excel', { search: searchQuery, status: statusFilter !== 'all' ? statusFilter : '' })}
+            onPDF={() => superadminService.exportPayments('pdf', { search: searchQuery, status: statusFilter !== 'all' ? statusFilter : '' })}
+            excelFilename="payments.xlsx"
+            pdfFilename="payments.pdf"
+          />
           <button type="button" onClick={handleSyncPayments} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
             <HiArrowPath className="h-4 w-4" /> Sync Payments
           </button>

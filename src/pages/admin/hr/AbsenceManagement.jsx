@@ -327,12 +327,10 @@ export default function AbsenceManagement() {
           columns={columns}
           data={absences}
           loading={loading}
-          pagination={{
-            page,
-            limit: 10,
-            total,
-            onPageChange: setPage,
-          }}
+          pageSize={10}
+          totalCount={total}
+          currentPage={page - 1}
+          onPageChange={(idx) => setPage(idx + 1)}
           emptyMessage="No absences found for the selected date."
         />
       </div>

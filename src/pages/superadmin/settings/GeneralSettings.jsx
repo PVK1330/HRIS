@@ -1,5 +1,4 @@
 import { useCallback } from 'react'
-import { Toggle } from '../../../components/ui/Toggle.jsx'
 import useSettings from '../../../hooks/useSettings.js'
 import settingsService from '../../../services/settingsService.js'
 import useSettingsMeta from './useSettingsMeta.js'
@@ -17,7 +16,6 @@ const DEFAULT_STATE = {
   dateFormat: 'd-m-Y',
   dateSelectorFormat: 'dd-mm-yyyy',
   renewalGracePeriod: '3',
-  termsOfService: false,
 }
 
 function fromApi(api) {
@@ -28,8 +26,6 @@ function fromApi(api) {
     dateFormat: api.dateFormat || DEFAULT_STATE.dateFormat,
     dateSelectorFormat: api.dateSelectorFormat || DEFAULT_STATE.dateSelectorFormat,
     renewalGracePeriod: String(api.renewalGracePeriod ?? DEFAULT_STATE.renewalGracePeriod),
-    termsOfService:
-      api.termsOfService === true || String(api.termsOfService).toLowerCase() === 'true',
   }
 }
 
@@ -40,7 +36,6 @@ function toApi(state) {
     dateFormat: state.dateFormat,
     dateSelectorFormat: state.dateSelectorFormat,
     renewalGracePeriod: Number(state.renewalGracePeriod) || 1,
-    termsOfService: !!state.termsOfService,
   }
 }
 
@@ -189,49 +184,6 @@ export default function GeneralSettings() {
                     </select>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700"
-              >
-                Discard
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
-          <form
-            onSubmit={(e) => { e.preventDefault(); save(); }}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
-          >
-            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
-              <h2 className="text-base font-semibold leading-7 text-gray-900">Governance Controls</h2>
-              <p className="mt-1 text-sm leading-6 text-gray-600">
-                Compliance checks during organization onboarding.
-              </p>
-            </div>
-            <div className="px-4 py-6 sm:p-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium leading-6 text-gray-900">Terms of Service</h3>
-                  <p className="mt-1 text-sm text-gray-500">Enforce mandatory agreement to terms during sign up.</p>
-                </div>
-                <Toggle
-                  checked={state.termsOfService}
-                  onChange={(v) => set({ termsOfService: v })}
-                />
               </div>
             </div>
 

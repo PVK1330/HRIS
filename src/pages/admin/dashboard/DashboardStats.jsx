@@ -64,15 +64,7 @@ export default function DashboardStats({ items, loading }) {
 
             <MiniBars points={item.graph} />
 
-            <div className="mt-3 flex items-center justify-between">
-              <span
-                className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ${
-                  isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                }`}
-              >
-                {isPositive ? '+' : ''}
-                {item.change}%
-              </span>
+            <div className="mt-3 flex items-center justify-end">
               <span className="text-xs text-slate-500">{item.subtitle}</span>
             </div>
           </article>

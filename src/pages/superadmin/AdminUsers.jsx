@@ -22,6 +22,7 @@ import { Input } from '../../components/ui/Input.jsx'
 import { Table } from '../../components/ui/Table.jsx'
 import { Modal } from '../../components/ui/Modal.jsx'
 import { superadminService } from '../../services/superadminService'
+import { ExportDropdown } from '../../components/ui/ExportDropdown.jsx'
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
@@ -207,6 +208,12 @@ export default function AdminUsers() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <ExportDropdown
+            onExcel={() => superadminService.exportAdminUsers('excel')}
+            onPDF={() => superadminService.exportAdminUsers('pdf')}
+            excelFilename="admin_users.xlsx"
+            pdfFilename="admin_users.pdf"
+          />
           <button type="button" onClick={() => setShowInviteModal(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
             <HiPlus className="h-4 w-4" /> Add User
           </button>

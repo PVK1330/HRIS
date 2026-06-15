@@ -115,6 +115,7 @@ export const settingsService = {
           clientId: pCred.client_id || '',
           clientSecret: pCred.client_secret || '',
           mode: pCred.mode || 'sandbox',
+          paypalCurrency: pCred.paypal_currency || 'USD',
         },
       },
     }
@@ -142,6 +143,7 @@ export const settingsService = {
             client_id: paypal.clientId || '',
             client_secret: paypal.clientSecret || '',
             mode: paypal.mode || 'sandbox',
+            paypal_currency: (paypal.paypalCurrency || 'USD').toUpperCase(),
           },
         }),
       )
