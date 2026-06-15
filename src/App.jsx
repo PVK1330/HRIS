@@ -1,6 +1,7 @@
 import {Toaster} from "react-hot-toast"
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { CurrencyProvider } from "./context/CurrencyContext.jsx";
+import { TimezoneProvider } from "./context/TimezoneContext.jsx";
 import AppRouter from './routes/AppRouter.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
@@ -10,7 +11,9 @@ export default function App() {
       <ErrorBoundary>
         <AuthProvider>
           <CurrencyProvider>
-            <AppRouter />
+            <TimezoneProvider>
+              <AppRouter />
+            </TimezoneProvider>
           </CurrencyProvider>
         </AuthProvider>
       </ErrorBoundary>

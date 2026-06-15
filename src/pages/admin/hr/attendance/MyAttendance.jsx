@@ -6,6 +6,7 @@ import {
 } from 'react-icons/hi2';
 import { Table } from '../../../../components/ui/Table.jsx';
 import { useAuth } from '../../../../context/AuthContext.jsx';
+import { useTimezone } from '../../../../context/TimezoneContext.jsx';
 import { canPunchAttendance } from '../../../../utils/rbac.js';
 import {
   getMyToday, checkIn, checkOut, getEmployeeAttendance,
@@ -100,6 +101,7 @@ function colLabel(text) {
 
 export default function MyAttendance() {
   const { user, allowedModules } = useAuth();
+  const { formatDate, formatTimeOnly, iana } = useTimezone();
   const employeeId = user?.employeeId || user?.id;
   const canPunch = canPunchAttendance(allowedModules || [], user);
 
@@ -124,6 +126,14 @@ export default function MyAttendance() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  const orgHour = useMemo(() => {
+    try {
+      return parseInt(new Intl.DateTimeFormat('en-US', { timeZone: iana || 'UTC', hour: 'numeric', hour12: false }).format(now), 10);
+    } catch {
+      return now.getHours();
+    }
+  }, [now, iana]);
 
   const refreshToday = useCallback(async () => {
     if (!canPunch) { setLoadingToday(false); return; }
@@ -295,9 +305,9 @@ export default function MyAttendance() {
         {/* ── Left Column: Hero punch card ── */}
         <div className="lg:col-span-4 xl:col-span-3">
           <div className="rounded-none border border-slate-200 bg-white p-6 shadow-sm flex flex-col items-center text-center h-full">
-            <p className="text-sm font-semibold text-slate-500">Good {now.getHours() < 12 ? 'Morning' : 'Afternoon'}, {user?.name?.split(' ')[0] || 'there'}</p>
+            <p className="text-sm font-semibold text-slate-500">Good {orgHour < 12 ? 'Morning' : orgHour < 17 ? 'Afternoon' : 'Evening'}, {user?.name?.split(' ')[0] || 'there'}</p>
             <p className="mt-1 text-2xl font-black tracking-tight text-slate-900">
-              {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}<span className="ml-1 text-base font-bold text-slate-500">, {now.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              {formatTimeOnly(now)}<span className="ml-1 text-base font-bold text-slate-500">, {formatDate(now)}</span>
             </p>
 
             {today?.profileImageUrl && !avatarError ? (

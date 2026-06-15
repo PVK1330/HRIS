@@ -13,6 +13,7 @@ import { Button } from '../../components/ui/Button.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { getMyAccount, updateMyAccount } from '../../services/accountService.js'
 import ChangePasswordCard from './settings/ChangePasswordCard.jsx'
+import MfaCard from './settings/MfaCard.jsx'
 
 const errMsg = (e, fb) => e?.response?.data?.message || e?.message || fb
 
@@ -51,6 +52,9 @@ export default function MyAccount() {
       if (data) {
         setProfile(data)
         setName(data.name || '')
+        if (data.profile_image_url !== undefined) {
+          updateUser({ profile_image_url: data.profile_image_url })
+        }
       }
     } catch (err) {
       console.error('Failed to load account:', err)
@@ -58,7 +62,7 @@ export default function MyAccount() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [updateUser])
 
   useEffect(() => {
     load()
@@ -124,7 +128,7 @@ export default function MyAccount() {
           <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div className="flex flex-col items-center gap-6 sm:flex-row">
               <div className="relative">
-                <Avatar name={displayName} size="lg" />
+                <Avatar name={displayName} src={profile?.profile_image_url} size="lg" />
                 <div className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-lg border border-slate-100 bg-white shadow-md">
                   <HiCheckCircle className="h-4 w-4 text-[#0F766E]" />
                 </div>
@@ -200,6 +204,9 @@ export default function MyAccount() {
 
           {/* Change password (reuses the shared self-service card) */}
           <ChangePasswordCard />
+
+          {/* Two-factor authentication */}
+          <MfaCard />
         </>
       )}
     </div>

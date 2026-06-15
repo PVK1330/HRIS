@@ -252,7 +252,7 @@ export function Sidebar({
               aria-expanded={profileMenuOpen}
               className="flex w-full items-center gap-3 rounded-lg bg-gray-100 px-3 py-3 text-left transition-colors hover:bg-gray-200/70"
             >
-              <Avatar name={user?.name ?? 'User'} size="md" bgColor={avatarPalette} />
+              <Avatar name={user?.name ?? 'User'} src={user?.profile_image_url} size="md" bgColor={avatarPalette} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-bold text-[#0F766E]">{user?.name ?? 'User'}</span>
                 <span className="block text-[10px] font-semibold uppercase tracking-wide text-gray-500">

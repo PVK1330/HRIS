@@ -44,7 +44,6 @@ const LettersTemplates = lazy(() => import("../pages/admin/documents/LettersTemp
 const LetterBuilder = lazy(() => import("../pages/admin/documents/LetterBuilder.jsx"));
 const TemplateGenerator = lazy(() => import("../pages/admin/documents/TemplateGenerator.jsx"));
 const AdminSettings = lazy(() => import("../pages/admin/settings/AdminSettings.jsx"));
-const AccountSecurity = lazy(() => import("../pages/admin/account/AccountSecurity.jsx"));
 const PaymentPage = lazy(() => import("../pages/admin/account/PaymentPage.jsx"));
 const RolesPermissions = lazy(() => import("../pages/admin/settings/RolesPermissions.jsx"));
 const DepartmentManagement = lazy(() => import("../pages/admin/settings/Departments.jsx"));
@@ -374,8 +373,7 @@ export const router = createBrowserRouter([
               </AdminModuleGate>
             ),
           },
-          // Self-service security (2FA) — available to every org user, no module gate.
-          { path: "security", element: <AccountSecurity /> },
+          { path: "security", element: <Navigate to="/admin/account" replace /> },
           {
             path: "settings/roles-permissions",
             element: (
