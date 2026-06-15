@@ -43,10 +43,36 @@ api.interceptors.response.use(
     // page reload → same unauthenticated request → repeat).
     const isLoggedIn = !!localStorage.getItem('hris_auth_user') || !!localStorage.getItem('hris_token')
 
+    // Detect superadmin sessions — they have a different refresh flow (separate
+    // cookie path). Attempting /auth/refresh for a superadmin will always fail
+    // and trigger a second unwanted redirect, so we skip straight to logout/redirect.
+    const isSuperadminSession = (() => {
+      try {
+        const raw = localStorage.getItem('hris_auth_user')
+        if (!raw) return false
+        const u = JSON.parse(raw)
+        const role = String(u?.role || '').toLowerCase().replace(/[\s_-]/g, '')
+        return role === 'superadmin' || role === 'supportadmin' || role === 'billingadmin'
+      } catch {
+        return false
+      }
+    })()
+
     if (error.response?.status === 401 && !original._retried && !isAuthEndpoint && isLoggedIn) {
+      // Superadmin: no refresh endpoint — go straight to login
+      if (isSuperadminSession) {
+        localStorage.removeItem('hris_auth_user')
+        localStorage.removeItem('hris_token')
+        localStorage.removeItem('allowedModules')
+        delete api.defaults.headers.common.Authorization
+        const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || ''
+        window.location.replace(`${window.location.origin}${base}/login`)
+        return Promise.reject(error)
+      }
+
       if (isRefreshing) {
         // Queue this request to retry once the ongoing refresh completes
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, _reject) => {
           refreshSubscribers.push((token) => {
             if (token) {
               original.headers.Authorization = `Bearer ${token}`
@@ -78,6 +104,7 @@ api.interceptors.response.use(
         localStorage.removeItem('hris_auth_user')
         localStorage.removeItem('hris_token')
         localStorage.removeItem('allowedModules')
+        delete api.defaults.headers.common.Authorization
         const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || ''
         window.location.replace(`${window.location.origin}${base}/login`)
         return Promise.reject(error)
