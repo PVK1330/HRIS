@@ -299,6 +299,11 @@ export default function Performance() {
   const [assessmentsLoading, setAssessmentsLoading] = useState(false)
   const [editingAssessmentId, setEditingAssessmentId] = useState(null)
 
+  // Employee Performance Assessments Pagination
+  const [assessmentPage, setAssessmentPage] = useState(1)
+  const [assessmentLimit, setAssessmentLimit] = useState(20)
+  const [assessmentPagination, setAssessmentPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 0 })
+
   // Dropdown lists
   const [compDropdownList, setCompDropdownList] = useState([])
   const [cycleDropdownList, setCycleDropdownList] = useState([])
@@ -317,6 +322,9 @@ export default function Performance() {
   const isHR = user?.role === 'hr_admin' || user?.role === 'admin' || user?.role === 'superadmin'
 
   // Fetch performance cycles and summary on component mount
+  // Note: fetchAssessments is intentionally NOT called here — the [q, isHR]
+  // effect below fires on mount (when isHR becomes true) and handles the
+  // initial load, preventing a duplicate network request.
   useEffect(() => {
     if (isHR) {
       fetchCycles()
@@ -324,15 +332,15 @@ export default function Performance() {
       fetchCompetencies()
       fetchCompsSummary()
       fetchDropdownData()
-      fetchAssessments()
       fetchAssessmentsSummary()
     }
   }, [isHR])
 
-  // Fetch assessments when search q changes
+  // Fetch assessments when search q changes — always reset to page 1
   useEffect(() => {
     if (isHR) {
-      fetchAssessments(q)
+      setAssessmentPage(1)
+      fetchAssessments(q, 1, assessmentLimit)
     }
   }, [q, isHR])
 
@@ -450,20 +458,38 @@ export default function Performance() {
   }
 
   /**
-   * Fetch employee performance assessments
+   * Fetch employee performance assessments with server-side pagination
    */
-  const fetchAssessments = async (search = '') => {
+  const fetchAssessments = async (search = '', page = 1, limit = assessmentLimit) => {
     try {
       setAssessmentsLoading(true)
-      const response = await performanceAssessmentAPI.getAllAssessments({ search })
+      const response = await performanceAssessmentAPI.getAllAssessments({ search, page, limit })
       if (response.success && response.data?.assessments) {
         setAssessments(response.data.assessments)
+        if (response.data.pagination) {
+          setAssessmentPagination(response.data.pagination)
+          setAssessmentPage(response.data.pagination.page)
+        }
       }
     } catch (error) {
       console.error('Error fetching assessments:', error)
     } finally {
       setAssessmentsLoading(false)
     }
+  }
+
+  /** Page-change handler: re-fetches with new page */
+  const handleAssessmentPageChange = (newPage) => {
+    const clampedPage = Math.max(1, Math.min(newPage, assessmentPagination.totalPages || 1))
+    setAssessmentPage(clampedPage)
+    fetchAssessments(q, clampedPage, assessmentLimit)
+  }
+
+  /** Rows-per-page change: reset to page 1 */
+  const handleAssessmentLimitChange = (newLimit) => {
+    setAssessmentLimit(newLimit)
+    setAssessmentPage(1)
+    fetchAssessments(q, 1, newLimit)
   }
 
   /**
@@ -564,7 +590,9 @@ export default function Performance() {
     try {
       const response = await performanceAssessmentAPI.deleteAssessment(id)
       if (response.success) {
-        await fetchAssessments(q)
+        // After delete, go back to page 1 to avoid empty pages
+        setAssessmentPage(1)
+        await fetchAssessments(q, 1, assessmentLimit)
         await fetchAssessmentsSummary()
       }
     } catch (error) {
@@ -646,7 +674,9 @@ export default function Performance() {
       }
 
       handleCloseModal()
-      await fetchAssessments(q)
+      // After create/update, go to page 1 so the new record is visible
+      setAssessmentPage(1)
+      await fetchAssessments(q, 1, assessmentLimit)
       await fetchAssessmentsSummary()
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to save assessment')
@@ -1393,7 +1423,11 @@ export default function Performance() {
                   />
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-xs font-medium text-slate-500">{filtered.length} records shown</p>
+                  <p className="text-xs font-medium text-slate-500">
+                    {assessmentPagination.total > 0
+                      ? `${assessmentPagination.total} total records`
+                      : `${assessments.length} records shown`}
+                  </p>
                   {q && (
                     <button
                       type="button"
@@ -1412,7 +1446,95 @@ export default function Performance() {
                   <span className="mt-3 text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Loading assessments...</span>
                 </div>
               ) : (
-                <Table columns={columns} data={filtered} pageSize={10} square />
+                <Table columns={columns} data={assessments} square />
+              )}
+
+              {/* ── Pagination footer ── */}
+              {!assessmentsLoading && assessmentPagination.totalPages > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3">
+                  {/* Rows per page */}
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <span className="font-medium">Rows per page:</span>
+                    <select
+                      value={assessmentLimit}
+                      onChange={(e) => handleAssessmentLimitChange(Number(e.target.value))}
+                      className="rounded-none border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E]"
+                    >
+                      {[10, 20, 50, 100].map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Record range info */}
+                  <span className="text-xs font-medium text-slate-500">
+                    {((assessmentPagination.page - 1) * assessmentPagination.limit) + 1}–
+                    {Math.min(assessmentPagination.page * assessmentPagination.limit, assessmentPagination.total)} of{' '}
+                    {assessmentPagination.total} records
+                  </span>
+
+                  {/* Page buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleAssessmentPageChange(1)}
+                      disabled={assessmentPagination.page <= 1}
+                      title="First page"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-none border border-slate-200 bg-white text-[11px] font-bold text-slate-500 transition hover:border-[#0F766E] hover:text-[#0F766E] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      «
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAssessmentPageChange(assessmentPagination.page - 1)}
+                      disabled={assessmentPagination.page <= 1}
+                      className="inline-flex h-7 items-center gap-0.5 rounded-none border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-500 transition hover:border-[#0F766E] hover:text-[#0F766E] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      ‹ Prev
+                    </button>
+
+                    {/* Windowed page numbers */}
+                    {(() => {
+                      const total = assessmentPagination.totalPages
+                      const cur = assessmentPagination.page
+                      const windowSize = 5
+                      const start = Math.max(1, Math.min(cur - Math.floor(windowSize / 2), total - windowSize + 1))
+                      const end = Math.min(total, start + windowSize - 1)
+                      return Array.from({ length: end - start + 1 }, (_, i) => start + i).map((pageNum) => (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          onClick={() => handleAssessmentPageChange(pageNum)}
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-none border text-[11px] font-semibold transition ${
+                            pageNum === cur
+                              ? 'border-[#0F766E] bg-[#0F766E] text-white shadow-sm'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-[#0F766E] hover:text-[#0F766E]'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      ))
+                    })()}
+
+                    <button
+                      type="button"
+                      onClick={() => handleAssessmentPageChange(assessmentPagination.page + 1)}
+                      disabled={assessmentPagination.page >= assessmentPagination.totalPages}
+                      className="inline-flex h-7 items-center gap-0.5 rounded-none border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-500 transition hover:border-[#0F766E] hover:text-[#0F766E] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Next ›
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAssessmentPageChange(assessmentPagination.totalPages)}
+                      disabled={assessmentPagination.page >= assessmentPagination.totalPages}
+                      title="Last page"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-none border border-slate-200 bg-white text-[11px] font-bold text-slate-500 transition hover:border-[#0F766E] hover:text-[#0F766E] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      »
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

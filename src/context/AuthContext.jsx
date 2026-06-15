@@ -270,7 +270,6 @@ export function AuthProvider({ children }) {
       localStorage.setItem("allowedModules", JSON.stringify(nextMods));
       setUser(finalUser);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(finalUser));
-      localStorage.setItem("hris_token", token);
     },
     [],
   );
@@ -342,7 +341,6 @@ export function AuthProvider({ children }) {
     setAllowedModules([]);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem("allowedModules");
-    localStorage.removeItem("hris_token");
     const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "") || "";
     const target = `${base}/login`.replace(/\/+/g, "/") || "/login";
     window.location.replace(

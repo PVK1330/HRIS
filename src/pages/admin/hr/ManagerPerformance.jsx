@@ -50,17 +50,19 @@ function ManagerPerformance() {
 
       if (response?.data) {
         setAssessments(response.data.assessments || [])
+        // Support new `pagination` envelope and old flat fields for back-compat
+        const pg = response.data.pagination || {}
         setPagination(prev => ({
           ...prev,
-          total: response.data.total || 0,
-          totalPages: response.data.totalPages || 0
+          total: pg.total ?? response.data.total ?? 0,
+          totalPages: pg.totalPages ?? response.data.totalPages ?? 0
         }))
       } else {
         setAssessments(response.assessments || [])
         setPagination(prev => ({
           ...prev,
-          total: response.total || 0,
-          totalPages: response.totalPages || 0
+          total: response.total ?? 0,
+          totalPages: response.totalPages ?? 0
         }))
       }
     } catch (err) {

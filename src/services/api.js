@@ -7,6 +7,7 @@ const api = axios.create({
   withCredentials: true, // send httpOnly refresh-token cookie on every request
 })
 
+// Request interceptor to attach Authorization header if using Bearer token fallback
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('hris_token')
   if (token) {
@@ -14,7 +15,6 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
-
 // Queue of callers waiting for a refresh in progress
 let isRefreshing = false
 const refreshSubscribers = []
@@ -41,15 +41,16 @@ api.interceptors.response.use(
     // means the caller is unauthenticated, not expired. Trying to refresh in
     // that case causes an infinite loop (no cookie → refresh 401 → redirect →
     // page reload → same unauthenticated request → repeat).
-    const hasToken = !!localStorage.getItem('hris_token')
+    const isLoggedIn = !!localStorage.getItem('hris_auth_user') || !!localStorage.getItem('hris_token')
 
-    if (error.response?.status === 401 && !original._retried && !isAuthEndpoint && hasToken) {
+    if (error.response?.status === 401 && !original._retried && !isAuthEndpoint && isLoggedIn) {
       if (isRefreshing) {
         // Queue this request to retry once the ongoing refresh completes
         return new Promise((resolve, reject) => {
           refreshSubscribers.push((token) => {
-            if (!token) return reject(error)
-            original.headers.Authorization = `Bearer ${token}`
+            if (token) {
+              original.headers.Authorization = `Bearer ${token}`
+            }
             resolve(api(original))
           })
         })
@@ -63,16 +64,19 @@ api.interceptors.response.use(
         const newToken = data?.data?.token
         if (!newToken) throw new Error('No token in refresh response')
 
-        localStorage.setItem('hris_token', newToken)
-        api.defaults.headers.common.Authorization = `Bearer ${newToken}`
-        original.headers.Authorization = `Bearer ${newToken}`
+        // If project uses Bearer token, keep it updated
+        if (localStorage.getItem('hris_token') || api.defaults.headers.common.Authorization) {
+          localStorage.setItem('hris_token', newToken)
+          api.defaults.headers.common.Authorization = `Bearer ${newToken}`
+          original.headers.Authorization = `Bearer ${newToken}`
+        }
 
         notifySubscribers(newToken)
         return api(original)
       } catch {
         notifySubscribers(null)
-        localStorage.removeItem('hris_token')
         localStorage.removeItem('hris_auth_user')
+        localStorage.removeItem('hris_token')
         localStorage.removeItem('allowedModules')
         const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || ''
         window.location.replace(`${window.location.origin}${base}/login`)
