@@ -7,8 +7,10 @@ import { Input } from '../../../components/ui/Input.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { Modal } from '../../../components/ui/Modal.jsx'
 import { Toggle } from '../../../components/ui/Toggle.jsx'
+import { ExportDropdown } from '../../../components/ui/ExportDropdown.jsx'
 import PlanPaymentStep from './PlanPaymentStep.jsx'
 import settingsService from '../../../services/settingsService.js'
+import { superadminService } from '../../../services/superadminService.js'
 import { createStripeCheckoutSession, createPaypalCheckoutSession, confirmPaypalCheckoutSession } from '../../../services/billingService.js'
 import {
   HiCheck,
@@ -726,9 +728,12 @@ export default function TenantManagement() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button type="button" onClick={handleExport} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
-            <HiArrowDownTray className="h-4 w-4" /> Export CSV
-          </button>
+          <ExportDropdown
+            onExcel={() => superadminService.exportTenants('excel', { search: searchQuery, plan: planFilter !== 'all' ? planFilter : '', status: statusFilter !== 'all' ? statusFilter : '' })}
+            onPDF={() => superadminService.exportTenants('pdf', { search: searchQuery, plan: planFilter !== 'all' ? planFilter : '', status: statusFilter !== 'all' ? statusFilter : '' })}
+            excelFilename="tenants.xlsx"
+            pdfFilename="tenants.pdf"
+          />
           <button type="button" onClick={openNewOrgModal} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
             <HiPlus className="h-4 w-4" /> Add Organisation
           </button>

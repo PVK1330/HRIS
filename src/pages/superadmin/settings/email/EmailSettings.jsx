@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Toggle } from '../../../../components/ui/Toggle.jsx'
 import settingsService from '../../../../services/settingsService.js'
 
 const DEFAULTS = {
@@ -28,10 +27,19 @@ function fromApi(api) {
 
 function deepClone(v) { return JSON.parse(JSON.stringify(v)) }
 
+const Field = ({ label, hint, children }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    {hint && <p className="text-xs text-gray-400 mb-1.5">{hint}</p>}
+    {children}
+  </div>
+)
+
 export default function EmailSettings() {
   const [data, setData] = useState(null)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [showPass, setShowPass] = useState(false)
   const original = useRef(null)
 
   const load = useCallback(async () => {
@@ -61,17 +69,13 @@ export default function EmailSettings() {
     if (!data) return
     setSaving(true)
     try {
-      const payload = {
-        ...data,
-        port: Number(data.port) || 587,
-      }
-      const res = await settingsService.updateEmail(payload)
+      const res = await settingsService.updateEmail({ ...data, port: Number(data.port) || 587 })
       const next = fromApi(res?.data)
       setData(next)
       original.current = deepClone(next)
-      toast.success('Email settings saved')
+      toast.success('SMTP settings saved')
     } catch (err) {
-      toast.error(err?.message || 'Failed to save email settings')
+      toast.error(err?.message || 'Failed to save settings')
     } finally {
       setSaving(false)
     }
@@ -80,10 +84,8 @@ export default function EmailSettings() {
   const handleTest = async () => {
     setTesting(true)
     try {
-      // Assuming sendTestEmail expects `{ sendTo: string }`.
-      // You can just send it to the 'fromEmail' for testing if no specific input is provided.
       await settingsService.sendTestEmail({ sendTo: data?.fromEmail || 'test@example.com' })
-      toast.success('SMTP connection successful')
+      toast.success('SMTP connection verified')
     } catch (err) {
       toast.error(err?.message || 'SMTP connection failed')
     } finally {
@@ -91,207 +93,160 @@ export default function EmailSettings() {
     }
   }
 
-  const baseInput = "block w-full px-4 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#0F766E] sm:text-sm sm:leading-6"
+  const inp = "block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 transition"
 
   if (data === null) {
     return (
-      <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
-        <div className="animate-pulse space-y-8">
-          <div className="h-64 rounded-xl bg-gray-100"></div>
-          <div className="h-48 rounded-xl bg-gray-100"></div>
-        </div>
+      <div className="mx-auto max-w-3xl space-y-4">
+        <div className="h-64 animate-pulse rounded-xl bg-gray-100" />
+        <div className="h-32 animate-pulse rounded-xl bg-gray-100" />
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        
-        {/* SMTP Configuration */}
-        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
-          <form
-            onSubmit={handleSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
-          >
-            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
-              <h2 className="text-base font-semibold leading-7 text-gray-900">SMTP Server</h2>
-              <p className="mt-1 text-sm leading-6 text-gray-600">
-                Configure connection details for your outbound mail server.
-              </p>
+    <div className="mx-auto max-w-3xl pb-10">
+      <form onSubmit={handleSave} className="space-y-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-900">SMTP Configuration</h2>
+          <p className="mt-0.5 text-sm text-gray-500">Configure your outbound mail server connection.</p>
+        </div>
+
+        {/* Server Connection */}
+        <div className="px-6 py-6 border-b border-gray-100">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Server Connection</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2">
+              <Field label="Hostname">
+                <input
+                  type="text"
+                  value={data.host}
+                  onChange={(e) => set({ host: e.target.value })}
+                  placeholder="smtp.example.com"
+                  className={inp}
+                />
+              </Field>
             </div>
-            <div className="px-4 py-6 sm:p-8 space-y-6">
-              
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium leading-6 text-gray-900">Hostname</label>
-                  <div className="mt-2">
-                    <input
-                      type="text"
-                      value={data.host}
-                      onChange={(e) => set({ host: e.target.value })}
-                      placeholder="smtp.example.com"
-                      className={baseInput}
-                    />
-                  </div>
-                </div>
+            <div>
+              <Field label="Port">
+                <input
+                  type="number"
+                  value={data.port}
+                  onChange={(e) => set({ port: e.target.value })}
+                  placeholder="587"
+                  className={inp}
+                />
+              </Field>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <Field label="Encryption">
+                <select
+                  value={data.encryption}
+                  onChange={(e) => set({ encryption: e.target.value })}
+                  className={inp}
+                >
+                  <option value="tls">TLS</option>
+                  <option value="ssl">SSL</option>
+                  <option value="none">None</option>
+                </select>
+              </Field>
+            </div>
+          </div>
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium leading-6 text-gray-900">Port</label>
-                  <div className="mt-2">
-                    <input
-                      type="number"
-                      value={data.port}
-                      onChange={(e) => set({ port: e.target.value })}
-                      placeholder="587"
-                      className={baseInput}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium leading-6 text-gray-900">Encryption Method</label>
-                  <div className="mt-2">
-                    <select
-                      value={data.encryption}
-                      onChange={(e) => set({ encryption: e.target.value })}
-                      className={baseInput}
-                    >
-                      <option value="none">None</option>
-                      <option value="ssl">SSL</option>
-                      <option value="tls">TLS</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 border-t border-gray-900/5 pt-6">
-                <div>
-                  <label className="block text-sm font-medium leading-6 text-gray-900">Username</label>
-                  <div className="mt-2">
-                    <input
-                      type="text"
-                      value={data.username}
-                      onChange={(e) => set({ username: e.target.value })}
-                      placeholder="user@example.com"
-                      className={baseInput}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium leading-6 text-gray-900">Password</label>
-                  <div className="mt-2">
-                    <input
-                      type="password"
-                      value={data.password}
-                      onChange={(e) => set({ password: e.target.value })}
-                      className={baseInput}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2">
+        {/* Authentication */}
+        <div className="px-6 py-6 border-b border-gray-100">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Authentication</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Username">
+              <input
+                type="text"
+                value={data.username}
+                onChange={(e) => set({ username: e.target.value })}
+                placeholder="user@example.com"
+                className={inp}
+              />
+            </Field>
+            <Field label="Password">
+              <div className="relative">
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={data.password}
+                  onChange={(e) => set({ password: e.target.value })}
+                  placeholder="••••••••"
+                  className={`${inp} pr-16`}
+                />
                 <button
                   type="button"
-                  onClick={handleTest}
-                  disabled={testing}
-                  className="text-sm font-medium text-[#0F766E] hover:text-[#115E59] disabled:opacity-50"
+                  onClick={() => setShowPass((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400 hover:text-gray-600"
                 >
-                  {testing ? 'Testing connection...' : 'Test Connection'}
+                  {showPass ? 'Hide' : 'Show'}
                 </button>
               </div>
-
-            </div>
-
-            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
-              <button
-                type="button"
-                onClick={() => setData(deepClone(original.current))}
-                disabled={!isDirty || saving}
-                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
-              >
-                Discard
-              </button>
-              <button
-                type="submit"
-                disabled={!isDirty || saving}
-                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
+            </Field>
+          </div>
         </div>
 
-        {/* System Sender */}
-        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
-          <form
-            onSubmit={handleSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
+        {/* Sender Identity */}
+        <div className="px-6 py-6 border-b border-gray-100">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Sender Identity</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="From Name" hint="Display name recipients see">
+              <input
+                type="text"
+                value={data.fromName}
+                onChange={(e) => set({ fromName: e.target.value })}
+                placeholder="My Platform"
+                className={inp}
+              />
+            </Field>
+            <Field label="From Address" hint="Reply-to email address">
+              <input
+                type="email"
+                value={data.fromEmail}
+                onChange={(e) => set({ fromEmail: e.target.value })}
+                placeholder="noreply@example.com"
+                className={inp}
+              />
+            </Field>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-6 py-4 bg-gray-50 flex items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={handleTest}
+            disabled={testing || saving}
+            className="text-sm font-medium text-[#0F766E] hover:text-[#115E59] disabled:opacity-40 transition"
           >
-            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
-              <h2 className="text-base font-semibold leading-7 text-gray-900">System Sender</h2>
-              <p className="mt-1 text-sm leading-6 text-gray-600">
-                The 'From' identity used for automated platform emails.
-              </p>
-            </div>
-            <div className="px-4 py-6 sm:p-8 space-y-6">
-              
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium leading-6 text-gray-900">From Name</label>
-                  <div className="mt-2">
-                    <input
-                      type="text"
-                      value={data.fromName}
-                      onChange={(e) => set({ fromName: e.target.value })}
-                      placeholder="Acme Platform"
-                      className={baseInput}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium leading-6 text-gray-900">From Address</label>
-                  <div className="mt-2">
-                    <input
-                      type="email"
-                      value={data.fromEmail}
-                      onChange={(e) => set({ fromEmail: e.target.value })}
-                      placeholder="noreply@example.com"
-                      className={baseInput}
-                    />
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
-              <button
-                type="button"
-                onClick={() => setData(deepClone(original.current))}
-                disabled={!isDirty || saving}
-                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
-              >
-                Discard
-              </button>
-              <button
-                type="submit"
-                disabled={!isDirty || saving}
-                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
+            {testing ? 'Testing…' : '⚡ Test Connection'}
+          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setData(deepClone(original.current))}
+              disabled={!isDirty || saving}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40 transition"
+            >
+              Discard
+            </button>
+            <button
+              type="submit"
+              disabled={!isDirty || saving}
+              className="px-5 py-2 rounded-lg bg-[#0F766E] text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] disabled:opacity-40 transition"
+            >
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
         </div>
 
-      </div>
+      </form>
     </div>
   )
 }

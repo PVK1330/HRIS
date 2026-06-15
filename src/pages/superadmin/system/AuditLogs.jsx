@@ -3,6 +3,7 @@ import { Badge } from '../../../components/ui/Badge.jsx'
 import { Button } from '../../../components/ui/Button.jsx'
 import { Table } from '../../../components/ui/Table.jsx'
 import { superadminService } from '../../../services/superadminService.js'
+import { ExportDropdown } from '../../../components/ui/ExportDropdown.jsx'
 import {
   HiMagnifyingGlass,
   HiFunnel,
@@ -104,9 +105,12 @@ export default function AuditLogs() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button type="button" onClick={handleExport} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
-            <HiArrowDownTray className="h-4 w-4" /> Export CSV
-          </button>
+          <ExportDropdown
+            onExcel={() => superadminService.exportAuditLogs('excel')}
+            onPDF={() => superadminService.exportAuditLogs('pdf')}
+            excelFilename="audit_logs.xlsx"
+            pdfFilename="audit_logs.pdf"
+          />
           <button type="button" onClick={fetchAuditLogs} className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
             <HiArrowPath className="h-4 w-4" /> Sync
           </button>

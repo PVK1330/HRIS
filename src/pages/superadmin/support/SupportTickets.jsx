@@ -8,6 +8,7 @@ import { Modal } from '../../../components/ui/Modal.jsx'
 import { Avatar } from '../../../components/ui/Avatar.jsx'
 import { superadminService } from '../../../services/superadminService.js'
 import { resolveFileUrl } from '../../../utils/fileUrl.js'
+import { ExportDropdown } from '../../../components/ui/ExportDropdown.jsx'
 import {
   HiPaperClip,
   HiCheckCircle,
@@ -266,6 +267,12 @@ export default function SupportTickets() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <ExportDropdown
+            onExcel={() => superadminService.exportSupportTickets('excel')}
+            onPDF={() => superadminService.exportSupportTickets('pdf')}
+            excelFilename="support_tickets.xlsx"
+            pdfFilename="support_tickets.pdf"
+          />
           <button
             type="button"
             onClick={fetchTickets}
