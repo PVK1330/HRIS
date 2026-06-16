@@ -9,7 +9,7 @@ import { Tooltip } from '../../../../components/ui/Tooltip.jsx'
 import { useAuth } from '../../../../context/AuthContext.jsx'
 import { canManageAttendanceOverride } from '../../../../utils/rbac.js'
 import { markAttendanceOverride } from '../../../../services/attendanceService.js'
-import { listEmployees } from '../../../../services/employeeService.js'
+import { listEmployeesDropdown } from '../../../../services/employeeService.js'
 import AttendanceExportMenu from '../../../../components/attendance/AttendanceExportMenu.jsx'
 
 const EMPTY = {
@@ -40,8 +40,8 @@ export default function AttendanceOverride() {
 
   const loadEmployees = useCallback(async () => {
     try {
-      const data = await listEmployees({ limit: 200 })
-      setEmpList(data?.employees || data?.records || [])
+      const list = await listEmployeesDropdown()
+      setEmpList(Array.isArray(list) ? list : [])
     } catch { /* ignore */ }
   }, [])
 

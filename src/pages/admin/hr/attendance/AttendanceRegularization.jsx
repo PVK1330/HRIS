@@ -40,10 +40,20 @@ function buildRegTrail(row) {
   ]
 }
 
+const STATUS_LABELS = {
+  Pending:          'Awaiting Manager',
+  Manager_Approved: 'Awaiting Dept Head',
+  Dept_Approved:    'Awaiting HR',
+  Approved:         'Approved',
+  Rejected:         'Rejected',
+}
+
 function regStatusColor(s) {
-  if (s === 'Approved') return 'emerald'
-  if (s === 'Rejected') return 'red'
-  if (s === 'Pending')  return 'amber'
+  if (s === 'Approved')         return 'emerald'
+  if (s === 'Rejected')         return 'red'
+  if (s === 'Pending')          return 'amber'
+  if (s === 'Manager_Approved') return 'blue'
+  if (s === 'Dept_Approved')    return 'indigo'
   return 'gray'
 }
 const inputClass =
@@ -174,7 +184,9 @@ export default function AttendanceRegularization() {
               className="h-10 min-w-[180px] cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]"
             >
               <option value="">All statuses</option>
-              <option value="Pending">Pending</option>
+              <option value="Pending">Awaiting Manager</option>
+              <option value="Manager_Approved">Awaiting Dept Head</option>
+              <option value="Dept_Approved">Awaiting HR</option>
               <option value="Approved">Approved</option>
               <option value="Rejected">Rejected</option>
             </select>
@@ -195,7 +207,7 @@ export default function AttendanceRegularization() {
             {
               key: 'regularization_status',
               label: 'Status',
-              render: (_, r) => <Badge label={r.regularization_status || '—'} color={regStatusColor(r.regularization_status)} />,
+              render: (_, r) => <Badge label={STATUS_LABELS[r.regularization_status] || r.regularization_status || '—'} color={regStatusColor(r.regularization_status)} />,
             },
             {
               key: 'pending_approver_role',
@@ -384,7 +396,7 @@ export default function AttendanceRegularization() {
             </div>
             <div>
               <dt className={labelClass}>Status</dt>
-              <dd className="mt-1"><Badge label={viewRow.regularization_status || '—'} color={regStatusColor(viewRow.regularization_status)} /></dd>
+              <dd className="mt-1"><Badge label={STATUS_LABELS[viewRow.regularization_status] || viewRow.regularization_status || '—'} color={regStatusColor(viewRow.regularization_status)} /></dd>
             </div>
             <div>
               <dt className={labelClass}>Approver level</dt>
