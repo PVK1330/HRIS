@@ -11,7 +11,12 @@ import {
   RiMacbookLine,
   RiCalendarCheckLine,
   RiCalendarEventLine,
-  RiFileList3Line
+  RiFileList3Line,
+  RiTimerLine,
+  RiRefreshLine,
+  RiMapPin2Line,
+  RiMoneyDollarCircleLine,
+  RiBuildingLine,
 } from 'react-icons/ri';
 
 export const settingsTabs = [
@@ -98,7 +103,49 @@ export const settingsTabs = [
     label: 'Assets',
     icon: RiMacbookLine,
     desc: 'Asset categories & rules'
-  }
+  },
+  {
+    id: 'shifts',
+    label: 'Shifts',
+    icon: RiCalendarCheckLine,
+    desc: 'Shift schedules & assignments'
+  },
+  {
+    id: 'approvals',
+    label: 'Approvals',
+    icon: RiShieldCheckLine,
+    desc: 'Approval workflows'
+  },
+  {
+    id: 'overtime',
+    label: 'Overtime Policy',
+    icon: RiTimerLine,
+    desc: 'OT calculation & approval rules'
+  },
+  {
+    id: 'regularisation',
+    label: 'Regularisation Policy',
+    icon: RiRefreshLine,
+    desc: 'Regularisation workflow & limits'
+  },
+  {
+    id: 'locations',
+    label: 'Locations',
+    icon: RiBuildingLine,
+    desc: 'Office sites & work locations'
+  },
+  {
+    id: 'geofencing',
+    label: 'Geo-Fencing',
+    icon: RiMapPin2Line,
+    desc: 'Location-based attendance settings'
+  },
+  {
+    id: 'payroll-policy',
+    label: 'Payroll Policy',
+    icon: RiMoneyDollarCircleLine,
+    desc: 'PF, ESI, tax & payslip settings'
+  },
 ];
 
 export default function SettingsTabs({ activeTab, setActiveTab }) {

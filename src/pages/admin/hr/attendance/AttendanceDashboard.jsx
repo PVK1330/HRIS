@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import {
   HiUsers,
   HiClock,
@@ -158,10 +159,10 @@ export default function AttendanceDashboard() {
           {/* KPI Grid */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
             <MetricCard title="Total Workforce" value={w.total_employees} icon={HiUsers} tone="indigo" />
-            <MetricCard title="Present Today" value={w.present_today} icon={HiCheckCircle} tone="emerald" trend="up" percent={12} />
-            <MetricCard title="Absent Today" value={w.absent_today} icon={HiXCircle} tone="red" trend="down" percent={2} />
+            <MetricCard title="Present Today" value={w.present_today} icon={HiCheckCircle} tone="emerald" trend={w.present_trend} percent={w.present_change_pct} />
+            <MetricCard title="Absent Today" value={w.absent_today} icon={HiXCircle} tone="red" trend={w.absent_trend} percent={w.absent_change_pct} />
             <MetricCard title="Attendance Rate" value={`${w.attendance_rate || 0}%`} icon={HiArrowTrendingUp} tone="emerald" />
-            <MetricCard title="Late Arrivals" value={w.late_today} icon={HiClock} tone="amber" trend="up" percent={5} />
+            <MetricCard title="Late Arrivals" value={w.late_today} icon={HiClock} tone="amber" trend={w.late_trend} percent={w.late_change_pct} />
             
             <MetricCard title="On Leave" value={w.on_leave} icon={HiCalendar} tone="purple" />
             <MetricCard title="Work From Home" value={w.work_from_home} icon={HiHome} tone="blue" />
@@ -338,7 +339,10 @@ export default function AttendanceDashboard() {
                             <p className="text-xs font-bold text-slate-900">{user.full_name}</p>
                             <p className="text-[10px] font-semibold text-slate-500">In at {user.check_in_time}</p>
                           </div>
-                          <button className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800">
+                          <button
+                            onClick={() => toast.success('Reminder sent')}
+                            className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800"
+                          >
                             Remind
                           </button>
                         </li>

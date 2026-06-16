@@ -7,7 +7,7 @@ import { Modal } from '../../../../components/ui/Modal.jsx'
 import { Tooltip } from '../../../../components/ui/Tooltip.jsx'
 import { Table } from '../../../../components/ui/Table.jsx'
 import { useAuth } from '../../../../context/AuthContext.jsx'
-import { canApproveRegularization, canManageAttendanceOverride, canPunchAttendance } from '../../../../utils/rbac.js'
+import { canManageAttendanceOverride, canPunchAttendance, hasRbacSlug } from '../../../../utils/rbac.js'
 import {
   getOvertimeRecords,
   processOvertime,
@@ -80,7 +80,8 @@ export default function OvertimeApprovals() {
   const { user, allowedModules } = useAuth()
   // Org (tenant) admin always has full overtime approve/manage rights.
   const isOrgAdmin = user?.role === 'admin'
-  const canApprove = canApproveRegularization(allowedModules) || isOrgAdmin
+  // Overtime approval requires attendance.approve, attendance.manage, or org-admin
+  const canApprove = hasRbacSlug(allowedModules, 'attendance.approve') || canManageAttendanceOverride(allowedModules) || isOrgAdmin
   const canManage = canManageAttendanceOverride(allowedModules) || isOrgAdmin
   // Employees (attendance.create) may add their OWN overtime; managers may add for their scope.
   const canAdd = canManage || canPunchAttendance(allowedModules, user)
