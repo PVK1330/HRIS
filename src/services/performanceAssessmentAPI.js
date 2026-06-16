@@ -22,7 +22,7 @@ const createAssessment = async (data) => {
 
 /** Get all assessments (admin) */
 const getAllAssessments = async (options = {}) => {
-  const { search = '', page = 1, limit = 100, sortBy = 'created_at', sortOrder = 'DESC' } = options
+  const { search = '', page = 1, limit = 20, sortBy = 'created_at', sortOrder = 'DESC' } = options
   const params = new URLSearchParams()
   if (search) params.append('search', search)
   params.append('page', page)
@@ -70,7 +70,7 @@ const deleteAssessment = async (id) => {
 
 /** Get performance assessments assigned to logged-in manager (NEW ENDPOINT) */
 const getManagerAssignedAssessments = async (options = {}) => {
-  const { search = '', page = 1, limit = 100, sortBy = 'created_at', sortOrder = 'DESC' } = options
+  const { search = '', page = 1, limit = 20, sortBy = 'created_at', sortOrder = 'DESC' } = options
   const params = new URLSearchParams()
   if (search) params.append('search', search)
   params.append('page', page)
@@ -90,7 +90,7 @@ const updateManagerGoalsForAssessment = async (id, managerGoals) => {
 
 /** Get performance reviews assigned to logged-in manager (LEGACY - keep for backward compatibility) */
 const getManagerReviews = async (options = {}) => {
-  const { search = '', page = 1, limit = 100, sortBy = 'created_at', sortOrder = 'DESC' } = options
+  const { search = '', page = 1, limit = 20, sortBy = 'created_at', sortOrder = 'DESC' } = options
   const params = new URLSearchParams()
   if (search) params.append('search', search)
   params.append('page', page)

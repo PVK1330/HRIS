@@ -164,7 +164,6 @@ export default function SupportManagement() {
       })
       const data = (response.data.data || []).map(normalizeTicket)
       setTickets(data)
-      toast.success('Support tickets refreshed')
     } catch (err) {
       console.error('[ADMIN SUPPORT] Failed to load support tickets:', err)
       toast.error('Unable to load support tickets')

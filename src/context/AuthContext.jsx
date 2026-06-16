@@ -15,6 +15,7 @@ import {
   expandModuleKeysForGate,
 } from "../constants/permissions.js";
 
+const TOKEN_KEY = "hris_token";
 const STORAGE_KEY = "hris_auth_user";
 
 function normalizeTenantFeatureCode(code) {
@@ -270,7 +271,15 @@ export function AuthProvider({ children }) {
       localStorage.setItem("allowedModules", JSON.stringify(nextMods));
       setUser(finalUser);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(finalUser));
-      localStorage.setItem("hris_token", token);
+
+      // Persist the access token so every axios interceptor (api.js, superadminService.js,
+      // supportApi, etc.) can read it from localStorage and attach the Authorization header.
+      if (token) {
+        localStorage.setItem(TOKEN_KEY, token);
+        // Also pre-populate the default header so in-flight requests that fire
+        // before the next request interceptor runs are also covered.
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      }
     },
     [],
   );
@@ -342,7 +351,9 @@ export function AuthProvider({ children }) {
     setAllowedModules([]);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem("allowedModules");
-    localStorage.removeItem("hris_token");
+    // Clear the access token so stale credentials cannot be reused
+    localStorage.removeItem(TOKEN_KEY);
+    delete api.defaults.headers.common["Authorization"];
     const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "") || "";
     const target = `${base}/login`.replace(/\/+/g, "/") || "/login";
     window.location.replace(
