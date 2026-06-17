@@ -167,19 +167,20 @@ export default function LeaveAbsence() {
   }, [form.fromDate, form.toDate]);
 
   useEffect(() => {
-    if (!form.employeeId || !form.leaveType) { setLiveBalance(null); return; }
+    if (!form.employeeId || !form.leaveTypeId) { setLiveBalance(null); return; }
     const yr = form.fromDate ? new Date(form.fromDate).getFullYear() : currentYear;
     setLoadingBalance(true);
     getEmployeeLeave(form.employeeId, { year: yr })
       .then(data => {
         const bal = (data?.balances || []).find(
-          b => b.leave_type?.toLowerCase() === form.leaveType?.toLowerCase()
+          b => String(b.leave_type_id) === String(form.leaveTypeId)
+            || b.leave_type?.toLowerCase() === String(form.leaveTypeId).toLowerCase()
         );
         setLiveBalance(bal || null);
       })
       .catch(() => setLiveBalance(null))
       .finally(() => setLoadingBalance(false));
-  }, [form.employeeId, form.leaveType, form.fromDate, currentYear]);
+  }, [form.employeeId, form.leaveTypeId, form.fromDate, currentYear]);
 
   const openApplyModal = () => {
     if (!canApply) {

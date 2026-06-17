@@ -16,7 +16,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, Cell, PieChart, Pie, Legend
 } from 'recharts';
-import { getAttendanceDashboard } from '../../../../services/attendanceService.js';
+import { getAttendanceDashboard, remindCheckout, exportAttendanceExcel } from '../../../../services/attendanceService.js';
 import AttendancePunchCard from '../../../../components/attendance/AttendancePunchCard.jsx';
 
 function MetricCard({ title, value, icon: Icon, tone = 'slate', trend, percent }) {
@@ -134,7 +134,10 @@ export default function AttendanceDashboard() {
               className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]"
             />
           </div>
-          <button className="mt-5 h-10 rounded-xl bg-slate-900 px-5 text-[10px] font-black uppercase tracking-widest text-white shadow-md transition-all hover:bg-black hover:shadow-lg active:scale-95">
+          <button
+            onClick={() => exportAttendanceExcel({ dateFrom: date, dateTo: date })}
+            className="mt-5 h-10 rounded-xl bg-slate-900 px-5 text-[10px] font-black uppercase tracking-widest text-white shadow-md transition-all hover:bg-black hover:shadow-lg active:scale-95"
+          >
             Export Report
           </button>
         </div>
@@ -340,7 +343,14 @@ export default function AttendanceDashboard() {
                             <p className="text-[10px] font-semibold text-slate-500">In at {user.check_in_time}</p>
                           </div>
                           <button
-                            onClick={() => toast.success('Reminder sent')}
+                            onClick={async () => {
+                              try {
+                                await remindCheckout(user.employee_id, date);
+                                toast.success('Reminder sent');
+                              } catch {
+                                toast.error('Failed to send reminder');
+                              }
+                            }}
                             className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800"
                           >
                             Remind

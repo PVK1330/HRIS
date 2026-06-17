@@ -66,7 +66,7 @@ export default function AttendanceReports() {
   const { reportType, dateFrom, dateTo, year, month, department, employeeId } = filters
 
   useEffect(() => {
-    listEmployees({ limit: 200 }).then((d) => setEmployees(d?.records || d || [])).catch(() => {})
+    listEmployees({ limit: 200 }).then((d) => setEmployees(d?.employees || d?.records || [])).catch(() => {})
   }, [])
 
   const params = () => ({

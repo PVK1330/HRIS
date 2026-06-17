@@ -45,6 +45,7 @@ const ACTION_TO_LEGACY = {
   'document.view': [LEGACY_MODULE_KEYS.DOCUMENTS],
   'document.upload': [LEGACY_MODULE_KEYS.DOCUMENTS],
   'payroll.view': [LEGACY_MODULE_KEYS.PAYROLL],
+  'payroll.manage': [LEGACY_MODULE_KEYS.PAYROLL],
   'performance.view': [LEGACY_MODULE_KEYS.PERFORMANCE],
   'visa.view': [LEGACY_MODULE_KEYS.VISA],
   'visa.manage': [LEGACY_MODULE_KEYS.VISA],

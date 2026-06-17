@@ -85,10 +85,10 @@ export default function OvertimeApprovals() {
   const canManage = canManageAttendanceOverride(allowedModules) || isOrgAdmin
   // Employees (attendance.create) may add their OWN overtime; managers may add for their scope.
   const canAdd = canManage || canPunchAttendance(allowedModules, user)
-  const myEmployeeId = Number(user?.employeeId ?? user?.id)
+  const myEmployeeId = user?.employeeId ? Number(user.employeeId) : null
   // You can never approve/reject/edit/delete your OWN overtime — that's a
   // segregation-of-duties rule, enforced here and again on the server.
-  const isOwn = (row) => Number(row?.employee_id) === myEmployeeId
+  const isOwn = (row) => myEmployeeId !== null && Number(row?.employee_id) === myEmployeeId
 
   const [records, setRecords] = useState([])
   // KPI counts from the unfiltered full-dataset fetch (not the searched/filtered table slice)

@@ -42,6 +42,11 @@ export const getAttendanceDashboard = async (params = {}) => {
   return data.data
 }
 
+export const remindCheckout = async (employeeId, date) => {
+  const { data } = await api.post(`${BASE}/remind-checkout`, { employeeId, date })
+  return data.data
+}
+
 export const submitRegularization = async (payload) => {
   const { data } = await api.post(`${BASE}/regularization`, payload)
   return data.data.record

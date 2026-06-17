@@ -36,7 +36,7 @@ import { triggerExport } from '../../../utils/exportHelper.js';
 export default function Payroll() {
    const { format: fmt } = useCurrency();
    const navigate = useNavigate();
-   const [mainTab, setMainTab] = useState('salary'); // 'salary' | 'items'
+   const [mainTab, setMainTab] = useState('salary'); // 'salary' | 'items' | 'monthly'
    const [exportOpen, setExportOpen] = useState(false)
    const [exportLoading, setExportLoading] = useState(false)
    const exportRef = useRef(null)
@@ -49,6 +49,12 @@ export default function Payroll() {
    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
    const [editSalaryForm, setEditSalaryForm] = useState(null);
    const [dept, setDept] = useState('');
+
+   // Monthly payroll state
+   const [monthlySummary, setMonthlySummary] = useState(null);
+   const [monthlyLoading, setMonthlyLoading] = useState(false);
+   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
+   const [payslipRow, setPayslipRow] = useState(null);
 
    // Settings specific state
    const [activeSettingsTab, setActiveSettingsTab] = useState('Additions');
@@ -72,10 +78,24 @@ export default function Payroll() {
    useEffect(() => {
       if (mainTab === 'items') {
          fetchPayrollItems();
+      } else if (mainTab === 'monthly') {
+         fetchMonthlySummary(selectedMonth);
       } else {
          fetchSalaries();
       }
    }, [mainTab, activeSettingsTab]);
+
+   const fetchMonthlySummary = async (month) => {
+      setMonthlyLoading(true);
+      try {
+         const data = await payrollService.getMonthlySummary(month);
+         setMonthlySummary(data);
+      } catch (error) {
+         console.error('Error fetching monthly summary:', error);
+      } finally {
+         setMonthlyLoading(false);
+      }
+   };
 
    const fetchInitialData = async () => {
       try {
@@ -128,7 +148,7 @@ export default function Payroll() {
    const handleEditSalary = async (e) => {
       e.preventDefault();
       try {
-         await payrollService.saveSalary(editSalaryForm);
+         await payrollService.updateSalary(editSalaryForm.id || editSalaryForm.salary_id, editSalaryForm);
          toast.success('Salary record updated');
          setIsEditModalOpen(false);
          setEditSalaryForm(null);
@@ -138,9 +158,15 @@ export default function Payroll() {
       }
    };
 
-   const handleDeleteSalary = (row) => {
+   const handleDeleteSalary = async (row) => {
       if (!window.confirm(`Delete salary record for ${row.first_name} ${row.last_name}?`)) return;
-      toast.error('Delete not yet supported');
+      try {
+         await payrollService.deleteSalary(row.id);
+         toast.success('Salary record deleted');
+         fetchSalaries();
+      } catch (error) {
+         toast.error(error?.response?.data?.message || 'Failed to delete salary record');
+      }
    };
 
    const filteredSalaries = useMemo(() => {
@@ -183,7 +209,7 @@ export default function Payroll() {
          render: (_, row) => (
             <div className="flex justify-center">
                <button
-                  onClick={() => navigate('/admin/payroll-engine')}
+                  onClick={() => setPayslipRow({ ...row, month: new Date().toISOString().slice(0, 7), working_days: 0 })}
                   className="inline-flex h-8 items-center gap-1.5 rounded-none bg-slate-800 px-3 text-[10px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-slate-900 shadow-sm"
                >
                   <HiDocumentText className="h-3.5 w-3.5" />
@@ -298,11 +324,12 @@ export default function Payroll() {
                      </div>
                   )}
                </div>
-               {mainTab === 'salary' ? (
+               {mainTab === 'salary' && (
                   <button onClick={() => setIsAddModalOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
                      <HiPlus className="h-4 w-4" /> Add Salary
                   </button>
-               ) : (
+               )}
+               {mainTab === 'items' && (
                   <button onClick={() => setIsSettingsModalOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
                      <HiPlus className="h-4 w-4" /> Add Item
                   </button>
@@ -314,6 +341,7 @@ export default function Payroll() {
          <div className="flex gap-1 border-b border-slate-200">
             {[
                { id: 'salary', label: 'Employee Salary' },
+               { id: 'monthly', label: 'Monthly Payroll' },
                { id: 'items', label: 'Payroll Items' }
             ].map(tab => (
                <button key={tab.id} onClick={() => setMainTab(tab.id)} className={`px-6 py-2.5 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${mainTab === tab.id ? 'border-[#0F766E] text-[#0F766E]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
@@ -365,6 +393,207 @@ export default function Payroll() {
 
                   <Table columns={salaryColumns} data={filteredSalaries} loading={loading} pageSize={8} square className="rounded-none border-0" />
                </div>
+            </>
+         ) : mainTab === 'monthly' ? (
+            <>
+               {/* Month picker */}
+               <div className="flex items-center gap-3">
+                  <label className="text-sm font-semibold text-slate-700">Payroll Month</label>
+                  <input
+                     type="month"
+                     value={selectedMonth}
+                     onChange={(e) => {
+                        setSelectedMonth(e.target.value);
+                        fetchMonthlySummary(e.target.value);
+                     }}
+                     className="h-9 rounded-none border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] font-medium"
+                  />
+                  <button
+                     onClick={() => fetchMonthlySummary(selectedMonth)}
+                     className="h-9 rounded-none bg-[#0F766E] px-4 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors shadow-sm"
+                  >
+                     Load
+                  </button>
+                  {monthlySummary && (
+                     <span className="text-xs font-medium text-slate-500">
+                        {monthlySummary.working_days} working days in month
+                     </span>
+                  )}
+               </div>
+
+               {/* KPI strip */}
+               {monthlySummary && (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+                     {[
+                        {
+                           label: 'TOTAL NET PAYROLL',
+                           value: fmt(monthlySummary.employees.reduce((s, r) => s + Number(r.net_pay_calculated || 0), 0)),
+                           bg: 'bg-[#0F172A]', icon: HiCurrencyDollar,
+                        },
+                        {
+                           label: 'EMPLOYEES ON PAYROLL',
+                           value: monthlySummary.employees.length,
+                           bg: 'bg-[#10B981]', icon: HiUserGroup,
+                        },
+                        {
+                           label: 'TOTAL OT HOURS',
+                           value: monthlySummary.employees.reduce((s, r) => s + Number(r.ot_hours || 0), 0).toFixed(1) + 'h',
+                           bg: 'bg-[#3B82F6]', icon: HiClock,
+                        },
+                        {
+                           label: 'TOTAL LOP DAYS',
+                           value: monthlySummary.employees.reduce((s, r) => s + Number(r.lop_days || 0), 0).toFixed(1),
+                           bg: 'bg-[#EF4444]', icon: HiMinusCircle,
+                        },
+                     ].map((card, idx) => (
+                        <div key={idx} className="flex items-center gap-3.5 rounded-none border border-slate-200 bg-white p-4 shadow-sm">
+                           <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bg} text-white shadow-sm`}>
+                              <card.icon className="h-5 w-5" />
+                           </div>
+                           <div className="min-w-0 flex-1">
+                              <div className="text-[11px] font-bold uppercase tracking-wider truncate text-slate-400">{card.label}</div>
+                              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.value}</div>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               )}
+
+               <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+                  <div className="flex items-center justify-between border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+                     <h2 className="text-sm font-semibold text-white">Monthly Payroll Breakdown — {selectedMonth}</h2>
+                  </div>
+
+                  {monthlyLoading ? (
+                     <div className="flex items-center justify-center py-16 text-sm text-slate-500">Loading payroll data…</div>
+                  ) : !monthlySummary ? (
+                     <div className="flex items-center justify-center py-16 text-sm text-slate-400">Select a month and click Load</div>
+                  ) : monthlySummary.employees.length === 0 ? (
+                     <div className="flex items-center justify-center py-16 text-sm text-slate-400">No employees have salary records. Add salaries in the Employee Salary tab first.</div>
+                  ) : (
+                     <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                           <thead>
+                              <tr className="border-b border-slate-100 bg-slate-50">
+                                 <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">Employee</th>
+                                 <th className="px-4 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">Present</th>
+                                 <th className="px-4 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">Half Days</th>
+                                 <th className="px-4 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">Paid Leave</th>
+                                 <th className="px-4 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">LOP Days</th>
+                                 <th className="px-4 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">OT Hours</th>
+                                 <th className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Gross Salary</th>
+                                 <th className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Net Pay</th>
+                                 <th className="px-4 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">Payslip</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-slate-100">
+                              {monthlySummary.employees.map((row) => (
+                                 <tr key={row.employee_id} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-4 py-3">
+                                       <div className="font-bold text-slate-900">{row.first_name} {row.last_name}</div>
+                                       <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">{row.department_name || row.designation_name || row.emp_code}</div>
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                       <span className="inline-block rounded-none bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">{row.present_days}</span>
+                                    </td>
+                                    <td className="px-4 py-3 text-center text-xs font-medium text-slate-600">{row.half_days}</td>
+                                    <td className="px-4 py-3 text-center text-xs font-medium text-blue-600">{row.paid_leave_days}</td>
+                                    <td className="px-4 py-3 text-center">
+                                       {Number(row.lop_days) > 0
+                                          ? <span className="inline-block rounded-none bg-red-50 px-2 py-0.5 text-xs font-bold text-red-600">{Number(row.lop_days).toFixed(1)}</span>
+                                          : <span className="text-xs text-slate-300">—</span>
+                                       }
+                                    </td>
+                                    <td className="px-4 py-3 text-center text-xs font-medium text-slate-600">{Number(row.ot_hours) > 0 ? `${Number(row.ot_hours).toFixed(1)}h` : '—'}</td>
+                                    <td className="px-4 py-3 text-right text-sm font-semibold text-slate-700">{fmt(Number(row.net_salary))}</td>
+                                    <td className="px-4 py-3 text-right">
+                                       <span className={`text-sm font-black ${Number(row.lop_days) > 0 ? 'text-red-600' : 'text-[#0F766E]'}`}>
+                                          {fmt(Number(row.net_pay_calculated))}
+                                       </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                       <button
+                                          onClick={() => setPayslipRow({ ...row, month: selectedMonth, working_days: monthlySummary.working_days })}
+                                          className="inline-flex h-7 items-center gap-1 rounded-none bg-slate-800 px-2.5 text-[10px] font-bold uppercase tracking-wider text-white hover:bg-slate-900 transition-colors"
+                                       >
+                                          <HiDocumentText className="h-3.5 w-3.5" /> View
+                                       </button>
+                                    </td>
+                                 </tr>
+                              ))}
+                           </tbody>
+                        </table>
+                     </div>
+                  )}
+               </div>
+
+               {/* Payslip Modal */}
+               {payslipRow && (
+                  <Modal isOpen={!!payslipRow} onClose={() => setPayslipRow(null)} size="lg" showClose
+                     header={<h2 className="text-lg font-bold text-slate-900">Payslip — {payslipRow.first_name} {payslipRow.last_name}</h2>}
+                  >
+                     <div className="space-y-5 pt-2">
+                        <div className="flex items-center justify-between rounded-none bg-[#0F766E]/5 border border-[#0F766E]/20 px-4 py-3">
+                           <div>
+                              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Pay Period</div>
+                              <div className="text-sm font-bold text-slate-900">{payslipRow.month}</div>
+                           </div>
+                           <div className="text-right">
+                              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Employee ID</div>
+                              <div className="text-sm font-bold text-slate-900">{payslipRow.emp_code || '—'}</div>
+                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                           {[
+                              ['Department', payslipRow.department_name || '—'],
+                              ['Designation', payslipRow.designation_name || '—'],
+                              ['Working Days', payslipRow.working_days],
+                              ['Days Present', payslipRow.present_days],
+                              ['Half Days', payslipRow.half_days],
+                              ['Paid Leave Days', payslipRow.paid_leave_days],
+                              ['LOP Days', Number(payslipRow.lop_days).toFixed(1)],
+                              ['OT Hours', Number(payslipRow.ot_hours) > 0 ? `${Number(payslipRow.ot_hours).toFixed(1)}h` : '—'],
+                           ].map(([label, val]) => (
+                              <div key={label} className="flex items-center justify-between rounded-none border border-slate-100 bg-slate-50 px-3 py-2">
+                                 <span className="text-xs font-medium text-slate-500">{label}</span>
+                                 <span className="text-xs font-bold text-slate-800">{val}</span>
+                              </div>
+                           ))}
+                        </div>
+
+                        <div className="rounded-none border border-slate-200 overflow-hidden">
+                           <div className="bg-slate-800 px-4 py-2">
+                              <span className="text-xs font-bold uppercase tracking-wider text-white">Salary Calculation</span>
+                           </div>
+                           <div className="divide-y divide-slate-100">
+                              <div className="flex items-center justify-between px-4 py-2.5">
+                                 <span className="text-sm text-slate-600">Gross Salary (Monthly)</span>
+                                 <span className="text-sm font-semibold text-slate-800">{fmt(Number(payslipRow.net_salary))}</span>
+                              </div>
+                              <div className="flex items-center justify-between px-4 py-2.5">
+                                 <span className="text-sm text-slate-600">Per-Day Rate</span>
+                                 <span className="text-sm font-semibold text-slate-800">{fmt(Number(payslipRow.per_day_salary))}</span>
+                              </div>
+                              {Number(payslipRow.lop_days) > 0 && (
+                                 <div className="flex items-center justify-between px-4 py-2.5 bg-red-50">
+                                    <span className="text-sm text-red-600">LOP Deduction ({Number(payslipRow.lop_days).toFixed(1)} days)</span>
+                                    <span className="text-sm font-semibold text-red-600">− {fmt(Number(payslipRow.per_day_salary) * Number(payslipRow.lop_days))}</span>
+                                 </div>
+                              )}
+                              <div className="flex items-center justify-between bg-[#0F766E] px-4 py-3">
+                                 <span className="text-sm font-bold text-white">Net Pay</span>
+                                 <span className="text-lg font-black text-white">{fmt(Number(payslipRow.net_pay_calculated))}</span>
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                           <button onClick={() => setPayslipRow(null)} className="h-9 rounded-none border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Close</button>
+                        </div>
+                     </div>
+                  </Modal>
+               )}
             </>
          ) : (
             <>
