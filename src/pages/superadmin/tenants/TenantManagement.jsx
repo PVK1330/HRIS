@@ -11,6 +11,7 @@ import { ExportDropdown } from '../../../components/ui/ExportDropdown.jsx'
 import PlanPaymentStep from './PlanPaymentStep.jsx'
 import settingsService from '../../../services/settingsService.js'
 import { superadminService } from '../../../services/superadminService.js'
+import { generateOrganisationManagementPDF, generateOrganisationManagementCSV } from '../../../utils/organisationPdfExport.js'
 import { createStripeCheckoutSession, createPaypalCheckoutSession, confirmPaypalCheckoutSession } from '../../../services/billingService.js'
 import {
   HiCheck,
@@ -61,7 +62,14 @@ export default function TenantManagement() {
   const [isLoading, setIsLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(0) // 0-indexed for UI, 1-indexed for API
+  const [exporting, setExporting] = useState(false)
   const pageSize = 5
+
+  // Chart refs for PDF export
+  const chartRef1 = useRef(null)
+  const chartRef2 = useRef(null)
+  const chartRef3 = useRef(null)
+  const chartRefs = [chartRef1, chartRef2, chartRef3]
 
   const paypalReturnHandled = useRef(false)
 
@@ -167,7 +175,7 @@ export default function TenantManagement() {
           trialDays: Number(d?.trialDays) || 0,
         })
       })
-      .catch(() => {})
+      .catch(() => { })
   }
 
   const resetNewOrgForm = () => {
@@ -300,6 +308,107 @@ export default function TenantManagement() {
       timer: 2000,
       showConfirmButton: false,
     })
+  }
+
+  const handleExportPDF = async () => {
+    setExporting(true)
+    const toastId = Swal.fire({
+      icon: 'info',
+      title: 'Generating PDF Report',
+      html: 'Please wait while we prepare your Organisation Management report...',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => Swal.showLoading(),
+    })
+
+    try {
+      // Give charts time to render
+      await new Promise((r) => setTimeout(r, 300))
+
+      const stats = {
+        totalOrganizations: organizations.length,
+        activeOrganizations: organizations.filter(o => o.status === 'Active').length,
+        trialOrganizations: organizations.filter(o => o.status === 'Trial').length,
+        suspendedOrganizations: organizations.filter(o => o.status === 'Suspended').length,
+      }
+
+      const filters = {
+        search: searchQuery,
+        plan: planFilter !== 'all' ? planFilter : '',
+        status: statusFilter !== 'all' ? statusFilter : '',
+      }
+
+      await generateOrganisationManagementPDF({
+        stats,
+        organizations: organizations.map(org => ({
+          ...org,
+          createdAt: org.created
+        })),
+        subscriptionData: [],
+        chartRefs,
+        filters,
+      })
+
+      Swal.fire({
+        icon: 'success',
+        title: 'PDF Generated Successfully',
+        text: 'The Organisation Management report has been downloaded.',
+        timer: 2000,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('PDF generation error:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'PDF Generation Failed',
+        text: 'Failed to generate the PDF report. Please try again.',
+        confirmButtonColor: '#ef4444',
+      })
+    } finally {
+      setExporting(false)
+      if (toastId) {
+        Swal.close()
+      }
+    }
+  }
+
+  const handleExportCSV = async () => {
+    setExporting(true)
+    try {
+      const stats = {
+        totalOrganizations: organizations.length,
+        activeOrganizations: organizations.filter(o => o.status === 'Active').length,
+        trialOrganizations: organizations.filter(o => o.status === 'Trial').length,
+        suspendedOrganizations: organizations.filter(o => o.status === 'Suspended').length,
+      }
+
+      generateOrganisationManagementCSV({
+        stats,
+        organizations: organizations.map(org => ({
+          ...org,
+          createdAt: org.created
+        })),
+        subscriptionData: [],
+      })
+
+      Swal.fire({
+        icon: 'success',
+        title: 'CSV Export Successful',
+        text: 'The Organisation Management data has been downloaded.',
+        timer: 2000,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('CSV export error:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'CSV Export Failed',
+        text: 'Failed to export the CSV file. Please try again.',
+        confirmButtonColor: '#ef4444',
+      })
+    } finally {
+      setExporting(false)
+    }
   }
 
   const handleLoginAs = async (org) => {
@@ -729,10 +838,11 @@ export default function TenantManagement() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ExportDropdown
-            onExcel={() => superadminService.exportTenants('excel', { search: searchQuery, plan: planFilter !== 'all' ? planFilter : '', status: statusFilter !== 'all' ? statusFilter : '' })}
-            onPDF={() => superadminService.exportTenants('pdf', { search: searchQuery, plan: planFilter !== 'all' ? planFilter : '', status: statusFilter !== 'all' ? statusFilter : '' })}
-            excelFilename="tenants.xlsx"
-            pdfFilename="tenants.pdf"
+            onExcel={() => handleExportCSV()}
+            onPDF={() => handleExportPDF()}
+            excelFilename="organisations.xlsx"
+            pdfFilename="organisations.pdf"
+            exporting={exporting}
           />
           <button type="button" onClick={openNewOrgModal} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
             <HiPlus className="h-4 w-4" /> Add Organisation
@@ -832,7 +942,7 @@ export default function TenantManagement() {
             created: <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{org.created}</span>,
             actions: (
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => handleView(org)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-slate-500 text-white transition-colors hover:bg-slate-600" title="View details"><HiDocumentText className="h-4 w-4" /></button>
+                <button type="button" onClick={() => handleView(org)} className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-500 text-white transition-colors hover:bg-slate-600" title="View details"><HiDocumentText className="h-4 w-4" /></button>
                 <button type="button" onClick={() => handleEdit(org)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-sky-500 text-white transition-colors hover:bg-sky-600" title="Edit organization"><HiPencil className="h-4 w-4" /></button>
                 <button type="button" onClick={() => handleOpenFeatures(org)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-violet-500 text-white transition-colors hover:bg-violet-600" title="Manage features"><HiSquares2X2 className="h-4 w-4" /></button>
                 <button type="button" onClick={() => handleLoginAs(org)} className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-emerald-500 text-white transition-colors hover:bg-emerald-600" title="Login as Admin"><HiArrowTopRightOnSquare className="h-4 w-4" /></button>
@@ -1189,9 +1299,8 @@ export default function TenantManagement() {
                     key={gw.slug}
                     type="button"
                     onClick={() => setModalGateway(gw.slug)}
-                    className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${
-                      active ? 'border-[#0F766E] bg-teal-50/50' : 'border-slate-200 bg-white hover:border-slate-300'
-                    }`}
+                    className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${active ? 'border-[#0F766E] bg-teal-50/50' : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
                   >
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-teal-100 text-[#0F766E]' : 'bg-slate-100 text-slate-500'}`}>
                       <HiCreditCard className="h-5 w-5" />
@@ -1209,9 +1318,8 @@ export default function TenantManagement() {
               <button
                 type="button"
                 onClick={() => setModalGateway('manual')}
-                className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${
-                  modalGateway === 'manual' ? 'border-[#0F766E] bg-teal-50/50' : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
+                className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${modalGateway === 'manual' ? 'border-[#0F766E] bg-teal-50/50' : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
               >
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${modalGateway === 'manual' ? 'bg-teal-100 text-[#0F766E]' : 'bg-slate-100 text-slate-500'}`}>
                   <HiBuildingLibrary className="h-5 w-5" />

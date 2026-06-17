@@ -7,11 +7,30 @@ import { useAuth } from '../../context/AuthContext.jsx'
 
 
 function roleSubtitle(role) {
-  if (role === 'superadmin') return 'SUPER ADMIN'
-  if (role === 'admin') return 'ADMIN'
-  if (role === 'hr') return 'HR ADMIN'
-  if (role === 'employee') return 'EMPLOYEE'
-  return (role ?? '').replace(/_/g, ' ').toUpperCase()
+  if (!role) return 'User'
+  
+  const roleMap = {
+    'superadmin': 'SUPER ADMIN',
+    'support_admin': 'SUPPORT ADMIN',
+    'billing_admin': 'BILLING ADMIN',
+    'admin': 'ADMIN',
+    'hr_admin': 'HR ADMIN',
+    'hr_executive': 'HR EXECUTIVE',
+    'hr_manager': 'HR MANAGER',
+    'manager': 'MANAGER',
+    'employee': 'EMPLOYEE',
+  }
+  
+  const normalized = String(role).toLowerCase().trim()
+  if (roleMap[normalized]) {
+    return roleMap[normalized]
+  }
+  
+  // Fallback: replace underscores/hyphens with spaces and uppercase each word
+  return String(role)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .toUpperCase()
 }
 
 function panelName(role) {

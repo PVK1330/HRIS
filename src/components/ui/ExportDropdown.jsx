@@ -35,7 +35,7 @@ export function ExportDropdown({ onExcel, onPDF, excelFilename, pdfFilename, dis
     const tid = toast.loading('Preparing export…')
     try {
       const res = await fn()
-      const blob = res.data instanceof Blob ? res.data : new Blob([res.data])
+      const blob = res?.data instanceof Blob ? res?.data : new Blob([res?.data])
       triggerDownload(blob, filename)
       toast.success('Download started', { id: tid })
     } catch (e) {

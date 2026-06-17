@@ -557,7 +557,29 @@ export default function AdminLayout() {
                   {user?.name}
                 </div>
                 <div className="text-[9px] font-black uppercase tracking-[0.1em] text-[#0E9F6E] mt-1">
-                  {String(user?.role || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'User'}
+                  {(() => {
+                    const role = user?.role
+                    if (!role) return 'User'
+                    const roleMap = {
+                      'superadmin': 'Super Admin',
+                      'support_admin': 'Support Admin',
+                      'billing_admin': 'Billing Admin',
+                      'admin': 'Admin',
+                      'hr_admin': 'HR Admin',
+                      'hr_executive': 'HR Executive',
+                      'hr_manager': 'HR Manager',
+                      'manager': 'Manager',
+                      'employee': 'Employee',
+                    }
+                    const normalized = String(role).toLowerCase().trim()
+                    if (roleMap[normalized]) {
+                      return roleMap[normalized].toUpperCase()
+                    }
+                    return String(role)
+                      .replace(/[_-]+/g, ' ')
+                      .replace(/\b\w/g, c => c.toUpperCase())
+                      .toUpperCase()
+                  })()}
                 </div>
               </div>
             </Link>

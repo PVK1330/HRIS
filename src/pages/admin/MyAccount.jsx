@@ -18,7 +18,29 @@ import MfaCard from './settings/MfaCard.jsx'
 const errMsg = (e, fb) => e?.response?.data?.message || e?.message || fb
 
 function roleLabel(role) {
-  return String(role || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || '—'
+  if (!role) return 'Not Assigned'
+  
+  const roleMap = {
+    'superadmin': 'Super Admin',
+    'support_admin': 'Support Admin',
+    'billing_admin': 'Billing Admin',
+    'admin': 'Admin',
+    'hr_admin': 'HR Admin',
+    'hr_executive': 'HR Executive',
+    'hr_manager': 'HR Manager',
+    'manager': 'Manager',
+    'employee': 'Employee',
+  }
+  
+  const normalized = String(role).toLowerCase().trim()
+  if (roleMap[normalized]) {
+    return roleMap[normalized]
+  }
+  
+  // Fallback: replace underscores/hyphens with spaces and title case
+  return String(role)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function InfoRow({ icon: Icon, label, value, hint }) {
@@ -50,6 +72,12 @@ export default function MyAccount() {
     try {
       const data = await getMyAccount()
       if (data) {
+        // Debug logging
+        console.log("Logged-in User:", user)
+        console.log("User Role:", user?.role)
+        console.log("Profile Data from API:", data)
+        console.log("Profile Role from API:", data?.role)
+        
         setProfile(data)
         setName(data.name || '')
         if (data.profile_image_url !== undefined) {
@@ -62,7 +90,7 @@ export default function MyAccount() {
     } finally {
       setLoading(false)
     }
-  }, [updateUser])
+  }, [updateUser, user])
 
   useEffect(() => {
     load()
@@ -103,7 +131,7 @@ export default function MyAccount() {
 
   const displayName = profile?.name || user?.name || 'My Account'
   const displayEmail = profile?.email || user?.email || '—'
-  const displayRole = roleLabel(profile?.role || user?.role)
+  const displayRole = roleLabel(profile?.role || user?.role || null)
   const isEmployee = (profile?.userType || user?.role) === 'employee'
 
   return (
