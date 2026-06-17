@@ -1,14 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAttendanceSettings } from '../../../../hooks/useAttendanceSettings'
-import {
-  FieldRow,
-  SectionCard,
-  SettingsBanner,
-  SettingsError,
-  SettingsLoading,
-  SettingsSection,
-  Toggle,
-} from '../components/ui'
 import { ApprovalChain } from './ApprovalChain.jsx'
 
 const OT_CALC_OPTIONS = ['Daily', 'Weekly', 'Monthly']
@@ -18,12 +9,6 @@ const OT_RATE_OPTIONS = [
   { label: '1.5x (Standard)', value: 1.5 },
   { label: '2.0x (Double)', value: 2.0 },
 ]
-const APPROVAL_OPTIONS = [
-  'Reporting Manager → Dept Head → HR',
-  'Reporting Manager → HR',
-  'HR Only',
-  'Auto Approve',
-]
 
 const APPROVAL_FLOW = 'Reporting Manager → Dept Head → HR'
 
@@ -31,31 +16,87 @@ function buildDraft(data) {
   if (!data) return null
   const ot = data.overtimeSettings || {}
   return {
-    overtimeEligibility: ot.overtimeEligibility !== false,
-    calculationRule: ot.calculationRule ?? 'Daily',
-    approvalWorkflow: ot.approvalWorkflow ?? APPROVAL_FLOW,
-    minimumThresholdMinutes: ot.minimumThresholdMinutes ?? 30,
-    maxPerMonthHours: ot.maxPerMonthHours ?? 0,
-    dailyOtLimitHours: ot.dailyOtLimitHours ?? 4,
-    weeklyOtLimitHours: ot.weeklyOtLimitHours ?? 12,
-    payMultiplier: ot.payMultiplier ?? 1.5,
-    requireReason: ot.requireReason !== false,
-    carryForwardOt: Boolean(ot.carryForwardOt),
-    holidayOtApplicable: ot.holidayOtApplicable !== false,
+    overtimeEligibility:      ot.overtimeEligibility !== false,
+    calculationRule:          ot.calculationRule ?? 'Daily',
+    approvalWorkflow:         ot.approvalWorkflow ?? APPROVAL_FLOW,
+    minimumThresholdMinutes:  ot.minimumThresholdMinutes ?? 30,
+    maxPerMonthHours:         ot.maxPerMonthHours ?? 0,
+    dailyOtLimitHours:        ot.dailyOtLimitHours ?? 4,
+    weeklyOtLimitHours:       ot.weeklyOtLimitHours ?? 12,
+    payMultiplier:            ot.payMultiplier ?? 1.5,
+    requireReason:            ot.requireReason !== false,
+    carryForwardOt:           Boolean(ot.carryForwardOt),
+    holidayOtApplicable:      ot.holidayOtApplicable !== false,
     notifyManagerOnOtRequest: ot.notifyManagerOnOtRequest !== false,
   }
 }
 
-const sel =
-  'h-9 w-full max-w-[220px] cursor-pointer rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 shadow-2xs outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]'
-const inp =
-  'h-9 w-full max-w-[140px] rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 shadow-2xs outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]'
+/* ── Style tokens ─────────────────────────────────────────────────────── */
+const inputCls =
+  'h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]'
+const selectCls =
+  'h-10 cursor-pointer rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E]'
 
+/* ── Card ─────────────────────────────────────────────────────────────── */
+function Card({ title, description, children }) {
+  return (
+    <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-[#0F766E] bg-[#0F766E] px-5 py-3">
+        <h2 className="text-sm font-semibold text-white">{title}</h2>
+        {description && (
+          <p className="mt-0.5 text-xs font-medium text-white/70">{description}</p>
+        )}
+      </div>
+      <div className="divide-y divide-slate-100">{children}</div>
+    </div>
+  )
+}
+
+/* ── Field row ────────────────────────────────────────────────────────── */
+function Field({ label, hint, children }) {
+  return (
+    <div className="flex items-center justify-between gap-6 px-5 py-3.5">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-700">{label}</p>
+        {hint && <p className="mt-0.5 text-xs text-slate-400">{hint}</p>}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">{children}</div>
+    </div>
+  )
+}
+
+/* ── Toggle ───────────────────────────────────────────────────────────── */
+function Toggle({ checked, onChange, disabled = false }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => !disabled && onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/30 disabled:opacity-50 ${
+        checked ? 'bg-[#0F766E]' : 'bg-gray-200'
+      }`}
+      aria-pressed={checked}
+    >
+      <span
+        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+          checked ? 'translate-x-[18px]' : 'translate-x-1'
+        }`}
+      />
+    </button>
+  )
+}
+
+/* ── Unit label ───────────────────────────────────────────────────────── */
+function Unit({ children }) {
+  return <span className="text-sm font-medium text-slate-400">{children}</span>
+}
+
+/* ── Main component ───────────────────────────────────────────────────── */
 export default function OvertimeSettings({ registerToolbar }) {
   const { settings, loading, saving, error, save } = useAttendanceSettings()
-  const [draft, setDraft] = useState(null)
+  const [draft, setDraft]       = useState(null)
   const [baseline, setBaseline] = useState(null)
-  const [banner, setBanner] = useState(null)
+  const [banner, setBanner]     = useState(null)
   const didInit = useRef(false)
 
   useEffect(() => {
@@ -102,73 +143,122 @@ export default function OvertimeSettings({ registerToolbar }) {
 
   const set = (partial) => setDraft((p) => p ? { ...p, ...partial } : p)
 
-  if (loading && !draft) return <SettingsLoading message="Loading overtime settings…" />
-  if (!draft) return <SettingsError message={error || 'Could not load overtime settings.'} />
+  if (loading && !draft) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center rounded-none border border-slate-200 bg-white p-10 text-center text-sm font-medium text-slate-500 shadow-sm">
+        Loading overtime settings…
+      </div>
+    )
+  }
+
+  if (!draft) {
+    return (
+      <div className="rounded-none border border-red-100 bg-red-50 p-6 text-sm font-medium text-red-700 shadow-sm">
+        {error || 'Could not load overtime settings.'}
+      </div>
+    )
+  }
 
   return (
-    <SettingsSection>
+    <div className="space-y-6 animate-in fade-in duration-500 min-w-0 py-6">
+
+      {/* Banner */}
       {(banner?.type === 'ok' || error) && (
-        <SettingsBanner type={banner?.type === 'ok' ? 'ok' : 'error'}>
+        <div className={`rounded-none px-4 py-3 text-sm font-medium ${
+          banner?.type === 'ok'
+            ? 'border border-emerald-100 bg-emerald-50 text-emerald-800'
+            : 'border border-red-100 bg-red-50 text-red-700'
+        }`}>
           {banner?.type === 'ok' ? banner.text : error}
-        </SettingsBanner>
+        </div>
       )}
 
-      {/* Eligibility */}
-      <SectionCard title="OT Eligibility" description="Enable and scope overtime for your workforce">
-        <FieldRow label="Overtime Enabled">
+      {/* ── Eligibility ───────────────────────────────────────────────── */}
+      <Card title="OT Eligibility" description="Enable and scope overtime for your workforce">
+        <Field label="Overtime Enabled">
           <Toggle checked={draft.overtimeEligibility} onChange={(v) => set({ overtimeEligibility: v })} />
-        </FieldRow>
-        <FieldRow label="Holiday OT Applicable">
+        </Field>
+        <Field label="Holiday OT Applicable">
           <Toggle checked={draft.holidayOtApplicable} onChange={(v) => set({ holidayOtApplicable: v })} />
-        </FieldRow>
-      </SectionCard>
+        </Field>
+      </Card>
 
-      {/* Calculation rules */}
-      <SectionCard title="Calculation Rules" description="Define how OT hours are computed">
-        <FieldRow label="OT Calculation Period">
-          <select className={sel} value={draft.calculationRule} onChange={(e) => set({ calculationRule: e.target.value })}>
+      {/* ── Calculation Rules ─────────────────────────────────────────── */}
+      <Card title="Calculation Rules" description="Define how OT hours are computed">
+        <Field label="OT Calculation Period">
+          <select
+            className={`${selectCls} w-44`}
+            value={draft.calculationRule}
+            onChange={(e) => set({ calculationRule: e.target.value })}
+          >
             {OT_CALC_OPTIONS.map((o) => <option key={o}>{o}</option>)}
           </select>
-        </FieldRow>
-        <FieldRow label="OT Starts After (minutes over shift)">
-          <input className={inp} type="number" min={0} max={120} value={draft.minimumThresholdMinutes}
-            onChange={(e) => set({ minimumThresholdMinutes: parseInt(e.target.value, 10) || 0 })} />
-        </FieldRow>
-        <FieldRow label="Daily OT Limit (hours)" hint="0 = no limit">
-          <input className={inp} type="number" min={0} max={12} step={0.5} value={draft.dailyOtLimitHours}
-            onChange={(e) => set({ dailyOtLimitHours: parseFloat(e.target.value) || 0 })} />
-        </FieldRow>
-        <FieldRow label="Weekly OT Limit (hours)" hint="0 = no limit">
-          <input className={inp} type="number" min={0} max={60} step={0.5} value={draft.weeklyOtLimitHours}
-            onChange={(e) => set({ weeklyOtLimitHours: parseFloat(e.target.value) || 0 })} />
-        </FieldRow>
-        <FieldRow label="Max OT per Month (hours)" hint="0 = no cap">
-          <input className={inp} type="number" min={0} max={100} step={0.5} value={draft.maxPerMonthHours}
-            onChange={(e) => set({ maxPerMonthHours: parseFloat(e.target.value) || 0 })} />
-        </FieldRow>
-        <FieldRow label="OT Pay Rate (multiplier)">
-          <select className={sel} value={String(draft.payMultiplier)}
-            onChange={(e) => set({ payMultiplier: parseFloat(e.target.value) })}>
-            {OT_RATE_OPTIONS.map((o) => <option key={o.value} value={String(o.value)}>{o.label}</option>)}
+        </Field>
+        <Field label="OT Starts After" hint="Minutes worked beyond shift end before OT is counted">
+          <input
+            type="number" min={0} max={120}
+            value={draft.minimumThresholdMinutes}
+            onChange={(e) => set({ minimumThresholdMinutes: parseInt(e.target.value, 10) || 0 })}
+            className={`${inputCls} w-24`}
+          />
+          <Unit>mins</Unit>
+        </Field>
+        <Field label="Daily OT Limit" hint="0 = no limit">
+          <input
+            type="number" min={0} max={12} step={0.5}
+            value={draft.dailyOtLimitHours}
+            onChange={(e) => set({ dailyOtLimitHours: parseFloat(e.target.value) || 0 })}
+            className={`${inputCls} w-24`}
+          />
+          <Unit>hours</Unit>
+        </Field>
+        <Field label="Weekly OT Limit" hint="0 = no limit">
+          <input
+            type="number" min={0} max={60} step={0.5}
+            value={draft.weeklyOtLimitHours}
+            onChange={(e) => set({ weeklyOtLimitHours: parseFloat(e.target.value) || 0 })}
+            className={`${inputCls} w-24`}
+          />
+          <Unit>hours</Unit>
+        </Field>
+        <Field label="Max OT per Month" hint="0 = no cap">
+          <input
+            type="number" min={0} max={100} step={0.5}
+            value={draft.maxPerMonthHours}
+            onChange={(e) => set({ maxPerMonthHours: parseFloat(e.target.value) || 0 })}
+            className={`${inputCls} w-24`}
+          />
+          <Unit>hours</Unit>
+        </Field>
+        <Field label="OT Pay Rate">
+          <select
+            className={`${selectCls} w-44`}
+            value={String(draft.payMultiplier)}
+            onChange={(e) => set({ payMultiplier: parseFloat(e.target.value) })}
+          >
+            {OT_RATE_OPTIONS.map((o) => (
+              <option key={o.value} value={String(o.value)}>{o.label}</option>
+            ))}
           </select>
-        </FieldRow>
-        <FieldRow label="Carry Forward OT">
+        </Field>
+        <Field label="Carry Forward OT">
           <Toggle checked={draft.carryForwardOt} onChange={(v) => set({ carryForwardOt: v })} />
-        </FieldRow>
-      </SectionCard>
+        </Field>
+      </Card>
 
-      {/* Approval workflow */}
-      <SectionCard title="Approval Workflow" description="OT request routing and notifications">
-        <FieldRow label="Approval Levels" hint="Fixed multi-stage chain applied to all OT requests.">
+      {/* ── Approval Workflow ─────────────────────────────────────────── */}
+      <Card title="Approval Workflow" description="OT request routing and notifications">
+        <Field label="Approval Levels" hint="Fixed multi-stage chain applied to all OT requests.">
           <ApprovalChain value={draft.approvalWorkflow} onChange={(v) => set({ approvalWorkflow: v })} />
-        </FieldRow>
-        <FieldRow label="Require Reason on Submission">
+        </Field>
+        <Field label="Require Reason on Submission">
           <Toggle checked={draft.requireReason} onChange={(v) => set({ requireReason: v })} />
-        </FieldRow>
-        <FieldRow label="Notify Manager on OT Request">
+        </Field>
+        <Field label="Notify Manager on OT Request">
           <Toggle checked={draft.notifyManagerOnOtRequest} onChange={(v) => set({ notifyManagerOnOtRequest: v })} />
-        </FieldRow>
-      </SectionCard>
-    </SettingsSection>
+        </Field>
+      </Card>
+
+    </div>
   )
 }
