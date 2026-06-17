@@ -16,6 +16,13 @@ import AuditLogs from "./sections/AuditLogs.jsx";
 import BackupRestore from "./sections/BackupRestore.jsx";
 import ExitSettingsSection from "./sections/ExitSettingsSection.jsx";
 import AssetSettingsSection from "./sections/AssetSettingsSection.jsx";
+import ShiftManagement from '../../admin/shifts/ShiftManagement.jsx';
+import ApprovalInbox from '../../admin/approvals/ApprovalInbox.jsx';
+import OvertimeSettings from "./sections/OvertimeSettings.jsx";
+import RegularisationPolicySettings from "./sections/RegularisationPolicySettings.jsx";
+import GeoFencingSettings from "./sections/GeoFencingSettings.jsx";
+import PayrollPolicySettings from "./sections/PayrollPolicySettings.jsx";
+import LocationManagement from "../locations/LocationManagement.jsx";
 
 function ActiveSection({
   active,
@@ -50,6 +57,20 @@ function ActiveSection({
       return <ExitSettingsSection />;
     case "assets":
       return <AssetSettingsSection registerToolbar={registerGeneralToolbar} />;
+    case "shifts":
+      return <ShiftManagement />;
+    case "approvals":
+      return <ApprovalInbox />;
+    case "overtime":
+      return <OvertimeSettings registerToolbar={registerGeneralToolbar} />;
+    case "regularisation":
+      return <RegularisationPolicySettings registerToolbar={registerGeneralToolbar} />;
+    case "locations":
+      return <LocationManagement />;
+    case "geofencing":
+      return <GeoFencingSettings registerToolbar={registerGeneralToolbar} />;
+    case "payroll-policy":
+      return <PayrollPolicySettings registerToolbar={registerGeneralToolbar} />;
     default:
       return null;
   }

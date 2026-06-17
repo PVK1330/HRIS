@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Modal } from '../ui/Modal.jsx'
-import { listEmployees } from '../../services/employeeService.js'
+import { listEmployeesDropdown } from '../../services/employeeService.js'
 import { addOvertime, updateOvertime } from '../../services/attendanceService.js'
 
 const inputClass = 'w-full h-11 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/25'
@@ -40,6 +40,7 @@ export default function AddOvertimeModal({
   const selfLocked = !isEdit && lockSelf
   const [formData, setFormData] = useState(EMPTY)
   const [employees, setEmployees] = useState([])
+  const [empLoadError, setEmpLoadError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -50,9 +51,26 @@ export default function AddOvertimeModal({
       setFormData({ ...EMPTY, employeeId: String(selfEmployee?.id || '') })
     } else {
       setFormData(EMPTY)
-      listEmployees({ limit: 1000, status: 'Active' })
-        .then((res) => setEmployees(res?.employees || res?.records || []))
-        .catch(() => {})
+      setEmpLoadError('')
+      listEmployeesDropdown()
+        .then((list) => {
+          const arr = Array.isArray(list) ? list : []
+          // If scope returns empty (e.g. dept manager with no reports yet) fall back to self
+          if (arr.length === 0 && selfEmployee?.id) {
+            setEmployees([{ id: selfEmployee.id, full_name: selfEmployee.name || 'Me', emp_id: '' }])
+            setFormData((p) => ({ ...p, employeeId: String(selfEmployee.id) }))
+          } else {
+            setEmployees(arr)
+          }
+        })
+        .catch(() => {
+          setEmpLoadError('Could not load employee list.')
+          // Fall back to self so the form is still usable
+          if (selfEmployee?.id) {
+            setEmployees([{ id: selfEmployee.id, full_name: selfEmployee.name || 'Me', emp_id: '' }])
+            setFormData((p) => ({ ...p, employeeId: String(selfEmployee.id) }))
+          }
+        })
     }
   }, [isOpen, isEdit, editRecord, selfLocked, selfEmployee])
 
@@ -113,17 +131,24 @@ export default function AddOvertimeModal({
           ) : selfLocked ? (
             <div className={lockedClass}>{selfEmployee?.name || 'You'}</div>
           ) : (
-            <select
-              value={formData.employeeId}
-              onChange={(e) => setFormData((p) => ({ ...p, employeeId: e.target.value }))}
-              className={inputClass}
-              required
-            >
-              <option value="">Select</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>{(emp.full_name || emp.name)} ({emp.emp_id})</option>
-              ))}
-            </select>
+            <>
+              <select
+                value={formData.employeeId}
+                onChange={(e) => setFormData((p) => ({ ...p, employeeId: e.target.value }))}
+                className={inputClass}
+                required
+              >
+                <option value="">Select employee</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.full_name || emp.name}{emp.emp_id ? ` (${emp.emp_id})` : ''}
+                  </option>
+                ))}
+              </select>
+              {empLoadError && (
+                <p className="mt-1 text-xs text-red-600">{empLoadError}</p>
+              )}
+            </>
           )}
         </div>
 

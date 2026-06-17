@@ -23,6 +23,8 @@ import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
 import { listDesignationsByDepartmentId } from '../../../services/designationService.js'
 import { triggerExport } from '../../../utils/exportHelper.js'
+import { listLocations } from '../../../services/locationsService.js'
+import { listActiveShifts } from '../../../services/shiftsService.js'
 import { todayIsoDate, formatEmpIdDisplay } from '../../../utils/employeeId.js'
 
 const selectClass = 'mt-1.5 w-full rounded-md border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all focus:border-[#0F766E]'
@@ -76,7 +78,7 @@ function mapEmployeeList(e) {
     phone: e.phone_number || '',
     jobTitle: e.job_title,
     department: e.department,
-    location: e.work_location || '',
+    location: e.work_location_name || e.work_location || '',
     departmentHead: e.managerName || 'N/A',
     manager: e.manager_name || e.reporting_manager || 'N/A',
     status: e.employment_status || 'Active',
@@ -103,7 +105,10 @@ function mapEmployeeFull(e) {
     department: e.department,
     departmentId: e.department_id ?? null,
     employmentType: e.employment_type || 'Full-time',
-    location: e.work_location || '',
+    location: e.work_location_name || e.work_location || '',
+    workLocationId: e.work_location_id ?? null,
+    shiftId: e.shift_id ?? null,
+    shiftName: e.shift_name || '',
     manager: e.manager_name || e.manager_emp_id || e.reporting_manager || '',
     managerEmpId: e.manager_emp_id || '',
     status: e.employment_status || 'Active',
@@ -204,6 +209,8 @@ const initialFormData = {
   /** Employment */
   employmentType: 'Full-time',
   workLocation: '',
+  workLocationId: '',
+  shiftId: '',
   reportingManager: '',
   probationEndDate: '',
   salary: '',
@@ -273,6 +280,8 @@ export default function EmployeeDirectory() {
   const [filterOptions, setFilterOptions] = useState({
     departments: [], jobTitles: [], workLocations: [], workModes: [], statuses: [],
   })
+  const [activeLocations, setActiveLocations] = useState([])
+  const [activeShifts, setActiveShifts] = useState([])
   const [tenantRoles, setTenantRoles] = useState([])
   const [departmentsCatalog, setDepartmentsCatalog] = useState([])
   const [designationsCatalog, setDesignationsCatalog] = useState([])
@@ -405,13 +414,20 @@ export default function EmployeeDirectory() {
     const { signal } = controller
     ;(async () => {
       try {
-        const [s, f] = await Promise.all([
+        const [s, f, locs, shifts] = await Promise.all([
           getEmployeeStats({ signal }),
           getFilterOptions({ signal }),
+          listLocations({ status: 'active', limit: 500 }),
+          listActiveShifts(),
         ])
         if (signal.aborted) return
         if (s) setStats(s)
         if (f) setFilterOptions(f)
+        if (locs) {
+          const items = (locs?.data ?? locs ?? []).filter((l) => l.name)
+          setActiveLocations(items)
+        }
+        if (shifts?.length) setActiveShifts(shifts)
       } catch (err) {
         if (err.name === 'CanceledError' || err.name === 'AbortError') return
         console.error(err)
@@ -720,6 +736,8 @@ export default function EmployeeDirectory() {
       departmentId,
       employmentType: formData.employmentType,
       workLocation: formData.workLocation || null,
+      workLocationId: formData.workLocationId ? Number(formData.workLocationId) : null,
+      shiftId: formData.shiftId ? Number(formData.shiftId) : null,
       reportingManagerEmpId: formData.reportingManager || null,
       joinDate: formData.joinDate,
       probationEndDate: formData.probationEndDate || null,
@@ -947,6 +965,8 @@ export default function EmployeeDirectory() {
           homeAddress: f.homeAddress,
           employmentType: f.employmentType || 'Full-time',
           workLocation: f.location,
+          workLocationId: f.workLocationId != null ? String(f.workLocationId) : '',
+          shiftId: String(f.shiftId || f.shift_id || ''),
           reportingManager: f.managerEmpId || '',
           probationEndDate: f.probationEndDate,
           salary: f.salary,
@@ -1881,14 +1901,37 @@ export default function EmployeeDirectory() {
                   </label>
                   <select
                     id="work-location"
-                    name="workLocation"
-                    value={formData.workLocation}
-                    onChange={handleFormChange}
+                    value={formData.workLocationId || ''}
+                    onChange={(e) => {
+                      const loc = activeLocations.find((l) => String(l.id) === e.target.value)
+                      setFormData((prev) => ({
+                        ...prev,
+                        workLocationId: e.target.value,
+                        workLocation: loc?.name || '',
+                      }))
+                    }}
                     className={basicFieldClass}
                   >
                     <option value="">Select location</option>
-                    {(filterOptions.workLocations?.length ? filterOptions.workLocations : ['Dubai', 'Abu Dhabi', 'Remote', 'UK', 'India']).map((loc) => (
-                      <option key={loc} value={loc}>{loc}</option>
+                    {activeLocations.map((loc) => (
+                      <option key={loc.id} value={String(loc.id)}>{loc.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="shift-id" className="mb-1 block text-sm font-medium text-slate-800">
+                    Shift
+                  </label>
+                  <select
+                    id="shift-id"
+                    name="shiftId"
+                    value={formData.shiftId}
+                    onChange={handleFormChange}
+                    className={basicFieldClass}
+                  >
+                    <option value="">Select Shift (Optional)</option>
+                    {activeShifts.map((s) => (
+                      <option key={s.id} value={String(s.id)}>{s.name}{s.shift_type ? ` (${s.shift_type})` : ''}</option>
                     ))}
                   </select>
                 </div>

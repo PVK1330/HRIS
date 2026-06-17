@@ -1,5 +1,5 @@
 // v2 ” single-tab unified form with system role
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   HiUserPlus,
   HiClipboardDocumentCheck,
@@ -19,6 +19,8 @@ import {
   HiDocumentDuplicate,
   HiDocumentText,
   HiDocument,
+  HiDocumentArrowDown,
+  HiChevronDown,
 } from 'react-icons/hi2'
 import toast from 'react-hot-toast'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -37,6 +39,8 @@ import {
 } from '../../../services/employeeService.js'
 import { useCurrency } from '../../../context/CurrencyContext.jsx'
 import * as onboardingApi from '../../../services/onboardingApi.js'
+import { listLocations } from '../../../services/locationsService.js'
+import { listActiveShifts } from '../../../services/shiftsService.js'
 import { resolveFileUrl } from '../../../utils/fileUrl.js'
 import { useAsyncAction } from '../../../hooks/useAsyncAction.js'
 import {
@@ -47,6 +51,7 @@ import {
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
 import { listDesignations } from '../../../services/designationService.js'
+import { triggerExport } from '../../../utils/exportHelper.js'
 
 // Accepts an optional leading +, digits, spaces, dashes, parentheses; requires
 // 7–15 actual digits (E.164-ish, lenient about formatting).
@@ -103,6 +108,8 @@ const INITIAL_FORM = {
   employmentType: 'Full-time',
   workMode: 'On-site',
   workLocation: '',
+  workLocationId: '',
+  shiftId: '',
   reportingManagerEmpId: '',
   rbacRoleId: '',
   // Offer & Status
@@ -126,6 +133,9 @@ const INITIAL_FORM = {
 export default function Onboarding() {
   const [q, setQ] = useState('')
   const [activeStatus, setActiveStatus] = useState('All')
+  const [exportOpen, setExportOpen] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
+  const exportRef = useRef(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [selectedHire, setSelectedHire] = useState(null)
@@ -145,6 +155,8 @@ export default function Onboarding() {
     workLocations: [],
     workModes: [],
   })
+  const [activeLocations, setActiveLocations] = useState([])
+  const [activeShifts, setActiveShifts] = useState([])
   const [departmentsCatalog, setDepartmentsCatalog] = useState([])
   const [designationsCatalog, setDesignationsCatalog] = useState([])
   const [deptDesignations, setDeptDesignations] = useState([])
@@ -189,7 +201,9 @@ export default function Onboarding() {
       departmentId: emp.department_id || emp.departmentId || '',
       employmentType: emp.employment_type || emp.employmentType || 'Full-time',
       workMode: emp.work_mode || emp.workMode || 'On-site',
-      workLocation: emp.work_location || emp.workLocation || '',
+      workLocation: emp.work_location_name || emp.work_location || emp.workLocation || '',
+      workLocationId: emp.work_location_id != null ? String(emp.work_location_id) : '',
+      shiftId: String(emp.shift_id || emp.shiftId || ''),
       reportingManagerEmpId: emp.reporting_manager_emp_id || emp.reportingManagerEmpId || '',
       rbacRoleId: emp.rbac_role_id || emp.rbacRoleId || '',
       probationPeriod: emp.probation_period || '6 Months',
@@ -230,10 +244,12 @@ export default function Onboarding() {
   }, [loadOnboarding, q])
 
   const loadMetaOptions = useCallback(async () => {
-    const [filtersResult, deptsResult, desigsResult] = await Promise.allSettled([
+    const [filtersResult, deptsResult, desigsResult, locsResult, shiftsResult] = await Promise.allSettled([
       getFilterOptions(),
       listDepartments({ limit: 100, page: 1, status: 'active' }),
       listDesignations({ limit: 100, page: 1, status: 'active' }),
+      listLocations({ status: 'active', limit: 500 }),
+      listActiveShifts(),
     ])
 
     const filters = filtersResult.status === 'fulfilled' ? filtersResult.value : null
@@ -245,6 +261,17 @@ export default function Onboarding() {
         workLocations: filters.workLocations || [],
         workModes: filters.workModes || [],
       })
+    }
+
+    if (locsResult.status === 'fulfilled') {
+      const locs = locsResult.value
+      const items = (locs?.data ?? locs ?? []).filter((l) => l.name)
+      setActiveLocations(items)
+    }
+
+    if (shiftsResult.status === 'fulfilled') {
+      const shifts = Array.isArray(shiftsResult.value) ? shiftsResult.value : (shiftsResult.value?.data ?? [])
+      if (shifts.length) setActiveShifts(shifts)
     }
 
     const fromFiltersDepts =
@@ -494,6 +521,31 @@ export default function Onboarding() {
 
   /* â”€â”€â”€ Stats & filtering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  async function runExport(type) {
+    const ext = type === 'pdf' ? 'pdf' : 'xlsx'
+    const today = new Date().toISOString().slice(0, 10)
+    setExportLoading(true)
+    const tid = toast.loading('Preparing export…')
+    try {
+      await triggerExport('employees/onboarding', {}, type, `onboarding_${today}.${ext}`)
+      toast.success('Export ready.', { id: tid })
+    } catch (err) {
+      console.error(err)
+      toast.error('Export failed.', { id: tid })
+    } finally {
+      setExportLoading(false)
+      setExportOpen(false)
+    }
+  }
+
   const stats = useMemo(() => {
     const offerSent = rows.filter((r) => r.workflowStatus === 'offer_sent').length
     const documentsPending = rows.filter((r) => r.workflowStatus === 'documents_pending').length
@@ -608,6 +660,8 @@ export default function Onboarding() {
         employmentType,
         workMode: wizardForm.workMode || null,
         workLocation: wizardForm.workLocation || null,
+        workLocationId: wizardForm.workLocationId ? Number(wizardForm.workLocationId) : undefined,
+        shiftId: wizardForm.shiftId ? Number(wizardForm.shiftId) : undefined,
         reportingManagerEmpId: wizardForm.reportingManagerEmpId || undefined,
         salary: wizardForm.annualCtc ? Number(wizardForm.annualCtc) : undefined,
         rbacRoleId: wizardForm.rbacRoleId ? Number(wizardForm.rbacRoleId) : null,
@@ -841,6 +895,30 @@ export default function Onboarding() {
               Reset Filters
             </button>
           )}
+          <div className="relative ml-auto" ref={exportRef}>
+            <button
+              type="button"
+              disabled={exportLoading}
+              onClick={() => setExportOpen((p) => !p)}
+              className="inline-flex items-center gap-2 h-10 px-3 rounded-none border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 shadow-sm"
+            >
+              <HiDocumentArrowDown className="h-4 w-4" />
+              Export
+              <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
+                <button type="button" disabled={exportLoading} onClick={() => runExport('pdf')}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" /> Export as PDF
+                </button>
+                <button type="button" disabled={exportLoading} onClick={() => runExport('excel')}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" /> Export as Excel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         {loading ? (
           <p className="px-6 py-12 text-center text-sm text-slate-500">Loading onboarding employees</p>
@@ -1232,15 +1310,31 @@ export default function Onboarding() {
                     </div>
                     <div>
                       <label className={labelCls}>Work Location</label>
-                      <select value={wizardForm.workLocation} onChange={(e) => fw({ workLocation: e.target.value })} className={selectCls}>
+                      <select
+                        value={wizardForm.workLocationId || ''}
+                        onChange={(e) => {
+                          const loc = activeLocations.find((l) => String(l.id) === e.target.value)
+                          fw({ workLocationId: e.target.value, workLocation: loc?.name || '' })
+                        }}
+                        className={selectCls}
+                      >
                         <option value="">Select Location</option>
-                        {(metaOptions.workLocations.length > 0 ? metaOptions.workLocations : ['Headquarters', 'Dubai Office', 'Abu Dhabi Office', 'Remote']).map((wl) => (
-                          <option key={wl} value={wl}>{wl}</option>
+                        {activeLocations.map((l) => (
+                          <option key={l.id} value={String(l.id)}>{l.name}</option>
                         ))}
                       </select>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className={labelCls}>Shift</label>
+                      <select value={wizardForm.shiftId} onChange={(e) => fw({ shiftId: e.target.value })} className={selectCls}>
+                        <option value="">Select Shift (Optional)</option>
+                        {activeShifts.map((s) => (
+                          <option key={s.id} value={String(s.id)}>{s.name}{s.shift_type ? ` (${s.shift_type})` : ''}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className={labelCls}>Reporting Manager</label>
                       <select value={wizardForm.reportingManagerEmpId} onChange={(e) => fw({ reportingManagerEmpId: e.target.value })} className={selectCls}>

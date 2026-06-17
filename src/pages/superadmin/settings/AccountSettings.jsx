@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Toggle } from '../../../components/ui/Toggle.jsx'
-import settingsService from '../../../services/settingsService.js'
 import { superadminService } from '../../../services/superadminService.js'
 import ChangePasswordCard from '../../admin/settings/ChangePasswordCard.jsx'
 
 const mfaErr = (e, fb) => e?.response?.data?.message || e?.message || fb
 
-/** Personal TOTP 2FA enrollment for the logged-in superadmin / sub-admin. */
 function MfaSection() {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -23,9 +20,7 @@ function MfaSection() {
       .then((s) => active && setStatus(s))
       .catch(() => active && setStatus({ enabled: false }))
       .finally(() => active && setLoading(false))
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [])
 
   const enabled = Boolean(status?.enabled)
@@ -85,279 +80,152 @@ function MfaSection() {
       disabled={busy}
       onChange={(e) => onCode(e.target.value)}
       placeholder="123456"
-      className="w-36 rounded-md border border-gray-300 px-3 py-2 text-center text-lg font-bold tracking-[0.3em] focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20"
+      className="w-36 rounded-none border border-slate-200 px-3 py-2 text-center font-mono text-lg font-bold tracking-[0.3em] focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20"
     />
   )
 
+  if (loading) {
+    return <p className="font-mono text-xs text-slate-400">Loading…</p>
+  }
+
   return (
-    <div className="bg-white p-4 py-6 shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl sm:p-8">
-      <div className="mb-4 flex items-center gap-3">
-        <h3 className="text-sm font-medium leading-6 text-gray-900">Your authenticator app (2FA)</h3>
+    <div>
+      <div className="mb-3 flex items-center gap-2">
         {enabled ? (
-          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Enabled</span>
+          <span className="rounded-none bg-teal-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-teal-700 border border-teal-200">
+            ENABLED
+          </span>
         ) : (
-          <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-500">Not enabled</span>
+          <span className="rounded-none bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-500 border border-slate-200">
+            NOT ENABLED
+          </span>
         )}
+        <p className="text-xs text-slate-500">
+          Use Google Authenticator, Authy, or any TOTP app.
+        </p>
       </div>
-      <p className="mb-4 text-sm text-gray-500">
-        Protect your own platform account with a time-based code from Google Authenticator, Authy, etc.
-      </p>
 
-      {loading ? (
-        <p className="text-sm text-gray-400">Loading…</p>
-      ) : (
-        <>
-          {!enabled && !setup && (
-            <button
-              type="button"
-              onClick={startSetup}
-              disabled={busy}
-              className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] disabled:opacity-50"
-            >
-              {busy ? 'Please wait…' : 'Set up two-factor authentication'}
-            </button>
-          )}
+      {!enabled && !setup && (
+        <button
+          type="button"
+          onClick={startSetup}
+          disabled={busy}
+          className="inline-flex h-9 items-center bg-[#0F766E] px-4 text-xs font-bold text-white shadow-2xs hover:bg-[#0c6b64] disabled:opacity-50"
+        >
+          {busy ? 'Please wait…' : 'Set up 2FA'}
+        </button>
+      )}
 
-          {!enabled && setup && (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <ol className="mb-4 list-decimal space-y-1 pl-5 text-sm text-gray-600">
-                <li>Scan this QR code with your authenticator app.</li>
-                <li>Enter the 6-digit code to confirm.</li>
-              </ol>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <img src={setup.qrDataUrl} alt="2FA QR code" className="h-40 w-40 rounded-lg border border-gray-200 bg-white p-2" />
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Manual key</p>
-                    <code className="mt-1 block break-all rounded bg-white px-2 py-1 font-mono text-xs text-gray-700 ring-1 ring-gray-200">
-                      {setup.secret}
-                    </code>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {codeInput}
-                    <button
-                      type="button"
-                      onClick={confirmEnable}
-                      disabled={busy || code.length < 6}
-                      className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] disabled:opacity-50"
-                    >
-                      Verify &amp; enable
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setSetup(null); setCode('') }}
-                      disabled={busy}
-                      className="rounded-md px-3 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
+      {!enabled && setup && (
+        <div className="border border-slate-200 bg-slate-50 p-4">
+          <ol className="mb-4 list-decimal space-y-1 pl-5 text-xs text-slate-600">
+            <li>Scan this QR code with your authenticator app.</li>
+            <li>Enter the 6-digit code to confirm.</li>
+          </ol>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <img
+              src={setup.qrDataUrl}
+              alt="2FA QR code"
+              className="h-40 w-40 border border-slate-200 bg-white p-2"
+            />
+            <div className="space-y-3">
+              <div>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  Manual key
+                </p>
+                <code className="mt-1 block break-all bg-white px-2 py-1 font-mono text-xs text-slate-700 ring-1 ring-slate-200">
+                  {setup.secret}
+                </code>
               </div>
-            </div>
-          )}
-
-          {enabled && (
-            disarming ? (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-600">Enter a current code to turn it off:</span>
                 {codeInput}
                 <button
                   type="button"
-                  onClick={confirmDisable}
+                  onClick={confirmEnable}
                   disabled={busy || code.length < 6}
-                  className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 disabled:opacity-50"
+                  className="inline-flex h-9 items-center bg-[#0F766E] px-4 text-xs font-bold text-white shadow-2xs hover:bg-[#0c6b64] disabled:opacity-50"
                 >
-                  Disable
+                  Verify &amp; enable
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setDisarming(false); setCode('') }}
+                  onClick={() => { setSetup(null); setCode('') }}
                   disabled={busy}
-                  className="rounded-md px-3 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900"
+                  className="inline-flex h-9 items-center px-3 text-xs font-semibold text-slate-600 hover:text-slate-900"
                 >
                   Cancel
                 </button>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setDisarming(true)}
-                className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-              >
-                Disable two-factor authentication
-              </button>
-            )
-          )}
-        </>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {enabled && (
+        disarming ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-slate-600">Enter a current code to turn it off:</span>
+            {codeInput}
+            <button
+              type="button"
+              onClick={confirmDisable}
+              disabled={busy || code.length < 6}
+              className="inline-flex h-9 items-center bg-red-600 px-4 text-xs font-bold text-white shadow-2xs hover:bg-red-500 disabled:opacity-50"
+            >
+              Disable
+            </button>
+            <button
+              type="button"
+              onClick={() => { setDisarming(false); setCode('') }}
+              disabled={busy}
+              className="inline-flex h-9 items-center px-3 text-xs font-semibold text-slate-600 hover:text-slate-900"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setDisarming(true)}
+            className="inline-flex h-9 items-center border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+          >
+            Disable two-factor authentication
+          </button>
+        )
       )}
     </div>
   )
 }
 
-const DEFAULTS = {
-  publicRegistration: false,
-  emailVerification: false,
-  twoFactorAuth: false,
-}
-
-function fromApi(api) {
-  if (!api) return { ...DEFAULTS }
-  return {
-    publicRegistration: !!api.publicRegistration,
-    emailVerification: !!api.emailVerification,
-    twoFactorAuth: !!api.twoFactorAuth,
-  }
-}
-
-function deepClone(v) {
-  return JSON.parse(JSON.stringify(v))
-}
-
 export default function AccountSettings() {
-  const [settings, setSettings] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const originalRef = useRef(null)
-
-  const load = useCallback(async () => {
-    try {
-      const res = await settingsService.getAccountSettings()
-      const next = fromApi(res?.data)
-      setSettings(next)
-      originalRef.current = deepClone(next)
-    } catch (err) {
-      toast.error(err?.message || 'Failed to load settings')
-      setSettings({ ...DEFAULTS })
-      originalRef.current = { ...DEFAULTS }
-    }
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  const isDirty = useMemo(() => {
-    if (!settings || !originalRef.current) return false
-    return JSON.stringify(settings) !== JSON.stringify(originalRef.current)
-  }, [settings])
-
-  const set = (patch) => setSettings((prev) => ({ ...(prev || DEFAULTS), ...patch }))
-
-  const handleSave = async (e) => {
-    if (e) e.preventDefault()
-    if (!settings) return
-    setSaving(true)
-    try {
-      const res = await settingsService.updateAccountSettings({
-        publicRegistration: settings.publicRegistration,
-        emailVerification: settings.emailVerification,
-        twoFactorAuth: settings.twoFactorAuth,
-      })
-      const next = fromApi(res?.data)
-      setSettings(next)
-      originalRef.current = deepClone(next)
-      toast.success('Settings saved')
-    } catch (err) {
-      toast.error(err?.message || 'Failed to save settings')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (settings === null) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 w-1/4 rounded bg-gray-200"></div>
-          <div className="h-32 rounded-xl bg-gray-100"></div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-
-        {/* Account Policies section hidden
-        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
-          <form
-            onSubmit={handleSave}
-            className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
-          >
-            <div className="border-b border-gray-900/10 px-4 py-5 sm:px-8">
-              <h2 className="text-base font-semibold leading-7 text-gray-900">Account Policies</h2>
-              <p className="mt-1 text-sm leading-6 text-gray-600">
-                Configure security and user onboarding access across the platform.
-              </p>
-            </div>
-            <div className="px-4 py-6 sm:p-8 space-y-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium leading-6 text-gray-900">Public Registration</h3>
-                  <p className="mt-1 text-sm text-gray-500">Allow new users to create accounts without an admin invitation.</p>
-                </div>
-                <Toggle checked={settings.publicRegistration} onChange={(v) => set({ publicRegistration: v })} />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium leading-6 text-gray-900">Email Verification</h3>
-                  <p className="mt-1 text-sm text-gray-500">Require email confirmation before granting system access.</p>
-                </div>
-                <Toggle checked={settings.emailVerification} onChange={(v) => set({ emailVerification: v })} />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium leading-6 text-gray-900">Multi-Factor Auth (2FA)</h3>
-                  <p className="mt-1 text-sm text-gray-500">Enforce secondary identity verification for all accounts.</p>
-                </div>
-                <Toggle checked={settings.twoFactorAuth} onChange={(v) => set({ twoFactorAuth: v })} />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/5 px-4 py-4 sm:px-8">
-              <button
-                type="button"
-                onClick={() => setSettings(deepClone(originalRef.current))}
-                disabled={!isDirty || saving}
-                className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 disabled:opacity-50"
-              >
-                Discard
-              </button>
-              <button
-                type="submit"
-                disabled={!isDirty || saving}
-                className="rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#115E59] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F766E] disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
+    <div className="space-y-6">
+      <div className="border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 bg-slate-50 px-5 py-3.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+            Two-Factor Authentication
+          </h3>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            Protect your superadmin account with a TOTP authenticator app.
+          </p>
         </div>
-        */}
-
-        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">My Security</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Manage two-factor authentication for your own platform account.
-            </p>
-          </div>
+        <div className="p-5">
           <MfaSection />
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 gap-x-8 gap-y-4">
-          <div className="px-4 sm:px-0">
-            <h2 className="text-base font-semibold leading-7 text-gray-900">My Password</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Change the password for your own platform account.
-            </p>
-          </div>
-          <div className="">
-            <ChangePasswordCard />
-          </div>
+      <div className="border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 bg-slate-50 px-5 py-3.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+            Change Password
+          </h3>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            Update the login password for this superadmin account.
+          </p>
         </div>
-
+        <div className="p-5">
+          <ChangePasswordCard />
+        </div>
       </div>
     </div>
   )

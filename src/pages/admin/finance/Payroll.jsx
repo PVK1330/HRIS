@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { 
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
    HiHome,
    HiPlus,
    HiArrowUpTray,
@@ -18,7 +19,8 @@ import {
    HiClock,
    HiMinusCircle,
    HiTag,
-   HiChevronRight
+   HiChevronRight,
+   HiDocumentArrowDown,
 } from 'react-icons/hi2';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { Avatar } from '../../../components/ui/Avatar.jsx';
@@ -26,17 +28,26 @@ import { Table } from '../../../components/ui/Table.jsx';
 import { Input } from '../../../components/ui/Input.jsx';
 import payrollService from '../../../services/payrollService';
 import { listEmployees } from '../../../services/employeeService';
+import { listDepartments } from '../../../services/departmentService';
 import { toast } from 'react-hot-toast';
 import { useCurrency } from '../../../context/CurrencyContext.jsx';
+import { triggerExport } from '../../../utils/exportHelper.js';
 
 export default function Payroll() {
    const { format: fmt } = useCurrency();
+   const navigate = useNavigate();
    const [mainTab, setMainTab] = useState('salary'); // 'salary' | 'items'
+   const [exportOpen, setExportOpen] = useState(false)
+   const [exportLoading, setExportLoading] = useState(false)
+   const exportRef = useRef(null)
    const [employees, setEmployees] = useState([]);
+   const [departments, setDepartments] = useState([]);
    const [salaries, setSalaries] = useState([]);
    const [loading, setLoading] = useState(true);
    const [searchTerm, setSearchTerm] = useState('');
    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+   const [editSalaryForm, setEditSalaryForm] = useState(null);
    const [dept, setDept] = useState('');
 
    // Settings specific state
@@ -69,8 +80,12 @@ export default function Payroll() {
    const fetchInitialData = async () => {
       try {
          setLoading(true);
-         const { employees: empData } = await listEmployees();
+         const [{ employees: empData }, deptResult] = await Promise.all([
+            listEmployees(),
+            listDepartments({ limit: 200 }).catch(() => ({ departments: [] })),
+         ]);
          setEmployees(empData || []);
+         setDepartments(deptResult?.departments || []);
          await fetchSalaries();
       } catch (error) {
          console.error('Error fetching initial data:', error);
@@ -110,6 +125,24 @@ export default function Payroll() {
       }
    };
 
+   const handleEditSalary = async (e) => {
+      e.preventDefault();
+      try {
+         await payrollService.saveSalary(editSalaryForm);
+         toast.success('Salary record updated');
+         setIsEditModalOpen(false);
+         setEditSalaryForm(null);
+         fetchSalaries();
+      } catch (error) {
+         toast.error('Failed to update salary');
+      }
+   };
+
+   const handleDeleteSalary = (row) => {
+      if (!window.confirm(`Delete salary record for ${row.first_name} ${row.last_name}?`)) return;
+      toast.error('Delete not yet supported');
+   };
+
    const filteredSalaries = useMemo(() => {
       return salaries.filter(s =>
          (s.first_name + ' ' + s.last_name).toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,9 +180,12 @@ export default function Payroll() {
       {
          key: 'payslip',
          label: <div className="text-center">Payslip</div>,
-         render: () => (
+         render: (_, row) => (
             <div className="flex justify-center">
-               <button className="inline-flex h-8 items-center gap-1.5 rounded-none bg-slate-800 px-3 text-[10px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-slate-900 shadow-sm">
+               <button
+                  onClick={() => navigate('/admin/payroll-engine')}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-none bg-slate-800 px-3 text-[10px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-slate-900 shadow-sm"
+               >
                   <HiDocumentText className="h-3.5 w-3.5" />
                   <span>Payslip</span>
                </button>
@@ -159,10 +195,20 @@ export default function Payroll() {
       {
          key: 'actions',
          label: <div className="text-right">Action</div>,
-         render: () => (
+         render: (_, row) => (
             <div className="flex justify-end gap-1.5">
-               <button className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56] shadow-sm"><HiPencilSquare className="h-4 w-4" /></button>
-               <button className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600 shadow-sm"><HiTrash className="h-4 w-4" /></button>
+               <button
+                  onClick={() => { setEditSalaryForm({ ...row }); setIsEditModalOpen(true); }}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-[#0F766E] text-white transition-colors hover:bg-[#0d5c56] shadow-sm"
+               >
+                  <HiPencilSquare className="h-4 w-4" />
+               </button>
+               <button
+                  onClick={() => handleDeleteSalary(row)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-none bg-red-500 text-white transition-colors hover:bg-red-600 shadow-sm"
+               >
+                  <HiTrash className="h-4 w-4" />
+               </button>
             </div>
          )
       }
@@ -191,6 +237,31 @@ export default function Payroll() {
       }
    ];
 
+   useEffect(() => {
+      function onClickOutside(e) {
+         if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false)
+      }
+      document.addEventListener('mousedown', onClickOutside)
+      return () => document.removeEventListener('mousedown', onClickOutside)
+   }, [])
+
+   async function runExport(type) {
+      const ext = type === 'pdf' ? 'pdf' : 'xlsx'
+      const today = new Date().toISOString().slice(0, 10)
+      setExportLoading(true)
+      const tid = toast.loading('Preparing export…')
+      try {
+         await triggerExport('admin/payroll/salaries', { search: searchTerm, departmentId: dept }, type, `salary_registry_${today}.${ext}`)
+         toast.success('Export ready.', { id: tid })
+      } catch (err) {
+         console.error(err)
+         toast.error('Export failed.', { id: tid })
+      } finally {
+         setExportLoading(false)
+         setExportOpen(false)
+      }
+   }
+
    return (
       <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
 
@@ -205,9 +276,28 @@ export default function Payroll() {
                </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-               <button className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
-                  <HiArrowUpTray className="h-4 w-4" /> Export <HiChevronDown className="h-4 w-4" />
-               </button>
+               <div className="relative" ref={exportRef}>
+                  <button
+                     type="button"
+                     disabled={exportLoading}
+                     onClick={() => setExportOpen((p) => !p)}
+                     className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 shadow-sm"
+                  >
+                     <HiDocumentArrowDown className="h-4 w-4" /> Export <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {exportOpen && (
+                     <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
+                        <button type="button" disabled={exportLoading} onClick={() => runExport('pdf')}
+                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                           <HiDocumentArrowDown className="h-4 w-4 text-slate-500" /> Export as PDF
+                        </button>
+                        <button type="button" disabled={exportLoading} onClick={() => runExport('excel')}
+                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                           <HiDocumentArrowDown className="h-4 w-4 text-slate-500" /> Export as Excel
+                        </button>
+                     </div>
+                  )}
+               </div>
                {mainTab === 'salary' ? (
                   <button onClick={() => setIsAddModalOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
                      <HiPlus className="h-4 w-4" /> Add Salary
@@ -266,7 +356,9 @@ export default function Payroll() {
                         </div>
                         <select value={dept} onChange={(e) => { setDept(e.target.value); fetchSalaries(); }} className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium cursor-pointer">
                            <option value="">All Departments</option>
-                           <option value="1">Finance</option>
+                           {departments.map((d) => (
+                              <option key={d.id} value={d.id}>{d.name}</option>
+                           ))}
                         </select>
                      </div>
                   </div>
@@ -313,7 +405,7 @@ export default function Payroll() {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
                      <label className="mb-1.5 block text-sm font-medium text-slate-800">Employee Name <span className="text-red-500">*</span></label>
-                     <select 
+                     <select
                         required
                         value={salaryForm.employee_id}
                         onChange={(e) => setSalaryForm({...salaryForm, employee_id: e.target.value})}
@@ -325,13 +417,13 @@ export default function Payroll() {
                   </div>
                   <div>
                      <label className="mb-1.5 block text-sm font-medium text-slate-800">Net Salary <span className="text-red-500">*</span></label>
-                     <input 
-                        type="number" 
+                     <input
+                        type="number"
                         required
                         value={salaryForm.net_salary}
                         onChange={(e) => setSalaryForm({...salaryForm, net_salary: e.target.value})}
-                        placeholder="Enter amount" 
-                        className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20 outline-none transition-all shadow-sm" 
+                        placeholder="Enter amount"
+                        className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20 outline-none transition-all shadow-sm"
                      />
                   </div>
                </div>
@@ -340,6 +432,51 @@ export default function Payroll() {
                   <button type="submit" className="h-10 rounded-md bg-[#0F766E] px-8 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors shadow-sm">Save Salary Record</button>
                </div>
             </form>
+         </Modal>
+
+         {/* Edit Salary Modal */}
+         <Modal
+            isOpen={isEditModalOpen}
+            onClose={() => { setIsEditModalOpen(false); setEditSalaryForm(null); }}
+            size="2xl"
+            showClose
+            header={
+               <div className="flex flex-col gap-1">
+                  <h2 className="text-lg font-bold text-slate-900">Edit Employee Salary</h2>
+                  <p className="text-xs font-medium text-slate-500">Update the compensation details for this employee.</p>
+               </div>
+            }
+         >
+            {editSalaryForm && (
+               <form className="space-y-6 pt-4" onSubmit={handleEditSalary}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-800">Employee</label>
+                        <input
+                           type="text"
+                           readOnly
+                           value={`${editSalaryForm.first_name || ''} ${editSalaryForm.last_name || ''}`}
+                           className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600 outline-none shadow-sm cursor-not-allowed"
+                        />
+                     </div>
+                     <div>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-800">Net Salary <span className="text-red-500">*</span></label>
+                        <input
+                           type="number"
+                           required
+                           value={editSalaryForm.net_salary}
+                           onChange={(e) => setEditSalaryForm({ ...editSalaryForm, net_salary: e.target.value })}
+                           placeholder="Enter amount"
+                           className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20 outline-none transition-all shadow-sm"
+                        />
+                     </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-3 pt-6 mt-8 border-t border-slate-100">
+                     <button type="button" onClick={() => { setIsEditModalOpen(false); setEditSalaryForm(null); }} className="h-10 rounded-md border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">Cancel</button>
+                     <button type="submit" className="h-10 rounded-md bg-[#0F766E] px-8 text-sm font-semibold text-white hover:bg-[#0d5c56] transition-colors shadow-sm">Update Salary Record</button>
+                  </div>
+               </form>
+            )}
          </Modal>
 
       </div>

@@ -1,15 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAttendanceSettings } from '../../../../hooks/useAttendanceSettings'
 import {
-  APPROVERS,
-  BREAK_DURATION_OPTIONS,
-  EARLY_DEPARTURE_RULES,
-  WHO_CAN_SUBMIT,
-} from '../attendanceConstants'
-import {
   FieldRow,
   SectionCard,
-  SelectInput,
   SettingsBanner,
   SettingsError,
   SettingsLoading,
@@ -17,67 +10,150 @@ import {
   TextInput,
   Toggle,
 } from '../components/ui'
-import { seedHolidays } from '../../../../services/holidayService.js'
+
+const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+const PENALTY_OPTIONS = [
+  'Half Day',
+  'Absent',
+  '1 Leave Deduction',
+  '1 Day Absent',
+  'Warning',
+  'None',
+]
+
+const DEFAULT_PENALTIES = [
+  { count: 3, result: 'Half Day' },
+  { count: 6, result: '1 Leave Deduction' },
+]
+
+function normalisePenalties(raw) {
+  if (Array.isArray(raw) && raw.length > 0) return raw.map((p) => ({ count: Number(p.count) || 0, result: p.result || 'Half Day' }))
+  return DEFAULT_PENALTIES.map((p) => ({ ...p }))
+}
 
 function buildDraft(data) {
   if (!data) return null
+  const ar  = data.attendanceRules   ?? {}
+  const gs  = data.generalSettings   ?? {}
+  const g   = data.generalAttendance ?? {}
+  const pr  = data.presentRules      ?? {}
+  const hd  = data.halfDayRules      ?? {}
+  const ab  = data.absentRules       ?? {}
+  const lm  = data.lateMarkRules     ?? {}
+
   return {
-    workHours: {
-      startTime: data.workHours?.startTime ?? '09:00',
-      endTime: data.workHours?.endTime ?? '18:00',
-      breakDurationMinutes: data.workHours?.breakDurationMinutes ?? 30,
-      totalRequiredHours: data.workHours?.totalRequiredHours ?? 8.5,
-      autoCalculateHours: data.workHours?.autoCalculateHours !== false,
+    workWeekDays:        g.workWeekDays       ?? gs.workWeekDays   ?? 'Mon,Tue,Wed,Thu,Fri,Sat',
+    fullDayPresentHours: pr.fullDayPresentHours ?? ar.minHoursForPresent ?? 8,
+    minHoursForPresent:  pr.minHoursForPresent  ?? ar.minHoursForPresent ?? 8,
+    presentStatusCode:   pr.presentStatusCode   ?? 'P',
+    halfDayMinHours:     hd.halfDayMinHours   ?? gs.halfDayThresholdHours ?? 4,
+    halfDayMaxHours:     hd.halfDayMaxHours   ?? 7.98,
+    halfDayStatusCode:   hd.halfDayStatusCode ?? 'HD',
+    absentBelowHours:    ab.absentBelowHours  ?? 4,
+    absentStatusCode:    ab.absentStatusCode  ?? 'A',
+    autoMarkAbsent:      ab.autoMarkAbsent    !== undefined ? Boolean(ab.autoMarkAbsent) : true,
+    gracePeriodMinutes:  lm.gracePeriodMinutes ?? gs.gracePeriodMinutes ?? 10,
+    enableLateMark:      lm.enableLateMark    !== undefined ? Boolean(lm.enableLateMark) : true,
+    lateMarkStatusCode:  lm.lateMarkStatusCode ?? 'L',
+    penalties:           normalisePenalties(lm.penalties),
+  }
+}
+
+function buildPayload(draft) {
+  const activeDays = draft.workWeekDays.split(',').map((d) => d.trim()).filter(Boolean)
+  const weeklyOff  = WEEK_DAYS.filter((d) => !activeDays.includes(d))
+  return {
+    generalAttendance: { workWeekDays: draft.workWeekDays, weeklyOff: weeklyOff.join(',') },
+    presentRules: {
+      fullDayPresentHours: draft.fullDayPresentHours,
+      minHoursForPresent:  draft.minHoursForPresent,
+      presentStatusCode:   draft.presentStatusCode,
     },
-    attendanceRules: {
-      minHoursForPresent: data.attendanceRules?.minHoursForPresent ?? 6,
-      tenMinuteBuffer: Boolean(data.attendanceRules?.tenMinuteBuffer),
-      lateMarkAutoCalculation: Boolean(data.attendanceRules?.lateMarkAutoCalculation),
-      graceDaysPerMonth: data.attendanceRules?.graceDaysPerMonth ?? 2,
-      earlyDepartureRule: data.attendanceRules?.earlyDepartureRule ?? 'Mark half day',
+    halfDayRules: {
+      halfDayMinHours:   draft.halfDayMinHours,
+      halfDayMaxHours:   draft.halfDayMaxHours,
+      halfDayStatusCode: draft.halfDayStatusCode,
     },
-    regularizationSettings: {
-      whoCanSubmitRequest: data.regularizationSettings?.whoCanSubmitRequest ?? 'All employees',
-      approver: data.regularizationSettings?.approver ?? 'HR',
-      autoRejectionAfterDays: data.regularizationSettings?.autoRejectionAfterDays ?? 3,
-      allowSelf: data.regularizationSettings?.allowSelf !== false,
-      maxPerMonth: data.regularizationSettings?.maxPerMonth ?? 3,
-      autoApproveEnabled: Boolean(data.regularizationSettings?.autoApproveEnabled),
-      autoApproveAfterDays: data.regularizationSettings?.autoApproveAfterDays ?? 3,
+    absentRules: {
+      absentBelowHours: draft.absentBelowHours,
+      absentStatusCode: draft.absentStatusCode,
+      autoMarkAbsent:   draft.autoMarkAbsent,
     },
-    overtimeSettings: {
-      overtimeEligibility: Boolean(data.overtimeSettings?.overtimeEligibility),
-      calculationRule: data.overtimeSettings?.calculationRule ?? '1.5x hourly',
-      approvalWorkflow: data.overtimeSettings?.approvalWorkflow ?? 'Manager → HR',
-      minimumThresholdMinutes: data.overtimeSettings?.minimumThresholdMinutes ?? 30,
-      maxPerMonthHours: data.overtimeSettings?.maxPerMonthHours ?? 0,
-      approver: data.overtimeSettings?.approver ?? 'HR Department',
-      payMultiplier: data.overtimeSettings?.payMultiplier ?? 1.5,
-      requireReason: data.overtimeSettings?.requireReason !== false,
-    },
-    shiftSettings: {
-      defaultShift: data.shiftSettings?.defaultShift ?? 'General',
-      allowEmployeeView: data.shiftSettings?.allowEmployeeView !== false,
-      changeRequestEnabled: Boolean(data.shiftSettings?.changeRequestEnabled),
-    },
-    generalSettings: {
-      workWeekDays: data.generalSettings?.workWeekDays ?? 'Mon,Tue,Wed,Thu,Fri',
-      gracePeriodMinutes: data.generalSettings?.gracePeriodMinutes ?? 10,
-      halfDayThresholdHours: data.generalSettings?.halfDayThresholdHours ?? 4,
-      biometricSyncEnabled: Boolean(data.generalSettings?.biometricSyncEnabled),
-      wfhMarkingAllowed: data.generalSettings?.wfhMarkingAllowed !== false,
+    lateMarkRules: {
+      gracePeriodMinutes: draft.gracePeriodMinutes,
+      enableLateMark:     draft.enableLateMark,
+      lateMarkStatusCode: draft.lateMarkStatusCode,
+      penalties:          draft.penalties,
     },
   }
 }
 
-const SHIFT_TYPES = ['Morning', 'General', 'Night', 'Rotational']
-const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const inp =
+  'h-9 w-full max-w-[110px] rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 shadow-2xs outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]'
+const sel =
+  'h-9 w-full max-w-[200px] cursor-pointer rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 shadow-2xs outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]'
+
+function PenaltyTiers({ penalties, onChange }) {
+  const update = (idx, field, value) => {
+    const next = penalties.map((p, i) => i === idx ? { ...p, [field]: value } : p)
+    onChange(next)
+  }
+  const add = () => {
+    const maxCount = penalties.reduce((m, p) => Math.max(m, Number(p.count) || 0), 0)
+    onChange([...penalties, { count: maxCount + 3, result: 'Half Day' }])
+  }
+  const remove = (idx) => { if (penalties.length <= 1) return; onChange(penalties.filter((_, i) => i !== idx)) }
+
+  return (
+    <div className="space-y-2">
+      {penalties.map((tier, idx) => (
+        <div key={idx} className="flex items-center gap-2">
+          <span className="text-[11px] font-bold text-slate-500 w-20 shrink-0">After</span>
+          <input
+            type="number"
+            min={1}
+            max={99}
+            value={tier.count}
+            onChange={(e) => update(idx, 'count', parseInt(e.target.value, 10) || 1)}
+            className={inp}
+          />
+          <span className="text-[11px] font-bold text-slate-500 shrink-0">lates →</span>
+          <select
+            value={tier.result}
+            onChange={(e) => update(idx, 'result', e.target.value)}
+            className={sel}
+          >
+            {PENALTY_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+          </select>
+          {penalties.length > 1 && (
+            <button
+              type="button"
+              onClick={() => remove(idx)}
+              className="h-7 w-7 shrink-0 text-slate-400 hover:text-red-500 text-lg leading-none font-black"
+              title="Remove tier"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={add}
+        className="mt-1 h-7 px-3 text-[11px] font-black uppercase tracking-wide border border-dashed border-[#0F766E]/40 text-[#0F766E] hover:bg-[#0F766E]/5 transition-colors"
+      >
+        + Add Tier
+      </button>
+    </div>
+  )
+}
 
 export default function AttendanceSection({ registerToolbar }) {
   const { settings, loading, saving, error, save } = useAttendanceSettings()
-  const [draft, setDraft] = useState(null)
+  const [draft, setDraft]       = useState(null)
   const [baseline, setBaseline] = useState(null)
-  const [banner, setBanner] = useState(null)
+  const [banner, setBanner]     = useState(null)
   const didInit = useRef(false)
 
   useEffect(() => {
@@ -106,72 +182,39 @@ export default function AttendanceSection({ registerToolbar }) {
     if (!draft) return
     setBanner(null)
     try {
-      const res = await save({
-        workHours: draft.workHours,
-        attendanceRules: draft.attendanceRules,
-        regularizationSettings: draft.regularizationSettings,
-        overtimeSettings: draft.overtimeSettings,
-        shiftSettings: draft.shiftSettings,
-        generalSettings: draft.generalSettings,
-      })
+      const res = await save(buildPayload(draft))
       if (res?.data) {
         const d = buildDraft(res.data)
         setDraft(d)
         setBaseline(JSON.stringify(d))
       }
       setBanner({ type: 'ok', text: 'Attendance settings saved.' })
-    } catch {
-      /* hook sets error */
-    }
+    } catch { /* hook surfaces the error */ }
   }, [draft, save])
 
   useEffect(() => {
     if (!registerToolbar) return undefined
-    registerToolbar({
-      dirty,
-      saving,
-      onSave: handleSave,
-      onDiscard: resetDraft,
-      disableSave: loading || !draft || saving || !dirty,
-    })
+    registerToolbar({ dirty, saving, onSave: handleSave, onDiscard: resetDraft, disableSave: loading || !draft || saving || !dirty })
     return () => registerToolbar(null)
   }, [registerToolbar, dirty, saving, handleSave, resetDraft, loading, draft])
 
-  const updateWorkHours = (partial) =>
-    setDraft((p) => (p ? { ...p, workHours: { ...p.workHours, ...partial } } : p))
-  const updateAttendanceRules = (partial) =>
-    setDraft((p) => (p ? { ...p, attendanceRules: { ...p.attendanceRules, ...partial } } : p))
-  const updateRegularization = (partial) =>
-    setDraft((p) =>
-      p ? { ...p, regularizationSettings: { ...p.regularizationSettings, ...partial } } : p,
-    )
-  const updateOvertime = (partial) =>
-    setDraft((p) => (p ? { ...p, overtimeSettings: { ...p.overtimeSettings, ...partial } } : p))
-  const updateShift = (partial) =>
-    setDraft((p) => (p ? { ...p, shiftSettings: { ...p.shiftSettings, ...partial } } : p))
-  const updateGeneral = (partial) =>
-    setDraft((p) => (p ? { ...p, generalSettings: { ...p.generalSettings, ...partial } } : p))
+  const set = (partial) => setDraft((p) => p ? { ...p, ...partial } : p)
 
   const toggleWorkDay = (day) => {
     setDraft((p) => {
       if (!p) return p
-      const current = String(p.generalSettings.workWeekDays || '')
-        .split(',').map((d) => d.trim()).filter(Boolean)
-      const next = current.includes(day)
-        ? current.filter((d) => d !== day)
-        : [...current, day]
+      const current = p.workWeekDays.split(',').map((d) => d.trim()).filter(Boolean)
+      const next    = current.includes(day) ? current.filter((d) => d !== day) : [...current, day]
       const ordered = WEEK_DAYS.filter((d) => next.includes(d))
-      return { ...p, generalSettings: { ...p.generalSettings, workWeekDays: ordered.join(',') } }
+      return { ...p, workWeekDays: ordered.join(',') }
     })
   }
 
-  if (loading && !draft) {
-    return <SettingsLoading message="Loading attendance settings…" />
-  }
+  if (loading && !draft) return <SettingsLoading message="Loading attendance settings…" />
+  if (!draft)            return <SettingsError   message={error || 'Could not load attendance settings.'} />
 
-  if (!draft) {
-    return <SettingsError message={error || 'Could not load attendance settings.'} />
-  }
+  const activeDays = draft.workWeekDays.split(',').map((d) => d.trim()).filter(Boolean)
+  const weeklyOff  = WEEK_DAYS.filter((d) => !activeDays.includes(d))
 
   return (
     <SettingsSection>
@@ -181,387 +224,132 @@ export default function AttendanceSection({ registerToolbar }) {
         </SettingsBanner>
       )}
 
-      <SectionCard title="Work hours">
-          <FieldRow label="Operational Start">
-            <TextInput
-              type="time"
-              value={draft.workHours.startTime}
-              onChange={(e) => updateWorkHours({ startTime: e.target.value })}
-              className="max-w-[140px]"
-            />
-          </FieldRow>
-          <FieldRow label="Operational End">
-            <TextInput
-              type="time"
-              value={draft.workHours.endTime}
-              onChange={(e) => updateWorkHours({ endTime: e.target.value })}
-              className="max-w-[140px]"
-            />
-          </FieldRow>
-          <FieldRow label="Rest Interval (Minutes)">
-            <select
-              value={String(draft.workHours.breakDurationMinutes)}
-              onChange={(e) =>
-                updateWorkHours({ breakDurationMinutes: parseInt(e.target.value, 10) })
-              }
-              className="h-9 w-full max-w-[200px] cursor-pointer rounded-none border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 shadow-2xs outline-none focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]"
-            >
-              {BREAK_DURATION_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </FieldRow>
-          <FieldRow
-            label="Mandatory Quota (Hours)"
-            hint={draft.workHours.autoCalculateHours
-              ? 'Auto-derived from Operational Start, End & Rest Interval'
-              : 'Decimal format (e.g. 8.5)'}
-          >
-            <TextInput
-              type="number"
-              step="0.25"
-              min={1}
-              max={24}
-              value={draft.workHours.totalRequiredHours}
-              disabled={draft.workHours.autoCalculateHours}
-              onChange={(e) =>
-                updateWorkHours({ totalRequiredHours: parseFloat(e.target.value) || 0 })
-              }
-              className="max-w-[140px]"
-            />
-          </FieldRow>
-          <FieldRow
-            label="Automated Quota Calculus"
-            hint="Derive required daily hours from the operational window instead of the manual quota."
-          >
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.workHours.autoCalculateHours}
-                onChange={(v) => updateWorkHours({ autoCalculateHours: v })}
-              />
-            </div>
-          </FieldRow>
+      {/* ── Working Days ──────────────────────────────────────────────── */}
+      <SectionCard title="Working Days" description="Select working days — remaining days are automatically set as weekly off">
+        <FieldRow label="Working Days">
+          <div className="flex flex-wrap gap-1.5 mt-0.5">
+            {WEEK_DAYS.map((day) => (
+              <button
+                key={day}
+                type="button"
+                onClick={() => toggleWorkDay(day)}
+                className={`h-9 w-12 text-[11px] font-black uppercase tracking-wide border transition-colors ${
+                  activeDays.includes(day)
+                    ? 'bg-[#0F766E] text-white border-[#0F766E]'
+                    : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600'
+                }`}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
+        </FieldRow>
+        <FieldRow label="Weekly Off" hint="Auto-derived from unselected days above.">
+          <div className="flex flex-wrap gap-1.5 mt-0.5">
+            {weeklyOff.length > 0 ? weeklyOff.map((day) => (
+              <span key={day} className="inline-flex h-9 w-12 items-center justify-center border border-amber-200 bg-amber-50 text-[11px] font-black uppercase tracking-wide text-amber-700">
+                {day}
+              </span>
+            )) : (
+              <span className="text-xs font-semibold text-slate-400 italic">No weekly off — all days are working</span>
+            )}
+          </div>
+        </FieldRow>
       </SectionCard>
 
-      <SectionCard title="Punctuality & presence">
-          <FieldRow label="Presence Threshold (Hours)">
-            <TextInput
-              type="number"
-              step="0.25"
-              min={1}
-              max={24}
-              value={draft.attendanceRules.minHoursForPresent}
-              onChange={(e) =>
-                updateAttendanceRules({ minHoursForPresent: parseFloat(e.target.value) || 0 })
-              }
-              className="max-w-[140px]"
-            />
-          </FieldRow>
-          <FieldRow label="Chronological Grace (10M)" hint="Late mark buffer">
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.attendanceRules.tenMinuteBuffer}
-                onChange={(v) => updateAttendanceRules({ tenMinuteBuffer: v })}
-              />
-            </div>
-          </FieldRow>
-          <FieldRow label="Automated Punctuality Audit">
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.attendanceRules.lateMarkAutoCalculation}
-                onChange={(v) => updateAttendanceRules({ lateMarkAutoCalculation: v })}
-              />
-            </div>
-          </FieldRow>
-          <FieldRow label="Monthly Deviation Allowance">
-            <TextInput
-              type="number"
-              min={0}
-              max={31}
-              value={draft.attendanceRules.graceDaysPerMonth}
-              onChange={(e) =>
-                updateAttendanceRules({ graceDaysPerMonth: parseInt(e.target.value, 10) || 0 })
-              }
-              className="max-w-[140px]"
-            />
-          </FieldRow>
-          <FieldRow label="Early Exit Compliance">
-            <SelectInput
-              options={EARLY_DEPARTURE_RULES}
-              value={draft.attendanceRules.earlyDepartureRule}
-              onChange={(e) => updateAttendanceRules({ earlyDepartureRule: e.target.value })}
-            />
-          </FieldRow>
+      {/* ── Present Rules ─────────────────────────────────────────────── */}
+      <SectionCard title="Present Rules" description="Worked Hours ≥ Min Hours for Present → Status = P">
+        <FieldRow label="Full Day Present Hours">
+          <div className="flex items-center gap-2">
+            <TextInput type="number" step="0.5" min={1} max={24} value={draft.fullDayPresentHours}
+              onChange={(e) => set({ fullDayPresentHours: parseFloat(e.target.value) || 0 })} className="max-w-[110px]" />
+            <span className="text-xs font-semibold text-slate-400">hours</span>
+          </div>
+        </FieldRow>
+        <FieldRow label="Minimum Hours For Present">
+          <div className="flex items-center gap-2">
+            <TextInput type="number" step="0.5" min={1} max={24} value={draft.minHoursForPresent}
+              onChange={(e) => set({ minHoursForPresent: parseFloat(e.target.value) || 0 })} className="max-w-[110px]" />
+            <span className="text-xs font-semibold text-slate-400">hours</span>
+          </div>
+        </FieldRow>
+        <FieldRow label="Present Status Code">
+          <TextInput value={draft.presentStatusCode}
+            onChange={(e) => set({ presentStatusCode: e.target.value.toUpperCase().slice(0, 4) })} className="max-w-[80px]" />
+        </FieldRow>
       </SectionCard>
 
-      <SectionCard title="Regularization">
-          <FieldRow label="Who can submit">
-            <SelectInput
-              options={WHO_CAN_SUBMIT}
-              value={draft.regularizationSettings.whoCanSubmitRequest}
-              onChange={(e) =>
-                updateRegularization({ whoCanSubmitRequest: e.target.value })
-              }
-            />
-          </FieldRow>
-          <FieldRow label="Approver">
-            <SelectInput
-              options={APPROVERS}
-              value={draft.regularizationSettings.approver}
-              onChange={(e) => updateRegularization({ approver: e.target.value })}
-            />
-          </FieldRow>
-          <FieldRow label="Auto-reject after (days)" hint="Reject if not approved in time.">
-            <TextInput
-              type="number"
-              min={1}
-              max={30}
-              value={draft.regularizationSettings.autoRejectionAfterDays}
-              onChange={(e) =>
-                updateRegularization({
-                  autoRejectionAfterDays: parseInt(e.target.value, 10) || 1,
-                })
-              }
-              className="max-w-[140px]"
-            />
-          </FieldRow>
-          <FieldRow label="Allow self-requests" hint="Let employees submit their own corrections.">
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.regularizationSettings.allowSelf}
-                onChange={(v) => updateRegularization({ allowSelf: v })}
-              />
-            </div>
-          </FieldRow>
-          <FieldRow label="Max per month" hint="Limit per employee (0 = no limit).">
-            <TextInput
-              type="number"
-              min={0}
-              max={31}
-              value={draft.regularizationSettings.maxPerMonth}
-              onChange={(e) => updateRegularization({ maxPerMonth: parseInt(e.target.value, 10) || 0 })}
-              className="max-w-[140px]"
-            />
-          </FieldRow>
-          <FieldRow label="Auto-approve if manager absent" hint="Approve after the days below if the manager hasn't acted.">
-            <div className="flex min-h-9 items-center gap-3">
-              <Toggle
-                checked={draft.regularizationSettings.autoApproveEnabled}
-                onChange={(v) => updateRegularization({ autoApproveEnabled: v })}
-              />
-              <TextInput
-                type="number"
-                min={0}
-                max={30}
-                value={draft.regularizationSettings.autoApproveAfterDays}
-                onChange={(e) =>
-                  updateRegularization({ autoApproveAfterDays: parseInt(e.target.value, 10) || 0 })
-                }
-                className="max-w-[90px]"
-                disabled={!draft.regularizationSettings.autoApproveEnabled}
-              />
-              <span className="text-xs font-semibold text-slate-400">days</span>
-            </div>
-          </FieldRow>
+      {/* ── Half Day Rules ────────────────────────────────────────────── */}
+      <SectionCard title="Half Day Rules" description="Min Hours ≤ Worked Hours < Full Day Hours → Status = HD">
+        <FieldRow label="Half Day Minimum Hours">
+          <div className="flex items-center gap-2">
+            <TextInput type="number" step="0.5" min={0} max={24} value={draft.halfDayMinHours}
+              onChange={(e) => set({ halfDayMinHours: parseFloat(e.target.value) || 0 })} className="max-w-[110px]" />
+            <span className="text-xs font-semibold text-slate-400">hours</span>
+          </div>
+        </FieldRow>
+        <FieldRow label="Half Day Maximum Hours" hint="Upper bound — typically full day hours minus 1 minute (e.g. 7.98).">
+          <div className="flex items-center gap-2">
+            <TextInput type="number" step="0.01" min={0} max={24} value={draft.halfDayMaxHours}
+              onChange={(e) => set({ halfDayMaxHours: parseFloat(e.target.value) || 0 })} className="max-w-[110px]" />
+            <span className="text-xs font-semibold text-slate-400">hours</span>
+          </div>
+        </FieldRow>
+        <FieldRow label="Half Day Status Code">
+          <TextInput value={draft.halfDayStatusCode}
+            onChange={(e) => set({ halfDayStatusCode: e.target.value.toUpperCase().slice(0, 4) })} className="max-w-[80px]" />
+        </FieldRow>
       </SectionCard>
 
-      <SectionCard
-        title="Overtime Settings"
-        description="Configure overtime tracking, thresholds, and approval workflows for your organisation"
-      >
-          <FieldRow
-            label="Enable Overtime Tracking"
-            hint="When on, the Overtime tab appears in the Attendance module for all users with access."
-          >
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.overtimeSettings.overtimeEligibility}
-                onChange={(v) => updateOvertime({ overtimeEligibility: v })}
-              />
-            </div>
-          </FieldRow>
-          <FieldRow
-            label="Minimum Overtime Threshold"
-            hint="Overtime is only counted after exceeding this duration past regular hours."
-          >
-            <div className="flex items-center gap-2">
-              <TextInput
-                type="number"
-                step="5"
-                min={0}
-                max={720}
-                value={draft.overtimeSettings.minimumThresholdMinutes}
-                onChange={(e) =>
-                  updateOvertime({ minimumThresholdMinutes: parseInt(e.target.value, 10) || 0 })
-                }
-                className="max-w-[120px]"
-              />
-              <span className="text-xs font-semibold text-slate-400">minutes</span>
-            </div>
-          </FieldRow>
-          <FieldRow
-            label="Max Overtime per Month"
-            hint="Cap on overtime hours per employee per calendar month (0 = unlimited)."
-          >
-            <div className="flex items-center gap-2">
-              <TextInput
-                type="number"
-                step="1"
-                min={0}
-                max={744}
-                value={draft.overtimeSettings.maxPerMonthHours}
-                onChange={(e) =>
-                  updateOvertime({ maxPerMonthHours: parseFloat(e.target.value) || 0 })
-                }
-                className="max-w-[120px]"
-              />
-              <span className="text-xs font-semibold text-slate-400">hours</span>
-            </div>
-          </FieldRow>
-          <FieldRow label="Overtime Pay Multiplier" hint="Rate multiplier applied to overtime hours for payroll calculation.">
-            <div className="flex items-center gap-2">
-              <TextInput
-                type="number"
-                step="0.1"
-                min={1}
-                max={10}
-                value={draft.overtimeSettings.payMultiplier}
-                onChange={(e) => updateOvertime({ payMultiplier: parseFloat(e.target.value) || 1 })}
-                className="max-w-[120px]"
-              />
-              <span className="text-xs font-semibold text-slate-400">× base rate</span>
-            </div>
-          </FieldRow>
-          <FieldRow label="Require Reason for Overtime" hint="Overtime entries must include a reason.">
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.overtimeSettings.requireReason}
-                onChange={(v) => updateOvertime({ requireReason: v })}
-              />
-            </div>
-          </FieldRow>
+      {/* ── Absent Rules ──────────────────────────────────────────────── */}
+      <SectionCard title="Absent Rules" description="Worked Hours < Threshold → Status = A">
+        <FieldRow label="Absent Below">
+          <div className="flex items-center gap-2">
+            <TextInput type="number" step="0.5" min={0} max={24} value={draft.absentBelowHours}
+              onChange={(e) => set({ absentBelowHours: parseFloat(e.target.value) || 0 })} className="max-w-[110px]" />
+            <span className="text-xs font-semibold text-slate-400">hours</span>
+          </div>
+        </FieldRow>
+        <FieldRow label="Absent Status Code">
+          <TextInput value={draft.absentStatusCode}
+            onChange={(e) => set({ absentStatusCode: e.target.value.toUpperCase().slice(0, 4) })} className="max-w-[80px]" />
+        </FieldRow>
+        <FieldRow label="Auto Mark Absent" hint="Auto-mark absent if no punch and no approved leave exists.">
+          <div className="flex min-h-9 items-center">
+            <Toggle checked={draft.autoMarkAbsent} onChange={(v) => set({ autoMarkAbsent: v })} />
+          </div>
+        </FieldRow>
       </SectionCard>
 
-      {/* <SectionCard title="Shift Settings" description="Default shift and employee shift visibility">
-          <FieldRow label="Default Shift" hint="Applied to new employees by default.">
-            <SelectInput
-              options={SHIFT_TYPES}
-              value={draft.shiftSettings.defaultShift}
-              onChange={(e) => updateShift({ defaultShift: e.target.value })}
-            />
-          </FieldRow>
-          <FieldRow label="Allow Employees to View Their Shift" hint="Show the assigned shift in the employee portal.">
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.shiftSettings.allowEmployeeView}
-                onChange={(v) => updateShift({ allowEmployeeView: v })}
-              />
-            </div>
-          </FieldRow>
-          <FieldRow label="Shift Change Requests" hint="Let employees request a shift change.">
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.shiftSettings.changeRequestEnabled}
-                onChange={(v) => updateShift({ changeRequestEnabled: v })}
-              />
-            </div>
-          </FieldRow>
-      </SectionCard> */}
-
-      <SectionCard title="General Attendance Settings" description="Work week, grace, and marking rules">
-          <FieldRow label="Work Week" hint="Days counted as working days." colSpan>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Work Week</p>
-            <p className="mt-0.5 text-[9px] normal-case text-slate-400">Days counted as working days.</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {WEEK_DAYS.map((d) => {
-                const on = String(draft.generalSettings.workWeekDays || '')
-                  .split(',').map((x) => x.trim()).includes(d)
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => toggleWorkDay(d)}
-                    className={`rounded-none border px-3 py-1.5 text-xs font-bold transition-colors ${
-                      on
-                        ? 'border-[#0F766E] bg-[#0F766E]/10 text-[#0F766E]'
-                        : 'border-slate-200 bg-white text-slate-400 hover:bg-slate-50'
-                    }`}
-                  >
-                    {d}
-                  </button>
-                )
-              })}
-            </div>
-          </FieldRow>
-          <FieldRow label="Grace Period for Late Marking" hint="Minutes before a check-in is marked late.">
-            <div className="flex items-center gap-2">
-              <TextInput
-                type="number"
-                min={0}
-                max={120}
-                value={draft.generalSettings.gracePeriodMinutes}
-                onChange={(e) => updateGeneral({ gracePeriodMinutes: parseInt(e.target.value, 10) || 0 })}
-                className="max-w-[120px]"
-              />
-              <span className="text-xs font-semibold text-slate-400">minutes</span>
-            </div>
-          </FieldRow>
-          <FieldRow label="Half-day Threshold" hint="Hours below which a day counts as half-day.">
-            <div className="flex items-center gap-2">
-              <TextInput
-                type="number"
-                step="0.5"
-                min={0}
-                max={24}
-                value={draft.generalSettings.halfDayThresholdHours}
-                onChange={(e) => updateGeneral({ halfDayThresholdHours: parseFloat(e.target.value) || 0 })}
-                className="max-w-[120px]"
-              />
-              <span className="text-xs font-semibold text-slate-400">hours</span>
-            </div>
-          </FieldRow>
-          <FieldRow label="Allow WFH marking" hint="Let employees check in as Work From Home.">
-            <div className="flex min-h-9 items-center">
-              <Toggle
-                checked={draft.generalSettings.wfhMarkingAllowed}
-                onChange={(v) => updateGeneral({ wfhMarkingAllowed: v })}
-              />
-            </div>
-          </FieldRow>
+      {/* ── Late Mark Rules ───────────────────────────────────────────── */}
+      <SectionCard title="Late Mark Rules" description="Check-in after Shift Start + Grace Time → Status = L">
+        <FieldRow label="Grace Period" hint="Minutes after shift start before a late mark is applied.">
+          <div className="flex items-center gap-2">
+            <TextInput type="number" min={0} max={120} value={draft.gracePeriodMinutes}
+              onChange={(e) => set({ gracePeriodMinutes: parseInt(e.target.value, 10) || 0 })} className="max-w-[110px]" />
+            <span className="text-xs font-semibold text-slate-400">minutes</span>
+          </div>
+        </FieldRow>
+        <FieldRow label="Enable Late Mark">
+          <div className="flex min-h-9 items-center">
+            <Toggle checked={draft.enableLateMark} onChange={(v) => set({ enableLateMark: v })} />
+          </div>
+        </FieldRow>
+        <FieldRow label="Late Mark Status Code">
+          <TextInput value={draft.lateMarkStatusCode}
+            onChange={(e) => set({ lateMarkStatusCode: e.target.value.toUpperCase().slice(0, 4) })} className="max-w-[80px]" />
+        </FieldRow>
+        <FieldRow
+          label="Late Penalty Tiers"
+          hint="Define penalty per cumulative late count in a month. Highest matching threshold applies."
+        >
+          <PenaltyTiers
+            penalties={draft.penalties}
+            onChange={(p) => set({ penalties: p })}
+          />
+        </FieldRow>
       </SectionCard>
 
-      <HolidaySeedPanel />
     </SettingsSection>
   )
 }
-
-const UK_REGIONS = ['England', 'Scotland', 'Wales', 'Northern Ireland']
-
-function HolidaySeedPanel() {
-  const [year, setYear] = useState(String(new Date().getFullYear()))
-  const [regions, setRegions] = useState(['England'])
-  const [seeding, setSeeding] = useState(false)
-  const [msg, setMsg] = useState('')
-
-  const toggleRegion = (r) => {
-    setRegions((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]))
-  }
-
-  const handleSeed = async () => {
-    setSeeding(true)
-    setMsg('')
-    try {
-      const result = await seedHolidays({ year: parseInt(year, 10), regions })
-      setMsg(`Seeded ${result.seeded?.length || 0} calendar(s) for ${year}`)
-    } catch (err) {
-      setMsg(err?.response?.data?.message || err?.message || 'Seed failed')
-    } finally {
-      setSeeding(false)
-    }
-  }
-
- 
-}
-

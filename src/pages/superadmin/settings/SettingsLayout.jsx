@@ -1,88 +1,107 @@
-import { useMemo } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import useSettingsMeta from './useSettingsMeta.js'
+import {
+  RiSettings3Line,
+  RiBuildingLine,
+  RiImageLine,
+  RiGlobalLine,
+  RiMoneyDollarCircleLine,
+  RiTimerLine,
+  RiBankCardLine,
+  RiMailSettingsLine,
+  RiMailLine,
+  RiHistoryLine,
+  RiShieldKeyholeLine,
+  RiRefreshLine,
+  RiServerLine,
+} from 'react-icons/ri'
 
-const FALLBACK_SECTIONS = [
-  { key: 'general', label: 'General', items: [{ label: 'General Settings', to: '/superadmin/settings/general' }] },
+const SA_TABS = [
+  { to: 'general',          label: 'General',       icon: RiSettings3Line,         group: 'Platform' },
+  { to: 'company',          label: 'Company',        icon: RiBuildingLine,           group: 'Platform' },
+  { to: 'logo',             label: 'Logo & Brand',   icon: RiImageLine,              group: 'Platform' },
+  { to: 'domain',           label: 'Domain',         icon: RiGlobalLine,             group: 'Platform' },
+  { to: 'currency',         label: 'Currency',       icon: RiMoneyDollarCircleLine,  group: 'Platform' },
+  { to: 'free-trial',       label: 'Free Trial',     icon: RiTimerLine,              group: 'Platform' },
+  { to: 'payments',         label: 'Payments',       icon: RiBankCardLine,           group: 'Platform' },
+  { to: 'email/settings',   label: 'Email SMTP',     icon: RiMailSettingsLine,       group: 'Email' },
+  { to: 'email/templates',  label: 'Templates',      icon: RiMailLine,               group: 'Email' },
+  { to: 'email/log',        label: 'Email Log',      icon: RiHistoryLine,            group: 'Email' },
+  { to: 'account-settings', label: 'Account',        icon: RiShieldKeyholeLine,      group: 'Security' },
+  { to: 'recaptcha',        label: 'reCAPTCHA',      icon: RiRefreshLine,            group: 'Security' },
+  { to: 'system',           label: 'System Info',    icon: RiServerLine,             group: 'System' },
 ]
 
-function SectionLabel({ children }) {
-  return (
-    <div className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-gray-400 first:pt-2">
-      {children}
-    </div>
-  )
-}
-
-function ChildNavItem({ item }) {
-  const location = useLocation()
-  const [pathOnly, search] = item.to.split('?')
-  const params = new URLSearchParams(search || '')
-  const tab = params.get('tab')
-  const currentTab = new URLSearchParams(location.search).get('tab')
-
-  const isActive =
-    location.pathname === pathOnly &&
-    ((tab && currentTab === tab) || (!tab && !currentTab))
-
-  return (
-    <NavLink
-      to={item.to}
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
-        isActive
-          ? 'bg-[#0F766E] text-white shadow-sm'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-      }`}
-    >
-      <span className={`text-xs font-bold transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`}>»</span>
-      <span>{item.label}</span>
-    </NavLink>
-  )
-}
-
 export default function SettingsLayout() {
-  const { meta, loading, error } = useSettingsMeta()
-  const sections = useMemo(
-    () => meta?.navigation?.sections || FALLBACK_SECTIONS,
-    [meta]
-  )
+  const location = useLocation()
+
+  const activeTab = SA_TABS.find((t) => {
+    const abs = `/superadmin/settings/${t.to}`
+    return location.pathname === abs || location.pathname.startsWith(abs + '/')
+  })
 
   return (
-    <div className="flex flex-col md:flex-row min-h-[calc(100vh-8rem)] gap-6 items-start px-4 md:px-0">
-      {/* Side Navigation */}
-      <aside className="w-full md:w-[220px] shrink-0 md:sticky md:top-6">
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <nav className="py-2">
-            {loading && (
-              <div className="space-y-1.5 p-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-9 animate-pulse rounded-lg bg-gray-100" />
-                ))}
-              </div>
-            )}
-            {!loading && sections.map((section, si) => (
-              <div key={section.key || section.label} className={si > 0 ? 'border-t border-gray-100 mt-1 pt-1' : ''}>
-                <SectionLabel>{section.label}</SectionLabel>
-                <div className="px-2 space-y-0.5">
-                  {(section.items || []).map((item) => (
-                    <ChildNavItem key={`${section.key}-${item.label}`} item={item} />
-                  ))}
-                </div>
-              </div>
-            ))}
-            {!!error && (
-              <p className="px-3 py-2 text-xs text-red-500">{error}</p>
-            )}
-          </nav>
+    <div className="min-w-0 animate-in fade-in duration-500 space-y-6 pb-12">
+      {/* Page header */}
+      <div className="min-w-0">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
+          Platform Settings
+        </h1>
+        <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+          <span>Superadmin</span>
+          <span className="text-slate-400">&gt;</span>
+          <span className="uppercase tracking-wider text-slate-600">
+            {activeTab?.label ?? 'Settings'}
+          </span>
         </div>
-      </aside>
+      </div>
 
-      {/* Main Content Pane */}
-      <main className="min-w-0 flex-1 w-full">
-        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-          <Outlet />
+      {/* Tab strip + content panel */}
+      <div className="min-w-0 rounded-none border border-slate-200 bg-white shadow-sm">
+        {/* Horizontal tab bar */}
+        <div className="border-b border-slate-200 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {SA_TABS.map((tab) => {
+              const Icon = tab.icon
+              const abs = `/superadmin/settings/${tab.to}`
+              const isActive =
+                location.pathname === abs ||
+                location.pathname.startsWith(abs + '/')
+              return (
+                <NavLink
+                  key={tab.to}
+                  to={abs}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-[#0F766E] text-white shadow-2xs'
+                      : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                  <span>{tab.label}</span>
+                </NavLink>
+              )
+            })}
+          </div>
         </div>
-      </main>
+
+        {/* Section heading + outlet */}
+        <div className="min-w-0 p-4 sm:p-6">
+          {activeTab && (
+            <div className="mb-6 flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">{activeTab.label}</h2>
+              </div>
+              <div className="w-max rounded-none border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                {activeTab.group}
+              </div>
+            </div>
+          )}
+
+          <main className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Outlet />
+          </main>
+        </div>
+      </div>
     </div>
   )
 }
