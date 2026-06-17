@@ -226,7 +226,7 @@ export default function AddOvertimeModal({
         </div>
 
         {!isEdit && (
-          <div className="rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+          <div className="rounded-md bg-teal-50 px-3 py-2 text-xs font-medium text-teal-800">
             This request will be submitted as <strong>Pending</strong> for approval.
           </div>
         )}
@@ -242,7 +242,7 @@ export default function AddOvertimeModal({
           <button
             type="submit"
             disabled={submitting || totalMinutes <= 0 || belowThreshold}
-            className="rounded-md bg-[#EA580C] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#C2410C] transition-colors disabled:opacity-50"
+            className="rounded-md bg-[#0F766E] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors disabled:opacity-50"
           >
             {submitting ? 'Saving…' : (isEdit ? 'Save changes' : 'Add Overtime')}
           </button>

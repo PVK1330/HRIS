@@ -28,24 +28,49 @@ import AttendanceExportMenu from '../../../../components/attendance/AttendanceEx
 const EMPTY = { date: '', checkInTime: '', checkOutTime: '', reason: '', workMode: 'In Office' }
 
 /**
- * Per-stage approval trail for the details modal. Each stage carries its own
- * status column ('N/A' | 'Pending' | 'Approved' | 'Rejected') plus the approver
- * name, so the state is read directly — no inference needed.
+ * Per-stage approval trail for the details modal.
+ * Stages already completed show Approved/Rejected; the current active stage shows
+ * Pending (amber); stages that are in the chain but not yet reached show Queued (gray).
  */
+const STAGE_ORDER = { manager: 0, department: 1, hr: 2 }
 function buildRegTrail(row) {
-  return [
-    { label: 'Reporting Manager',   status: row.manager_approval_status,    name: row.manager_approver_name },
-    { label: 'Department Head', status: row.department_approval_status, name: row.dept_approver_name },
-    { label: 'HR Department',        status: row.hr_approval_status,         name: row.hr_approver_name },
+  const stages = [
+    { label: 'Reporting Manager', status: row.manager_approval_status,    name: row.manager_approver_name, remark: row.reg_manager_remarks },
+    { label: 'Department Head',   status: row.department_approval_status, name: row.dept_approver_name,    remark: row.reg_dept_remarks },
+    { label: 'HR Department',     status: row.hr_approval_status,         name: row.hr_approver_name,      remark: row.reg_hr_remarks },
   ]
+  const isRejected = row.regularization_status === 'Rejected'
+  // Find which stage did the rejecting (last stage that has an approver stamped)
+  let rejectIdx = -1
+  if (isRejected) {
+    for (let k = stages.length - 1; k >= 0; k--) {
+      if (stages[k].status === 'Rejected') { rejectIdx = k; break }
+    }
+  }
+  return stages.map((s, idx) => {
+    let state
+    if (isRejected && idx === rejectIdx)       state = 'rejected'
+    else if (s.status === 'Approved')          state = 'approved'
+    else if (isRejected)                       state = 'na'
+    else if (s.status === 'N/A')               state = 'na'
+    else if (s.status === 'Pending')           state = 'pending'
+    else                                       state = 'na'
+    return { ...s, state }
+  })
 }
 
+// Maps reg_current_stage → human label for in-progress requests.
+// Do NOT use regularization_status for the label — Manager_Approved doesn't always
+// mean "Awaiting Dept Head" (in 2-level workflow Manager_Approved → HR, not Dept Head).
+const STAGE_LABELS = {
+  manager:    'Awaiting Reporting Manager',
+  department: 'Awaiting Dept Head',
+  hr:         'Awaiting HR',
+}
+// Only used as fallback for terminal statuses (Approved/Rejected)
 const STATUS_LABELS = {
-  Pending:          'Awaiting Manager',
-  Manager_Approved: 'Awaiting Dept Head',
-  Dept_Approved:    'Awaiting HR',
-  Approved:         'Approved',
-  Rejected:         'Rejected',
+  Approved: 'Approved',
+  Rejected: 'Rejected',
 }
 
 function regStatusColor(s) {
@@ -185,8 +210,8 @@ export default function AttendanceRegularization() {
             >
               <option value="">All statuses</option>
               <option value="Pending">Awaiting Manager</option>
-              <option value="Manager_Approved">Awaiting Dept Head</option>
-              <option value="Dept_Approved">Awaiting HR</option>
+              <option value="Manager_Approved">After Manager — in progress</option>
+              <option value="Dept_Approved">After Dept Head — in progress</option>
               <option value="Approved">Approved</option>
               <option value="Rejected">Rejected</option>
             </select>
@@ -207,7 +232,12 @@ export default function AttendanceRegularization() {
             {
               key: 'regularization_status',
               label: 'Status',
-              render: (_, r) => <Badge label={STATUS_LABELS[r.regularization_status] || r.regularization_status || '—'} color={regStatusColor(r.regularization_status)} />,
+              render: (_, r) => {
+                const label = STATUS_LABELS[r.regularization_status]
+                  || STAGE_LABELS[r.pending_stage]
+                  || r.regularization_status || '—'
+                return <Badge label={label} color={regStatusColor(r.regularization_status)} />
+              },
             },
             {
               key: 'pending_approver_role',
@@ -396,50 +426,39 @@ export default function AttendanceRegularization() {
             </div>
             <div>
               <dt className={labelClass}>Status</dt>
-              <dd className="mt-1"><Badge label={STATUS_LABELS[viewRow.regularization_status] || viewRow.regularization_status || '—'} color={regStatusColor(viewRow.regularization_status)} /></dd>
+              <dd className="mt-1"><Badge
+                label={STATUS_LABELS[viewRow.regularization_status] || STAGE_LABELS[viewRow.pending_stage] || viewRow.regularization_status || '—'}
+                color={regStatusColor(viewRow.regularization_status)}
+              /></dd>
             </div>
             <div>
-              <dt className={labelClass}>Approver level</dt>
-              <dd className="mt-1 text-sm text-slate-800">
-                {viewRow.pending_approver_role
-                  || (viewRow.regularization_status === 'Pending'
-                    ? `Level ${viewRow.pending_level || viewRow.current_approval_level || '—'}`
-                    : '—')}
-              </dd>
-            </div>
-            <div className="sm:col-span-2">
               <dt className={labelClass}>Reason</dt>
               <dd className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{viewRow.regularization_reason || '—'}</dd>
             </div>
-            {viewRow.regularization_remarks && (
-              <div className="sm:col-span-2">
-                <dt className={labelClass}>Approver remarks</dt>
-                <dd className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{viewRow.regularization_remarks}</dd>
-              </div>
-            )}
+           
 
             {/* Approval trail */}
             <div className="sm:col-span-2 border-t border-slate-100 pt-3">
               <dt className="text-sm font-semibold text-slate-600">Approval Status</dt>
               <dl className="mt-2 grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
-                {buildRegTrail(viewRow).map((s) => {
-                  const status = s.status || 'N/A'
-                  return (
-                    <Fragment key={s.label}>
-                      <dt className="font-medium text-slate-500">{s.label}</dt>
-                      <dd className="col-span-2 text-slate-800">
-                        {status === 'Approved' && (
-                          <span className="font-medium text-emerald-700">✓ Approved{s.name ? ` — ${s.name}` : ''}</span>
-                        )}
-                        {status === 'Rejected' && (
-                          <span className="font-medium text-red-600">✗ Rejected{s.name ? ` — ${s.name}` : ''}</span>
-                        )}
-                        {status === 'Pending' && <span className="text-amber-600">Pending</span>}
-                        {status === 'N/A' && <span className="text-slate-300">Not required</span>}
-                      </dd>
-                    </Fragment>
-                  )
-                })}
+                {buildRegTrail(viewRow).map((s) => (
+                  <Fragment key={s.label}>
+                    <dt className="font-medium text-slate-500">{s.label}</dt>
+                    <dd className="col-span-2 text-slate-800">
+                      {s.state === 'approved' && (
+                        <span className="font-medium text-emerald-700">✓ Approved{s.name ? ` — ${s.name}` : ''}</span>
+                      )}
+                      {s.state === 'rejected' && (
+                        <span className="font-medium text-red-600">✗ Rejected{s.name ? ` — ${s.name}` : ''}</span>
+                      )}
+                      {s.state === 'pending' && <span className="text-amber-600">Pending</span>}
+                      {s.state === 'na'       && <span className="text-slate-300">—</span>}
+                      {s.remark && (
+                        <p className="mt-0.5 text-xs italic text-slate-500 whitespace-pre-wrap">"{s.remark}"</p>
+                      )}
+                    </dd>
+                  </Fragment>
+                ))}
               </dl>
             </div>
           </dl>

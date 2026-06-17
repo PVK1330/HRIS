@@ -452,7 +452,7 @@ export default function EmployeeProfile() {
           <div className="grid gap-4 sm:grid-cols-2 min-w-0">
             <div className="space-y-4 min-w-0">
               <div className="p-3.5 rounded-none border border-slate-200 bg-slate-50/50 min-w-0">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Direct Manager</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Reporting Manager</p>
                 <p className="text-xs font-bold text-slate-900 truncate">{emp?.manager_name || '—'}</p>
               </div>
               <div className="p-3.5 rounded-none border border-slate-200 bg-slate-50/50 min-w-0">
