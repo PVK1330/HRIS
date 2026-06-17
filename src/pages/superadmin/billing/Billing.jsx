@@ -11,10 +11,10 @@ import { ExportDropdown } from '../../../components/ui/ExportDropdown.jsx'
 import { useCurrency } from '../../../context/CurrencyContext.jsx'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
-import { 
-  HiArrowTrendingDown, 
-  HiCurrencyDollar, 
-  HiDocumentText, 
+import {
+  HiArrowTrendingDown,
+  HiCurrencyDollar,
+  HiDocumentText,
   HiCloudArrowDown,
   HiBellAlert,
   HiArrowPath,
@@ -24,7 +24,7 @@ import {
   HiChevronLeft,
   HiChevronRight,
   HiInformationCircle
-  ,HiPrinter
+  , HiPrinter
 } from 'react-icons/hi2'
 
 export default function Billing() {
@@ -42,7 +42,7 @@ export default function Billing() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [pageSize] = useState(10)
-  
+
   const [selectedInvoice, setSelectedInvoice] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showManualInvoiceModal, setShowManualInvoiceModal] = useState(false)
@@ -106,7 +106,7 @@ export default function Billing() {
       inv.status,
       new Date(inv.created_at).toLocaleDateString()
     ])
-    
+
     const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
@@ -288,7 +288,7 @@ export default function Billing() {
       {/* Top Title Bar with Moved Actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Financial Control</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 truncate">Billing & Payments</h1>
           <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
             <span>Billing</span>
             <span className="text-slate-400">&gt;</span>
@@ -318,16 +318,16 @@ export default function Billing() {
           { label: 'OUTSTANDING', count: fmt(Number(stats.outstanding_amount)), bgColor: 'bg-[#F59E0B]', icon: HiBellAlert },
           { label: 'FAILED ATTEMPTS', count: stats.failed_count, bgColor: 'bg-[#EF4444]', icon: HiArrowTrendingDown }
         ].map((card, idx) => (
-            <div
-              key={idx}
-              className="group flex items-center gap-3.5 rounded-none border border-slate-200 p-4 text-left transition-all hover:bg-slate-50/50 min-w-0 shadow-sm bg-white"
-            >
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}><card.icon className="h-5 w-5" /></div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-bold uppercase tracking-wider truncate leading-none text-slate-400">{card.label}</div>
-                <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
-              </div>
+          <div
+            key={idx}
+            className="group flex items-center gap-3.5 rounded-none border border-slate-200 p-4 text-left transition-all hover:bg-slate-50/50 min-w-0 shadow-sm bg-white"
+          >
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-none ${card.bgColor} text-white shadow-sm`}><card.icon className="h-5 w-5" /></div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-bold uppercase tracking-wider truncate leading-none text-slate-400">{card.label}</div>
+              <div className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 leading-none">{card.count}</div>
             </div>
+          </div>
         ))}
       </div>
 
@@ -343,9 +343,9 @@ export default function Billing() {
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by ID or Organisation..." className="h-10 w-full rounded-none border border-slate-200 bg-slate-50/70 px-3 pl-9 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] font-medium" />
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <select 
-              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer" 
-              value={statusFilter} 
+            <select
+              className="h-10 rounded-none border border-slate-200 bg-slate-50/70 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-[#0F766E] focus:bg-white focus:ring-1 focus:ring-[#0F766E] cursor-pointer"
+              value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="all">All Transactions</option>
@@ -360,7 +360,7 @@ export default function Billing() {
             ) : null}
           </div>
         </div>
-        
+
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -383,8 +383,8 @@ export default function Billing() {
             data={invoices.map((invoice) => ({
               invoice: (
                 <div className="flex items-center gap-2">
-                   <HiDocumentText className="text-slate-300 h-4 w-4" />
-                   <span className="font-mono text-[11px] font-black text-indigo-600">INV-{invoice.id}</span>
+                  <HiDocumentText className="text-slate-300 h-4 w-4" />
+                  <span className="font-mono text-[11px] font-black text-indigo-600">INV-{invoice.id}</span>
                 </div>
               ),
               tenant: (
@@ -395,21 +395,21 @@ export default function Billing() {
               ),
               plan: <Badge label={invoice.plan_name || 'N/A'} color="indigo" variant="soft" />,
               amount: (
-                 <div className="flex flex-col">
-                    <span className={`text-sm font-black ${invoice.status === 'completed' ? 'text-slate-900' : 'text-amber-600'}`}>
-                      {fmt(Number(invoice.amount))}
-                    </span>
-                 </div>
+                <div className="flex flex-col">
+                  <span className={`text-sm font-black ${invoice.status === 'completed' ? 'text-slate-900' : 'text-amber-600'}`}>
+                    {fmt(Number(invoice.amount))}
+                  </span>
+                </div>
               ),
               dates: (
-                 <div className="flex flex-col">
-                    <span className="text-xs text-slate-600 font-bold">
-                      {new Date(invoice.billing_start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} - {new Date(invoice.billing_end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                      Issued: {new Date(invoice.created_at).toLocaleDateString()}
-                    </span>
-                 </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-slate-600 font-bold">
+                    {new Date(invoice.billing_start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} - {new Date(invoice.billing_end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    Issued: {new Date(invoice.created_at).toLocaleDateString()}
+                  </span>
+                </div>
               ),
               status: <Badge label={invoice.status.toUpperCase()} color={invoice.status === 'completed' ? 'green' : invoice.status === 'pending' ? 'amber' : 'red'} />,
               actions: (
@@ -456,9 +456,9 @@ export default function Billing() {
               <div className="p-4 rounded-none bg-slate-50 border border-slate-200">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Status</span>
                 <div className="mt-1">
-                  <Badge 
-                    label={selectedInvoice.status.toUpperCase()} 
-                    color={selectedInvoice.status === 'completed' ? 'green' : selectedInvoice.status === 'pending' ? 'amber' : 'red'} 
+                  <Badge
+                    label={selectedInvoice.status.toUpperCase()}
+                    color={selectedInvoice.status === 'completed' ? 'green' : selectedInvoice.status === 'pending' ? 'amber' : 'red'}
                   />
                 </div>
               </div>
@@ -495,8 +495,8 @@ export default function Billing() {
             )}
 
             <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6">
-              <button type="button" onClick={() => handlePrintInvoice(selectedInvoice)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 mr-auto"><HiPrinter className="h-4 w-4"/> Print Invoice</button>
-              <button type="button" onClick={() => handleDownloadInvoice(selectedInvoice)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5"><HiCloudArrowDown className="h-4 w-4"/> Download Invoice</button>
+              <button type="button" onClick={() => handlePrintInvoice(selectedInvoice)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 mr-auto"><HiPrinter className="h-4 w-4" /> Print Invoice</button>
+              <button type="button" onClick={() => handleDownloadInvoice(selectedInvoice)} className="rounded-none border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5"><HiCloudArrowDown className="h-4 w-4" /> Download Invoice</button>
               <button type="button" onClick={() => setShowDetailModal(false)} className="rounded-none bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0c6b64] transition-colors">Close</button>
             </div>
           </div>

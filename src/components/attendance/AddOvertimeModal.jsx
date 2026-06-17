@@ -217,7 +217,7 @@ export default function AddOvertimeModal({
           <button
             type="submit"
             disabled={submitting || totalMinutes <= 0 || belowThreshold}
-            className="rounded-md bg-[#EA580C] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#C2410C] transition-colors disabled:opacity-50"
+            className="rounded-md bg-[#0f766e] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0f766e] transition-colors disabled:opacity-50"
           >
             {submitting ? 'Saving…' : (isEdit ? 'Save changes' : 'Add Overtime')}
           </button>
