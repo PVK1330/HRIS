@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
    HiHome,
@@ -19,7 +19,8 @@ import {
    HiClock,
    HiMinusCircle,
    HiTag,
-   HiChevronRight
+   HiChevronRight,
+   HiDocumentArrowDown,
 } from 'react-icons/hi2';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { Avatar } from '../../../components/ui/Avatar.jsx';
@@ -30,11 +31,15 @@ import { listEmployees } from '../../../services/employeeService';
 import { listDepartments } from '../../../services/departmentService';
 import { toast } from 'react-hot-toast';
 import { useCurrency } from '../../../context/CurrencyContext.jsx';
+import { triggerExport } from '../../../utils/exportHelper.js';
 
 export default function Payroll() {
    const { format: fmt } = useCurrency();
    const navigate = useNavigate();
    const [mainTab, setMainTab] = useState('salary'); // 'salary' | 'items'
+   const [exportOpen, setExportOpen] = useState(false)
+   const [exportLoading, setExportLoading] = useState(false)
+   const exportRef = useRef(null)
    const [employees, setEmployees] = useState([]);
    const [departments, setDepartments] = useState([]);
    const [salaries, setSalaries] = useState([]);
@@ -232,6 +237,31 @@ export default function Payroll() {
       }
    ];
 
+   useEffect(() => {
+      function onClickOutside(e) {
+         if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false)
+      }
+      document.addEventListener('mousedown', onClickOutside)
+      return () => document.removeEventListener('mousedown', onClickOutside)
+   }, [])
+
+   async function runExport(type) {
+      const ext = type === 'pdf' ? 'pdf' : 'xlsx'
+      const today = new Date().toISOString().slice(0, 10)
+      setExportLoading(true)
+      const tid = toast.loading('Preparing export…')
+      try {
+         await triggerExport('admin/payroll/salaries', { search: searchTerm, departmentId: dept }, type, `salary_registry_${today}.${ext}`)
+         toast.success('Export ready.', { id: tid })
+      } catch (err) {
+         console.error(err)
+         toast.error('Export failed.', { id: tid })
+      } finally {
+         setExportLoading(false)
+         setExportOpen(false)
+      }
+   }
+
    return (
       <div className="space-y-6 animate-in fade-in duration-500 min-w-0">
 
@@ -246,9 +276,28 @@ export default function Payroll() {
                </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-               <button className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 shadow-sm">
-                  <HiArrowUpTray className="h-4 w-4" /> Export <HiChevronDown className="h-4 w-4" />
-               </button>
+               <div className="relative" ref={exportRef}>
+                  <button
+                     type="button"
+                     disabled={exportLoading}
+                     onClick={() => setExportOpen((p) => !p)}
+                     className="inline-flex items-center justify-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 shadow-sm"
+                  >
+                     <HiDocumentArrowDown className="h-4 w-4" /> Export <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {exportOpen && (
+                     <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
+                        <button type="button" disabled={exportLoading} onClick={() => runExport('pdf')}
+                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                           <HiDocumentArrowDown className="h-4 w-4 text-slate-500" /> Export as PDF
+                        </button>
+                        <button type="button" disabled={exportLoading} onClick={() => runExport('excel')}
+                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                           <HiDocumentArrowDown className="h-4 w-4 text-slate-500" /> Export as Excel
+                        </button>
+                     </div>
+                  )}
+               </div>
                {mainTab === 'salary' ? (
                   <button onClick={() => setIsAddModalOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-none bg-[#0F766E] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0c6b64] shadow-sm">
                      <HiPlus className="h-4 w-4" /> Add Salary

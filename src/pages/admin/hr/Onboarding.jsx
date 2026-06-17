@@ -1,5 +1,5 @@
 // v2 ” single-tab unified form with system role
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   HiUserPlus,
   HiClipboardDocumentCheck,
@@ -19,6 +19,8 @@ import {
   HiDocumentDuplicate,
   HiDocumentText,
   HiDocument,
+  HiDocumentArrowDown,
+  HiChevronDown,
 } from 'react-icons/hi2'
 import toast from 'react-hot-toast'
 import { Badge } from '../../../components/ui/Badge.jsx'
@@ -49,6 +51,7 @@ import {
 import { adminSettingsService } from '../../../services/adminSettingsService.js'
 import { listDepartments } from '../../../services/departmentService.js'
 import { listDesignations } from '../../../services/designationService.js'
+import { triggerExport } from '../../../utils/exportHelper.js'
 
 // Accepts an optional leading +, digits, spaces, dashes, parentheses; requires
 // 7–15 actual digits (E.164-ish, lenient about formatting).
@@ -130,6 +133,9 @@ const INITIAL_FORM = {
 export default function Onboarding() {
   const [q, setQ] = useState('')
   const [activeStatus, setActiveStatus] = useState('All')
+  const [exportOpen, setExportOpen] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
+  const exportRef = useRef(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [selectedHire, setSelectedHire] = useState(null)
@@ -515,6 +521,31 @@ export default function Onboarding() {
 
   /* â”€â”€â”€ Stats & filtering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  async function runExport(type) {
+    const ext = type === 'pdf' ? 'pdf' : 'xlsx'
+    const today = new Date().toISOString().slice(0, 10)
+    setExportLoading(true)
+    const tid = toast.loading('Preparing export…')
+    try {
+      await triggerExport('employees/onboarding', {}, type, `onboarding_${today}.${ext}`)
+      toast.success('Export ready.', { id: tid })
+    } catch (err) {
+      console.error(err)
+      toast.error('Export failed.', { id: tid })
+    } finally {
+      setExportLoading(false)
+      setExportOpen(false)
+    }
+  }
+
   const stats = useMemo(() => {
     const offerSent = rows.filter((r) => r.workflowStatus === 'offer_sent').length
     const documentsPending = rows.filter((r) => r.workflowStatus === 'documents_pending').length
@@ -864,6 +895,30 @@ export default function Onboarding() {
               Reset Filters
             </button>
           )}
+          <div className="relative ml-auto" ref={exportRef}>
+            <button
+              type="button"
+              disabled={exportLoading}
+              onClick={() => setExportOpen((p) => !p)}
+              className="inline-flex items-center gap-2 h-10 px-3 rounded-none border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 shadow-sm"
+            >
+              <HiDocumentArrowDown className="h-4 w-4" />
+              Export
+              <HiChevronDown className={`h-4 w-4 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-none border border-slate-200 bg-white py-1 shadow-lg">
+                <button type="button" disabled={exportLoading} onClick={() => runExport('pdf')}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" /> Export as PDF
+                </button>
+                <button type="button" disabled={exportLoading} onClick={() => runExport('excel')}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                  <HiDocumentArrowDown className="h-4 w-4 text-slate-500" /> Export as Excel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         {loading ? (
           <p className="px-6 py-12 text-center text-sm text-slate-500">Loading onboarding employees</p>
