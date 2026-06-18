@@ -59,6 +59,15 @@ const AnnouncementsPage = lazy(() => import("../pages/admin/Announcements.jsx"))
 const MyAccount = lazy(() => import("../pages/admin/MyAccount.jsx"));
 const Payroll = lazy(() => import("../pages/admin/finance/Payroll.jsx"));
 const SupportManagement = lazy(() => import("../pages/admin/support/Support.jsx"));
+const DailyWagesDashboard = lazy(() => import("../pages/admin/workforce/daily-wages/DailyWagesDashboard.jsx"));
+const DailyWagesAddWorker = lazy(() => import("../pages/admin/workforce/daily-wages/AddWorkerPage.jsx"));
+const DailyWagesAddLocation = lazy(() => import("../pages/admin/workforce/daily-wages/AddLocationPage.jsx"));
+const DailyWagesWorkers = lazy(() => import("../pages/admin/workforce/daily-wages/WorkerList.jsx"));
+const DailyWagesAreas = lazy(() => import("../pages/admin/workforce/daily-wages/AreasManagement.jsx"));
+const DailyWagesGeofencing = lazy(() => import("../pages/admin/workforce/daily-wages/GeofencingZones.jsx"));
+const DailyWagesAttendance = lazy(() => import("../pages/admin/workforce/daily-wages/WorkerAttendance.jsx"));
+const DailyWagesWages = lazy(() => import("../pages/admin/workforce/daily-wages/WagesSummary.jsx"));
+const DailyWagesPortal = lazy(() => import("../pages/admin/workforce/daily-wages/WorkerPortalPreview.jsx"));
 
 const PlatformDashboard = lazy(() => import("../pages/superadmin/platform/Dashboard.jsx"));
 const TenantManagement = lazy(() => import("../pages/superadmin/tenants/TenantManagement.jsx"));
@@ -452,6 +461,15 @@ export const router = createBrowserRouter([
               </AdminModuleGate>
             ),
           },
+          { path: "daily-wages/workers/dashboard", element: <DailyWagesDashboard /> },
+          { path: "daily-wages/workers/list", element: <DailyWagesWorkers /> },
+          { path: "daily-wages/workers", element: <DailyWagesAddWorker /> },
+          { path: "daily-wages/areas", element: <DailyWagesAreas /> },
+          { path: "daily-wages/areas/add", element: <DailyWagesAddLocation /> },
+          { path: "daily-wages/geofencing", element: <DailyWagesGeofencing /> },
+          { path: "daily-wages/attendance", element: <DailyWagesAttendance /> },
+          { path: "daily-wages/wages", element: <DailyWagesWages /> },
+          { path: "daily-wages/portal", element: <DailyWagesPortal /> },
         ],
       },
       {

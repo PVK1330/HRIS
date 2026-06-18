@@ -13,6 +13,8 @@ import {
   HiCreditCard,
   HiCurrencyDollar,
   HiDocument,
+  HiUserGroup,
+  HiMapPin,
   HiDocumentText,
   HiEnvelope,
   HiFlag,
@@ -262,6 +264,26 @@ const adminNavGroups = [
       // { label: 'Projects', icon: HiFolder, path: '/admin/projects', permission: 'edit_settings', featureCode: 'projects' },
       // { label: 'Tasks', icon: HiFlag, path: '/admin/tasks', permission: 'edit_settings', featureCode: 'task_management' },
       // { label: 'Template Generator', icon: HiDocumentText, path: '/admin/templates', permission: 'edit_settings', featureCode: 'template_generation' },
+    ],
+  },
+  {
+    groupLabel: "WORKFORCE MANAGEMENT",
+    items: [
+      {
+        label: "Daily Wages",
+        icon: HiUserGroup,
+        featureCode: "daily_wages_workers",
+        children: [
+          { label: "Dashboard", path: "/admin/daily-wages/workers/dashboard" },
+          { label: "Workers", path: "/admin/daily-wages/workers/list" },
+          // { label: "Add Workers", path: "/admin/daily-wages/workers" },
+          { label: "Locations", path: "/admin/daily-wages/areas" },
+          { label: "Attendance", path: "/admin/daily-wages/attendance" },
+          { label: "Wages", path: "/admin/daily-wages/wages" },
+          // { label: "Worker Portal", path: "/admin/daily-wages/portal" },
+        ],
+      },
+     
     ],
   },
   {
